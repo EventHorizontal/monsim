@@ -1,0 +1,13 @@
+[package]
+name = "monsim"
+version = "0.3.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libmath = "0.2.1"
+num = "0.2.1"
+phf = { version = "0.11", features = ["macros"] }
+rand = "0.8.5"
+battle_state_macro = { path = "battle_state_macro" }

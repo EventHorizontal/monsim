@@ -3,11 +3,12 @@
 #![allow(unused_imports)]
 
 // Modules
+pub mod battle_state;
+pub mod entities;
+
 mod utility_macros;
 mod type_chart;
-pub mod entities;
 mod battle_constants;
-pub mod battle_state;
 
 // Usings
 use crate::field;

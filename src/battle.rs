@@ -28,7 +28,7 @@ impl Battle {
 
     pub fn run_sim(&mut self) {
         self.battle_state =
-            Self::run_damaging_move(self.battle_state.clone(), 1, 3, MoveID::First);
+            Self::run_damaging_move(self.battle_state.clone(), 1, 2, MoveID::First);
     }
 
     pub fn run_damaging_move(

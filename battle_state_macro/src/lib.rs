@@ -19,7 +19,7 @@ use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
 ///             },
 ///         //...up to 5 more
 ///     },
-///    OpposingTeam {
+///    OpponentTeam {
 ///         mon #MonsterNameHere {
 ///                 mov #MoveNameHere,
 ///                 //...up to 3 more
@@ -63,7 +63,7 @@ pub fn battle_state(input: TokenStream) -> TokenStream {
         );
 
     // Concatenate streams of Tokens ______________________________________________________
-    let mut output = proc_macro2::TokenStream::new(); // init output stream
+    let mut output = quote!( use crate::battle; ); // init output stream
     concatenate(&mut ally_monster_list, opponent_monster_list);
     concatenate_delimited(&mut monster_stream, ally_monster_list, Delimiter::Bracket);
     concatenate(&mut output, monster_stream);
@@ -76,7 +76,7 @@ pub fn battle_state(input: TokenStream) -> TokenStream {
         &mut output,
         quote!(
             (
-                monsim::battle::battle_state::BattleState::new( monsters, moves ),
+                battle::battle_state::BattleState::new( monsters, moves ),
                 #entity_id,
                 #effector_id
             )
@@ -101,12 +101,12 @@ fn construct_streams_per_team<'a>(
 
     let mut first = true;
 
-    let monstertype = quote!(monsim::battle::entities::Monster);
-    let monstersmod = quote!(monsim::battle::entities::monster_dex);
+    let monstertype = quote!(battle::entities::Monster);
+    let monstersmod = quote!(battle::entities::monster_dex);
     let mut monster_list = proc_macro2::TokenStream::new();
     
-    let movetype = quote!(monsim::battle::entities::Move);
-    let movesmod = quote!(monsim::battle::entities::move_dex);
+    let movetype = quote!(battle::entities::Move);
+    let movesmod = quote!(battle::entities::move_dex);
     let mut move_list = proc_macro2::TokenStream::new();
 
     for monster_expr in expr_tree.iter() {
@@ -133,7 +133,7 @@ fn construct_streams_per_team<'a>(
                             quote!(#movetype::from_species(
                                 #movesmod::#effector_name, 
                                 #entity_id, 
-                                monsim::battle::entities::MoveID::First).set_active(true),
+                                battle::entities::MoveID::First).set_active(true),
                             ),
                         );
                     }

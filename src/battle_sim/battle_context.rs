@@ -44,11 +44,10 @@ fn test_priority_sorting_deterministic() {
 
         let event_handler_set_plus_info = test_bcontext.event_handler_sets_plus_info();
         use super::event::event_dex::OnTryMove;
-        let handler_retriever = OnTryMove.handler_retriever();
         let mut unwrapped_event_handler_plus_info = event_handler_set_plus_info
             .iter()
             .filter_map(|event_handler_set_info| {
-                    if let Some (handler) = handler_retriever(&event_handler_set_info.event_handler_set) {
+                    if let Some (handler) = OnTryMove.associated_handler(&event_handler_set_info.event_handler_set) {
                         Some(EventHandlerInfo {
                             event_handler: handler,
                             owner_uid: event_handler_set_info.owner_uid,
@@ -189,11 +188,10 @@ fn test_priority_sorting_with_speed_ties() {
 
         let event_handler_set_plus_info = test_bcontext.event_handler_sets_plus_info();
         use super::event::event_dex::OnTryMove;
-        let handler_retriever = OnTryMove.handler_retriever();
         let mut unwrapped_event_handler_plus_info = event_handler_set_plus_info
             .iter()
             .filter_map(|event_handler_set_info| {
-                    if let Some (handler) = handler_retriever(&event_handler_set_info.event_handler_set) {
+                    if let Some (handler) = OnTryMove.associated_handler(&event_handler_set_info.event_handler_set) {
                         Some(EventHandlerInfo {
                             event_handler: handler,
                             owner_uid: event_handler_set_info.owner_uid,

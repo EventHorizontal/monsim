@@ -68,13 +68,11 @@ impl EventResolver {
     /// 
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
     pub fn broadcast_event<R: PartialEq + Copy>(context: &mut BattleContext, caller_uid: BattlerUID, event: &dyn InBattleEvent<EventReturnType=R>, default: R, short_circuit: Option<R>) -> R {
-        let handler_retriever = event.handler_retriever();
-        
         let event_handler_set_plus_info = context.event_handler_sets_plus_info();
         let mut unwrapped_event_handler_plus_info = event_handler_set_plus_info
             .iter()
             .filter_map(|event_handler_set_info| {
-                    if let Some (handler) = handler_retriever(&event_handler_set_info.event_handler_set) {
+                    if let Some (handler) = event.associated_handler(&event_handler_set_info.event_handler_set) {
                         Some(EventHandlerInfo {
                             event_handler: handler,
                             owner_uid: event_handler_set_info.owner_uid,
@@ -117,18 +115,6 @@ impl EventResolver {
     }
 }
 
-macro_rules! field {
-    ($x:ident) => {
-        |it| { it.$x }
-    };
-}
-
-pub trait InBattleEvent {
-    type EventReturnType: Sized;
-    
-    fn handler_retriever(&self) -> fn(&EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>>;
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ActivationOrder {
     pub priority: u16,
@@ -161,17 +147,25 @@ bitflags! {
     }
 }
 
+pub trait InBattleEvent {
+    type EventReturnType: Sized;
+    
+    fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>>;
+}
+
 pub mod event_dex {
     use super::*;
+
+    //TODO: This could be a derive macro
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct OnTryMove;
     
     impl InBattleEvent for OnTryMove {
         type EventReturnType = bool;
-    
-        fn handler_retriever(&self) -> fn(&EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            field!(on_try_move)
+        
+        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
+            event_handler_set.on_try_move
         }
     }
 
@@ -180,9 +174,9 @@ pub mod event_dex {
     
     impl InBattleEvent for OnAbilityActivated {
         type EventReturnType = ();
-    
-        fn handler_retriever(&self) -> fn(&EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            field!(on_ability_activated)
+        
+        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
+            event_handler_set.on_ability_activated
         }
     }
 
@@ -191,9 +185,9 @@ pub mod event_dex {
     
     impl InBattleEvent for OnDamageDealt {
         type EventReturnType = ();
-    
-        fn handler_retriever(&self) -> fn(&EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            field!(on_damage_dealt)
+        
+        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
+            event_handler_set.on_damage_dealt
         }
     }
 
@@ -203,8 +197,8 @@ pub mod event_dex {
     impl InBattleEvent for OnTryActivateAbility {
         type EventReturnType = bool;
     
-        fn handler_retriever(&self) -> fn(&EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            field!(on_try_activate_ability)
+        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
+            event_handler_set.on_try_activate_ability
         }
     }
 
@@ -213,9 +207,9 @@ pub mod event_dex {
     
     impl InBattleEvent for OnModifyAccuracy {
         type EventReturnType = u16;
-    
-        fn handler_retriever(&self) -> fn(&EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            field!(on_modify_accuracy)
+        
+        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
+            event_handler_set.on_modify_accuracy
         }
     }
 }

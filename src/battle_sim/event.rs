@@ -42,6 +42,7 @@ fn test_print_event_handler_set() {
 
 impl Debug for EventHandlerSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO: Investigate whether it is worth it to add explicit lifetimes to the EventHandler to allow printing its pointers.
         f.debug_struct("EventHandlerSet")
             .field("on_try_move", if self.on_try_move.is_some() { &Some("EventHandler") } else { &None::<()> } )
             .field("on_damage_dealt", if self.on_damage_dealt.is_some() { &Some("EventHandler") } else { &None::<()> } )

@@ -319,10 +319,10 @@ impl Display for BattleContext {
                     ].as_str());
                     out.push_str("\t\t│\n");
                     let number_of_effects = battler.moveset.moves().flatten().count();
-                    out.push_str("\t\t├──");
+                    out.push_str("\t\t├── ");
                     
                     out.push_str(format!["type {:?}/{:?} \n", battler.monster.species.primary_type, battler.monster.species.secondary_type].as_str());
-                    out.push_str("\t\t├──");
+                    out.push_str("\t\t├── ");
         
                     out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
                     

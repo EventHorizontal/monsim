@@ -1,11 +1,14 @@
-use crate::battle::entities::MonType;
+pub const SUCCESS: bool = true;
+pub const FAILURE: bool = false;
 
-const INEFFECTIVE: f32 = 0.0;
-const NOT_VERY_EFFECTIVE: f32 = 0.5;
-const EFFECTIVE: f32 = 1.0;
-const SUPER_EFFECTIVE: f32 = 2.0;
+use super::MonType;
 
-pub const fn get_matchup(move_type: MonType, target_type: MonType) -> f32 {
+pub const INEFFECTIVE: f64 = 0.0;
+pub const NOT_VERY_EFFECTIVE: f64 = 0.5;
+pub const EFFECTIVE: f64 = 1.0;
+pub const SUPER_EFFECTIVE: f64 = 2.0;
+
+pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
     match (move_type, target_type) {
         (MonType::None, MonType::None) => EFFECTIVE,
         (MonType::None, MonType::Bug) => EFFECTIVE,

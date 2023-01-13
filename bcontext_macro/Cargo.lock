@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "battle_state_macro"
+name = "bcontext_macro"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",

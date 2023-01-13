@@ -1,28 +1,42 @@
-pub mod battle;
+pub mod battle_sim;
 
 #[cfg(test)]
-mod tests {
-    use crate::battle::Battle;
-    pub use battle_state_macro;
-    use battle_state_macro::battle_state;
-    
+mod public_api {
+
+    use crate::battle_sim::*;
+
     #[test]
-    fn run_demo_battle() {
-        let (battle_state, _, _) = battle_state!(
-            {
-                AllyTeam {
-                    mon Shroomish Shroomba {
-                        mov Tackle
+    fn test_example_battle() {
+        let mut battle = Battle::new(bcontext!(
+                {
+                    AllyTeam {
+                        mon Torchic "Ruby" {
+                            mov Ember,
+                            mov Scratch,
+                            abl FlashFire, 
+                        },
+                        mon Mudkip "Sapphire" {
+                            mov Tackle,
+                            mov Bubble,
+                            abl FlashFire, 
+                        },
+                        mon Torchic "Emerald" {
+                            mov Scratch,
+                            mov Ember,
+                            abl FlashFire, 
+                        },
+                    },
+                    OpponentTeam {
+                        mon Torchic "Cheerio" {
+                            mov Scratch,
+                            mov Ember,
+                            abl FlashFire,
+                        },
                     }
-                },
-                OpponentTeam {
-                    mon Trapinch Trap {
-                        mov Tackle
-                    }
-                }
-            }
+                }  
+            )
         );
-        let mut battle = Battle::new(battle_state);
-        battle.run_sim();
+    
+        assert_eq!(battle.simulate(), Ok(()));
     }
 }

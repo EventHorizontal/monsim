@@ -3,35 +3,11 @@
 version = 3
 
 [[package]]
-name = "bcontext_macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "bitflags"
-version = "1.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
-
-[[package]]
 name = "event_derive_macro"
 version = "0.1.0"
 dependencies = [
  "quote",
  "syn",
-]
-
-[[package]]
-name = "monsim"
-version = "0.2.0"
-dependencies = [
- "bcontext_macro",
- "bitflags",
- "event_derive_macro",
 ]
 
 [[package]]

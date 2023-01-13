@@ -154,62 +154,32 @@ pub trait InBattleEvent {
 }
 
 pub mod event_dex {
+    use event_derive_macro::InBattleEvent;
+
     use super::*;
 
-    //TODO: This could be a derive macro
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(bool)]
+    #[callback(on_try_move)]
     pub struct OnTryMove;
-    
-    impl InBattleEvent for OnTryMove {
-        type EventReturnType = bool;
-        
-        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            event_handler_set.on_try_move
-        }
-    }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(())]
+    #[callback(on_ability_activated)]
     pub struct OnAbilityActivated;
-    
-    impl InBattleEvent for OnAbilityActivated {
-        type EventReturnType = ();
-        
-        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            event_handler_set.on_ability_activated
-        }
-    }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(())]
+    #[callback(on_damage_dealt)]
     pub struct OnDamageDealt;
-    
-    impl InBattleEvent for OnDamageDealt {
-        type EventReturnType = ();
-        
-        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            event_handler_set.on_damage_dealt
-        }
-    }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(bool)]
+    #[callback(on_try_activate_ability)]
     pub struct OnTryActivateAbility;
-    
-    impl InBattleEvent for OnTryActivateAbility {
-        type EventReturnType = bool;
-    
-        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            event_handler_set.on_try_activate_ability
-        }
-    }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(u16)]
+    #[callback(on_modify_accuracy)]
     pub struct OnModifyAccuracy;
-    
-    impl InBattleEvent for OnModifyAccuracy {
-        type EventReturnType = u16;
-        
-        fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
-            event_handler_set.on_modify_accuracy
-        }
-    }
 }

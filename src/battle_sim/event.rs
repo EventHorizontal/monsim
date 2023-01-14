@@ -42,11 +42,11 @@ fn test_print_event_handler_set() {
 impl Debug for EventHandlerSet {
     fn fmt<'a>(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventHandlerSet")
-            .field("on_try_move", &(self.on_try_move as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>))
-            .field("on_damage_dealt", &&(self.on_damage_dealt as Option<ExplicitlyAnnotatedEventHandler<'a, void>>))
-            .field("on_try_activate_ability", &(self.on_try_activate_ability as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>))
-            .field("on_ability_activated", &&(self.on_ability_activated as Option<ExplicitlyAnnotatedEventHandler<'a, void>>))
-            .field("on_modify_accuracy", &&(self.on_modify_accuracy as Option<ExplicitlyAnnotatedEventHandler<'a, u16>>))
+            .field("on_try_move", &(self.on_try_move as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>) as &dyn Debug)
+            .field("on_damage_dealt", &(self.on_damage_dealt as Option<ExplicitlyAnnotatedEventHandler<'a, void>>) as &dyn Debug)
+            .field("on_try_activate_ability", &(self.on_try_activate_ability as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>) as &dyn Debug)
+            .field("on_ability_activated", &(self.on_ability_activated as Option<ExplicitlyAnnotatedEventHandler<'a, void>>) as &dyn Debug)
+            .field("on_modify_accuracy", &(self.on_modify_accuracy as Option<ExplicitlyAnnotatedEventHandler<'a, u16>>) as &dyn Debug)
             .finish()
     }
 }

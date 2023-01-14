@@ -213,8 +213,7 @@ impl Battle {
             Battle::priority_sort::<ActionChoice>(&mut self.context.prng, &mut action_choices, 
                 &mut |it| battle_context.choice_activation_order(it
                 )
-            );
-            dbg!(action_choices.clone());   
+            ); 
         }
         for action_choice in  action_choices.into_iter() {
             self.context.current_action = action_choice;

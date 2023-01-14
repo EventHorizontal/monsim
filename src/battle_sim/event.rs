@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use super::{BattleContext, game_mechanics::BattlerUID, global_constants::void};
+use super::{BattleContext, game_mechanics::BattlerUID, global_constants::void, Battle};
 
 pub type EventHandler<R> = fn(&mut BattleContext, BattlerUID, R) -> EventReturn<R>;
 pub type ExplicitlyAnnotatedEventHandler<'a, R> = fn(&'a mut BattleContext, BattlerUID, R) -> EventReturn<R>;
@@ -85,7 +85,7 @@ impl EventResolver {
             )
             .collect::<Vec<_>>();
 
-        context.priority_sort::<R>(&mut unwrapped_event_handler_plus_info);
+        Battle::priority_sort::<EventHandlerInfo<R>>(&mut context.prng, &mut unwrapped_event_handler_plus_info, &mut |it| it.activation_order);
                     
         if unwrapped_event_handler_plus_info.is_empty() {
             return default;

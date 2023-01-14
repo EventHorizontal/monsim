@@ -101,7 +101,7 @@ impl Action {
     pub fn damage(context: &mut BattleContext, target_uid: BattlerUID, damage: u16) -> () {
         context.write_monster(
             target_uid, 
-            &mut |mut it| { it.current_health -= damage; it }
+            &mut |mut it| { it.current_health = it.current_health.saturating_sub(damage); it }
         );
     }
 

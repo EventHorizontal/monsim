@@ -27,7 +27,7 @@ mod public_api {
                         },
                     },
                     OpponentTeam {
-                        mon Torchic "Cheerio" {
+                        mon Drifloon "Cheerio" {
                             mov Scratch,
                             mov Ember,
                             abl FlashFire,

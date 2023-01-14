@@ -8,7 +8,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     name: "Flash Fire",
     event_handlers: EventHandlerSet {
         on_try_move: Some(|context, owner_uid, _relay| {
-            if context.active_battler().is_type(MonType::Fire) {
+            if context.current_action_user().is_type(MonType::Fire) {
                 if Action::activate_ability(context, owner_uid) {
                     return FAILURE;
                 }

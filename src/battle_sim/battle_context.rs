@@ -61,7 +61,7 @@ fn test_priority_sorting_deterministic() {
             )
             .collect::<Vec<_>>();
 
-        test_bcontext.priority_sort::<bool>(&mut unwrapped_event_handler_plus_info);
+        Battle::priority_sort::<EventHandlerInfo<bool>>(&mut test_bcontext.prng, &mut unwrapped_event_handler_plus_info, & mut |it| it.activation_order);
         
         result[i] = unwrapped_event_handler_plus_info.into_iter().map(|event_handler_info| {
             test_bcontext.read_monster(event_handler_info.owner_uid).nickname
@@ -205,7 +205,7 @@ fn test_priority_sorting_with_speed_ties() {
             )
             .collect::<Vec<_>>();
 
-        test_bcontext.priority_sort::<bool>(&mut unwrapped_event_handler_plus_info);
+        Battle::priority_sort::<EventHandlerInfo<bool>>(&mut test_bcontext.prng, &mut unwrapped_event_handler_plus_info, &mut |it| it.activation_order);
         
         result[i] =  unwrapped_event_handler_plus_info.into_iter().map(|event_handler_info| {
             test_bcontext.read_monster(event_handler_info.owner_uid).nickname
@@ -226,6 +226,7 @@ fn test_priority_sorting_with_speed_ties() {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattleContext {
+    pub current_action: ActionChoice,
     pub state: BattleState,
     pub prng: LCRNG,
     pub ally_team: MonsterTeam,
@@ -346,6 +347,7 @@ impl Display for BattleContext {
 impl BattleContext {
     pub fn new(ally_team: MonsterTeam, opponent_team: MonsterTeam) -> Self {
         Self {
+            current_action: ActionChoice::None,
             state: BattleState::UsingMove { 
                 move_uid: MoveUID {
                     battler_uid: BattlerUID { 
@@ -366,7 +368,7 @@ impl BattleContext {
         }
     }
 
-    fn battlers(&self) -> BattlerIterator {
+    pub fn battlers(&self) -> BattlerIterator {
         let left = self.ally_team.battlers();
         let right = self.opponent_team.battlers();
 
@@ -399,24 +401,20 @@ impl BattleContext {
         self.find_battler(battler_uid).on_field   
     }
     
-    pub fn active_battler(&self) -> &Battler {
-        if let BattleState::UsingMove { move_uid, target_uid: _ } = self.state {
-            let battler_uid = move_uid.battler_uid;
-            self.battlers()
-            .flatten()
-            .find(|it| it.uid == battler_uid)
-            .expect(format!["Theres should exist a monster with id {:?}", battler_uid].as_str())
-        } else {
-            panic!("The battle is not calculating a move.")
-        }
+    pub fn current_action_user(&self) -> &Battler {
+        self.find_battler(self.current_action.chooser())
     }
 
-    pub fn is_active_battler(&self, test_monster_uid: BattlerUID) -> bool {
-        if let BattleState::UsingMove { move_uid, target_uid } = self.state {
-            move_uid.battler_uid == test_monster_uid || target_uid == test_monster_uid
-        } else {
-            false
-        }
+    pub fn is_current_action_user(&self, test_monster_uid: BattlerUID) -> bool {
+        test_monster_uid == self.current_action.chooser()
+    }
+
+    pub(crate) fn current_action_target(&self) -> &Battler {
+        self.find_battler(self.current_action.target())
+    }
+
+    pub(crate) fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> bool {
+        test_monster_uid == self.current_action.target()
     }
 
     pub fn write_monster(&mut self, uid: BattlerUID, change: &mut dyn FnMut(Monster) -> Monster) -> () {
@@ -457,65 +455,6 @@ impl BattleContext {
         out
     }
 
-    /// Shuffles the event handler order for consecutive speed-tied monsters in place.
-    pub(crate) fn priority_sort<R: Clone+Copy>(&mut self, vector: &mut EventHandlerInfoList<R>) {
-        
-        // Sort without resolving speed ties, this sorting is stable, so it doesn't affect the order of condition-wise equal elements.
-        vector.sort_by(|a, b| {
-                a.activation_order.cmp(&b.activation_order) 
-            }
-        );
-        vector.reverse();
-        
-        let vector_length = vector.len();
-        match vector_length.cmp(&2) {
-            std::cmp::Ordering::Less => (),
-            std::cmp::Ordering::Equal => {
-                self.resolve_speed_tie(vector, &mut vec![0, 1]);
-            },
-            std::cmp::Ordering::Greater => {
-                let mut tied_monster_indices: Vec<usize> = vec![0];
-                // If there are more than two items, iterated through the 2nd through last index of the vector, comparing each item to the previous one.
-                for i in 1..vector_length {
-                    let previous_item = vector[i-1].activation_order;
-                    let this_item = vector[i].activation_order;
-                    // If the item we are looking at has the same speed as the previous, add its index to the tied queue.
-                    if previous_item == this_item { // TODO: Investigate whether this should be `previous_item == this_item` instead
-                        tied_monster_indices.push(i);
-                        if i == (vector_length - 1) {
-                            self.resolve_speed_tie(vector, &mut tied_monster_indices);
-                        }
-                    // If the priority or speed of the last item is higher, sort the current tied items using the PRNG and then reset the tied queue.
-                    } else if previous_item > this_item {
-                        self.resolve_speed_tie(vector, &mut tied_monster_indices);
-                        tied_monster_indices = vec![i];
-                    }
-                }
-            },
-        }
-    }
-
-    fn resolve_speed_tie<R: Clone+Copy>(&mut self, vector: &mut EventHandlerInfoList<R>, tied_monster_indices: &mut Vec<usize>) {
-        if tied_monster_indices.len() < 2 {
-            return;
-        }
-        let mut i: usize = 0;
-        let vector_copy = vector.clone(); 
-        let offset = tied_monster_indices[0];
-        'iteration_over_tied_indices: while tied_monster_indices.len() > 0 {
-            let number_tied = tied_monster_indices.len() as u16;
-            // Roll an n-sided die and put the monster corresponding to the roll at the front of the tied order.
-            let prng_roll = self.prng.generate_number_in_range(0..=number_tied-1) as usize;
-            vector[i+offset] = vector_copy[tied_monster_indices.remove(prng_roll)];
-            // Once there is only one remaining tied monster, put it at the end of the queue.
-            if tied_monster_indices.len() == 1 {
-                vector[i+offset+1] = vector_copy[tied_monster_indices[0]];
-                break 'iteration_over_tied_indices;
-            }
-            i += 1;
-        }
-    }
-
     pub(crate) fn filter_event_handlers(&self, event_caller_uid: BattlerUID, owner_uid: BattlerUID, event_handler_filters: EventHandlerFilters) -> bool {
         let bitmask = {
             let mut bitmask = 0b0000;
@@ -526,7 +465,7 @@ impl BattleContext {
             bitmask
         };
         let event_source_filter_passed = event_handler_filters.whose_event.bits() == bitmask;
-        let on_battlefield_passed = self.is_active_battler(owner_uid);
+        let on_battlefield_passed = self.is_battler_on_field(owner_uid);
 
         event_source_filter_passed && on_battlefield_passed
     }
@@ -559,6 +498,21 @@ impl BattleContext {
 
         (self.is_on_ally_team(owner_uid) && self.is_on_ally_team(event_caller_uid)) || 
         (self.is_on_opponent_team(event_caller_uid) && self.is_on_opponent_team(owner_uid))
+    }
+
+    /// Given an action choice, computes its activation order. This is handled by BattleContext because the order is 
+    /// context dependent.
+    pub(crate) fn choice_activation_order(&self, choice: ActionChoice) -> ActivationOrder {
+        match choice {
+            ActionChoice::Move { move_uid, target_uid : _ } => {
+                ActivationOrder {
+                    priority: self.read_move(move_uid).species.priority,
+                    speed: self.read_monster(move_uid.battler_uid).stats[Stat::Speed],
+                    order: 0,
+                }
+            },
+            ActionChoice::None => unreachable!(),
+        }
     }
 
 }

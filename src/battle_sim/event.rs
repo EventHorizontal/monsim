@@ -3,6 +3,7 @@ use core::fmt::Debug;
 use super::{BattleContext, game_mechanics::BattlerUID};
 
 pub type EventHandler<R> = fn(&mut BattleContext, BattlerUID, R) -> EventReturn<R>;
+pub type ExplicitlyAnnotatedEventHandler<'a, R> = fn(&'a mut BattleContext, BattlerUID, R) -> EventReturn<R>;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventHandlerSetInfo {
@@ -41,14 +42,13 @@ fn test_print_event_handler_set() {
 }
 
 impl Debug for EventHandlerSet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: Investigate whether it is worth it to add explicit lifetimes to the EventHandler to allow printing its pointers.
+    fn fmt<'a>(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventHandlerSet")
-            .field("on_try_move", if self.on_try_move.is_some() { &Some("EventHandler") } else { &None::<()> } )
-            .field("on_damage_dealt", if self.on_damage_dealt.is_some() { &Some("EventHandler") } else { &None::<()> } )
-            .field("on_try_activate_ability", if self.on_try_activate_ability.is_some() { &Some("EventHandler") } else { &None::<()> } )
-            .field("on_ability_activated", if self.on_ability_activated.is_some() { &Some("EventHandler") } else { &None::<()> } )
-            .field("on_modify_accuracy", if self.on_modify_accuracy.is_some() { &Some("EventHandler") } else { &None::<()> } )
+            .field("on_try_move", &(self.on_try_move as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>))
+            .field("on_damage_dealt", &&(self.on_damage_dealt as Option<ExplicitlyAnnotatedEventHandler<'a, Void>>))
+            .field("on_try_activate_ability", &(self.on_try_activate_ability as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>))
+            .field("on_ability_activated", &&(self.on_ability_activated as Option<ExplicitlyAnnotatedEventHandler<'a, Void>>))
+            .field("on_modify_accuracy", &&(self.on_modify_accuracy as Option<ExplicitlyAnnotatedEventHandler<'a, u16>>))
             .finish()
     }
 }

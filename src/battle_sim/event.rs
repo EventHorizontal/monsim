@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use super::{BattleContext, game_mechanics::BattlerUID};
+use super::{BattleContext, game_mechanics::BattlerUID, global_constants::void};
 
 pub type EventHandler<R> = fn(&mut BattleContext, BattlerUID, R) -> EventReturn<R>;
 pub type ExplicitlyAnnotatedEventHandler<'a, R> = fn(&'a mut BattleContext, BattlerUID, R) -> EventReturn<R>;
@@ -22,16 +22,14 @@ pub struct EventHandlerInfo<R: Clone+Copy> {
     pub filters: EventHandlerFilters
 }
 pub type EventHandlerInfoList<R> = Vec<EventHandlerInfo<R>>;
-
-pub type Void = ();
 pub type EventReturn<R> = R;
 
 #[derive(Clone, Copy)]
 pub struct EventHandlerSet {
     pub on_try_move: Option<EventHandler<bool>>,
-    pub on_damage_dealt: Option<EventHandler<Void>>,
+    pub on_damage_dealt: Option<EventHandler<void>>,
     pub on_try_activate_ability: Option<EventHandler<bool>>,
-    pub on_ability_activated: Option<EventHandler<Void>>,
+    pub on_ability_activated: Option<EventHandler<void>>,
     pub on_modify_accuracy: Option<EventHandler<u16>>,
 }
 
@@ -45,9 +43,9 @@ impl Debug for EventHandlerSet {
     fn fmt<'a>(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventHandlerSet")
             .field("on_try_move", &(self.on_try_move as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>))
-            .field("on_damage_dealt", &&(self.on_damage_dealt as Option<ExplicitlyAnnotatedEventHandler<'a, Void>>))
+            .field("on_damage_dealt", &&(self.on_damage_dealt as Option<ExplicitlyAnnotatedEventHandler<'a, void>>))
             .field("on_try_activate_ability", &(self.on_try_activate_ability as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>))
-            .field("on_ability_activated", &&(self.on_ability_activated as Option<ExplicitlyAnnotatedEventHandler<'a, Void>>))
+            .field("on_ability_activated", &&(self.on_ability_activated as Option<ExplicitlyAnnotatedEventHandler<'a, void>>))
             .field("on_modify_accuracy", &&(self.on_modify_accuracy as Option<ExplicitlyAnnotatedEventHandler<'a, u16>>))
             .finish()
     }

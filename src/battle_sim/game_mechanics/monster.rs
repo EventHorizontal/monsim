@@ -135,6 +135,10 @@ impl Monster {
         self.species.event_handlers
     }
 
+    pub(crate) fn fainted(&self) -> bool {
+        self.current_health == 0
+    }
+
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

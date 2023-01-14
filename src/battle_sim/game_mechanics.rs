@@ -170,6 +170,10 @@ impl Battler {
             .collect::<Vec<_>>()
     }
     
+    pub fn fainted(&self) -> bool {
+        self.monster.fainted()
+    }
+    
     pub fn event_handlers(&self) -> EventHandlerSetInfoList {
         let mut out = Vec::new();
         out.push(self.monster_event_handler_info());

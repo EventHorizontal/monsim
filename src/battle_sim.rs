@@ -211,8 +211,7 @@ impl Battle {
             // needs to read/write and so we can split borrows here.
             let battle_context = self.context.clone();
             Battle::priority_sort::<ActionChoice>(&mut self.context.prng, &mut action_choices, 
-                &mut |it| battle_context.choice_activation_order(it
-                )
+                &mut |it| battle_context.choice_activation_order(it)
             ); 
         }
         for action_choice in  action_choices.into_iter() {

@@ -23,7 +23,6 @@ impl ActionChoice {
             ActionChoice::Move { move_uid: _, target_uid } => *target_uid,
         }
     }
-
     
 }
 

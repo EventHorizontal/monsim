@@ -6,7 +6,7 @@ pub mod move_;
 pub mod move_dex;
 
 use core::marker::Copy;
-use std::fmt::{Debug, Display};
+use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{EventHandlerSet, ActivationOrder, EventHandlerFilters, EventHandlerSetInfoList, EventHandlerSetInfo};
 pub use ability::*;
@@ -26,7 +26,7 @@ pub struct BattlerUID {
 }
 
 impl Display for BattlerUID {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}{:?}", self.battler_number, self.team_id)
     }
 }
@@ -82,7 +82,7 @@ pub struct Battler {
 }
 
 impl Display for Battler {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
         out.push_str(format![
             "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n", 

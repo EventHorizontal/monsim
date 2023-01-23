@@ -104,3 +104,15 @@ pub enum MoveNumber {
     Third,
     Fourth,
 }
+
+impl MoveNumber {
+    pub fn from(number: usize) -> Self {
+        match number {
+            0 => MoveNumber::First,
+            1 => MoveNumber::Second,
+            2 => MoveNumber::Third,
+            3 => MoveNumber::Fourth,
+            _ => panic!("Move Number must be an integer between 0 and 3.")
+        }
+    }
+}

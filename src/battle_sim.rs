@@ -191,12 +191,56 @@ impl Battle {
     pub fn simulate(&mut self) -> BattleResult {
         // Keep simulating turns until the battle is finished.
         while self.context.state != BattleState::Finished {
-            let user_input;
-            match self.recieve_user_input() {
-                Ok(input) => { user_input = input; },
-                Err(e) => { return Err(BattleError::InputError(e.to_string())); },
-            };
-            self.simulate_turn(user_input)?;
+            let mut choice_ids = Vec::new();
+            println!("Please choose a move");
+            for battler in self.context.battlers_on_field() {
+                let mut move_count = 0;
+                println!("{}'s choices.", battler.monster.nickname);
+                for (i, move_) in battler.moveset.moves().flatten().enumerate() {
+                    println!("{}, {}", i, move_.species.name);
+                    move_count += 1;    
+                }
+                let mut waiting_for_input = true;
+                while waiting_for_input {
+                    let mut user_input = String::new();
+                    std::io::stdin().read_line(&mut user_input).unwrap();
+                    let numeric_input = user_input[0..1].parse::<usize>().unwrap();
+                    if numeric_input < move_count {
+                        waiting_for_input = false;
+                        choice_ids.push(MoveNumber::from(numeric_input));
+                    } else {
+                        println!("Malformed input! Please try again.");
+                    }
+                }
+            }
+            self.simulate_turn(UserInput {
+                ally_choices: ActionChoice::Move { 
+                    move_uid: MoveUID { 
+                        battler_uid: BattlerUID { 
+                            team_id: TeamID::Ally, 
+                            battler_number: BattlerNumber::First 
+                        }, 
+                        move_number: choice_ids[0],
+                    }, 
+                    target_uid: BattlerUID { 
+                        team_id: TeamID::Opponent, 
+                        battler_number: BattlerNumber::First 
+                    } 
+                },
+                opponent_choices: ActionChoice::Move { 
+                    move_uid: MoveUID { 
+                        battler_uid: BattlerUID { 
+                            team_id: TeamID::Opponent, 
+                            battler_number: BattlerNumber::First 
+                        }, 
+                        move_number: choice_ids[1],
+                    }, 
+                    target_uid: BattlerUID { 
+                        team_id: TeamID::Ally, 
+                        battler_number: BattlerNumber::First 
+                    } 
+                },
+            })?;
         }
         Action::display_message(&mut self.context, &"The Battle ended with no errors.");
         Ok(())
@@ -234,10 +278,33 @@ impl Battle {
         result
     }
 
-    fn recieve_user_input(&self) -> Result<UserInput, std::io::Error> {
-        let mut input_string = String::new();
-        std::io::stdin().read_line(&mut input_string)?;
+    fn print_user_choices(&self) {
+        let battlers_on_field = self.context.battlers_on_field();
 
+        println!("Please choose a move");
+        for battler in battlers_on_field {
+            for (i, move_) in battler.moveset.moves().flatten().enumerate() {
+                println!("{}, {}", i, move_.species.name);    
+            }
+        }
+    }
+
+    fn recieve_user_input(&self) -> Result<UserInput, std::io::Error> {
+        
+        let mut waiting_for_input = true;
+        while waiting_for_input {
+            self.print_user_choices();
+            let mut input_string = String::new();
+            std::io::stdin().read_line(&mut input_string)?;
+            let numeric_input = input_string.parse::<usize>().unwrap();
+            if !([0,1,2,3].contains(&numeric_input)) {
+                waiting_for_input = false
+            } else {
+                println!("Malformed input! Please try again.")
+            }
+        }
+         
+        
         // TEMP: Hardcoded action-choices.
         Ok(
             UserInput {

@@ -500,6 +500,13 @@ impl BattleContext {
         (self.is_on_opponent_team(event_caller_uid) && self.is_on_opponent_team(owner_uid))
     }
 
+    pub fn battlers_on_field(&self) -> Vec<&Battler> {
+        self.battlers()
+            .flatten()
+            .filter(|it| it.on_field)
+            .collect::<Vec<_>>()
+    }
+
     /// Given an action choice, computes its activation order. This is handled by BattleContext because the order is 
     /// context dependent.
     pub(crate) fn choice_activation_order(&self, choice: ActionChoice) -> ActivationOrder {

@@ -2,7 +2,7 @@ use monsim::*;
 use tui;
 
 fn main() {
-    let _battle = Battle::new(bcontext!(
+    let mut battle = Battle::new(bcontext!(
         {
             AllyTeam {
                 mon Torchic "Ruby" {
@@ -30,5 +30,7 @@ fn main() {
             }
         }
     ));
+    let result = battle.simulate();
+    println!("{:?}", result);
     println!("This is monsim bin. Here is some additional info.");
 }

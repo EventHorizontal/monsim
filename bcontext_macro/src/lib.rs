@@ -53,7 +53,7 @@ pub fn bcontext(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         quote!(Opponent),
     );
 
-    let entities = quote!(monsim::battle_sim::game_mechanics);
+    let entities = quote!(monsim::game_mechanics);
     let output = quote!( 
         BattleContext::new(
             #entities::MonsterTeam::new([#ally_monsters]),
@@ -88,7 +88,7 @@ pub fn bcontext_internal(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         quote!(Opponent),
     );
     
-    let entities = quote!(crate::battle_sim::game_mechanics);
+    let entities = quote!(crate::game_mechanics);
     let output = quote!( 
         BattleContext::new(
             #entities::MonsterTeam::new([#ally_monsters]),
@@ -106,7 +106,7 @@ fn construct_streams_per_team<'a>(
     team_name_ident: TokenStream,
 ) -> TokenStream {
 
-    let game_mechanics = quote!(#package_ident::battle_sim::game_mechanics);
+    let game_mechanics = quote!(#package_ident::game_mechanics);
     
     let monster_mod = quote!(#game_mechanics::monster);
     let monster_dex_mod = quote!(#game_mechanics::monster_dex);

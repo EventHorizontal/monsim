@@ -36,7 +36,7 @@ pub struct EventHandlerSet {
 
 #[test]
 fn test_print_event_handler_set() {
-    use crate::battle_sim::ability_dex::FlashFire;
+    use crate::ability_dex::FlashFire;
     println!("{:?}", FlashFire.event_handlers);
 }
 

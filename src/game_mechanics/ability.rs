@@ -1,4 +1,4 @@
-use crate::battle_sim::{event::EventHandlerFilters, BattleContext};
+use crate::{event::EventHandlerFilters, BattleContext};
 
 use super::{BattlerUID, Debug, EventHandlerSet};
 

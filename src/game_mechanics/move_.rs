@@ -1,4 +1,4 @@
-use crate::battle_sim::event::EventHandlerFilters;
+use crate::event::EventHandlerFilters;
 use core::slice::Iter;
 use std::ops::Index;
 

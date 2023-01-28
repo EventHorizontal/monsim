@@ -1,5 +1,4 @@
-use bcontext_macro::bcontext;
-use monsim::battle_sim::*;
+use monsim::*;
 use tui;
 
 fn main() {

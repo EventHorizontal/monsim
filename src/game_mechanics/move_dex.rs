@@ -4,7 +4,7 @@ use super::{
     move_::{MoveCategory, MoveSpecies},
     MonType,
 };
-use crate::battle_sim::event::{EventHandlerFilters, DEFAULT_HANDLERS};
+use crate::event::{EventHandlerFilters, DEFAULT_HANDLERS};
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,

@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals)]
 
 use super::{ability::AbilitySpecies, MonType};
-use crate::battle_sim::{
+use crate::{
     event::{EventHandlerFilters, EventHandlerSet, DEFAULT_HANDLERS},
     Action, FAILURE, SUCCESS,
 };

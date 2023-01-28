@@ -4,7 +4,7 @@ use super::{
     monster::{MonsterSpecies, StatSet},
     MonType,
 };
-use crate::battle_sim::event::DEFAULT_HANDLERS;
+use crate::event::DEFAULT_HANDLERS;
 
 pub const Treecko: MonsterSpecies = MonsterSpecies {
     name: "Mudkip",

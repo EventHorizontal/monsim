@@ -5,11 +5,12 @@ pub use battle_sim::*;
 #[cfg(test)]
 mod public_api {
 
+    use bcontext_macro::bcontext_internal;
     use crate::battle_sim::*;
 
     #[test]
     fn test_example_battle() {
-        let mut battle = Battle::new(bcontext!(
+        let mut battle = Battle::new(bcontext_internal!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {

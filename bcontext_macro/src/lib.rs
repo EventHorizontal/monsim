@@ -2,8 +2,7 @@ mod customsyntax;
 
 use customsyntax::{BattleStateExpr, EffectType, MonsterExpr};
 
-use proc_macro::TokenStream;
-use proc_macro2::Literal;
+use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
 
@@ -32,7 +31,7 @@ use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
 /// ```
 /// and produces a `battle::BattleContext`.
 #[proc_macro]
-pub fn bcontext(input: TokenStream) -> TokenStream {
+pub fn bcontext(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     
     // Parse the expression ________________________________________________________________
     let context_expr = parse_macro_input!(input as BattleStateExpr);
@@ -43,8 +42,51 @@ pub fn bcontext(input: TokenStream) -> TokenStream {
         ally_team_fields, opponent_team_fields 
     } = context_expr;
     
-    let ally_monsters = construct_streams_per_team(ally_team_fields, quote!(Ally));
-    let opponent_monsters = construct_streams_per_team(opponent_team_fields, quote!(Opponent));
+    let ally_monsters = construct_streams_per_team(
+        quote!(monsim),
+        ally_team_fields, 
+        quote!(Ally)
+    );
+    let opponent_monsters = construct_streams_per_team(
+        quote!(monsim),
+        opponent_team_fields, 
+        quote!(Opponent),
+    );
+
+    let entities = quote!(monsim::battle_sim::game_mechanics);
+    let output = quote!( 
+        BattleContext::new(
+            #entities::MonsterTeam::new([#ally_monsters]),
+            #entities::MonsterTeam::new([#opponent_monsters]),
+        )
+    );
+    
+    // Return the final stream of Tokens ______________________________________________________
+    output.into()
+}
+
+#[proc_macro]
+pub fn bcontext_internal(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    
+    // Parse the expression ________________________________________________________________
+    let context_expr = parse_macro_input!(input as BattleStateExpr);
+
+    // Construct the streams of Tokens_______________________________________________________
+    
+    let BattleStateExpr { 
+        ally_team_fields, opponent_team_fields 
+    } = context_expr;
+    
+    let ally_monsters = construct_streams_per_team(
+        quote!(crate),
+        ally_team_fields, 
+        quote!(Ally)
+    );
+    let opponent_monsters = construct_streams_per_team(
+        quote!(crate),
+        opponent_team_fields, 
+        quote!(Opponent),
+    );
     
     let entities = quote!(crate::battle_sim::game_mechanics);
     let output = quote!( 
@@ -59,10 +101,12 @@ pub fn bcontext(input: TokenStream) -> TokenStream {
 }
 
 fn construct_streams_per_team<'a>(
+    package_ident: TokenStream,
     team_fields: Punctuated<MonsterExpr, Comma>,
-    team_name_ident: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
-    let game_mechanics = quote!(crate::battle_sim::game_mechanics);
+    team_name_ident: TokenStream,
+) -> TokenStream {
+
+    let game_mechanics = quote!(#package_ident::battle_sim::game_mechanics);
     
     let monster_mod = quote!(#game_mechanics::monster);
     let monster_dex_mod = quote!(#game_mechanics::monster_dex);
@@ -132,7 +176,7 @@ fn construct_streams_per_team<'a>(
 }
 
 #[inline(always)]
-fn map_usize_to_monster_number_ident(number: usize) -> proc_macro2::TokenStream {
+fn map_usize_to_monster_number_ident(number: usize) -> TokenStream {
     match number {
         0 => quote!(BattlerNumber::First),
         1 => quote!(BattlerNumber::Second),

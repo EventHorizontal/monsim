@@ -16,10 +16,11 @@ use prng::LCRNG;
 
 pub use battle_context::BattleContext;
 pub use bcontext_macro::bcontext;
+use bcontext_macro::bcontext_internal;
 
 #[test]
 fn test_bcontext_macro() {
-    let test_bcontext = bcontext!(
+    let test_bcontext = bcontext_internal!(
         {
             AllyTeam {
                 mon Torchic "Ruby" {

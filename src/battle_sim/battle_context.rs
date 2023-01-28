@@ -13,7 +13,7 @@ type MutableBattlerIterator<'a> = Chain<IterMut<'a, Option<Battler>>, IterMut<'a
 fn test_priority_sorting_deterministic() {
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
-        let mut test_bcontext = bcontext!(
+        let mut test_bcontext = bcontext_internal!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {
@@ -87,7 +87,7 @@ fn test_priority_sorting_deterministic() {
 
 #[test]
 fn test_event_filtering_for_event_sources() {
-    let test_bcontext = bcontext!(
+    let test_bcontext = bcontext_internal!(
         {
             AllyTeam {
                 mon Torchic "Ruby" {
@@ -129,7 +129,7 @@ fn test_event_filtering_for_event_sources() {
 fn test_priority_sorting_with_speed_ties() {
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
-        let mut test_bcontext = bcontext!(
+        let mut test_bcontext = bcontext_internal!(
             {
                 AllyTeam {
                     mon Torchic "A" {
@@ -258,7 +258,7 @@ pub struct BattleContext {
 
 #[test]
 fn test_display_battle_context() {
-    let test_bcontext = bcontext!(
+    let test_bcontext = bcontext_internal!(
         {
             AllyTeam {
                 mon Torchic "Ruby" {

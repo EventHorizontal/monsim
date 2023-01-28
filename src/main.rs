@@ -1,0 +1,34 @@
+use bcontext_macro::bcontext;
+use monsim::battle_sim::*;
+
+fn main() {
+    let battle = Battle::new(bcontext!(
+        {
+            AllyTeam {
+                mon Torchic "Ruby" {
+                    mov Ember,
+                    mov Scratch,
+                    abl FlashFire,
+                },
+                mon Mudkip "Sapphire" {
+                    mov Tackle,
+                    mov Bubble,
+                    abl FlashFire,
+                },
+                mon Torchic "Emerald" {
+                    mov Scratch,
+                    mov Ember,
+                    abl FlashFire,
+                },
+            },
+            OpponentTeam {
+                mon Drifloon "Cheerio" {
+                    mov Scratch,
+                    mov Ember,
+                    abl FlashFire,
+                },
+            }
+        }
+    ));
+    println!("This is monsim bin. Here is some additional info.");
+}

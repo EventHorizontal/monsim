@@ -1,5 +1,7 @@
 pub mod battle_sim;
 
+pub use battle_sim::*;
+
 #[cfg(test)]
 mod public_api {
 

@@ -2,15 +2,15 @@ mod action;
 pub mod battle_context;
 mod event;
 pub mod game_mechanics;
-mod global_constants;
-mod io;
+pub mod global_constants;
+pub mod io;
 mod prng;
 
-use action::*;
-use battle_context::*;
-use event::*;
-use game_mechanics::*;
-use global_constants::*;
+pub use action::*;
+pub use battle_context::*;
+pub use event::*;
+pub use game_mechanics::*;
+pub use global_constants::*;
 use io::*;
 use prng::LCRNG;
 
@@ -190,6 +190,7 @@ impl Battle {
         while self.context.state != BattleState::Finished {
             let mut choice_ids = Vec::new();
             println!("Please choose a move");
+            Action::display_message(&EMPTY_LINE);
             for battler in self.context.battlers_on_field() {
                 let mut move_count = 0;
                 println!("{}'s choices.", battler.monster.nickname);
@@ -197,6 +198,7 @@ impl Battle {
                     println!("{}, {}", i, move_.species.name);
                     move_count += 1;
                 }
+                Action::display_message(&EMPTY_LINE);
                 let mut waiting_for_input = true;
                 while waiting_for_input {
                     let mut user_input = String::new();
@@ -207,6 +209,7 @@ impl Battle {
                         choice_ids.push(MoveNumber::from(numeric_input));
                     } else {
                         println!("Malformed input! Please try again.");
+                        Action::display_message(&EMPTY_LINE);
                     }
                 }
             }
@@ -239,7 +242,7 @@ impl Battle {
                 },
             })?;
         }
-        Action::display_message(&mut self.context, &"The Battle ended with no errors.");
+        Action::display_message(&"The Battle ended with no errors.\n");
         Ok(())
     }
 
@@ -271,13 +274,13 @@ impl Battle {
             if let Some(battler) = self.context.battlers().flatten().find(|it| it.fainted()) {
                 let battler = *battler;
                 Action::display_message(
-                    &mut self.context,
                     &format!["{} fainted!", battler.monster.nickname],
                 );
                 self.context.state = BattleState::Finished;
+                break
             };
         }
-
+        Action::display_message(&"\n-------------------------------------\n");
         result
     }
 

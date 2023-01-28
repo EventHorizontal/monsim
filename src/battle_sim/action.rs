@@ -11,7 +11,7 @@ use std::fmt::Display;
 pub struct Action;
 
 impl Action {
-    pub fn display_message(_context: &mut BattleContext, message: &dyn Display) -> () {
+    pub fn display_message(message: &dyn Display) -> () {
         println!("{}", message);
     }
 
@@ -24,13 +24,10 @@ impl Action {
         let attacker = context.read_monster(attacker_uid);
         let move_ = context.read_move(move_uid);
 
-        Action::display_message(
-            context,
-            &format!["{} used {}", attacker.nickname, move_.species.name],
-        );
+        Action::display_message(&format!["{} used {}", attacker.nickname, move_.species.name]);
 
         if EventResolver::broadcast_try_event(context, attacker_uid, &OnTryMove) == FAILURE {
-            Action::display_message(context, &"The move failed!");
+            Action::display_message(&"The move failed!");
             return Ok(());
         }
 
@@ -80,7 +77,7 @@ impl Action {
 
         // If the opponent is immune, damage calculation is skipped.
         if type_matchup_multiplier == INEFFECTIVE {
-            Action::display_message(context, &"It was ineffective...");
+            Action::display_message(&"It was ineffective...");
             return Ok(());
         }
 
@@ -102,7 +99,6 @@ impl Action {
 
         let target = context.read_monster(target_uid); // We need to reread data to make sure it is updated.
         Action::display_message(
-            context,
             &format!("It was {}!", {
                 let type_matchup_multiplier_times_hundred =
                     f64::floor(type_matchup_multiplier * 100.0) as u16;
@@ -119,15 +115,13 @@ impl Action {
             }),
         );
         Action::display_message(
-            context,
-            &format!("{} took {} damage!", target.nickname, damage),
+            &format!("{} took {} damage!", target.nickname, damage)
         );
         Action::display_message(
-            context,
             &format!(
                 "{} has {} health left.",
                 target.nickname, target.current_health
-            ),
+            )
         );
 
         Ok(())

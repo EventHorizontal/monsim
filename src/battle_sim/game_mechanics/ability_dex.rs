@@ -20,7 +20,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         }),
         ..DEFAULT_HANDLERS
     },
-    on_activate: |context, _owner_uid| Action::display_message(context, &"Flash Fire activated!"),
+    on_activate: |_context, _owner_uid| Action::display_message(&"Flash Fire activated!"),
     event_handler_filters: EventHandlerFilters::default(),
     order: 0,
 };

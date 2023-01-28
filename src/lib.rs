@@ -286,62 +286,6 @@ impl Battle {
         result
     }
 
-    fn print_user_choices(&self) {
-        let battlers_on_field = self.context.battlers_on_field();
-
-        println!("Please choose a move");
-        for battler in battlers_on_field {
-            for (i, move_) in battler.moveset.moves().flatten().enumerate() {
-                println!("{}, {}", i, move_.species.name);
-            }
-        }
-    }
-
-    fn recieve_user_input(&self) -> Result<UserInput, std::io::Error> {
-        let mut waiting_for_input = true;
-        while waiting_for_input {
-            self.print_user_choices();
-            let mut input_string = String::new();
-            std::io::stdin().read_line(&mut input_string)?;
-            let numeric_input = input_string.parse::<usize>().unwrap();
-            if !([0, 1, 2, 3].contains(&numeric_input)) {
-                waiting_for_input = false
-            } else {
-                println!("Malformed input! Please try again.")
-            }
-        }
-
-        // TEMP: Hardcoded action-choices.
-        Ok(UserInput {
-            ally_choices: ActionChoice::Move {
-                move_uid: MoveUID {
-                    battler_uid: BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::First,
-                    },
-                    move_number: MoveNumber::First,
-                },
-                target_uid: BattlerUID {
-                    team_id: TeamID::Opponent,
-                    battler_number: BattlerNumber::First,
-                },
-            },
-            opponent_choices: ActionChoice::Move {
-                move_uid: MoveUID {
-                    battler_uid: BattlerUID {
-                        team_id: TeamID::Opponent,
-                        battler_number: BattlerNumber::First,
-                    },
-                    move_number: MoveNumber::First,
-                },
-                target_uid: BattlerUID {
-                    team_id: TeamID::Ally,
-                    battler_number: BattlerNumber::First,
-                },
-            },
-        })
-    }
-
     /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
     pub(crate) fn priority_sort<T: Clone + Copy>(
         prng: &mut LCRNG,

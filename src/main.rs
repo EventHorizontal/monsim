@@ -8,6 +8,8 @@ fn main() {
                 mon Torchic "Ruby" {
                     mov Ember,
                     mov Scratch,
+                    mov Growl,
+                    mov Bubble,
                     abl FlashFire,
                 },
                 mon Mudkip "Sapphire" {
@@ -30,7 +32,14 @@ fn main() {
             }
         }
     ));
-    let result = battle.simulate();
-    println!("{:?}", result);
-    println!("This is monsim bin. Here is some additional info.");
+
+    // Keep simulating turns until the battle is finished.
+    while battle.context.state != BattleState::Finished {
+        let user_input = UserInput::receive_input(&battle.context);
+        let result = battle.simulate_turn(user_input);
+        println!("{:?}\n", result);
+        println!("\n-------------------------------------\n");
+    }
+
+    println!("The Battle ended with no errors.\n");
 }

@@ -53,3 +53,15 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
 };
+
+pub const Growl: MoveSpecies = MoveSpecies {
+    dex_number: 005,
+    name: "Growl",
+    type_: MonType::Normal,
+    category: MoveCategory::Status,
+    base_power: 0,
+    base_accuracy: 100,
+    event_handlers: DEFAULT_HANDLERS,
+    priority: 0,
+    event_handler_filters: EventHandlerFilters::default(),
+};

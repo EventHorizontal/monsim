@@ -11,7 +11,7 @@ pub use battle_context::*;
 pub use event::*;
 pub use game_mechanics::*;
 pub use global_constants::*;
-use io::*;
+pub use io::*;
 use prng::LCRNG;
 
 pub use battle_context::BattleContext;
@@ -56,8 +56,7 @@ fn test_bcontext_macro() {
                 Some(crate::game_mechanics::Battler::new(
                     crate::game_mechanics::BattlerUID {
                         team_id: crate::game_mechanics::TeamID::Ally,
-                        battler_number:
-                            crate::game_mechanics::monster::BattlerNumber::First,
+                        battler_number: crate::game_mechanics::monster::BattlerNumber::First,
                     },
                     true,
                     crate::game_mechanics::monster::Monster::new(
@@ -81,8 +80,7 @@ fn test_bcontext_macro() {
                 Some(crate::game_mechanics::Battler::new(
                     crate::game_mechanics::BattlerUID {
                         team_id: crate::game_mechanics::TeamID::Ally,
-                        battler_number:
-                            crate::game_mechanics::monster::BattlerNumber::Second,
+                        battler_number: crate::game_mechanics::monster::BattlerNumber::Second,
                     },
                     false,
                     crate::game_mechanics::monster::Monster::new(
@@ -106,8 +104,7 @@ fn test_bcontext_macro() {
                 Some(crate::game_mechanics::Battler::new(
                     crate::game_mechanics::BattlerUID {
                         team_id: crate::game_mechanics::TeamID::Ally,
-                        battler_number:
-                            crate::game_mechanics::monster::BattlerNumber::Third,
+                        battler_number: crate::game_mechanics::monster::BattlerNumber::Third,
                     },
                     false,
                     crate::game_mechanics::monster::Monster::new(
@@ -136,8 +133,7 @@ fn test_bcontext_macro() {
                 Some(crate::game_mechanics::Battler::new(
                     crate::game_mechanics::BattlerUID {
                         team_id: crate::game_mechanics::TeamID::Opponent,
-                        battler_number:
-                            crate::game_mechanics::monster::BattlerNumber::First,
+                        battler_number: crate::game_mechanics::monster::BattlerNumber::First,
                     },
                     true,
                     crate::game_mechanics::monster::Monster::new(
@@ -172,13 +168,7 @@ type BattleResult = Result<(), BattleError>;
 
 #[derive(Debug)]
 pub struct Battle {
-    context: BattleContext,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BattleError {
-    WrongState(&'static str),
-    InputError(String),
+    pub context: BattleContext,
 }
 
 impl Battle {
@@ -186,69 +176,7 @@ impl Battle {
         Battle { context }
     }
 
-    /// Main function for the simulator.
-    pub fn simulate(&mut self) -> BattleResult {
-        // Keep simulating turns until the battle is finished.
-        while self.context.state != BattleState::Finished {
-            let mut choice_ids = Vec::new();
-            println!("Please choose a move");
-            Action::display_message(&EMPTY_LINE);
-            for battler in self.context.battlers_on_field() {
-                let mut move_count = 0;
-                println!("{}'s choices.", battler.monster.nickname);
-                for (i, move_) in battler.moveset.moves().flatten().enumerate() {
-                    println!("{}, {}", i, move_.species.name);
-                    move_count += 1;
-                }
-                Action::display_message(&EMPTY_LINE);
-                let mut waiting_for_input = true;
-                while waiting_for_input {
-                    let mut user_input = String::new();
-                    std::io::stdin().read_line(&mut user_input).unwrap();
-                    let numeric_input = user_input[0..1].parse::<usize>().unwrap();
-                    if numeric_input < move_count {
-                        waiting_for_input = false;
-                        choice_ids.push(MoveNumber::from(numeric_input));
-                    } else {
-                        println!("Malformed input! Please try again.");
-                        Action::display_message(&EMPTY_LINE);
-                    }
-                }
-            }
-            self.simulate_turn(UserInput {
-                ally_choices: ActionChoice::Move {
-                    move_uid: MoveUID {
-                        battler_uid: BattlerUID {
-                            team_id: TeamID::Ally,
-                            battler_number: BattlerNumber::First,
-                        },
-                        move_number: choice_ids[0],
-                    },
-                    target_uid: BattlerUID {
-                        team_id: TeamID::Opponent,
-                        battler_number: BattlerNumber::First,
-                    },
-                },
-                opponent_choices: ActionChoice::Move {
-                    move_uid: MoveUID {
-                        battler_uid: BattlerUID {
-                            team_id: TeamID::Opponent,
-                            battler_number: BattlerNumber::First,
-                        },
-                        move_number: choice_ids[1],
-                    },
-                    target_uid: BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::First,
-                    },
-                },
-            })?;
-        }
-        Action::display_message(&"The Battle ended with no errors.\n");
-        Ok(())
-    }
-
-    fn simulate_turn(&mut self, user_input: UserInput) -> BattleResult {
+    pub fn simulate_turn(&mut self, user_input: UserInput) -> BattleResult {
         let mut result = Ok(());
         let mut action_choices = user_input.choices();
         {
@@ -275,11 +203,9 @@ impl Battle {
             // Check if any monster fainted due to the last action.
             if let Some(battler) = self.context.battlers().flatten().find(|it| it.fainted()) {
                 let battler = *battler;
-                Action::display_message(
-                    &format!["{} fainted!", battler.monster.nickname],
-                );
+                Action::display_message(&format!["{} fainted!", battler.monster.nickname]);
                 self.context.state = BattleState::Finished;
-                break
+                break;
             };
         }
         Action::display_message(&"\n-------------------------------------\n");
@@ -355,4 +281,10 @@ impl Battle {
             i += 1;
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BattleError {
+    WrongState(&'static str),
+    InputError(String),
 }

@@ -1,6 +1,6 @@
-use crate::battle_sim::{BattleContext, event::EventHandlerFilters};
+use crate::battle_sim::{event::EventHandlerFilters, BattleContext};
 
-use super::{Debug, EventHandlerSet, BattlerUID};
+use super::{BattlerUID, Debug, EventHandlerSet};
 
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {
@@ -38,7 +38,7 @@ impl Ability {
 
     pub fn on_activate(&self, context: &mut BattleContext, owner_uid: BattlerUID) -> () {
         (self.species.on_activate)(context, owner_uid);
-    } 
+    }
 
     pub fn event_handlers(&self) -> EventHandlerSet {
         self.species.event_handlers

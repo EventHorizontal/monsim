@@ -1,7 +1,10 @@
 #![allow(non_upper_case_globals)]
 
-use super::{move_::{MoveSpecies, MoveCategory}, MonType};
-use crate::battle_sim::event::{DEFAULT_HANDLERS, EventHandlerFilters};
+use super::{
+    move_::{MoveCategory, MoveSpecies},
+    MonType,
+};
+use crate::battle_sim::event::{EventHandlerFilters, DEFAULT_HANDLERS};
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,

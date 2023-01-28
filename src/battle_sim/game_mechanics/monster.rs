@@ -12,7 +12,7 @@ pub struct MonsterSpecies {
     pub event_handlers: EventHandlerSet,
 }
 
-impl Debug for MonsterSpecies { 
+impl Debug for MonsterSpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -37,7 +37,7 @@ pub struct StatSet {
     def: u16,
     spa: u16,
     spd: u16,
-    spe: u16
+    spe: u16,
 }
 
 impl Index<Stat> for StatSet {
@@ -70,7 +70,7 @@ impl StatSet {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Monster {
-    pub nickname: & 'static str,
+    pub nickname: &'static str,
     pub level: u16,
     pub max_health: u16,
     pub nature: MonsterNature,
@@ -90,26 +90,30 @@ pub enum Stat {
 }
 
 impl Monster {
-    pub fn new(species: MonsterSpecies, nickname: & 'static str) -> Self {
+    pub fn new(species: MonsterSpecies, nickname: &'static str) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
-        let ev_in_stat = 252; 
+        let ev_in_stat = 252;
         // In-game hp-stat determination formula
-        let health_stat = ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
+        let health_stat =
+            ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100
+                + level
+                + 10;
         let nature = MonsterNature::Serious;
-        
+
         // In-game non-hp-stat determination formula
         let get_non_hp_stat = |stat: Stat| -> u16 {
             // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
             let iv_in_stat = 31;
-            let ev_in_stat = 252; 
-            let mut out = ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
+            let ev_in_stat = 252;
+            let mut out =
+                ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
             out = f64::floor(out as f64 * nature[stat]) as u16;
             out
         };
-        
-        Monster { 
+
+        Monster {
             nickname,
             level,
             nature,
@@ -138,7 +142,6 @@ impl Monster {
     pub(crate) fn fainted(&self) -> bool {
         self.current_health == 0
     }
-
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -177,7 +180,7 @@ pub enum MonsterNature {
     Gentle,
     Sassy,
     Careful,
-    Quirky
+    Quirky,
 }
 
 impl Index<Stat> for MonsterNature {
@@ -210,7 +213,7 @@ impl Index<Stat> for MonsterNature {
                 Stat::SpecialDefense => &0.9,
                 _ => &1.0,
             },
-            
+
             MonsterNature::Docile => &1.0,
 
             MonsterNature::Bold => match index {
@@ -236,7 +239,7 @@ impl Index<Stat> for MonsterNature {
                 Stat::SpecialAttack => &0.9,
                 _ => &1.0,
             },
-            
+
             MonsterNature::Serious => &1.0,
 
             MonsterNature::Timid => match index {
@@ -262,7 +265,7 @@ impl Index<Stat> for MonsterNature {
                 Stat::SpecialDefense => &0.9,
                 _ => &1.0,
             },
-            
+
             MonsterNature::Bashful => &1.0,
 
             MonsterNature::Modest => match index {
@@ -288,9 +291,9 @@ impl Index<Stat> for MonsterNature {
                 Stat::SpecialDefense => &0.9,
                 _ => &1.0,
             },
-            
+
             MonsterNature::Quirky => &1.0,
-            
+
             MonsterNature::Calm => match index {
                 Stat::SpecialDefense => &1.1,
                 Stat::PhysicalAttack => &0.9,
@@ -302,7 +305,7 @@ impl Index<Stat> for MonsterNature {
                 Stat::PhysicalDefense => &0.9,
                 _ => &1.0,
             },
-            
+
             MonsterNature::Sassy => match index {
                 Stat::SpecialDefense => &1.1,
                 Stat::Speed => &0.9,

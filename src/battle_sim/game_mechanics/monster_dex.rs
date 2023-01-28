@@ -1,6 +1,9 @@
 #![allow(non_upper_case_globals)]
 
-use super::{monster::{MonsterSpecies, StatSet}, MonType};
+use super::{
+    monster::{MonsterSpecies, StatSet},
+    MonType,
+};
 use crate::battle_sim::event::DEFAULT_HANDLERS;
 
 pub const Treecko: MonsterSpecies = MonsterSpecies {

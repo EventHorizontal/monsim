@@ -1,4 +1,4 @@
-use super::game_mechanics::{MoveUID, BattlerUID};
+use super::game_mechanics::{BattlerUID, MoveUID};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionChoice {
@@ -13,17 +13,22 @@ impl ActionChoice {
     pub(crate) fn chooser(&self) -> BattlerUID {
         match self {
             ActionChoice::None => unreachable!(),
-            ActionChoice::Move { move_uid, target_uid: _ } => move_uid.battler_uid,
+            ActionChoice::Move {
+                move_uid,
+                target_uid: _,
+            } => move_uid.battler_uid,
         }
     }
 
     pub(crate) fn target(&self) -> BattlerUID {
         match self {
             ActionChoice::None => unreachable!(),
-            ActionChoice::Move { move_uid: _, target_uid } => *target_uid,
+            ActionChoice::Move {
+                move_uid: _,
+                target_uid,
+            } => *target_uid,
         }
     }
-    
 }
 
 // TODO: If/when we support double battles, this needs to take 1-2 choices per team.

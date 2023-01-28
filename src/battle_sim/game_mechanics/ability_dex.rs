@@ -1,7 +1,10 @@
 #![allow(non_upper_case_globals)]
 
 use super::{ability::AbilitySpecies, MonType};
-use crate::battle_sim::{event::{EventHandlerSet, DEFAULT_HANDLERS, EventHandlerFilters}, Action, FAILURE, SUCCESS};
+use crate::battle_sim::{
+    event::{EventHandlerFilters, EventHandlerSet, DEFAULT_HANDLERS},
+    Action, FAILURE, SUCCESS,
+};
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
@@ -17,7 +20,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         }),
         ..DEFAULT_HANDLERS
     },
-    on_activate: |context, _owner_uid| { Action::display_message(context, &"Flash Fire activated!")},
+    on_activate: |context, _owner_uid| Action::display_message(context, &"Flash Fire activated!"),
     event_handler_filters: EventHandlerFilters::default(),
     order: 0,
 };

@@ -1,6 +1,6 @@
+use crate::battle_sim::event::EventHandlerFilters;
 use core::slice::Iter;
 use std::ops::Index;
-use crate::battle_sim::event::EventHandlerFilters;
 
 use super::{Debug, EventHandlerSet, MonType};
 
@@ -14,7 +14,7 @@ pub struct MoveSpecies {
     pub base_accuracy: u16,
     pub priority: u16,
     pub event_handlers: EventHandlerSet,
-    pub event_handler_filters: EventHandlerFilters
+    pub event_handler_filters: EventHandlerFilters,
 }
 
 impl Debug for MoveSpecies {
@@ -42,9 +42,7 @@ pub struct Move {
 
 impl Move {
     pub fn new(species: MoveSpecies) -> Self {
-        Move {
-            species
-        }
+        Move { species }
     }
 
     pub fn category(&self) -> MoveCategory {
@@ -64,7 +62,7 @@ impl Move {
 pub enum MoveCategory {
     Physical,
     Special,
-    Status
+    Status,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,7 +74,11 @@ impl Index<usize> for MoveSet {
     type Output = Option<Move>;
 
     fn index(&self, index: usize) -> &Self::Output {
-        assert!(index < 4, "MoveSet can only be indexed with 0-3. The index passed was {}", index);
+        assert!(
+            index < 4,
+            "MoveSet can only be indexed with 0-3. The index passed was {}",
+            index
+        );
         &self.moves[index]
     }
 }
@@ -92,7 +94,9 @@ impl MoveSet {
     }
 
     pub fn move_(&self, id: MoveNumber) -> &Option<Move> {
-        &self.moves.get(id as usize)
+        &self
+            .moves
+            .get(id as usize)
             .expect(&format!["The move at the {:?} index should exist.", id])
     }
 }
@@ -112,7 +116,7 @@ impl MoveNumber {
             1 => MoveNumber::Second,
             2 => MoveNumber::Third,
             3 => MoveNumber::Fourth,
-            _ => panic!("Move Number must be an integer between 0 and 3.")
+            _ => panic!("Move Number must be an integer between 0 and 3."),
         }
     }
 }

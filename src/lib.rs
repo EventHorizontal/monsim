@@ -52,106 +52,106 @@ fn test_bcontext_macro() {
     assert_eq!(
         test_bcontext,
         BattleContext::new(
-            crate::game_mechanics::MonsterTeam::new([
-                Some(crate::game_mechanics::Battler::new(
-                    crate::game_mechanics::BattlerUID {
-                        team_id: crate::game_mechanics::TeamID::Ally,
-                        battler_number: crate::game_mechanics::monster::BattlerNumber::First,
+            MonsterTeam::new([
+                Some(Battler::new(
+                    BattlerUID {
+                        team_id: TeamID::Ally,
+                        battler_number: BattlerNumber::First,
                     },
                     true,
-                    crate::game_mechanics::monster::Monster::new(
-                        crate::game_mechanics::monster_dex::Torchic,
+                    Monster::new(
+                        monster_dex::Torchic,
                         "Ruby",
                     ),
-                    crate::game_mechanics::move_::MoveSet::new([
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Scratch,
+                    move_::MoveSet::new([
+                        Some(move_::Move::new(
+                            move_dex::Scratch,
                         )),
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Ember,
+                        Some(move_::Move::new(
+                            move_dex::Ember,
                         )),
                         None,
                         None,
                     ]),
-                    crate::game_mechanics::ability::Ability::new(
-                        crate::game_mechanics::ability_dex::FlashFire,
+                    ability::Ability::new(
+                        ability_dex::FlashFire,
                     ),
                 )),
-                Some(crate::game_mechanics::Battler::new(
-                    crate::game_mechanics::BattlerUID {
-                        team_id: crate::game_mechanics::TeamID::Ally,
-                        battler_number: crate::game_mechanics::monster::BattlerNumber::Second,
+                Some(Battler::new(
+                    BattlerUID {
+                        team_id: TeamID::Ally,
+                        battler_number: BattlerNumber::Second,
                     },
                     false,
-                    crate::game_mechanics::monster::Monster::new(
-                        crate::game_mechanics::monster_dex::Torchic,
+                    Monster::new(
+                        monster_dex::Torchic,
                         "Sapphire",
                     ),
-                    crate::game_mechanics::move_::MoveSet::new([
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Scratch,
+                    move_::MoveSet::new([
+                        Some(move_::Move::new(
+                            move_dex::Scratch,
                         )),
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Ember,
+                        Some(move_::Move::new(
+                            move_dex::Ember,
                         )),
                         None,
                         None,
                     ]),
-                    crate::game_mechanics::ability::Ability::new(
-                        crate::game_mechanics::ability_dex::FlashFire,
+                    ability::Ability::new(
+                        ability_dex::FlashFire,
                     ),
                 )),
-                Some(crate::game_mechanics::Battler::new(
-                    crate::game_mechanics::BattlerUID {
-                        team_id: crate::game_mechanics::TeamID::Ally,
-                        battler_number: crate::game_mechanics::monster::BattlerNumber::Third,
+                Some(Battler::new(
+                    BattlerUID {
+                        team_id: TeamID::Ally,
+                        battler_number: BattlerNumber::Third,
                     },
                     false,
-                    crate::game_mechanics::monster::Monster::new(
-                        crate::game_mechanics::monster_dex::Torchic,
+                    Monster::new(
+                        monster_dex::Torchic,
                         "Emerald",
                     ),
-                    crate::game_mechanics::move_::MoveSet::new([
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Scratch,
+                    move_::MoveSet::new([
+                        Some(move_::Move::new(
+                            move_dex::Scratch,
                         )),
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Ember,
+                        Some(move_::Move::new(
+                            move_dex::Ember,
                         )),
                         None,
                         None,
                     ]),
-                    crate::game_mechanics::ability::Ability::new(
-                        crate::game_mechanics::ability_dex::FlashFire,
+                    ability::Ability::new(
+                        ability_dex::FlashFire,
                     ),
                 )),
                 None,
                 None,
                 None,
             ]),
-            crate::game_mechanics::MonsterTeam::new([
-                Some(crate::game_mechanics::Battler::new(
-                    crate::game_mechanics::BattlerUID {
-                        team_id: crate::game_mechanics::TeamID::Opponent,
-                        battler_number: crate::game_mechanics::monster::BattlerNumber::First,
+            MonsterTeam::new([
+                Some(Battler::new(
+                    BattlerUID {
+                        team_id: TeamID::Opponent,
+                        battler_number: BattlerNumber::First,
                     },
                     true,
-                    crate::game_mechanics::monster::Monster::new(
-                        crate::game_mechanics::monster_dex::Torchic,
+                    Monster::new(
+                        monster_dex::Torchic,
                         "Cheerio",
                     ),
-                    crate::game_mechanics::move_::MoveSet::new([
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Scratch,
+                    move_::MoveSet::new([
+                        Some(move_::Move::new(
+                            move_dex::Scratch,
                         )),
-                        Some(crate::game_mechanics::move_::Move::new(
-                            crate::game_mechanics::move_dex::Ember,
+                        Some(move_::Move::new(
+                            move_dex::Ember,
                         )),
                         None,
                         None,
                     ]),
-                    crate::game_mechanics::ability::Ability::new(
-                        crate::game_mechanics::ability_dex::FlashFire,
+                    ability::Ability::new(
+                        ability_dex::FlashFire,
                     ),
                 )),
                 None,

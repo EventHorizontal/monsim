@@ -99,7 +99,7 @@ fn main() -> MonsimIOResult {
             TUIEvent::Tick => {},
         }
 
-        // Draw to the terminal the result of the current turn
+        // Draw the result of the current turn to the terminal
         terminal.draw( |frame| {    
             let text = battle.context.message_buffer.iter().map(|element| { Spans::from(Span::raw(element))}).collect::<Vec<_>>();
             let paragraph_widget = Paragraph::new(text)

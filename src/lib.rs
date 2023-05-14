@@ -241,7 +241,6 @@ impl Battle {
                     let this_item = activation_order(vector[i]);
                     // If the item we are looking at has the same speed as the previous, add its index to the tied queue.
                     if previous_item == this_item {
-                        // TODO: Investigate whether this should be `previous_item == this_item` instead
                         tied_monster_indices.push(i);
                         if i == (vector_length - 1) {
                             Self::resolve_speed_tie::<T>(prng, vector, &mut tied_monster_indices);

@@ -11,7 +11,7 @@ use std::fmt::Display;
 pub struct Action;
 
 impl Action {
-    pub fn display_message(message: &dyn Display) -> () {
+    pub fn _display_message(message: &dyn Display) -> () {
         println!("{}", message);
     }
 
@@ -24,13 +24,13 @@ impl Action {
         let attacker = context.read_monster(attacker_uid);
         let move_ = context.read_move(move_uid);
 
-        Action::display_message(&format![
+        context.message_buffer.push(format![
             "{} used {}",
             attacker.nickname, move_.species.name
-        ]);
+        ].to_string());
 
         if EventResolver::broadcast_try_event(context, attacker_uid, &OnTryMove) == FAILURE {
-            Action::display_message(&"The move failed!");
+            context.message_buffer.push("The move failed!".to_string());
             return Ok(());
         }
 
@@ -80,7 +80,7 @@ impl Action {
 
         // If the opponent is immune, damage calculation is skipped.
         if type_matchup_multiplier == INEFFECTIVE {
-            Action::display_message(&"It was ineffective...");
+            context.message_buffer.push("It was ineffective...".to_string());
             return Ok(());
         }
 
@@ -101,25 +101,22 @@ impl Action {
         EventResolver::broadcast_event(context, attacker_uid, &OnDamageDealt, (), None);
 
         let target = context.read_monster(target_uid); // We need to reread data to make sure it is updated.
-        Action::display_message(&format!("It was {}!", {
-            let type_matchup_multiplier_times_hundred =
-                f64::floor(type_matchup_multiplier * 100.0) as u16;
-            // INFO: We cannot match against floats so we match against 100 x the multiplier rounded to an int.
-            match type_matchup_multiplier_times_hundred {
-                25 | 50 => "not very effective",
-                100 => "effective",
-                200 | 400 => "super effective",
-                _ => panic!(
-                    "type multiplier is unexpectedly {}",
-                    type_matchup_multiplier
-                ),
-            }
-        }));
-        Action::display_message(&format!("{} took {} damage!", target.nickname, damage));
-        Action::display_message(&format!(
-            "{} has {} health left.",
-            target.nickname, target.current_health
-        ));
+        
+        let type_matchup_multiplier_times_hundred =
+            f64::floor(type_matchup_multiplier * 100.0) as u16;
+        // INFO: We cannot match against floats so we match against 100 x the multiplier rounded to an int.
+        let type_effectiveness = match type_matchup_multiplier_times_hundred {
+            25 | 50 => "not very effective",
+            100 => "effective",
+            200 | 400 => "super effective",
+            _ => panic!(
+                "type multiplier is unexpectedly {}",
+                type_matchup_multiplier
+            ),
+        };
+        context.message_buffer.push(format!["It was {}!", type_effectiveness]);
+        context.message_buffer.push(format!["{} took {} damage!", target.nickname, damage]);
+        context.message_buffer.push(format!["{} has {} health left.", target.nickname, target.current_health]);
 
         Ok(())
     }

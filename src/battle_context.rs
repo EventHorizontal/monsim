@@ -254,7 +254,10 @@ pub struct BattleContext {
     pub prng: LCRNG,
     pub ally_team: MonsterTeam,
     pub opponent_team: MonsterTeam,
+    pub message_buffer: MessageBuffer,
 }
+
+type MessageBuffer = Vec<String>;
 
 #[test]
 fn test_display_battle_context() {
@@ -407,6 +410,7 @@ impl BattleContext {
             prng: LCRNG::new(prng::seed_from_time_now()),
             ally_team,
             opponent_team,
+            message_buffer: Vec::with_capacity(0),
         }
     }
 

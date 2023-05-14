@@ -203,12 +203,13 @@ impl Battle {
             // Check if any monster fainted due to the last action.
             if let Some(battler) = self.context.battlers().flatten().find(|it| it.fainted()) {
                 let battler = *battler;
-                Action::display_message(&format!["{} fainted!", battler.monster.nickname]);
+                self.context.message_buffer.push(format!["{} fainted!", battler.monster.nickname]);
                 self.context.state = BattleState::Finished;
                 break;
             };
         }
-        Action::display_message(&"\n-------------------------------------\n");
+        self.context.message_buffer.push("\n-------------------------------------\n".to_string());
+
         result
     }
 

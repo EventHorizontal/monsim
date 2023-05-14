@@ -1,8 +1,8 @@
 use std::{thread, time::{Duration, Instant}, sync::mpsc};
 
 use monsim::*;
-use crossterm::{event::{self, Event, KeyCode}, terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, execute};
-use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, BorderType}, style::{Style, Color}};
+use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, execute};
+use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, BorderType}, style::{Style, Color}, layout::{Layout, Direction, Rect}};
 
 
 const TUI_TICK_RATE_MILLISECONDS: u64 = 20;
@@ -77,22 +77,25 @@ fn main() -> MonsimIOResult {
     loop {
         terminal.draw( |frame| {
             let size  = frame.size();
+                
             let background_widget = Block::default()
                 .title(" MonsimTUI ")
-                .style(Style::default().fg(Color::LightCyan).bg(Color::Black))
+                .style(Style::default().fg(Color::Black).bg(Color::White))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Plain);
             frame.render_widget(background_widget, size);
         })?;
 
         match receiver.recv()? {
-            TUIEvent::Input(event) => match event.code {
+            TUIEvent::Input(event) => match event {
                 // Quit
-                KeyCode::Char('q') => {
-                    disable_raw_mode()?;
-                    execute!(std::io::stdout(), LeaveAlternateScreen)?;
-                    terminal.show_cursor()?;
-                    break;
+                KeyEvent { code, modifiers, kind: KeyEventKind::Release, state } => {
+                    if code == KeyCode::Esc {
+                        disable_raw_mode()?;
+                        execute!(std::io::stdout(), LeaveAlternateScreen)?;
+                        terminal.show_cursor()?;
+                        break;
+                    }
                 },
                 _ => {},
             },

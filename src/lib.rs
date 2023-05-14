@@ -182,8 +182,8 @@ impl Battle {
         {
             // TODO: We need to revamp the BattleContext so that we can send it smaller chunks of info as/when it
             // needs to read/write and so we can split borrows here.
-            let battle_context = self.context.clone();
-            Battle::priority_sort::<ActionChoice>(
+            let battle_context: BattleContext = self.context.clone();
+            Battle::priority_sort(
                 &mut self.context.prng,
                 &mut action_choices,
                 &mut |it| battle_context.choice_activation_order(it),

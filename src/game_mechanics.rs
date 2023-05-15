@@ -40,40 +40,41 @@ pub struct MoveUID {
     pub move_number: MoveNumber,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattlerTeam {
-    battlers: [Option<Battler>; 6],
+    battlers: Vec<Battler>,
 }
 
+const MAX_BATTLERS_PER_TEAM: usize = 6;
+
 impl BattlerTeam {
-    pub fn new(monsters: [Option<Battler>; 6]) -> Self {
+    pub fn new(monsters: Vec<Battler>) -> Self {
         assert!(
             monsters.first() != None,
             "There is not a single monster in the team."
         );
+        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
         return BattlerTeam { battlers: monsters };
     }
 
-    pub fn battlers(&self) -> &[Option<Battler>; 6] {
+    pub fn battlers(&self) -> &Vec<Battler> {
         &self.battlers
     }
 
-    pub fn battlers_mut(&mut self) -> &mut [Option<Battler>; 6] {
+    pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
         &mut self.battlers
     }
 
     pub fn event_handlers(&self) -> EventHandlerSetInfoList {
         let mut out = Vec::new();
-        for optional_battler in self.battlers.iter() {
-            if let Some(battler) = optional_battler {
-                out.append(&mut battler.event_handlers())
-            }
+        for battler in self.battlers.iter() {
+            out.append(&mut battler.event_handlers())
         }
         out
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battler {
     pub uid: BattlerUID,
     pub on_field: bool,
@@ -96,7 +97,7 @@ impl Display for Battler {
             ]
             .as_str(),
         );
-        let number_of_effects = self.moveset.moves().flatten().count();
+        let number_of_effects = self.moveset.moves().count();
 
         out.push_str("\t│\t├── ");
         out.push_str(
@@ -110,7 +111,7 @@ impl Display for Battler {
         out.push_str("\t│\t├── ");
         out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
 
-        for (i, move_) in self.moveset.moves().flatten().enumerate() {
+        for (i, move_) in self.moveset.moves().enumerate() {
             if i < number_of_effects - 1 {
                 out.push_str("\t│\t├── ");
             } else {
@@ -175,7 +176,6 @@ impl Battler {
     pub fn moveset_event_handler_info(&self, uid: BattlerUID) -> EventHandlerSetInfoList {
         self.moveset
             .moves()
-            .flatten()
             .map(|it| EventHandlerSetInfo {
                 event_handler_set: it.species.event_handlers,
                 owner_uid: uid,

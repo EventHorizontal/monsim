@@ -6,8 +6,8 @@ use std::{
     slice::{Iter, IterMut},
 };
 
-type BattlerIterator<'a> = Chain<Iter<'a, Option<Battler>>, Iter<'a, Option<Battler>>>;
-type MutableBattlerIterator<'a> = Chain<IterMut<'a, Option<Battler>>, IterMut<'a, Option<Battler>>>;
+type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
+type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
 
 #[test]
 fn test_priority_sorting_deterministic() {
@@ -300,7 +300,6 @@ impl BattleContext {
 
     pub fn read_monster(&self, uid: BattlerUID) -> Monster {
         self.battlers()
-            .flatten()
             .find(|it| it.uid == uid)
             .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
             .monster
@@ -308,7 +307,6 @@ impl BattleContext {
 
     fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
         self.battlers()
-            .flatten()
             .find(|it| it.uid == battler_uid)
             .expect(
             "Error: Requested look up for a monster with ID that does not exist in this battle.",
@@ -340,7 +338,7 @@ impl BattleContext {
         uid: BattlerUID,
         change: &mut dyn FnMut(Monster) -> Monster,
     ) -> () {
-        let maybe_battler = self.battlers_mut().flatten().find(|it| it.uid == uid);
+        let maybe_battler = self.battlers_mut().find(|it| it.uid == uid);
         if let Some(battler) = maybe_battler {
             let new_monster = change(battler.monster);
             battler.monster = new_monster;
@@ -349,27 +347,18 @@ impl BattleContext {
 
     pub fn read_ability(&self, owner_uid: BattlerUID) -> Ability {
         self.battlers()
-            .flatten()
             .find(|it| it.uid == owner_uid)
             .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
             .ability
     }
 
-    pub fn read_move(&self, move_uid: MoveUID) -> Move {
+    pub fn read_move(&self, move_uid: MoveUID) -> &Move {
         let owner_uid = move_uid.battler_uid;
         self.battlers()
-            .flatten()
             .find(|it| it.uid == owner_uid)
             .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
             .moveset
             .move_(move_uid.move_number)
-            .expect(
-                format![
-                    "There should be a move in the {:?} slot.",
-                    move_uid.move_number
-                ]
-                .as_str(),
-            )
     }
 
     pub fn event_handler_sets_plus_info(&self) -> EventHandlerSetInfoList {
@@ -409,7 +398,6 @@ impl BattleContext {
         self.ally_team
             .battlers()
             .iter()
-            .flatten()
             .any(|it| it.uid == uid)
     }
 
@@ -417,7 +405,6 @@ impl BattleContext {
         self.opponent_team
             .battlers()
             .iter()
-            .flatten()
             .any(|it| it.uid == uid)
     }
 
@@ -441,7 +428,6 @@ impl BattleContext {
 
     pub fn battlers_on_field(&self) -> Vec<&Battler> {
         self.battlers()
-            .flatten()
             .filter(|it| it.on_field)
             .collect::<Vec<_>>()
     }
@@ -499,16 +485,16 @@ fn test_display_battle_context() {
 impl Display for BattleContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
-        let teams = [self.ally_team, self.opponent_team];
+        let teams = [self.ally_team.clone(), self.opponent_team.clone()];
         let team_names = ["Ally Team\n", "Opponent Team\n"];
         let number_of_monsters = [
-            self.ally_team.battlers().iter().flatten().count(),
-            self.opponent_team.battlers().iter().flatten().count(),
+            self.ally_team.battlers().iter().count(),
+            self.opponent_team.battlers().iter().count(),
         ];
 
         for k in 0..=1 {
             out.push_str(team_names[k]);
-            for (i, battler) in teams[k].battlers().iter().flatten().enumerate() {
+            for (i, battler) in teams[k].battlers().iter().enumerate() {
                 let is_not_last_monster = i < number_of_monsters[k] - 1;
                 if is_not_last_monster {
                     out.push_str("\t├── ");
@@ -524,7 +510,7 @@ impl Display for BattleContext {
                         .as_str(),
                     );
                     out.push_str("\t│\t│\n");
-                    let number_of_effects = battler.moveset.moves().flatten().count();
+                    let number_of_effects = battler.moveset.moves().count();
                     out.push_str("\t│\t├── ");
 
                     out.push_str(
@@ -538,7 +524,7 @@ impl Display for BattleContext {
                     out.push_str("\t│\t├── ");
                     out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
 
-                    for (j, move_) in battler.moveset.moves().flatten().enumerate() {
+                    for (j, move_) in battler.moveset.moves().enumerate() {
                         let is_not_last_move = j < number_of_effects - 1;
                         if is_not_last_move {
                             out.push_str("\t│\t├── ");
@@ -562,7 +548,7 @@ impl Display for BattleContext {
                         .as_str(),
                     );
                     out.push_str("\t\t│\n");
-                    let number_of_effects = battler.moveset.moves().flatten().count();
+                    let number_of_effects = battler.moveset.moves().count();
                     out.push_str("\t\t├── ");
 
                     out.push_str(
@@ -577,7 +563,7 @@ impl Display for BattleContext {
 
                     out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
 
-                    for (j, move_) in battler.moveset.moves().flatten().enumerate() {
+                    for (j, move_) in battler.moveset.moves().enumerate() {
                         let is_not_last_move = j < number_of_effects - 1;
                         if is_not_last_move {
                             out.push_str("\t\t├── ");

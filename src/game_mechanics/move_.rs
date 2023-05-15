@@ -65,17 +65,19 @@ pub enum MoveCategory {
     Status,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+const MAX_MOVES_PER_MOVESET: usize = 4;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MoveSet {
-    moves: [Option<Move>; 4],
+    moves: Vec<Move>,
 }
 
 impl Index<usize> for MoveSet {
-    type Output = Option<Move>;
+    type Output = Move;
 
     fn index(&self, index: usize) -> &Self::Output {
         assert!(
-            index < 4,
+            index < MAX_MOVES_PER_MOVESET,
             "MoveSet can only be indexed with 0-3. The index passed was {}",
             index
         );
@@ -84,16 +86,17 @@ impl Index<usize> for MoveSet {
 }
 
 impl MoveSet {
-    pub fn new(moves: [Option<Move>; 4]) -> Self {
+    pub fn new(moves: Vec<Move>) -> Self {
         assert!(moves.first() != None, "There is no first move.");
+        assert!(moves.len() <= MAX_MOVES_PER_MOVESET);
         return MoveSet { moves };
     }
 
-    pub fn moves(&self) -> Iter<Option<Move>> {
+    pub fn moves(&self) -> Iter<Move> {
         return self.moves.iter();
     }
 
-    pub fn move_(&self, id: MoveNumber) -> &Option<Move> {
+    pub fn move_(&self, id: MoveNumber) -> &Move {
         &self
             .moves
             .get(id as usize)

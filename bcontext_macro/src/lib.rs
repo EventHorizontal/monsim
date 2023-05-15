@@ -32,42 +32,15 @@ use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
 /// and produces a `battle::BattleContext`.
 #[proc_macro]
 pub fn bcontext(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    
-    // Parse the expression ________________________________________________________________
-    let context_expr = parse_macro_input!(input as BattleStateExpr);
-
-    // Construct the streams of Tokens_______________________________________________________
-    
-    let BattleStateExpr { 
-        ally_team_fields, opponent_team_fields 
-    } = context_expr;
-    
-    let ally_monsters = construct_streams_per_team(
-        quote!(monsim),
-        ally_team_fields, 
-        quote!(Ally)
-    );
-    let opponent_monsters = construct_streams_per_team(
-        quote!(monsim),
-        opponent_team_fields, 
-        quote!(Opponent),
-    );
-
-    let entities = quote!(monsim::game_mechanics);
-    let output = quote!( 
-        BattleContext::new(
-            #entities::BattlerTeam::new([#ally_monsters]),
-            #entities::BattlerTeam::new([#opponent_monsters]),
-        )
-    );
-    
-    // Return the final stream of Tokens ______________________________________________________
-    output.into()
+    construct_output(input, quote!(monsim))
 }
 
 #[proc_macro]
 pub fn bcontext_internal(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    
+    construct_output(input, quote!(crate))
+}
+
+fn construct_output(input: proc_macro::TokenStream, crate_name: TokenStream) -> proc_macro::TokenStream {
     // Parse the expression ________________________________________________________________
     let context_expr = parse_macro_input!(input as BattleStateExpr);
 
@@ -77,13 +50,13 @@ pub fn bcontext_internal(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         ally_team_fields, opponent_team_fields 
     } = context_expr;
     
-    let ally_monsters = construct_streams_per_team(
-        quote!(crate),
+    let ally_monsters_vec = construct_team_token_stream(
+        crate_name.clone(),
         ally_team_fields, 
         quote!(Ally)
     );
-    let opponent_monsters = construct_streams_per_team(
-        quote!(crate),
+    let opponent_monsters_vec = construct_team_token_stream(
+        crate_name,
         opponent_team_fields, 
         quote!(Opponent),
     );
@@ -91,8 +64,8 @@ pub fn bcontext_internal(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let entities = quote!(crate::game_mechanics);
     let output = quote!( 
         BattleContext::new(
-            #entities::BattlerTeam::new([#ally_monsters]),
-            #entities::BattlerTeam::new([#opponent_monsters]),
+            #entities::BattlerTeam::new(#ally_monsters_vec),
+            #entities::BattlerTeam::new(#opponent_monsters_vec),
         )
     );
     
@@ -100,7 +73,8 @@ pub fn bcontext_internal(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     output.into()
 }
 
-fn construct_streams_per_team<'a>(
+
+fn construct_team_token_stream<'a>(
     package_ident: TokenStream,
     team_fields: Punctuated<MonsterExpr, Comma>,
     team_name_ident: TokenStream,
@@ -117,7 +91,6 @@ fn construct_streams_per_team<'a>(
     let ability_mod = quote!(#game_mechanics::ability);
     let ability_dex_mod = quote!(#game_mechanics::ability_dex);
 
-    let monster_count = team_fields.len();
     let monster_iterator = team_fields.into_iter();
 
     let mut monsters = quote!();
@@ -127,15 +100,15 @@ fn construct_streams_per_team<'a>(
         let monster_species = monster.monster_ident.clone();
         let monster_nickname = monster.nickname_ident.unwrap_or(Literal::string(&monster.monster_ident.to_string()));
         let mut ability_species = quote!();
-        let mut moves_array = quote!();
+        let mut moves_vec = quote!();
         // Iterate through efects on monster
         for effect_expr in monster.fields.iter() {
             match effect_expr.effect_type {
                 EffectType::Move => {
                     let move_ident = effect_expr.effect_ident.clone();
                     // Add to the moves array
-                    moves_array = quote!(
-                        #moves_array Some(#move_mod::Move::new(#move_dex_mod::#move_ident)),
+                    moves_vec = quote!(
+                        #moves_vec #move_mod::Move::new(#move_dex_mod::#move_ident),
                     );
                 },
                 EffectType::Ability => {
@@ -145,34 +118,26 @@ fn construct_streams_per_team<'a>(
                 EffectType::Item => todo!(),
             }
         }
-        // Fill in the rest of the MoveSet with None
-        for _ in monster.move_count..4 {
-            moves_array = quote!(#moves_array None,);
-        }
+
         // Delimit the moves array with [] after we add all the elements
-        moves_array = quote!([#moves_array]);
+        moves_vec = quote!(vec![#moves_vec]);
         // Add to the monsters array
         let monster_number = map_usize_to_monster_number_ident(index);
         let is_first_monster = index == 0;
         monsters = quote!(
             #monsters 
-            Some(#game_mechanics::Battler::new(
+            #game_mechanics::Battler::new(
                 #game_mechanics::BattlerUID { team_id: #game_mechanics::TeamID::#team_name_ident, battler_number: #monster_mod::#monster_number },
                 #is_first_monster,
                 #monster_mod::Monster::new(#monster_dex_mod::#monster_species, #monster_nickname),
-                #move_mod::MoveSet::new(#moves_array),
+                #move_mod::MoveSet::new(#moves_vec),
                 #ability_mod::Ability::new(#ability_dex_mod::#ability_species),
-            )),        
+            ),        
         );
     }
 
-    // Fill the rest of the MonsterTeam with None
-    for _ in monster_count..6 {
-        monsters = quote!(#monsters None,)
-    }
-
-    // Return the `MonsterTeam` TokenStream
-    monsters
+    // Return the `BattlerTeam` TokenStream
+    quote!(vec![#monsters])
 }
 
 #[inline(always)]

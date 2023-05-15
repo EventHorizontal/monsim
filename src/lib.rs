@@ -52,115 +52,112 @@ fn test_bcontext_macro() {
     assert_eq!(
         test_bcontext,
         BattleContext::new(
-            BattlerTeam::new([
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::First,
-                    },
-                    true,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Ruby",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
+            crate::game_mechanics::BattlerTeam::new(
+                vec![
+                        (crate::game_mechanics::Battler::new(
+                            crate::game_mechanics::BattlerUID {
+                                team_id: crate::game_mechanics::TeamID::Ally,
+                                battler_number: crate::game_mechanics::monster::BattlerNumber::First,
+                            },
+                            true,
+                            crate::game_mechanics::monster::Monster::new(
+                                crate::game_mechanics::monster_dex::Torchic,
+                                "Ruby",
+                            ),
+                            crate::game_mechanics::move_::MoveSet::new(
+                                vec![
+                                    (crate::game_mechanics::move_::Move::new(
+                                        crate::game_mechanics::move_dex::Scratch,
+                                    )),
+                                    (crate::game_mechanics::move_::Move::new(
+                                        crate::game_mechanics::move_dex::Ember,
+                                    )),
+                                ],
+                            ),
+                            crate::game_mechanics::ability::Ability::new(
+                                crate::game_mechanics::ability_dex::FlashFire,
+                            ),
                         )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
+                        (crate::game_mechanics::Battler::new(
+                            crate::game_mechanics::BattlerUID {
+                                team_id: crate::game_mechanics::TeamID::Ally,
+                                battler_number: crate::game_mechanics::monster::BattlerNumber::Second,
+                            },
+                            false,
+                            crate::game_mechanics::monster::Monster::new(
+                                crate::game_mechanics::monster_dex::Torchic,
+                                "Sapphire",
+                            ),
+                            crate::game_mechanics::move_::MoveSet::new(
+                                vec![
+                                    (crate::game_mechanics::move_::Move::new(
+                                        crate::game_mechanics::move_dex::Scratch,
+                                    )),
+                                    (crate::game_mechanics::move_::Move::new(
+                                        crate::game_mechanics::move_dex::Ember,
+                                    )),
+                                ],
+                            ),
+                            crate::game_mechanics::ability::Ability::new(
+                                crate::game_mechanics::ability_dex::FlashFire,
+                            ),
                         )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::Second,
-                    },
-                    false,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Sapphire",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
+                        (crate::game_mechanics::Battler::new(
+                            crate::game_mechanics::BattlerUID {
+                                team_id: crate::game_mechanics::TeamID::Ally,
+                                battler_number: crate::game_mechanics::monster::BattlerNumber::Third,
+                            },
+                            false,
+                            crate::game_mechanics::monster::Monster::new(
+                                crate::game_mechanics::monster_dex::Torchic,
+                                "Emerald",
+                            ),
+                            crate::game_mechanics::move_::MoveSet::new(
+                                vec![
+                                    (crate::game_mechanics::move_::Move::new(
+                                        crate::game_mechanics::move_dex::Scratch,
+                                    )),
+                                    (crate::game_mechanics::move_::Move::new(
+                                        crate::game_mechanics::move_dex::Ember,
+                                    )),
+                                ],
+                            ),
+                            crate::game_mechanics::ability::Ability::new(
+                                crate::game_mechanics::ability_dex::FlashFire,
+                            ),
                         )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
-                        )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::Third,
-                    },
-                    false,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Emerald",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
-                        )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
-                        )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                None,
-                None,
-                None,
-            ]),
-            BattlerTeam::new([
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Opponent,
-                        battler_number: BattlerNumber::First,
-                    },
-                    true,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Cheerio",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
-                        )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
-                        )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                None,
-                None,
-                None,
-                None,
-                None,
-            ]),
-        )
+                    ],
+                
+            ),
+            crate::game_mechanics::BattlerTeam::new(
+                vec![
+                    (crate::game_mechanics::Battler::new(
+                        crate::game_mechanics::BattlerUID {
+                            team_id: crate::game_mechanics::TeamID::Opponent,
+                            battler_number: crate::game_mechanics::monster::BattlerNumber::First,
+                        },
+                        true,
+                        crate::game_mechanics::monster::Monster::new(
+                            crate::game_mechanics::monster_dex::Torchic,
+                            "Cheerio",
+                        ),
+                        crate::game_mechanics::move_::MoveSet::new(
+                            vec![
+                                (crate::game_mechanics::move_::Move::new(
+                                    crate::game_mechanics::move_dex::Scratch,
+                                )),
+                                (crate::game_mechanics::move_::Move::new(
+                                    crate::game_mechanics::move_dex::Ember,
+                                )),
+                            ],
+                        ),
+                        crate::game_mechanics::ability::Ability::new(
+                            crate::game_mechanics::ability_dex::FlashFire,
+                        ),
+                    ))
+                ],
+            ),
+        ),
     );
 }
 
@@ -201,8 +198,7 @@ impl Battle {
                 }
             };
             // Check if any monster fainted due to the last action.
-            if let Some(battler) = self.context.battlers().flatten().find(|it| it.fainted()) {
-                let battler = *battler;
+            if let Some(battler) = self.context.battlers().find(|it| it.fainted()) {
                 self.context.message_buffer.push(format!["{} fainted!", battler.monster.nickname]);
                 self.context.state = BattleState::Finished;
                 break;

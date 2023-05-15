@@ -113,8 +113,6 @@ fn main() -> MonsimIOResult {
                 .wrap(Wrap { trim: true });
             frame.render_widget(paragraph_widget, frame.size());
         })?;
-        
-
     }
     
     battle.context.message_buffer.clear();

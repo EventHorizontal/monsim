@@ -21,7 +21,7 @@ pub fn derive_in_battle_event_trait(input: TokenStream) -> TokenStream {
         impl InBattleEvent for #struct_name {
             type EventReturnType = #return_type;
     
-            fn associated_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
+            fn corresponding_handler(&self, event_handler_set: &EventHandlerSet) -> Option<EventHandler<Self::EventReturnType>> {
                 event_handler_set.#callback
             }
         }

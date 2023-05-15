@@ -50,7 +50,7 @@ fn test_priority_sorting_deterministic() {
             .iter()
             .filter_map(|event_handler_set_info| {
                 if let Some(handler) =
-                    OnTryMove.associated_handler(&event_handler_set_info.event_handler_set)
+                    OnTryMove.corresponding_handler(&event_handler_set_info.event_handler_set)
                 {
                     Some(EventHandlerInfo {
                         event_handler: handler,
@@ -207,7 +207,7 @@ fn test_priority_sorting_with_speed_ties() {
             .iter()
             .filter_map(|event_handler_set_info| {
                 if let Some(handler) =
-                    OnTryMove.associated_handler(&event_handler_set_info.event_handler_set)
+                    OnTryMove.corresponding_handler(&event_handler_set_info.event_handler_set)
                 {
                     Some(EventHandlerInfo {
                         event_handler: handler,

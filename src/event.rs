@@ -102,7 +102,7 @@ impl EventResolver {
             .iter()
             .filter_map(|event_handler_set_info| {
                 if let Some(handler) =
-                    event.associated_handler(&event_handler_set_info.event_handler_set)
+                    event.corresponding_handler(&event_handler_set_info.event_handler_set)
                 {
                     Some(EventHandlerInfo {
                         event_handler: handler,
@@ -192,7 +192,7 @@ bitflags! {
 pub trait InBattleEvent {
     type EventReturnType: Sized;
 
-    fn associated_handler(
+    fn corresponding_handler(
         &self,
         event_handler_set: &EventHandlerSet,
     ) -> Option<EventHandler<Self::EventReturnType>>;

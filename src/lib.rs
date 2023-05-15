@@ -180,13 +180,11 @@ impl Battle {
     pub fn simulate_turn(&mut self, user_input: UserInput) -> BattleResult {
         let mut result = Ok(());
         let mut action_choices = user_input.choices();
-        
-        // TODO: We need to revamp the BattleContext so that we can send it smaller chunks of info as/when it
-        // needs to read/write and so we can split borrows here.
+
         Battle::priority_sort(
             &mut self.prng,
             &mut action_choices,
-            &mut |it| self.context.choice_activation_order(it),
+            &mut |choice| self.context.choice_activation_order(choice),
         );
         
         for action_choice in action_choices.into_iter() {

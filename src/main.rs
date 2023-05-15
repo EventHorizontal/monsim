@@ -91,7 +91,7 @@ fn main() -> MonsimIOResult {
                     } else if code == KeyCode::Char('n') && battle.context.state != BattleState::Finished {
                         battle.context.message_buffer.clear();
                         let user_input = UserInput::receive_input(&battle.context);
-                        _ = battle.simulate_turn(user_input);
+                        _ = battle.simulate_turn(user_input); // <- This is main use of the monsim library
                     }
                 },
                 _ => {},

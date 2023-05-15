@@ -252,8 +252,8 @@ pub struct BattleContext {
     pub current_action: ActionChoice,
     pub state: BattleState,
     pub prng: LCRNG,
-    pub ally_team: MonsterTeam,
-    pub opponent_team: MonsterTeam,
+    pub ally_team: BattlerTeam,
+    pub opponent_team: BattlerTeam,
     pub message_buffer: MessageBuffer,
 }
 
@@ -261,7 +261,7 @@ type MessageBuffer = Vec<String>;
 const MESSAGE_BUFFER_SIZE: usize = 20; 
 
 impl BattleContext {
-    pub fn new(ally_team: MonsterTeam, opponent_team: MonsterTeam) -> Self {
+    pub fn new(ally_team: BattlerTeam, opponent_team: BattlerTeam) -> Self {
         Self {
             current_action: ActionChoice::None,
             state: BattleState::UsingMove {

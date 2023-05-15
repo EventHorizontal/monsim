@@ -41,17 +41,17 @@ pub struct MoveUID {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct MonsterTeam {
+pub struct BattlerTeam {
     battlers: [Option<Battler>; 6],
 }
 
-impl MonsterTeam {
+impl BattlerTeam {
     pub fn new(monsters: [Option<Battler>; 6]) -> Self {
         assert!(
             monsters.first() != None,
             "There is not a single monster in the team."
         );
-        return MonsterTeam { battlers: monsters };
+        return BattlerTeam { battlers: monsters };
     }
 
     pub fn battlers(&self) -> &[Option<Battler>; 6] {

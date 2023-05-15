@@ -52,7 +52,7 @@ fn test_bcontext_macro() {
     assert_eq!(
         test_bcontext,
         BattleContext::new(
-            MonsterTeam::new([
+            BattlerTeam::new([
                 Some(Battler::new(
                     BattlerUID {
                         team_id: TeamID::Ally,
@@ -129,7 +129,7 @@ fn test_bcontext_macro() {
                 None,
                 None,
             ]),
-            MonsterTeam::new([
+            BattlerTeam::new([
                 Some(Battler::new(
                     BattlerUID {
                         team_id: TeamID::Opponent,

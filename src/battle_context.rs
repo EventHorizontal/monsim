@@ -390,6 +390,8 @@ impl Display for BattleContext {
     }
 }
 
+const MESSAGE_BUFFER_SIZE: usize = 20; 
+
 impl BattleContext {
     pub fn new(ally_team: MonsterTeam, opponent_team: MonsterTeam) -> Self {
         Self {
@@ -410,7 +412,7 @@ impl BattleContext {
             prng: LCRNG::new(prng::seed_from_time_now()),
             ally_team,
             opponent_team,
-            message_buffer: Vec::with_capacity(0),
+            message_buffer: Vec::with_capacity(MESSAGE_BUFFER_SIZE),
         }
     }
 

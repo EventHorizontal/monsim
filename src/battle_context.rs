@@ -258,138 +258,6 @@ pub struct BattleContext {
 }
 
 type MessageBuffer = Vec<String>;
-
-#[test]
-fn test_display_battle_context() {
-    let test_bcontext = bcontext_internal!(
-        {
-            AllyTeam {
-                mon Torchic "Ruby" {
-                    mov Ember,
-                    mov Scratch,
-                    abl FlashFire,
-                },
-                mon Mudkip "Sapphire" {
-                    mov Tackle,
-                    mov Bubble,
-                    abl FlashFire,
-                },
-                mon Treecko "Emerald" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-            },
-            OpponentTeam {
-                mon Drifloon "Cheerio" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-            }
-        }
-    );
-    println!("{}", test_bcontext);
-}
-
-impl Display for BattleContext {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut out = String::new();
-        let teams = [self.ally_team, self.opponent_team];
-        let team_names = ["Ally Team\n", "Opponent Team\n"];
-        let number_of_monsters = [
-            self.ally_team.battlers().iter().flatten().count(),
-            self.opponent_team.battlers().iter().flatten().count(),
-        ];
-
-        for k in 0..=1 {
-            out.push_str(team_names[k]);
-            for (i, battler) in teams[k].battlers().iter().flatten().enumerate() {
-                let is_not_last_monster = i < number_of_monsters[k] - 1;
-                if is_not_last_monster {
-                    out.push_str("\t├── ");
-                    out.push_str(
-                        format![
-                            "{} the {} ({}) [HP: {}/{}]\n",
-                            battler.monster.nickname,
-                            battler.monster.species.name,
-                            battler.uid,
-                            battler.monster.current_health,
-                            battler.monster.max_health
-                        ]
-                        .as_str(),
-                    );
-                    out.push_str("\t│\t│\n");
-                    let number_of_effects = battler.moveset.moves().flatten().count();
-                    out.push_str("\t│\t├── ");
-
-                    out.push_str(
-                        format![
-                            "type {:?}/{:?} \n",
-                            battler.monster.species.primary_type,
-                            battler.monster.species.secondary_type
-                        ]
-                        .as_str(),
-                    );
-                    out.push_str("\t│\t├── ");
-                    out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
-
-                    for (j, move_) in battler.moveset.moves().flatten().enumerate() {
-                        let is_not_last_move = j < number_of_effects - 1;
-                        if is_not_last_move {
-                            out.push_str("\t│\t├── ");
-                        } else {
-                            out.push_str("\t│\t└── ");
-                        }
-                        out.push_str(format!["mov {}\n", move_.species.name].as_str());
-                    }
-                    out.push_str("\t│\t\n");
-                } else {
-                    out.push_str("\t└── ");
-                    out.push_str(
-                        format![
-                            "{} the {} ({}) [HP: {}/{}]\n",
-                            battler.monster.nickname,
-                            battler.monster.species.name,
-                            battler.uid,
-                            battler.monster.current_health,
-                            battler.monster.max_health
-                        ]
-                        .as_str(),
-                    );
-                    out.push_str("\t\t│\n");
-                    let number_of_effects = battler.moveset.moves().flatten().count();
-                    out.push_str("\t\t├── ");
-
-                    out.push_str(
-                        format![
-                            "type {:?}/{:?} \n",
-                            battler.monster.species.primary_type,
-                            battler.monster.species.secondary_type
-                        ]
-                        .as_str(),
-                    );
-                    out.push_str("\t\t├── ");
-
-                    out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
-
-                    for (j, move_) in battler.moveset.moves().flatten().enumerate() {
-                        let is_not_last_move = j < number_of_effects - 1;
-                        if is_not_last_move {
-                            out.push_str("\t\t├── ");
-                        } else {
-                            out.push_str("\t\t└── ");
-                        }
-                        out.push_str(format!["mov {}\n", move_.species.name].as_str());
-                    }
-                    out.push_str("\t\t\n");
-                }
-            }
-        }
-        write!(f, "{}", out)
-    }
-}
-
 const MESSAGE_BUFFER_SIZE: usize = 20; 
 
 impl BattleContext {
@@ -592,6 +460,137 @@ impl BattleContext {
             },
             ActionChoice::None => unreachable!(),
         }
+    }
+}
+
+#[test]
+fn test_display_battle_context() {
+    let test_bcontext = bcontext_internal!(
+        {
+            AllyTeam {
+                mon Torchic "Ruby" {
+                    mov Ember,
+                    mov Scratch,
+                    abl FlashFire,
+                },
+                mon Mudkip "Sapphire" {
+                    mov Tackle,
+                    mov Bubble,
+                    abl FlashFire,
+                },
+                mon Treecko "Emerald" {
+                    mov Scratch,
+                    mov Ember,
+                    abl FlashFire,
+                },
+            },
+            OpponentTeam {
+                mon Drifloon "Cheerio" {
+                    mov Scratch,
+                    mov Ember,
+                    abl FlashFire,
+                },
+            }
+        }
+    );
+    println!("{}", test_bcontext);
+}
+
+impl Display for BattleContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::new();
+        let teams = [self.ally_team, self.opponent_team];
+        let team_names = ["Ally Team\n", "Opponent Team\n"];
+        let number_of_monsters = [
+            self.ally_team.battlers().iter().flatten().count(),
+            self.opponent_team.battlers().iter().flatten().count(),
+        ];
+
+        for k in 0..=1 {
+            out.push_str(team_names[k]);
+            for (i, battler) in teams[k].battlers().iter().flatten().enumerate() {
+                let is_not_last_monster = i < number_of_monsters[k] - 1;
+                if is_not_last_monster {
+                    out.push_str("\t├── ");
+                    out.push_str(
+                        format![
+                            "{} the {} ({}) [HP: {}/{}]\n",
+                            battler.monster.nickname,
+                            battler.monster.species.name,
+                            battler.uid,
+                            battler.monster.current_health,
+                            battler.monster.max_health
+                        ]
+                        .as_str(),
+                    );
+                    out.push_str("\t│\t│\n");
+                    let number_of_effects = battler.moveset.moves().flatten().count();
+                    out.push_str("\t│\t├── ");
+
+                    out.push_str(
+                        format![
+                            "type {:?}/{:?} \n",
+                            battler.monster.species.primary_type,
+                            battler.monster.species.secondary_type
+                        ]
+                        .as_str(),
+                    );
+                    out.push_str("\t│\t├── ");
+                    out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
+
+                    for (j, move_) in battler.moveset.moves().flatten().enumerate() {
+                        let is_not_last_move = j < number_of_effects - 1;
+                        if is_not_last_move {
+                            out.push_str("\t│\t├── ");
+                        } else {
+                            out.push_str("\t│\t└── ");
+                        }
+                        out.push_str(format!["mov {}\n", move_.species.name].as_str());
+                    }
+                    out.push_str("\t│\t\n");
+                } else {
+                    out.push_str("\t└── ");
+                    out.push_str(
+                        format![
+                            "{} the {} ({}) [HP: {}/{}]\n",
+                            battler.monster.nickname,
+                            battler.monster.species.name,
+                            battler.uid,
+                            battler.monster.current_health,
+                            battler.monster.max_health
+                        ]
+                        .as_str(),
+                    );
+                    out.push_str("\t\t│\n");
+                    let number_of_effects = battler.moveset.moves().flatten().count();
+                    out.push_str("\t\t├── ");
+
+                    out.push_str(
+                        format![
+                            "type {:?}/{:?} \n",
+                            battler.monster.species.primary_type,
+                            battler.monster.species.secondary_type
+                        ]
+                        .as_str(),
+                    );
+                    out.push_str("\t\t├── ");
+
+                    out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
+
+                    for (j, move_) in battler.moveset.moves().flatten().enumerate() {
+                        let is_not_last_move = j < number_of_effects - 1;
+                        if is_not_last_move {
+                            out.push_str("\t\t├── ");
+                        } else {
+                            out.push_str("\t\t└── ");
+                        }
+                        out.push_str(format!["mov {}\n", move_.species.name].as_str());
+                    }
+                    out.push_str("\t\t\n");
+                }
+            }
+        }
+        write!(f, "{}", out)
     }
 }
 

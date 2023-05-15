@@ -36,12 +36,6 @@ pub struct EventHandlerSet {
     pub on_modify_accuracy: Option<EventHandler<u16>>,
 }
 
-#[test]
-fn test_print_event_handler_set() {
-    use crate::ability_dex::FlashFire;
-    println!("{:?}", FlashFire.event_handlers);
-}
-
 impl Debug for EventHandlerSet {
     fn fmt<'a>(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventHandlerSet")

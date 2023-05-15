@@ -2,42 +2,11 @@ use std::{time, u64::MAX};
 
 use std::ops::RangeInclusive;
 
-#[test]
-fn test_prng_percentage_chance() {
-    let mut lcrng = Lcrng::new(seed_from_time_now());
-    let mut dist = [0u64; 100];
-    for _ in 0..=10_000_000 {
-        let n = lcrng.generate_number_in_range(0..=99) as usize;
-        dist[n] += 1;
-    }
-    let avg_deviation = dist
-        .iter()
-        .map(|it| ((*it as f32 / 100_000.0) - 1.0).abs())
-        .reduce(|it, acc| it + acc)
-        .expect("We should always get some average value.")
-        / 100.0;
-    let avg_deviation = f32::floor(avg_deviation * 100_000.0) / 100_000.0;
-    println!(
-        "LCRNG has {:?}% average deviation (threshold is at 0.005%)",
-        avg_deviation
-    );
-    assert!(avg_deviation < 5.0e-3);
-}
-
-#[test]
-fn test_prng_idempotence() {
-    let seed = seed_from_time_now();
-    let mut lcrng_1 = Lcrng::new(seed);
-    let mut generated_numbers_1 = [0; 10_000];
-    for i in 0..10_000 {
-        generated_numbers_1[i] = lcrng_1.next();
-    }
-    let mut lcrng_2 = Lcrng::new(seed);
-    let mut generated_numbers_2 = [0; 10_000];
-    for i in 0..10_000 {
-        generated_numbers_2[i] = lcrng_2.next();
-    }
-    assert_eq!(generated_numbers_1, generated_numbers_2);
+// LCRNG -> Linear Congruential Random Number Generator
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Lcrng {
+    start_seed: u64,
+    current_seed: u64,
 }
 
 pub fn seed_from_time_now() -> u64 {
@@ -45,37 +14,6 @@ pub fn seed_from_time_now() -> u64 {
         .duration_since(time::UNIX_EPOCH)
         .unwrap()
         .as_secs()
-}
-
-#[test]
-fn test_prng_chance() {
-    let mut lcrng = Lcrng::new(
-        time::SystemTime::now()
-            .duration_since(time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs(),
-    );
-
-    let mut success = 0.0;
-    for _ in 0..=10_000_000 {
-        if lcrng.chance(33, 100) {
-            success += 1.0;
-        }
-    }
-    let avg_probability_deviation = (((success / 10_000_000.0) - 0.3333333333) as f64).abs();
-    let avg_probability_deviation = f64::floor(avg_probability_deviation * 100_000.0) / 100_000.0;
-    println!(
-        "Average probability of LCRNG is off by {}% (threshold is at 0.005%)",
-        avg_probability_deviation
-    );
-    assert!(avg_probability_deviation < 5.0e-3);
-}
-
-// LCRNG -> Linear Congruential Random Number Generator
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Lcrng {
-    start_seed: u64,
-    current_seed: u64,
 }
 
 const A: u64 = 0x5D588B656C078965;

@@ -5,6 +5,7 @@ pub mod game_mechanics;
 pub mod global_constants;
 pub mod io;
 mod prng;
+mod test;
 
 pub use action::*;
 pub use battle_context::*;
@@ -19,147 +20,7 @@ pub use bcontext_macro::bcontext;
 #[allow(unused_imports)]
 use bcontext_macro::bcontext_internal;
 
-#[test]
-fn test_bcontext_macro() {
-    let test_bcontext = bcontext_internal!(
-        {
-            AllyTeam {
-                mon Torchic "Ruby" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-                mon Torchic "Sapphire" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-                mon Torchic "Emerald" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-            },
-            OpponentTeam {
-                mon Torchic "Cheerio" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-            }
-        }
-    );
-    assert_eq!(
-        test_bcontext,
-        BattleContext::new(
-            crate::game_mechanics::BattlerTeam::new(
-                vec![
-                        (crate::game_mechanics::Battler::new(
-                            crate::game_mechanics::BattlerUID {
-                                team_id: crate::game_mechanics::TeamID::Ally,
-                                battler_number: crate::game_mechanics::monster::BattlerNumber::First,
-                            },
-                            true,
-                            crate::game_mechanics::monster::Monster::new(
-                                crate::game_mechanics::monster_dex::Torchic,
-                                "Ruby",
-                            ),
-                            crate::game_mechanics::move_::MoveSet::new(
-                                vec![
-                                    (crate::game_mechanics::move_::Move::new(
-                                        crate::game_mechanics::move_dex::Scratch,
-                                    )),
-                                    (crate::game_mechanics::move_::Move::new(
-                                        crate::game_mechanics::move_dex::Ember,
-                                    )),
-                                ],
-                            ),
-                            crate::game_mechanics::ability::Ability::new(
-                                crate::game_mechanics::ability_dex::FlashFire,
-                            ),
-                        )),
-                        (crate::game_mechanics::Battler::new(
-                            crate::game_mechanics::BattlerUID {
-                                team_id: crate::game_mechanics::TeamID::Ally,
-                                battler_number: crate::game_mechanics::monster::BattlerNumber::Second,
-                            },
-                            false,
-                            crate::game_mechanics::monster::Monster::new(
-                                crate::game_mechanics::monster_dex::Torchic,
-                                "Sapphire",
-                            ),
-                            crate::game_mechanics::move_::MoveSet::new(
-                                vec![
-                                    (crate::game_mechanics::move_::Move::new(
-                                        crate::game_mechanics::move_dex::Scratch,
-                                    )),
-                                    (crate::game_mechanics::move_::Move::new(
-                                        crate::game_mechanics::move_dex::Ember,
-                                    )),
-                                ],
-                            ),
-                            crate::game_mechanics::ability::Ability::new(
-                                crate::game_mechanics::ability_dex::FlashFire,
-                            ),
-                        )),
-                        (crate::game_mechanics::Battler::new(
-                            crate::game_mechanics::BattlerUID {
-                                team_id: crate::game_mechanics::TeamID::Ally,
-                                battler_number: crate::game_mechanics::monster::BattlerNumber::Third,
-                            },
-                            false,
-                            crate::game_mechanics::monster::Monster::new(
-                                crate::game_mechanics::monster_dex::Torchic,
-                                "Emerald",
-                            ),
-                            crate::game_mechanics::move_::MoveSet::new(
-                                vec![
-                                    (crate::game_mechanics::move_::Move::new(
-                                        crate::game_mechanics::move_dex::Scratch,
-                                    )),
-                                    (crate::game_mechanics::move_::Move::new(
-                                        crate::game_mechanics::move_dex::Ember,
-                                    )),
-                                ],
-                            ),
-                            crate::game_mechanics::ability::Ability::new(
-                                crate::game_mechanics::ability_dex::FlashFire,
-                            ),
-                        )),
-                    ],
-                
-            ),
-            crate::game_mechanics::BattlerTeam::new(
-                vec![
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Opponent,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::First,
-                        },
-                        true,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Cheerio",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(
-                            vec![
-                                (crate::game_mechanics::move_::Move::new(
-                                    crate::game_mechanics::move_dex::Scratch,
-                                )),
-                                (crate::game_mechanics::move_::Move::new(
-                                    crate::game_mechanics::move_dex::Ember,
-                                )),
-                            ],
-                        ),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
-                    ))
-                ],
-            ),
-        ),
-    );
-}
+
 
 type BattleResult = Result<(), BattleError>;
 

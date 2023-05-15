@@ -24,8 +24,8 @@ impl Action {
         target_uid: BattlerUID,
     ) -> BattleResult {
         let attacker_uid = move_uid.battler_uid;
-        let attacker = context.read_monster(attacker_uid);
-        let move_ = context.read_move(move_uid);
+        let attacker = context.monster(attacker_uid);
+        let move_ = context.move_(move_uid);
 
         context.message_buffer.push(format![
             "{} used {}",
@@ -37,23 +37,23 @@ impl Action {
             return Ok(());
         }
 
-        let level = context.read_monster(attacker_uid).level;
-        let move_power = context.read_move(move_uid).base_power();
+        let level = context.monster(attacker_uid).level;
+        let move_power = context.move_(move_uid).base_power();
 
         let attackers_attacking_stat;
         let targets_defense_stat;
 
-        match context.read_move(move_uid).category() {
+        match context.move_(move_uid).category() {
             MoveCategory::Physical => {
                 attackers_attacking_stat =
-                    context.read_monster(attacker_uid).stats[Stat::PhysicalAttack];
+                    context.monster(attacker_uid).stats[Stat::PhysicalAttack];
                 targets_defense_stat =
-                    context.read_monster(target_uid).stats[Stat::PhysicalDefense];
+                    context.monster(target_uid).stats[Stat::PhysicalDefense];
             }
             MoveCategory::Special => {
                 attackers_attacking_stat =
-                    context.read_monster(attacker_uid).stats[Stat::SpecialAttack];
-                targets_defense_stat = context.read_monster(target_uid).stats[Stat::SpecialDefense];
+                    context.monster(attacker_uid).stats[Stat::SpecialAttack];
+                targets_defense_stat = context.monster(target_uid).stats[Stat::SpecialDefense];
             }
             MoveCategory::Status => {
                 return Err(BattleError::WrongState(
@@ -66,17 +66,17 @@ impl Action {
         let random_multiplier = random_multiplier as f64 / 100.0;
 
         let stab_multiplier = {
-            let move_type = context.read_move(move_uid).species.type_;
-            if context.read_monster(attacker_uid).is_type(move_type) {
+            let move_type = context.move_(move_uid).species.type_;
+            if context.monster(attacker_uid).is_type(move_type) {
                 1.25f64
             } else {
                 1.00f64
             }
         };
 
-        let move_type = context.read_move(move_uid).species.type_;
-        let target_primary_type = context.read_monster(target_uid).species.primary_type;
-        let target_secondary_type = context.read_monster(target_uid).species.secondary_type;
+        let move_type = context.move_(move_uid).species.type_;
+        let target_primary_type = context.monster(target_uid).species.primary_type;
+        let target_secondary_type = context.monster(target_uid).species.secondary_type;
 
         let type_matchup_multiplier = type_matchup(move_type, target_primary_type)
             * type_matchup(move_type, target_secondary_type);
@@ -102,8 +102,6 @@ impl Action {
         // Do the calculated damage to the target
         Action::damage(context, target_uid, damage);
         EventResolver::broadcast_event(context, prng, attacker_uid, &OnDamageDealt, (), None);
-
-        let target = context.read_monster(target_uid); // We need to reread data to make sure it is updated.
         
         let type_matchup_multiplier_times_hundred =
             f64::floor(type_matchup_multiplier * 100.0) as u16;
@@ -118,22 +116,19 @@ impl Action {
             ),
         };
         context.message_buffer.push(format!["It was {}!", type_effectiveness]);
-        context.message_buffer.push(format!["{} took {} damage!", target.nickname, damage]);
-        context.message_buffer.push(format!["{} has {} health left.", target.nickname, target.current_health]);
+        context.message_buffer.push(format!["{} took {} damage!", context.monster(target_uid).nickname, damage]);
+        context.message_buffer.push(format!["{} has {} health left.", context.monster(target_uid).nickname, context.monster(target_uid).current_health]);
 
         Ok(())
     }
 
     pub fn damage(context: &mut BattleContext, target_uid: BattlerUID, damage: u16) -> () {
-        context.write_monster(target_uid, &mut |mut it| {
-            it.current_health = it.current_health.saturating_sub(damage);
-            it
-        });
+        context.monster_mut(target_uid).current_health = context.monster(target_uid).current_health.saturating_sub(damage);
     }
 
     pub fn activate_ability(context: &mut BattleContext, prng: &mut Lcrng, owner_uid: BattlerUID) -> bool {
         if EventResolver::broadcast_try_event(context, prng, owner_uid, &OnTryActivateAbility) {
-            let ability = context.read_ability(owner_uid);
+            let ability = context.ability(owner_uid).clone();
             ability.on_activate(context, owner_uid);
             EventResolver::broadcast_event(context, prng, owner_uid, &OnAbilityActivated, (), None);
             SUCCESS

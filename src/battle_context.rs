@@ -74,7 +74,7 @@ fn test_priority_sorting_deterministic() {
             .into_iter()
             .map(|event_handler_info| {
                 test_bcontext
-                    .read_monster(event_handler_info.owner_uid)
+                    .monster(event_handler_info.owner_uid)
                     .nickname
             })
             .collect::<Vec<_>>();
@@ -231,7 +231,7 @@ fn test_priority_sorting_with_speed_ties() {
             .into_iter()
             .map(|event_handler_info| {
                 test_bcontext
-                    .read_monster(event_handler_info.owner_uid)
+                    .monster(event_handler_info.owner_uid)
                     .nickname
             })
             .collect::<Vec<_>>();
@@ -298,12 +298,6 @@ impl BattleContext {
         left.into_iter().chain(right)
     }
 
-    pub fn read_monster(&self, uid: BattlerUID) -> Monster {
-        self.battlers()
-            .find(|it| it.uid == uid)
-            .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
-            .monster
-    }
 
     fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
         self.battlers()
@@ -325,40 +319,58 @@ impl BattleContext {
         test_monster_uid == self.current_action.chooser()
     }
 
-    pub(crate) fn current_action_target(&self) -> &Battler {
+    pub fn current_action_target(&self) -> &Battler {
         self.find_battler(self.current_action.target())
     }
 
-    pub(crate) fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> bool {
+    pub fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> bool {
         test_monster_uid == self.current_action.target()
     }
 
-    pub fn write_monster(
-        &mut self,
-        uid: BattlerUID,
-        change: &mut dyn FnMut(Monster) -> Monster,
-    ) -> () {
-        let maybe_battler = self.battlers_mut().find(|it| it.uid == uid);
-        if let Some(battler) = maybe_battler {
-            let new_monster = change(battler.monster);
-            battler.monster = new_monster;
-        };
+    pub fn monster(&self, uid: BattlerUID) -> &Monster {
+        &self.battlers()
+            .find(|it| it.uid == uid)
+            .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
+            .monster
     }
 
-    pub fn read_ability(&self, owner_uid: BattlerUID) -> Ability {
-        self.battlers()
+    pub fn monster_mut(&mut self, uid: BattlerUID) -> &mut Monster {
+        &mut self.battlers_mut()
+            .find(|it| it.uid == uid)
+            .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
+            .monster
+    }
+
+    pub fn ability(&self, owner_uid: BattlerUID) -> &Ability {
+        &self.battlers()
             .find(|it| it.uid == owner_uid)
             .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
             .ability
     }
 
-    pub fn read_move(&self, move_uid: MoveUID) -> &Move {
+    pub fn ability_mut(&mut self, owner_uid: BattlerUID) -> &mut Ability {
+        &mut self.battlers_mut()
+            .find(|it| it.uid == owner_uid)
+            .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
+            .ability
+    }
+
+    pub fn move_(&self, move_uid: MoveUID) -> &Move {
         let owner_uid = move_uid.battler_uid;
         self.battlers()
             .find(|it| it.uid == owner_uid)
             .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
             .moveset
             .move_(move_uid.move_number)
+    }
+
+    pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
+        let owner_uid = move_uid.battler_uid;
+        self.battlers_mut()
+            .find(|it| it.uid == owner_uid)
+            .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
+            .moveset
+            .move_mut(move_uid.move_number)
     }
 
     pub fn event_handler_sets_plus_info(&self) -> EventHandlerSetInfoList {
@@ -440,8 +452,8 @@ impl BattleContext {
                 move_uid,
                 target_uid: _,
             } => ActivationOrder {
-                priority: self.read_move(move_uid).species.priority,
-                speed: self.read_monster(move_uid.battler_uid).stats[Stat::Speed],
+                priority: self.move_(move_uid).species.priority,
+                speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
                 order: 0,
             },
             ActionChoice::None => unreachable!(),

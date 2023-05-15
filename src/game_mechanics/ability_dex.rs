@@ -10,7 +10,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
     event_handlers: EventHandlerSet {
-        on_try_move: Some(|context, owner_uid, _relay| {
+        on_try_move: Some(|context, prng, owner_uid, _relay| {
             // TEMP: This ugly predicate will be easier on the eyes once more of the API is written
             if context.read_move({
                     if let crate::ActionChoice::Move { move_uid, target_uid: _ } = context.current_action {
@@ -19,7 +19,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
                         panic!()
                     }
                 }).species.type_ == MonType::Fire {
-                if Action::activate_ability(context, owner_uid) {
+                if Action::activate_ability(context, prng, owner_uid) {
                     return FAILURE;
                 }
             }

@@ -1,3 +1,5 @@
+use crate::prng::Lcrng;
+
 use super::{
     battle_context::BattleContext,
     event::{event_dex::*, EventResolver},
@@ -17,6 +19,7 @@ impl Action {
 
     pub fn damaging_move(
         context: &mut BattleContext,
+        prng: &mut Lcrng,
         move_uid: MoveUID,
         target_uid: BattlerUID,
     ) -> BattleResult {
@@ -29,7 +32,7 @@ impl Action {
             attacker.nickname, move_.species.name
         ].to_string());
 
-        if EventResolver::broadcast_try_event(context, attacker_uid, &OnTryMove) == FAILURE {
+        if EventResolver::broadcast_try_event(context, prng, attacker_uid, &OnTryMove) == FAILURE {
             context.message_buffer.push("The move failed!".to_string());
             return Ok(());
         }
@@ -59,7 +62,7 @@ impl Action {
             }
         }
 
-        let random_multiplier = context.prng.generate_number_in_range(85..=100);
+        let random_multiplier = prng.generate_number_in_range(85..=100);
         let random_multiplier = random_multiplier as f64 / 100.0;
 
         let stab_multiplier = {
@@ -98,7 +101,7 @@ impl Action {
 
         // Do the calculated damage to the target
         Action::damage(context, target_uid, damage);
-        EventResolver::broadcast_event(context, attacker_uid, &OnDamageDealt, (), None);
+        EventResolver::broadcast_event(context, prng, attacker_uid, &OnDamageDealt, (), None);
 
         let target = context.read_monster(target_uid); // We need to reread data to make sure it is updated.
         
@@ -128,11 +131,11 @@ impl Action {
         });
     }
 
-    pub fn activate_ability(context: &mut BattleContext, owner_uid: BattlerUID) -> bool {
-        if EventResolver::broadcast_try_event(context, owner_uid, &OnTryActivateAbility) {
+    pub fn activate_ability(context: &mut BattleContext, prng: &mut Lcrng, owner_uid: BattlerUID) -> bool {
+        if EventResolver::broadcast_try_event(context, prng, owner_uid, &OnTryActivateAbility) {
             let ability = context.read_ability(owner_uid);
             ability.on_activate(context, owner_uid);
-            EventResolver::broadcast_event(context, owner_uid, &OnAbilityActivated, (), None);
+            EventResolver::broadcast_event(context, prng, owner_uid, &OnAbilityActivated, (), None);
             SUCCESS
         } else {
             FAILURE

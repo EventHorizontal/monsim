@@ -4,7 +4,7 @@ use std::ops::RangeInclusive;
 
 #[test]
 fn test_prng_percentage_chance() {
-    let mut lcrng = LCRNG::new(seed_from_time_now());
+    let mut lcrng = Lcrng::new(seed_from_time_now());
     let mut dist = [0u64; 100];
     for _ in 0..=10_000_000 {
         let n = lcrng.generate_number_in_range(0..=99) as usize;
@@ -27,12 +27,12 @@ fn test_prng_percentage_chance() {
 #[test]
 fn test_prng_idempotence() {
     let seed = seed_from_time_now();
-    let mut lcrng_1 = LCRNG::new(seed);
+    let mut lcrng_1 = Lcrng::new(seed);
     let mut generated_numbers_1 = [0; 10_000];
     for i in 0..10_000 {
         generated_numbers_1[i] = lcrng_1.next();
     }
-    let mut lcrng_2 = LCRNG::new(seed);
+    let mut lcrng_2 = Lcrng::new(seed);
     let mut generated_numbers_2 = [0; 10_000];
     for i in 0..10_000 {
         generated_numbers_2[i] = lcrng_2.next();
@@ -49,7 +49,7 @@ pub fn seed_from_time_now() -> u64 {
 
 #[test]
 fn test_prng_chance() {
-    let mut lcrng = LCRNG::new(
+    let mut lcrng = Lcrng::new(
         time::SystemTime::now()
             .duration_since(time::UNIX_EPOCH)
             .unwrap()
@@ -73,7 +73,7 @@ fn test_prng_chance() {
 
 // LCRNG -> Linear Congruential Random Number Generator
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LCRNG {
+pub struct Lcrng {
     start_seed: u64,
     current_seed: u64,
 }
@@ -81,7 +81,7 @@ pub struct LCRNG {
 const A: u64 = 0x5D588B656C078965;
 const C: u64 = 0x00269EC3;
 
-impl LCRNG {
+impl Lcrng {
     pub(crate) fn new(start_seed: u64) -> Self {
         Self {
             start_seed,

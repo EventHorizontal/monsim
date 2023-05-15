@@ -1,10 +1,12 @@
 use core::fmt::Debug;
 
+use crate::prng::Lcrng;
+
 use super::{game_mechanics::BattlerUID, global_constants::void, Battle, BattleContext};
 
-pub type EventHandler<R> = fn(&mut BattleContext, BattlerUID, R) -> EventReturn<R>;
+pub type EventHandler<R> = fn(&mut BattleContext, &mut Lcrng, BattlerUID, R) -> EventReturn<R>;
 pub type ExplicitlyAnnotatedEventHandler<'a, R> =
-    fn(&'a mut BattleContext, BattlerUID, R) -> EventReturn<R>;
+    fn(&'a mut BattleContext, &'a mut Lcrng, BattlerUID, R) -> EventReturn<R>;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventHandlerSetInfo {
@@ -89,6 +91,7 @@ impl EventResolver {
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
     pub fn broadcast_event<R: PartialEq + Copy>(
         context: &mut BattleContext,
+        prng: &mut Lcrng,
         caller_uid: BattlerUID,
         event: &dyn InBattleEvent<EventReturnType = R>,
         default: R,
@@ -114,7 +117,7 @@ impl EventResolver {
             .collect::<Vec<_>>();
 
         Battle::priority_sort::<EventHandlerInfo<R>>(
-            &mut context.prng,
+            prng,
             &mut unwrapped_event_handler_plus_info,
             &mut |it| it.activation_order,
         );
@@ -132,7 +135,7 @@ impl EventResolver {
         } in unwrapped_event_handler_plus_info.into_iter()
         {
             if context.filter_event_handlers(caller_uid, owner_uid, filters) {
-                relay = event_handler(context, owner_uid, relay);
+                relay = event_handler(context, prng, owner_uid, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -146,10 +149,11 @@ impl EventResolver {
 
     pub fn broadcast_try_event(
         context: &mut BattleContext,
+        prng: &mut Lcrng,
         caller_uid: BattlerUID,
         event: &dyn InBattleEvent<EventReturnType = bool>,
     ) -> bool {
-        Self::broadcast_event(context, caller_uid, event, true, Some(false))
+        Self::broadcast_event(context, prng, caller_uid, event, true, Some(false))
     }
 }
 

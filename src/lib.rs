@@ -12,7 +12,7 @@ pub use event::*;
 pub use game_mechanics::*;
 pub use global_constants::*;
 pub use io::*;
-use prng::LCRNG;
+use prng::Lcrng;
 
 pub use battle_context::BattleContext;
 pub use bcontext_macro::bcontext;
@@ -166,33 +166,36 @@ type BattleResult = Result<(), BattleError>;
 #[derive(Debug)]
 pub struct Battle {
     pub context: BattleContext,
+    pub prng: Lcrng,
 }
 
 impl Battle {
     pub fn new(context: BattleContext) -> Self {
-        Battle { context }
+        Battle { 
+            context, 
+            prng: Lcrng::new(prng::seed_from_time_now()), 
+        }
     }
 
     pub fn simulate_turn(&mut self, user_input: UserInput) -> BattleResult {
         let mut result = Ok(());
         let mut action_choices = user_input.choices();
-        {
-            // TODO: We need to revamp the BattleContext so that we can send it smaller chunks of info as/when it
-            // needs to read/write and so we can split borrows here.
-            let battle_context: BattleContext = self.context.clone();
-            Battle::priority_sort(
-                &mut self.context.prng,
-                &mut action_choices,
-                &mut |it| battle_context.choice_activation_order(it),
-            );
-        }
+        
+        // TODO: We need to revamp the BattleContext so that we can send it smaller chunks of info as/when it
+        // needs to read/write and so we can split borrows here.
+        Battle::priority_sort(
+            &mut self.prng,
+            &mut action_choices,
+            &mut |it| self.context.choice_activation_order(it),
+        );
+        
         for action_choice in action_choices.into_iter() {
             self.context.current_action = action_choice;
             result = match action_choice {
                 ActionChoice::Move {
                     move_uid,
                     target_uid,
-                } => Action::damaging_move(&mut self.context, move_uid, target_uid),
+                } => Action::damaging_move(&mut self.context, &mut self.prng, move_uid, target_uid),
                 ActionChoice::None => {
                     Err(BattleError::WrongState("No action was taken by a Monster."))
                 }
@@ -211,7 +214,7 @@ impl Battle {
 
     /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
     pub(crate) fn priority_sort<T: Clone + Copy>(
-        prng: &mut LCRNG,
+        prng: &mut Lcrng,
         vector: &mut Vec<T>,
         activation_order: &mut dyn FnMut(T) -> ActivationOrder,
     ) {
@@ -254,7 +257,7 @@ impl Battle {
 
     /// Shuffles the event handler order for consecutive speed-tied items in place using their associated activation orders.
     fn resolve_speed_tie<T: Clone + Copy>(
-        prng: &mut LCRNG,
+        prng: &mut Lcrng,
         vector: &mut Vec<T>,
         tied_monster_indices: &mut Vec<usize>,
     ) {

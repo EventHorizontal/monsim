@@ -13,7 +13,7 @@ type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battle
 fn test_priority_sorting_deterministic() {
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
-        let mut test_bcontext = bcontext_internal!(
+        let test_bcontext = bcontext_internal!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {
@@ -42,6 +42,8 @@ fn test_priority_sorting_deterministic() {
             }
         );
 
+        let mut prng = Lcrng::new(prng::seed_from_time_now());
+
         let event_handler_set_plus_info = test_bcontext.event_handler_sets_plus_info();
         use super::event::event_dex::OnTryMove;
         let mut unwrapped_event_handler_plus_info = event_handler_set_plus_info
@@ -63,7 +65,7 @@ fn test_priority_sorting_deterministic() {
             .collect::<Vec<_>>();
 
         Battle::priority_sort::<EventHandlerInfo<bool>>(
-            &mut test_bcontext.prng,
+            &mut prng,
             &mut unwrapped_event_handler_plus_info,
             &mut |it| it.activation_order,
         );
@@ -129,7 +131,7 @@ fn test_event_filtering_for_event_sources() {
 fn test_priority_sorting_with_speed_ties() {
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
-        let mut test_bcontext = bcontext_internal!(
+        let test_bcontext = bcontext_internal!(
             {
                 AllyTeam {
                     mon Torchic "A" {
@@ -197,7 +199,7 @@ fn test_priority_sorting_with_speed_ties() {
                 }
             }
         );
-        test_bcontext.prng = LCRNG::new(i as u64);
+        let mut prng = Lcrng::new(i as u64);
 
         let event_handler_set_plus_info = test_bcontext.event_handler_sets_plus_info();
         use super::event::event_dex::OnTryMove;
@@ -220,7 +222,7 @@ fn test_priority_sorting_with_speed_ties() {
             .collect::<Vec<_>>();
 
         Battle::priority_sort::<EventHandlerInfo<bool>>(
-            &mut test_bcontext.prng,
+            &mut prng,
             &mut unwrapped_event_handler_plus_info,
             &mut |it| it.activation_order,
         );
@@ -251,7 +253,6 @@ fn test_priority_sorting_with_speed_ties() {
 pub struct BattleContext {
     pub current_action: ActionChoice,
     pub state: BattleState,
-    pub prng: LCRNG,
     pub ally_team: BattlerTeam,
     pub opponent_team: BattlerTeam,
     pub message_buffer: MessageBuffer,
@@ -277,7 +278,6 @@ impl BattleContext {
                     battler_number: BattlerNumber::First,
                 },
             },
-            prng: LCRNG::new(prng::seed_from_time_now()),
             ally_team,
             opponent_team,
             message_buffer: Vec::with_capacity(MESSAGE_BUFFER_SIZE),

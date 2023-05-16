@@ -113,20 +113,20 @@ impl MoveSet {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MoveNumber {
-    First,
-    Second,
-    Third,
-    Fourth,
+    _1,
+    _2,
+    _3,
+    _4,
 }
 
-impl MoveNumber {
-    pub fn from(number: usize) -> Self {
-        match number {
-            0 => MoveNumber::First,
-            1 => MoveNumber::Second,
-            2 => MoveNumber::Third,
-            3 => MoveNumber::Fourth,
-            _ => panic!("Move Number must be an integer between 0 and 3."),
+impl From<usize> for MoveNumber {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => MoveNumber::_1,
+            1 => MoveNumber::_2,
+            2 => MoveNumber::_3,
+            3 => MoveNumber::_4,
+            _ => panic!("MoveNumber can only be formed from usize 0 to 3."),
         }
     }
 }

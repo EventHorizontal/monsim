@@ -11,7 +11,7 @@ type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battle
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattleContext {
-    pub current_action: ActionChoice,
+    pub current_action: Option<ActionChoice>,
     pub state: BattleState,
     pub ally_team: BattlerTeam,
     pub opponent_team: BattlerTeam,
@@ -24,18 +24,18 @@ const MESSAGE_BUFFER_SIZE: usize = 20;
 impl BattleContext {
     pub fn new(ally_team: BattlerTeam, opponent_team: BattlerTeam) -> Self {
         Self {
-            current_action: ActionChoice::None,
+            current_action: None,
             state: BattleState::UsingMove {
                 move_uid: MoveUID {
                     battler_uid: BattlerUID {
                         team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::First,
+                        battler_number: BattlerNumber::_1,
                     },
-                    move_number: MoveNumber::First,
+                    move_number: MoveNumber::_1,
                 },
                 target_uid: BattlerUID {
                     team_id: TeamID::Opponent,
-                    battler_number: BattlerNumber::First,
+                    battler_number: BattlerNumber::_1,
                 },
             },
             ally_team,
@@ -71,20 +71,36 @@ impl BattleContext {
         self.find_battler(battler_uid).on_field
     }
 
-    pub fn current_action_user(&self) -> &Battler {
-        self.find_battler(self.current_action.chooser())
+    pub fn current_action_user(&self) -> Option<&Battler> {
+        if let Some(current_action) = self.current_action {
+            Some(self.find_battler(current_action.chooser()))
+        } else {
+            None
+        }
     }
 
-    pub fn is_current_action_user(&self, test_monster_uid: BattlerUID) -> bool {
-        test_monster_uid == self.current_action.chooser()
+    pub fn is_current_action_user(&self, test_monster_uid: BattlerUID) -> Option<bool> {
+        if let Some(current_action) = self.current_action {
+            Some(test_monster_uid == current_action.chooser())
+        } else {
+            None
+        }
     }
 
-    pub fn current_action_target(&self) -> &Battler {
-        self.find_battler(self.current_action.target())
+    pub fn current_action_target(&self) -> Option<&Battler> {
+        if let Some(current_action) = self.current_action {
+            Some(self.find_battler(current_action.target()))
+        } else {
+            None
+        }
     }
 
-    pub fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> bool {
-        test_monster_uid == self.current_action.target()
+    pub fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> Option<bool> {
+        if let Some(current_action) = self.current_action {
+            Some(test_monster_uid == current_action.target())
+        } else {
+            None
+        }
     }
 
     pub fn monster(&self, uid: BattlerUID) -> &Monster {
@@ -216,7 +232,36 @@ impl BattleContext {
                 speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
                 order: 0,
             },
-            ActionChoice::None => unreachable!(),
+        }
+    }
+
+    pub fn generate_action_choices(&self) -> AvailableActionChoices {
+        
+        let ally_active_battler = self.ally_team.active_battler();
+        let opponent_active_battler = self.opponent_team.active_battler();
+
+        let ally_moves = ally_active_battler.move_uids();
+        let opponent_moves = opponent_active_battler.move_uids();
+
+        let mut ally_team_choices: TeamActionChoiceList = Vec::with_capacity(4);
+        for move_uid in ally_moves {
+            ally_team_choices.push(ActionChoice::Move { 
+                move_uid, 
+                target_uid: opponent_active_battler.uid 
+            });
+        }
+
+        let mut opponent_team_choices: TeamActionChoiceList = Vec::with_capacity(4);
+        for move_uid in opponent_moves {
+            opponent_team_choices.push(ActionChoice::Move { 
+                move_uid, 
+                target_uid: opponent_active_battler.uid 
+            });
+        }
+
+        AvailableActionChoices { 
+            ally_team_choices, 
+            opponent_team_choices, 
         }
     }
 }

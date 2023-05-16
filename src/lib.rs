@@ -38,9 +38,9 @@ impl Battle {
         }
     }
 
-    pub fn simulate_turn(&mut self, user_input: UserInput) -> BattleResult {
+    pub fn simulate_turn(&mut self, user_input: &UserInput) -> BattleResult {
         let mut result = Ok(());
-        let mut action_choices = user_input.choices();
+        let mut action_choices = todo!("We don't have a method yet to return the action choices");
 
         Battle::priority_sort(
             &mut self.prng,
@@ -49,15 +49,12 @@ impl Battle {
         );
         
         for action_choice in action_choices.into_iter() {
-            self.context.current_action = action_choice;
+            self.context.current_action = Some(action_choice);
             result = match action_choice {
                 ActionChoice::Move {
                     move_uid,
                     target_uid,
                 } => Action::damaging_move(&mut self.context, &mut self.prng, move_uid, target_uid),
-                ActionChoice::None => {
-                    Err(BattleError::WrongState("No action was taken by a Monster."))
-                }
             };
             // Check if any monster fainted due to the last action.
             if let Some(battler) = self.context.battlers().find(|it| it.fainted()) {

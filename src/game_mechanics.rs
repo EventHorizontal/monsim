@@ -72,6 +72,10 @@ impl BattlerTeam {
         }
         out
     }
+
+    pub fn active_battler(&self) -> &Battler {
+        &self.battlers[0]
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -199,6 +203,19 @@ impl Battler {
         out.append(&mut self.moveset_event_handler_info(self.uid));
         out.push(self.ability_event_handler_info());
         out
+    }
+
+    pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
+        self.moveset
+            .moves()
+            .enumerate()
+            .map(|(idx, _)| {
+                MoveUID { 
+                    battler_uid: self.uid, 
+                    move_number: MoveNumber::from(idx) 
+                }
+            })
+            .collect()
     }
 }
 

@@ -43,7 +43,7 @@ mod main {
 							(crate::game_mechanics::Battler::new(
 								crate::game_mechanics::BattlerUID {
 									team_id: crate::game_mechanics::TeamID::Ally,
-									battler_number: crate::game_mechanics::monster::BattlerNumber::First,
+									battler_number: crate::game_mechanics::monster::BattlerNumber::_1,
 								},
 								true,
 								crate::game_mechanics::monster::Monster::new(
@@ -67,7 +67,7 @@ mod main {
 							(crate::game_mechanics::Battler::new(
 								crate::game_mechanics::BattlerUID {
 									team_id: crate::game_mechanics::TeamID::Ally,
-									battler_number: crate::game_mechanics::monster::BattlerNumber::Second,
+									battler_number: crate::game_mechanics::monster::BattlerNumber::_2,
 								},
 								false,
 								crate::game_mechanics::monster::Monster::new(
@@ -91,7 +91,7 @@ mod main {
 							(crate::game_mechanics::Battler::new(
 								crate::game_mechanics::BattlerUID {
 									team_id: crate::game_mechanics::TeamID::Ally,
-									battler_number: crate::game_mechanics::monster::BattlerNumber::Third,
+									battler_number: crate::game_mechanics::monster::BattlerNumber::_3,
 								},
 								false,
 								crate::game_mechanics::monster::Monster::new(
@@ -120,7 +120,7 @@ mod main {
 						(crate::game_mechanics::Battler::new(
 							crate::game_mechanics::BattlerUID {
 								team_id: crate::game_mechanics::TeamID::Opponent,
-								battler_number: crate::game_mechanics::monster::BattlerNumber::First,
+								battler_number: crate::game_mechanics::monster::BattlerNumber::_1,
 							},
 							true,
 							crate::game_mechanics::monster::Monster::new(
@@ -262,11 +262,11 @@ mod bcontext {
 		let passed_filter = test_bcontext.filter_event_handlers(
 			BattlerUID {
 				team_id: TeamID::Ally,
-				battler_number: BattlerNumber::First,
+				battler_number: BattlerNumber::_1,
 			},
 			BattlerUID {
 				team_id: TeamID::Opponent,
-				battler_number: BattlerNumber::First,
+				battler_number: BattlerNumber::_1,
 			},
 			EventHandlerFilters::default(),
 		);

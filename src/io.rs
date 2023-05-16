@@ -1,11 +1,10 @@
 use std::io::Write;
 
 use super::game_mechanics::{BattlerUID, MoveUID};
-use crate::{print_empty_line, BattleContext, BattlerNumber, MoveNumber, TeamID};
+use crate::{print_empty_line, BattleContext, BattlerNumber, MoveNumber, TeamID, Move};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionChoice {
-    None,
     Move {
         move_uid: MoveUID,
         target_uid: BattlerUID,
@@ -15,7 +14,6 @@ pub enum ActionChoice {
 impl ActionChoice {
     pub(crate) fn chooser(&self) -> BattlerUID {
         match self {
-            ActionChoice::None => unreachable!(),
             ActionChoice::Move {
                 move_uid,
                 target_uid: _,
@@ -25,7 +23,6 @@ impl ActionChoice {
 
     pub(crate) fn target(&self) -> BattlerUID {
         match self {
-            ActionChoice::None => unreachable!(),
             ActionChoice::Move {
                 move_uid: _,
                 target_uid,
@@ -35,16 +32,9 @@ impl ActionChoice {
 }
 
 // TODO: If/when we support double battles, this needs to take 1-2 choices per team.
-pub struct UserInput {
-    pub ally_choices: ActionChoice,
-    pub opponent_choices: ActionChoice,
-}
+pub struct UserInput(AvailableActionChoices);
 
 impl UserInput {
-    pub fn choices(&self) -> Vec<ActionChoice> {
-        vec![self.ally_choices, self.opponent_choices]
-    }
-
     pub fn receive_input(_context: &BattleContext) -> Self {
         // let mut choice_ids = Vec::new();
         // println!("Please choose a move");
@@ -78,35 +68,45 @@ impl UserInput {
         //         }
         //     }
         // }
-
+        
+        // TODO: Make a TUI to support user input and stop hard coding this.
         // TEMP: Hard coded until UI is sophisticated enought to allow for user input.
-        UserInput {
-            ally_choices: ActionChoice::Move {
-                move_uid: MoveUID {
-                    battler_uid: BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::First,
-                    },
-                    move_number: MoveNumber::Fourth,
-                },
-                target_uid: BattlerUID {
-                    team_id: TeamID::Opponent,
-                    battler_number: BattlerNumber::First,
-                },
-            },
-            opponent_choices: ActionChoice::Move {
-                move_uid: MoveUID {
-                    battler_uid: BattlerUID {
-                        team_id: TeamID::Opponent,
-                        battler_number: BattlerNumber::First,
-                    },
-                    move_number: MoveNumber::First,
-                },
-                target_uid: BattlerUID {
-                    team_id: TeamID::Ally,
-                    battler_number: BattlerNumber::First,
-                },
-            },
-        }
+        // UserInput {
+        //     ally_choices: ActionChoice::Move {
+        //         move_uid: MoveUID {
+        //             battler_uid: BattlerUID {
+        //                 team_id: TeamID::Ally,
+        //                 battler_number: BattlerNumber::First,
+        //             },
+        //             move_number: MoveNumber::Fourth,
+        //         },
+        //         target_uid: BattlerUID {
+        //             team_id: TeamID::Opponent,
+        //             battler_number: BattlerNumber::First,
+        //         },
+        //     },
+        //     opponent_choices: ActionChoice::Move {
+        //         move_uid: MoveUID {
+        //             battler_uid: BattlerUID {
+        //                 team_id: TeamID::Opponent,
+        //                 battler_number: BattlerNumber::First,
+        //             },
+        //             move_number: MoveNumber::First,
+        //         },
+        //         target_uid: BattlerUID {
+        //             team_id: TeamID::Ally,
+        //             battler_number: BattlerNumber::First,
+        //         },
+        //     },
+        // }
+        todo!()
     }
 }
+
+#[derive(Debug)]
+pub struct AvailableActionChoices {
+    pub ally_team_choices: TeamActionChoiceList,
+    pub opponent_team_choices: TeamActionChoiceList,
+}
+
+pub type TeamActionChoiceList = Vec<ActionChoice>;

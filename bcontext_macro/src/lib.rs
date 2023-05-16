@@ -122,7 +122,7 @@ fn construct_team_token_stream<'a>(
         // Delimit the moves array with [] after we add all the elements
         moves_vec = quote!(vec![#moves_vec]);
         // Add to the monsters array
-        let monster_number = map_usize_to_monster_number_ident(index);
+        let monster_number = quote!(BattlerNumber::from(#index));
         let is_first_monster = index == 0;
         monsters = quote!(
             #monsters 
@@ -138,17 +138,4 @@ fn construct_team_token_stream<'a>(
 
     // Return the `BattlerTeam` TokenStream
     quote!(vec![#monsters])
-}
-
-#[inline(always)]
-fn map_usize_to_monster_number_ident(number: usize) -> TokenStream {
-    match number {
-        0 => quote!(BattlerNumber::First),
-        1 => quote!(BattlerNumber::Second),
-        2 => quote!(BattlerNumber::Third),
-        3 => quote!(BattlerNumber::Fourth),
-        4 => quote!(BattlerNumber::Fifth),
-        5 => quote!(BattlerNumber::Sixth),
-        _ => panic!("You cannot have more than 6 Monsters.")
-    }
 }

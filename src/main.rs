@@ -8,6 +8,12 @@ use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, Paragra
 const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
 type MonsimIOResult = Result<(), Box<dyn std::error::Error>>; 
 
+pub enum AppState {
+    AwaitingUserInput { action_choices: AvailableActionChoices },
+    // InputReceived { chosen_actions: UserChoice },
+    Simulating { user_input: UserInput }
+}
+
 fn main() -> MonsimIOResult {
     let mut battle = Battle::new(bcontext!(
         {
@@ -39,6 +45,9 @@ fn main() -> MonsimIOResult {
             }
         }
     ));
+
+    // Initialise the Program
+    let mut app_state = AppState::AwaitingUserInput { action_choices: battle.context.generate_action_choices() };
     
     // Raw mode allows to not require enter presses to get 
     enable_raw_mode().expect("can run in raw mode");
@@ -75,32 +84,38 @@ fn main() -> MonsimIOResult {
     terminal.clear()?;
     execute!(std::io::stdout(), EnterAlternateScreen)?;
 
-    loop {
+    'app: loop {
 
-        // Do appropriate thing based on input receieved
-        match receiver.recv()? {
-            TUIEvent::Input(event) => match event {
-                // Quit
-                KeyEvent { code, modifiers: _, kind: KeyEventKind::Release, state: _ } => {
-                    if code == KeyCode::Esc {
-                        disable_raw_mode()?;
-                        execute!(std::io::stdout(), LeaveAlternateScreen)?;
-                        terminal.show_cursor()?;
-                        break;
-                    // Keep simulating turns until the battle is finished.
-                    } else if code == KeyCode::Char('n') && battle.context.state != BattleState::Finished {
-                        battle.context.message_buffer.clear();
-                        let user_input = UserInput::receive_input(&battle.context);
-                        _ = battle.simulate_turn(user_input); // <- This is main use of the monsim library
-                    }
-                },
-                _ => {},
+        match app_state {
+            AppState::AwaitingUserInput { ref action_choices } => {
+                // Do appropriate thing based on input receieved
+                match receiver.recv()? {
+                    TUIEvent::Input(event) => match event {
+                        // Quit
+                        KeyEvent { code, modifiers: _, kind: KeyEventKind::Release, state: _ } => {
+                            if code == KeyCode::Esc {
+                                disable_raw_mode()?;
+                                execute!(std::io::stdout(), LeaveAlternateScreen)?;
+                                terminal.show_cursor()?;
+                                break 'app;
+                            }
+                            // Keep simulating turns until the battle is finished.
+                            render(&mut terminal, &battle.context.message_buffer, Some(action_choices))?;
+                        },
+                        _ => {},
+                    },
+                    TUIEvent::Tick => {},
+                }
             },
-            TUIEvent::Tick => {},
+            AppState::Simulating { ref user_input } => {
+                let _result = battle.simulate_turn(user_input); // <- This is the main use of the monsim library
+                app_state = AppState::AwaitingUserInput { action_choices: battle.context.generate_action_choices()}
+            },
         }
 
+
         // Draw the result of the current turn to the terminal
-        render(&mut terminal, battle.context.message_buffer.clone())?;
+        // render(&mut terminal, &battle.context.message_buffer)?;
     }
     
     battle.context.message_buffer.clear();
@@ -108,7 +123,11 @@ fn main() -> MonsimIOResult {
     Ok(())
 }
 
-fn render<'a>(terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, message_buffer: Vec<String>) -> std::io::Result<CompletedFrame<'a>> {
+fn render<'a>(
+    terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
+    message_buffer: &Vec<String>,
+    action_choices: Option<&AvailableActionChoices>,
+) -> std::io::Result<CompletedFrame<'a>> {
     terminal.draw( |frame| {    
         
         // Chunks
@@ -123,18 +142,38 @@ fn render<'a>(terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, message_buff
             ].as_ref()
         )
         .split(frame.size());
+    
+        let ally_text;
+        let opponent_text;
+        match action_choices {
+            Some(choices) => {
+                ally_text = format!["{:?}", choices.ally_team_choices];
+                opponent_text = format!["{:?}",choices.opponent_team_choices];
+            },
+            None => {
+                ally_text = String::new();
+                opponent_text = String::new();
+            },
+        }
 
         // Ally Monster Stats Widget
-        let ally_block = Block::default()
-            .title(" Ally Stats ")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Blue).bg(Color::Black));
-        frame.render_widget(ally_block, chunks[0]);
+        let ally_text = Span::raw(ally_text);
+        let ally_widget = Paragraph::new(ally_text)
+        .block(Block::default()
+        .title(" Ally Team ")
+        .style(Style::default().fg(Color::Blue))
+        .borders(Borders::ALL)
+            )
+            .style(Style::default().fg(Color::White).bg(Color::Black))
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(ally_widget, chunks[0]);   
+
 
         // Message log widget
         let text = message_buffer
-            .iter()
-            .map(|element| { Spans::from(Span::raw(element))})
+        .iter()
+        .map(|element| { Spans::from(Span::raw(element))})
             .collect::<Vec<_>>();
         let paragraph_widget = Paragraph::new(text)
             .block(Block::default()
@@ -146,14 +185,20 @@ fn render<'a>(terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, message_buff
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: true });
         frame.render_widget(paragraph_widget, chunks[1]);   
-
+        
         
         // Opponent Monster Stats Widget
-        let opponent_block = Block::default()
-            .title(" Opponent Stats ")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Blue).bg(Color::Black));
-        frame.render_widget(opponent_block, chunks[2]); 
+        let opponent_text = Span::raw(opponent_text);
+        let opponent_widget = Paragraph::new(opponent_text)
+        .block(Block::default()
+        .title(" Opponent Team ")
+        .style(Style::default().fg(Color::Blue))
+        .borders(Borders::ALL)
+            )
+            .style(Style::default().fg(Color::White).bg(Color::Black))
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(opponent_widget, chunks[2]);   
     })
     
 }

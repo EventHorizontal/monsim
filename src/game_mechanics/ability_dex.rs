@@ -13,7 +13,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(|context, prng, owner_uid, _relay| {
             // TEMP: This ugly predicate will be easier on the eyes once more of the API is written
             if context.move_({
-                    if let crate::ActionChoice::Move { move_uid, target_uid: _ } = context.current_action {
+                    if let Some(crate::ActionChoice::Move { move_uid, target_uid: _ }) = context.current_action {
                         move_uid
                     } else {
                         panic!()

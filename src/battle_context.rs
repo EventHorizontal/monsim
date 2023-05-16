@@ -19,7 +19,7 @@ pub struct BattleContext {
 }
 
 type MessageBuffer = Vec<String>;
-const MESSAGE_BUFFER_SIZE: usize = 20; 
+const MESSAGE_BUFFER_SIZE: usize = 20;
 
 impl BattleContext {
     pub fn new(ally_team: BattlerTeam, opponent_team: BattlerTeam) -> Self {
@@ -58,11 +58,8 @@ impl BattleContext {
         left.into_iter().chain(right)
     }
 
-
     fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
-        self.battlers()
-            .find(|it| it.uid == battler_uid)
-            .expect(
+        self.battlers().find(|it| it.uid == battler_uid).expect(
             "Error: Requested look up for a monster with ID that does not exist in this battle.",
         )
     }
@@ -104,28 +101,32 @@ impl BattleContext {
     }
 
     pub fn monster(&self, uid: BattlerUID) -> &Monster {
-        &self.battlers()
+        &self
+            .battlers()
             .find(|it| it.uid == uid)
             .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
             .monster
     }
 
     pub fn monster_mut(&mut self, uid: BattlerUID) -> &mut Monster {
-        &mut self.battlers_mut()
+        &mut self
+            .battlers_mut()
             .find(|it| it.uid == uid)
             .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
             .monster
     }
 
     pub fn ability(&self, owner_uid: BattlerUID) -> &Ability {
-        &self.battlers()
+        &self
+            .battlers()
             .find(|it| it.uid == owner_uid)
             .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
             .ability
     }
 
     pub fn ability_mut(&mut self, owner_uid: BattlerUID) -> &mut Ability {
-        &mut self.battlers_mut()
+        &mut self
+            .battlers_mut()
             .find(|it| it.uid == owner_uid)
             .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
             .ability
@@ -183,17 +184,11 @@ impl BattleContext {
     }
 
     fn is_on_ally_team(&self, uid: BattlerUID) -> bool {
-        self.ally_team
-            .battlers()
-            .iter()
-            .any(|it| it.uid == uid)
+        self.ally_team.battlers().iter().any(|it| it.uid == uid)
     }
 
     fn is_on_opponent_team(&self, uid: BattlerUID) -> bool {
-        self.opponent_team
-            .battlers()
-            .iter()
-            .any(|it| it.uid == uid)
+        self.opponent_team.battlers().iter().any(|it| it.uid == uid)
     }
 
     fn are_opponents(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
@@ -215,9 +210,7 @@ impl BattleContext {
     }
 
     pub fn battlers_on_field(&self) -> Vec<&Battler> {
-        self.battlers()
-            .filter(|it| it.on_field)
-            .collect::<Vec<_>>()
+        self.battlers().filter(|it| it.on_field).collect::<Vec<_>>()
     }
 
     /// Given an action choice, computes its activation order. This is handled by BattleContext because the order is
@@ -236,7 +229,6 @@ impl BattleContext {
     }
 
     pub fn generate_action_choices(&self) -> AvailableActionChoices {
-        
         let ally_active_battler = self.ally_team.active_battler();
         let opponent_active_battler = self.opponent_team.active_battler();
 
@@ -245,28 +237,26 @@ impl BattleContext {
 
         let mut ally_team_choices: TeamActionChoiceList = Vec::with_capacity(4);
         for move_uid in ally_moves {
-            ally_team_choices.push(ActionChoice::Move { 
-                move_uid, 
-                target_uid: opponent_active_battler.uid 
+            ally_team_choices.push(ActionChoice::Move {
+                move_uid,
+                target_uid: opponent_active_battler.uid,
             });
         }
 
         let mut opponent_team_choices: TeamActionChoiceList = Vec::with_capacity(4);
         for move_uid in opponent_moves {
-            opponent_team_choices.push(ActionChoice::Move { 
-                move_uid, 
-                target_uid: opponent_active_battler.uid 
+            opponent_team_choices.push(ActionChoice::Move {
+                move_uid,
+                target_uid: opponent_active_battler.uid,
             });
         }
 
-        AvailableActionChoices { 
-            ally_team_choices, 
-            opponent_team_choices, 
+        AvailableActionChoices {
+            ally_team_choices,
+            opponent_team_choices,
         }
     }
 }
-
-
 
 impl Display for BattleContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -209,11 +209,9 @@ impl Battler {
         self.moveset
             .moves()
             .enumerate()
-            .map(|(idx, _)| {
-                MoveUID { 
-                    battler_uid: self.uid, 
-                    move_number: MoveNumber::from(idx) 
-                }
+            .map(|(idx, _)| MoveUID {
+                battler_uid: self.uid,
+                move_number: MoveNumber::from(idx),
             })
             .collect()
     }

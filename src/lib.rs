@@ -1,9 +1,10 @@
-mod action;
-pub mod battle_context;
-mod event;
 pub mod game_mechanics;
+pub mod battle_context;
 pub mod global_constants;
 pub mod io;
+
+mod action;
+mod event;
 mod prng;
 mod test;
 
@@ -20,8 +21,6 @@ pub use bcontext_macro::bcontext;
 #[allow(unused_imports)]
 use bcontext_macro::bcontext_internal;
 
-
-
 type BattleResult = Result<(), BattleError>;
 
 #[derive(Debug)]
@@ -32,9 +31,9 @@ pub struct Battle {
 
 impl Battle {
     pub fn new(context: BattleContext) -> Self {
-        Battle { 
-            context, 
-            prng: Lcrng::new(prng::seed_from_time_now()), 
+        Battle {
+            context,
+            prng: Lcrng::new(prng::seed_from_time_now()),
         }
     }
 
@@ -42,12 +41,10 @@ impl Battle {
         let mut result = Ok(());
         let mut action_choices = todo!("We don't have a method yet to return the action choices");
 
-        Battle::priority_sort(
-            &mut self.prng,
-            &mut action_choices,
-            &mut |choice| self.context.choice_activation_order(choice),
-        );
-        
+        Battle::priority_sort(&mut self.prng, &mut action_choices, &mut |choice| {
+            self.context.choice_activation_order(choice)
+        });
+
         for action_choice in action_choices.into_iter() {
             self.context.current_action = Some(action_choice);
             result = match action_choice {
@@ -58,12 +55,16 @@ impl Battle {
             };
             // Check if any monster fainted due to the last action.
             if let Some(battler) = self.context.battlers().find(|it| it.fainted()) {
-                self.context.message_buffer.push(format!["{} fainted!", battler.monster.nickname]);
+                self.context
+                    .message_buffer
+                    .push(format!["{} fainted!", battler.monster.nickname]);
                 self.context.state = BattleState::Finished;
                 break;
             };
         }
-        self.context.message_buffer.push("\n-------------------------------------\n".to_string());
+        self.context
+            .message_buffer
+            .push("\n-------------------------------------\n".to_string());
 
         result
     }

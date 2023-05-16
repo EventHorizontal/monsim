@@ -97,15 +97,13 @@ impl MoveSet {
     }
 
     pub fn move_(&self, id: MoveNumber) -> &Move {
-        self
-            .moves
+        self.moves
             .get(id as usize)
             .expect(&format!["The move at the {:?} index should exist.", id])
     }
 
     pub fn move_mut(&mut self, id: MoveNumber) -> &mut Move {
-        self
-            .moves
+        self.moves
             .get_mut(id as usize)
             .expect(&format!["The move at the {:?} index should exist.", id])
     }

@@ -163,7 +163,7 @@ impl From<usize> for BattlerNumber {
             3 => BattlerNumber::_4,
             4 => BattlerNumber::_5,
             5 => BattlerNumber::_6,
-            _ => panic!("BattlerNumber can only be formed from usize 0 to 5.")
+            _ => panic!("BattlerNumber can only be formed from usize 0 to 5."),
         }
     }
 }

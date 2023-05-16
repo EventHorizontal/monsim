@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use super::game_mechanics::{BattlerUID, MoveUID};
-use crate::{print_empty_line, BattleContext, BattlerNumber, MoveNumber, TeamID, Move};
+use crate::{print_empty_line, BattleContext, BattlerNumber, Move, MoveNumber, TeamID};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionChoice {
@@ -68,7 +68,7 @@ impl UserInput {
         //         }
         //     }
         // }
-        
+
         // TODO: Make a TUI to support user input and stop hard coding this.
         // TEMP: Hard coded until UI is sophisticated enought to allow for user input.
         // UserInput {

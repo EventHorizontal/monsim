@@ -12,13 +12,22 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     event_handlers: EventHandlerSet {
         on_try_move: Some(|context, prng, owner_uid, _relay| {
             // TEMP: This ugly predicate will be easier on the eyes once more of the API is written
-            if context.move_({
-                    if let Some(crate::ActionChoice::Move { move_uid, target_uid: _ }) = context.current_action {
+            if context
+                .move_({
+                    if let Some(crate::ActionChoice::Move {
+                        move_uid,
+                        target_uid: _,
+                    }) = context.current_action
+                    {
                         move_uid
                     } else {
                         panic!()
                     }
-                }).species.type_ == MonType::Fire {
+                })
+                .species
+                .type_
+                == MonType::Fire
+            {
                 if Action::activate_ability(context, prng, owner_uid) {
                     return FAILURE;
                 }
@@ -28,7 +37,9 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         ..DEFAULT_HANDLERS
     },
     on_activate: |context, _owner_uid| {
-        context.message_buffer.push("Flash Fire activated".to_string())
+        context
+            .message_buffer
+            .push("Flash Fire activated".to_string())
     },
     event_handler_filters: EventHandlerFilters::default(),
     order: 0,

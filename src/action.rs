@@ -27,10 +27,9 @@ impl Action {
         let attacker = context.monster(attacker_uid);
         let move_ = context.move_(move_uid);
 
-        context.message_buffer.push(format![
-            "{} used {}",
-            attacker.nickname, move_.species.name
-        ].to_string());
+        context
+            .message_buffer
+            .push(format!["{} used {}", attacker.nickname, move_.species.name].to_string());
 
         if EventResolver::broadcast_try_event(context, prng, attacker_uid, &OnTryMove) == FAILURE {
             context.message_buffer.push("The move failed!".to_string());
@@ -47,12 +46,10 @@ impl Action {
             MoveCategory::Physical => {
                 attackers_attacking_stat =
                     context.monster(attacker_uid).stats[Stat::PhysicalAttack];
-                targets_defense_stat =
-                    context.monster(target_uid).stats[Stat::PhysicalDefense];
+                targets_defense_stat = context.monster(target_uid).stats[Stat::PhysicalDefense];
             }
             MoveCategory::Special => {
-                attackers_attacking_stat =
-                    context.monster(attacker_uid).stats[Stat::SpecialAttack];
+                attackers_attacking_stat = context.monster(attacker_uid).stats[Stat::SpecialAttack];
                 targets_defense_stat = context.monster(target_uid).stats[Stat::SpecialDefense];
             }
             MoveCategory::Status => {
@@ -83,7 +80,9 @@ impl Action {
 
         // If the opponent is immune, damage calculation is skipped.
         if type_matchup_multiplier == INEFFECTIVE {
-            context.message_buffer.push("It was ineffective...".to_string());
+            context
+                .message_buffer
+                .push("It was ineffective...".to_string());
             return Ok(());
         }
 
@@ -102,7 +101,7 @@ impl Action {
         // Do the calculated damage to the target
         Action::damage(context, target_uid, damage);
         EventResolver::broadcast_event(context, prng, attacker_uid, &OnDamageDealt, (), None);
-        
+
         let type_matchup_multiplier_times_hundred =
             f64::floor(type_matchup_multiplier * 100.0) as u16;
         // INFO: We cannot match against floats so we match against 100 x the multiplier rounded to an int.
@@ -115,18 +114,35 @@ impl Action {
                 type_matchup_multiplier
             ),
         };
-        context.message_buffer.push(format!["It was {}!", type_effectiveness]);
-        context.message_buffer.push(format!["{} took {} damage!", context.monster(target_uid).nickname, damage]);
-        context.message_buffer.push(format!["{} has {} health left.", context.monster(target_uid).nickname, context.monster(target_uid).current_health]);
+        context
+            .message_buffer
+            .push(format!["It was {}!", type_effectiveness]);
+        context.message_buffer.push(format![
+            "{} took {} damage!",
+            context.monster(target_uid).nickname,
+            damage
+        ]);
+        context.message_buffer.push(format![
+            "{} has {} health left.",
+            context.monster(target_uid).nickname,
+            context.monster(target_uid).current_health
+        ]);
 
         Ok(())
     }
 
     pub fn damage(context: &mut BattleContext, target_uid: BattlerUID, damage: u16) -> () {
-        context.monster_mut(target_uid).current_health = context.monster(target_uid).current_health.saturating_sub(damage);
+        context.monster_mut(target_uid).current_health = context
+            .monster(target_uid)
+            .current_health
+            .saturating_sub(damage);
     }
 
-    pub fn activate_ability(context: &mut BattleContext, prng: &mut Lcrng, owner_uid: BattlerUID) -> bool {
+    pub fn activate_ability(
+        context: &mut BattleContext,
+        prng: &mut Lcrng,
+        owner_uid: BattlerUID,
+    ) -> bool {
         if EventResolver::broadcast_try_event(context, prng, owner_uid, &OnTryActivateAbility) {
             let ability = context.ability(owner_uid).clone();
             ability.on_activate(context, owner_uid);

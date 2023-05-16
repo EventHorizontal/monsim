@@ -228,14 +228,14 @@ impl BattleContext {
         }
     }
 
-    pub fn generate_action_choices(&self) -> AvailableActionChoices {
+    pub fn generate_action_choices(&self) -> AvailableActions {
         let ally_active_battler = self.ally_team.active_battler();
         let opponent_active_battler = self.opponent_team.active_battler();
 
         let ally_moves = ally_active_battler.move_uids();
         let opponent_moves = opponent_active_battler.move_uids();
 
-        let mut ally_team_choices: TeamActionChoiceList = Vec::with_capacity(4);
+        let mut ally_team_choices: TeamAvailableActions = Vec::with_capacity(4);
         for move_uid in ally_moves {
             ally_team_choices.push(ActionChoice::Move {
                 move_uid,
@@ -243,7 +243,7 @@ impl BattleContext {
             });
         }
 
-        let mut opponent_team_choices: TeamActionChoiceList = Vec::with_capacity(4);
+        let mut opponent_team_choices: TeamAvailableActions = Vec::with_capacity(4);
         for move_uid in opponent_moves {
             opponent_team_choices.push(ActionChoice::Move {
                 move_uid,
@@ -251,7 +251,7 @@ impl BattleContext {
             });
         }
 
-        AvailableActionChoices {
+        AvailableActions {
             ally_team_choices,
             opponent_team_choices,
         }

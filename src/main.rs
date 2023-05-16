@@ -17,7 +17,7 @@ use tui::{
     style::{Color, Modifier, Style},
     terminal::CompletedFrame,
     text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap, ListState},
     Terminal,
 };
 
@@ -26,7 +26,7 @@ type MonsimIOResult = Result<(), Box<dyn std::error::Error>>;
 
 pub enum AppState {
     AwaitingUserInput {
-        action_choices: AvailableActionChoices,
+        action_choices: AvailableActions,
     },
     // InputReceived { chosen_actions: UserChoice },
     Simulating {
@@ -108,6 +108,7 @@ fn main() -> MonsimIOResult {
     terminal.clear()?;
     execute!(std::io::stdout(), EnterAlternateScreen)?;
 
+    let mut overall_action_choices = None;
     'app: loop {
         match app_state {
             AppState::AwaitingUserInput { ref action_choices } => {
@@ -130,7 +131,7 @@ fn main() -> MonsimIOResult {
                                 }
                                 _ => {}
                             };
-                            render(&mut terminal, &battle.context, Some(action_choices))?;
+                            overall_action_choices = Some(action_choices.clone());
                         }
                         _ => {}
                     },
@@ -145,7 +146,7 @@ fn main() -> MonsimIOResult {
             }
         }
 
-        // render(&mut terminal, &battle.context.message_buffer)?;
+        render(&mut terminal, &battle.context, &overall_action_choices)?;
     }
 
     battle.context.message_buffer.clear();
@@ -156,7 +157,7 @@ fn main() -> MonsimIOResult {
 fn render<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
     battle_context: &BattleContext,
-    action_choices: Option<&AvailableActionChoices>,
+    action_choices: &Option<AvailableActions>,
 ) -> std::io::Result<CompletedFrame<'a>> {
     terminal.draw(|frame| {
         // Chunks
@@ -197,13 +198,14 @@ fn render<'a>(
                 None => vec![],
             }
         };
+        let mut ally_list_state = ListState::default();
+        ally_list_state.select(Some(2));
         let ally_widget = List::new(items)
             .block(Block::default().title(" Ally Team Choices ").borders(Borders::ALL))
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
-
-        frame.render_widget(ally_widget, chunks[0]);
+        frame.render_stateful_widget(ally_widget, chunks[0], &mut ally_list_state);
 
 
         // Message log widget
@@ -246,12 +248,14 @@ fn render<'a>(
                 None => vec![],
             }
         };
+        let mut opponent_list_state = ListState::default();
+        opponent_list_state.select(Some(0));
         let opponent_widget = List::new(items)
             .block(Block::default().title(" Opponent Team Choices ").borders(Borders::ALL))
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
-        frame.render_widget(opponent_widget, chunks[2]);
+        frame.render_stateful_widget(opponent_widget, chunks[2], &mut opponent_list_state);
     })
 }
 enum TUIEvent<I> {

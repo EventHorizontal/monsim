@@ -32,7 +32,7 @@ impl ActionChoice {
 }
 
 // TODO: If/when we support double battles, this needs to take 1-2 choices per team.
-pub struct UserInput(AvailableActionChoices);
+pub struct UserInput(AvailableActions);
 
 impl UserInput {
     pub fn receive_input(_context: &BattleContext) -> Self {
@@ -103,10 +103,10 @@ impl UserInput {
     }
 }
 
-#[derive(Debug)]
-pub struct AvailableActionChoices {
-    pub ally_team_choices: TeamActionChoiceList,
-    pub opponent_team_choices: TeamActionChoiceList,
+#[derive(Debug, Clone)]
+pub struct AvailableActions {
+    pub ally_team_choices: TeamAvailableActions,
+    pub opponent_team_choices: TeamAvailableActions,
 }
 
-pub type TeamActionChoiceList = Vec<ActionChoice>;
+pub type TeamAvailableActions = Vec<ActionChoice>;

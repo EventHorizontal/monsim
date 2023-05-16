@@ -2,7 +2,7 @@ use std::{thread, time::{Duration, Instant}, sync::mpsc, io::Stdout};
 
 use monsim::*;
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, execute};
-use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, Paragraph, Wrap}, style::{Style, Color, Modifier}, layout::{Alignment}, text::{Spans, Span}, terminal::CompletedFrame};
+use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, Paragraph, Wrap}, style::{Style, Color}, layout::{Alignment, Layout, Direction, Constraint}, text::{Spans, Span}, terminal::CompletedFrame};
 
 
 const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
@@ -110,24 +110,53 @@ fn main() -> MonsimIOResult {
 
 fn render<'a>(terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, message_buffer: Vec<String>) -> std::io::Result<CompletedFrame<'a>> {
     terminal.draw( |frame| {    
+        
+        // Chunks
+        let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+                Constraint::Percentage(33)
+            ].as_ref()
+        )
+        .split(frame.size());
+
+        // Ally Monster Stats Widget
+        let ally_block = Block::default()
+            .title(" Ally Stats ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Blue).bg(Color::Black));
+        frame.render_widget(ally_block, chunks[0]);
+
+        // Message log widget
         let text = message_buffer
             .iter()
             .map(|element| { Spans::from(Span::raw(element))})
             .collect::<Vec<_>>();
         let paragraph_widget = Paragraph::new(text)
             .block(Block::default()
-                .title(Span::styled(" Monsim TUI ", Style::default().fg(Color::White).add_modifier(Modifier::ITALIC)))
+                .title(" Message Log ")
                 .style(Style::default().fg(Color::Blue))
                 .borders(Borders::ALL)
             )
             .style(Style::default().fg(Color::White).bg(Color::Black))
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: true });
-        frame.render_widget(paragraph_widget, frame.size());    
+        frame.render_widget(paragraph_widget, chunks[1]);   
+
+        
+        // Opponent Monster Stats Widget
+        let opponent_block = Block::default()
+            .title(" Opponent Stats ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Blue).bg(Color::Black));
+        frame.render_widget(opponent_block, chunks[2]); 
     })
     
 }
-
 enum TUIEvent<I> {
     Input(I),
     Tick,

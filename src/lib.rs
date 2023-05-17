@@ -1,5 +1,5 @@
-pub mod game_mechanics;
 pub mod battle_context;
+pub mod game_mechanics;
 pub mod global_constants;
 pub mod io;
 

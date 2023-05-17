@@ -17,7 +17,7 @@ use tui::{
     style::{Color, Modifier, Style},
     terminal::CompletedFrame,
     text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap, ListState},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Terminal,
 };
 
@@ -25,13 +25,9 @@ const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
 type MonsimIOResult = Result<(), Box<dyn std::error::Error>>;
 
 pub enum AppState {
-    AwaitingUserInput {
-        action_choices: AvailableActions,
-    },
+    AwaitingUserInput { action_choices: AvailableActions },
     // InputReceived { chosen_actions: UserChoice },
-    Simulating {
-        user_input: UserInput,
-    },
+    Simulating { user_input: UserInput },
 }
 
 fn main() -> MonsimIOResult {
@@ -201,12 +197,15 @@ fn render<'a>(
         let mut ally_list_state = ListState::default();
         ally_list_state.select(Some(2));
         let ally_widget = List::new(items)
-            .block(Block::default().title(" Ally Team Choices ").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title(" Ally Team Choices ")
+                    .borders(Borders::ALL),
+            )
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
         frame.render_stateful_widget(ally_widget, chunks[0], &mut ally_list_state);
-
 
         // Message log widget
         let text = battle_context
@@ -251,7 +250,11 @@ fn render<'a>(
         let mut opponent_list_state = ListState::default();
         opponent_list_state.select(Some(0));
         let opponent_widget = List::new(items)
-            .block(Block::default().title(" Opponent Team Choices ").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title(" Opponent Team Choices ")
+                    .borders(Borders::ALL),
+            )
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");

@@ -247,7 +247,7 @@ impl BattleContext {
         for move_uid in opponent_moves {
             opponent_team_choices.push(ActionChoice::Move {
                 move_uid,
-                target_uid: opponent_active_battler.uid,
+                target_uid: ally_active_battler.uid,
             });
         }
 
@@ -358,7 +358,6 @@ impl Display for BattleContext {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BattleState {
-    ChoosingActions,
     UsingMove {
         move_uid: MoveUID,
         target_uid: BattlerUID,

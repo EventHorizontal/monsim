@@ -6,7 +6,7 @@ use std::{
 };
 
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -38,6 +38,7 @@ pub struct AppState<'a> {
     opponent_list_items: Vec<ListItem<'a>>,
     opponent_list_state: ListState,
     message_buffer: MessageBuffer,
+    is_battle_ongoing: bool,
 }
 
 impl<'a> AppState<'a> {
@@ -59,6 +60,7 @@ impl<'a> AppState<'a> {
                 list
             },
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+            is_battle_ongoing: true
         };
         state.build_list_items(battle_context);
         state
@@ -196,22 +198,16 @@ fn main() -> MonsimIOResult {
             } => {
                 // Do appropriate thing based on input receieved
                 match receiver.recv()? {
-                    TUIEvent::Input(event) => match event {
-                        // Quit
-                        KeyEvent {
-                            code,
-                            modifiers: _,
-                            kind: KeyEventKind::Release,
-                            state: _,
-                        } => {
-                            match code {
-                                KeyCode::Esc => {
+                    TUIEvent::Input(event) => {
+                        if app_state.is_battle_ongoing {
+                            match (event.code, event.kind) {
+                                (KeyCode::Esc, KeyEventKind::Release) => {
                                     disable_raw_mode()?;
                                     execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                     terminal.show_cursor()?;
                                     break 'app;
                                 }
-                                KeyCode::Up => {
+                                (KeyCode::Up, KeyEventKind::Release) => {
                                     if let Some(selected_index) =
                                         app_state.opponent_list_state.selected()
                                     {
@@ -223,7 +219,7 @@ fn main() -> MonsimIOResult {
                                         ));
                                     }
                                 }
-                                KeyCode::Down => {
+                                (KeyCode::Down, KeyEventKind::Release) => {
                                     if let Some(selected_index) =
                                         app_state.opponent_list_state.selected()
                                     {
@@ -234,7 +230,7 @@ fn main() -> MonsimIOResult {
                                         ))
                                     }
                                 }
-                                KeyCode::Tab => {
+                                (KeyCode::Tab, KeyEventKind::Release) => {
                                     if let (
                                         Some(selected_ally_choice_index),
                                         Some(selected_opponent_choice_index),
@@ -251,7 +247,7 @@ fn main() -> MonsimIOResult {
                                         app_state.app_mode = AppMode::Simulating { chosen_actions };
                                     }
                                 }
-                                KeyCode::Char('w') => {
+                                (KeyCode::Char('w'), KeyEventKind::Release) => {
                                     if let Some(selected_index) =
                                         app_state.ally_list_state.selected()
                                     {
@@ -262,7 +258,7 @@ fn main() -> MonsimIOResult {
                                         ));
                                     }
                                 }
-                                KeyCode::Char('s') => {
+                                (KeyCode::Char('s'), KeyEventKind::Release) => {
                                     if let Some(selected_index) =
                                         app_state.ally_list_state.selected()
                                     {
@@ -271,17 +267,34 @@ fn main() -> MonsimIOResult {
                                             .ally_list_state
                                             .select(Some((selected_index + 1) % ally_list_length))
                                     }
-                                }
-                                _ => {}
-                            };
+                                },
+                                _ => (),
+                            }
+                        } else {
+                            match (event.code, event.kind) {
+                                (KeyCode::Esc, KeyEventKind::Release) => {
+                                    disable_raw_mode()?;
+                                    execute!(std::io::stdout(), LeaveAlternateScreen)?;
+                                    terminal.show_cursor()?;
+                                    break 'app;
+                                },
+                                _ => ()
+                            }
                         }
-                        _ => {}
-                    },
+                    }
                     TUIEvent::Tick => {}
-                }
+                };
             }
             AppMode::Simulating { chosen_actions } => {
                 let result = battle.simulate_turn(chosen_actions); // <- This is the main use of the monsim library
+                match result {
+                    Ok(_) => battle.context.message_buffer.push(String::from("(The turn was calculated successfully.)")),
+                    Err(error) => battle.context.message_buffer.push(format!["{:?}", error]),
+                }
+                if battle.context.state == BattleState::Finished {
+                    app_state.is_battle_ongoing = false;
+                    battle.context.message_buffer.push(String::from("The battle ended."));
+                }
                 app_state.app_mode = AppMode::AwaitingUserInput {
                     available_actions: battle.context.generate_action_choices(),
                 };
@@ -293,7 +306,7 @@ fn main() -> MonsimIOResult {
         render(&mut terminal, &mut app_state)?;
     }
 
-    println!("The Battle ended with no errors.\n");
+    println!("monsim_tui exited successfully");
     Ok(())
 }
 

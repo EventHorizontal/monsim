@@ -235,10 +235,21 @@ fn main() -> MonsimIOResult {
                                     }
                                 }
                                 KeyCode::Tab => {
-                                    if let (Some(selected_ally_choice_index), Some(selected_opponent_choice_index)) = (app_state.ally_list_state.selected(), app_state.opponent_list_state.selected()) {
-                                        let chosen_actions = vec![available_actions.ally_team_choices[selected_ally_choice_index], available_actions.opponent_team_choices[selected_opponent_choice_index]];
+                                    if let (
+                                        Some(selected_ally_choice_index),
+                                        Some(selected_opponent_choice_index),
+                                    ) = (
+                                        app_state.ally_list_state.selected(),
+                                        app_state.opponent_list_state.selected(),
+                                    ) {
+                                        let chosen_actions = vec![
+                                            available_actions.ally_team_choices
+                                                [selected_ally_choice_index],
+                                            available_actions.opponent_team_choices
+                                                [selected_opponent_choice_index],
+                                        ];
                                         app_state.app_mode = AppMode::Simulating { chosen_actions };
-                                    } 
+                                    }
                                 }
                                 KeyCode::Char('w') => {
                                     if let Some(selected_index) =
@@ -255,11 +266,10 @@ fn main() -> MonsimIOResult {
                                     if let Some(selected_index) =
                                         app_state.ally_list_state.selected()
                                     {
-                                        let ally_list_length =
-                                            app_state.ally_list_items_length();
-                                        app_state.ally_list_state.select(Some(
-                                            (selected_index + 1) % ally_list_length,
-                                        ))
+                                        let ally_list_length = app_state.ally_list_items_length();
+                                        app_state
+                                            .ally_list_state
+                                            .select(Some((selected_index + 1) % ally_list_length))
                                     }
                                 }
                                 _ => {}
@@ -271,7 +281,7 @@ fn main() -> MonsimIOResult {
                 }
             }
             AppMode::Simulating { chosen_actions } => {
-                let _result = battle.simulate_turn(chosen_actions); // <- This is the main use of the monsim library
+                let result = battle.simulate_turn(chosen_actions); // <- This is the main use of the monsim library
                 app_state.app_mode = AppMode::AwaitingUserInput {
                     available_actions: battle.context.generate_action_choices(),
                 };
@@ -279,10 +289,10 @@ fn main() -> MonsimIOResult {
                 battle.context.message_buffer.clear();
             }
         }
-        
+
         render(&mut terminal, &mut app_state)?;
     }
-    
+
     println!("The Battle ended with no errors.\n");
     Ok(())
 }

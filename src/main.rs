@@ -6,7 +6,7 @@ use std::{
 };
 
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -24,10 +24,97 @@ use tui::{
 const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
 type MonsimIOResult = Result<(), Box<dyn std::error::Error>>;
 
-pub enum AppState {
-    AwaitingUserInput { action_choices: AvailableActions },
-    // InputReceived { chosen_actions: UserChoice },
-    Simulating { user_input: UserInput },
+#[derive(Debug)]
+pub enum AppMode {
+    AwaitingUserInput { available_actions: AvailableActions },
+    Simulating { chosen_actions: ChosenActions },
+}
+
+#[derive(Debug)]
+pub struct AppState<'a> {
+    app_mode: AppMode,
+    ally_list_items: Vec<ListItem<'a>>,
+    ally_list_state: ListState,
+    opponent_list_items: Vec<ListItem<'a>>,
+    opponent_list_state: ListState,
+    message_buffer: MessageBuffer,
+}
+
+impl<'a> AppState<'a> {
+    fn new(battle_context: &mut BattleContext) -> Self {
+        let mut state = Self {
+            app_mode: AppMode::AwaitingUserInput {
+                available_actions: battle_context.generate_action_choices(),
+            },
+            ally_list_items: Vec::with_capacity(4),
+            ally_list_state: {
+                let mut list = ListState::default();
+                list.select(Some(0));
+                list
+            },
+            opponent_list_items: Vec::with_capacity(4),
+            opponent_list_state: {
+                let mut list = ListState::default();
+                list.select(Some(0));
+                list
+            },
+            message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+        };
+        state.build_list_items(battle_context);
+        state
+    }
+
+    fn build_list_items(&mut self, battle_context: &BattleContext) {
+        let available_actions = battle_context.generate_action_choices();
+        (self.ally_list_items, self.opponent_list_items) = {
+            (
+                available_actions
+                    .ally_team_choices
+                    .iter()
+                    .map(|choice| {
+                        ListItem::new(
+                            battle_context
+                                .move_({
+                                    let ActionChoice::Move {
+                                        move_uid,
+                                        target_uid: _,
+                                    } = choice;
+                                    *move_uid
+                                })
+                                .species
+                                .name,
+                        )
+                    })
+                    .collect(),
+                available_actions
+                    .opponent_team_choices
+                    .iter()
+                    .map(|choice| {
+                        ListItem::new(
+                            battle_context
+                                .move_({
+                                    let ActionChoice::Move {
+                                        move_uid,
+                                        target_uid: _,
+                                    } = choice;
+                                    *move_uid
+                                })
+                                .species
+                                .name,
+                        )
+                    })
+                    .collect(),
+            )
+        };
+    }
+
+    fn ally_list_items_length(&self) -> usize {
+        self.ally_list_items.len()
+    }
+
+    fn opponent_list_items_length(&self) -> usize {
+        self.opponent_list_items.len()
+    }
 }
 
 fn main() -> MonsimIOResult {
@@ -63,9 +150,7 @@ fn main() -> MonsimIOResult {
     ));
 
     // Initialise the Program
-    let mut app_state = AppState::AwaitingUserInput {
-        action_choices: battle.context.generate_action_choices(),
-    };
+    let mut app_state = AppState::new(&mut battle.context);
 
     // Raw mode allows to not require enter presses to get
     enable_raw_mode().expect("can run in raw mode");
@@ -104,10 +189,11 @@ fn main() -> MonsimIOResult {
     terminal.clear()?;
     execute!(std::io::stdout(), EnterAlternateScreen)?;
 
-    let mut overall_action_choices = None;
     'app: loop {
-        match app_state {
-            AppState::AwaitingUserInput { ref action_choices } => {
+        match app_state.app_mode {
+            AppMode::AwaitingUserInput {
+                ref available_actions,
+            } => {
                 // Do appropriate thing based on input receieved
                 match receiver.recv()? {
                     TUIEvent::Input(event) => match event {
@@ -125,35 +211,85 @@ fn main() -> MonsimIOResult {
                                     terminal.show_cursor()?;
                                     break 'app;
                                 }
+                                KeyCode::Up => {
+                                    if let Some(selected_index) =
+                                        app_state.opponent_list_state.selected()
+                                    {
+                                        let opponent_list_items_length =
+                                            app_state.opponent_list_items_length();
+                                        app_state.opponent_list_state.select(Some(
+                                            (selected_index + opponent_list_items_length - 1)
+                                                % opponent_list_items_length,
+                                        ));
+                                    }
+                                }
+                                KeyCode::Down => {
+                                    if let Some(selected_index) =
+                                        app_state.opponent_list_state.selected()
+                                    {
+                                        let opponent_list_items_length =
+                                            app_state.opponent_list_items_length();
+                                        app_state.opponent_list_state.select(Some(
+                                            (selected_index + 1) % opponent_list_items_length,
+                                        ))
+                                    }
+                                }
+                                KeyCode::Tab => {
+                                    if let (Some(selected_ally_choice_index), Some(selected_opponent_choice_index)) = (app_state.ally_list_state.selected(), app_state.opponent_list_state.selected()) {
+                                        let chosen_actions = vec![available_actions.ally_team_choices[selected_ally_choice_index], available_actions.opponent_team_choices[selected_opponent_choice_index]];
+                                        app_state.app_mode = AppMode::Simulating { chosen_actions };
+                                    } 
+                                }
+                                KeyCode::Char('w') => {
+                                    if let Some(selected_index) =
+                                        app_state.ally_list_state.selected()
+                                    {
+                                        let ally_list_length = app_state.ally_list_items_length();
+                                        app_state.ally_list_state.select(Some(
+                                            (selected_index + ally_list_length - 1)
+                                                % ally_list_length,
+                                        ));
+                                    }
+                                }
+                                KeyCode::Char('s') => {
+                                    if let Some(selected_index) =
+                                        app_state.ally_list_state.selected()
+                                    {
+                                        let ally_list_length =
+                                            app_state.ally_list_items_length();
+                                        app_state.ally_list_state.select(Some(
+                                            (selected_index + 1) % ally_list_length,
+                                        ))
+                                    }
+                                }
                                 _ => {}
                             };
-                            overall_action_choices = Some(action_choices.clone());
                         }
                         _ => {}
                     },
                     TUIEvent::Tick => {}
                 }
             }
-            AppState::Simulating { ref user_input } => {
-                let _result = battle.simulate_turn(user_input); // <- This is the main use of the monsim library
-                app_state = AppState::AwaitingUserInput {
-                    action_choices: battle.context.generate_action_choices(),
-                }
+            AppMode::Simulating { chosen_actions } => {
+                let _result = battle.simulate_turn(chosen_actions); // <- This is the main use of the monsim library
+                app_state.app_mode = AppMode::AwaitingUserInput {
+                    available_actions: battle.context.generate_action_choices(),
+                };
+                app_state.message_buffer = battle.context.message_buffer.clone();
+                battle.context.message_buffer.clear();
             }
         }
-
-        render(&mut terminal, &battle.context, &overall_action_choices)?;
+        
+        render(&mut terminal, &mut app_state)?;
     }
-
-    battle.context.message_buffer.clear();
+    
     println!("The Battle ended with no errors.\n");
     Ok(())
 }
 
 fn render<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
-    battle_context: &BattleContext,
-    action_choices: &Option<AvailableActions>,
+    app_state: &mut AppState,
 ) -> std::io::Result<CompletedFrame<'a>> {
     terminal.draw(|frame| {
         // Chunks
@@ -171,32 +307,9 @@ fn render<'a>(
             .split(frame.size());
 
         // Ally Monster Stats Widget
-        let items = {
-            match action_choices {
-                Some(choices) => choices
-                    .ally_team_choices
-                    .iter()
-                    .map(|choice| {
-                        ListItem::new(
-                            battle_context
-                                .move_({
-                                    let ActionChoice::Move {
-                                        move_uid,
-                                        target_uid: _,
-                                    } = choice;
-                                    *move_uid
-                                })
-                                .species
-                                .name,
-                        )
-                    })
-                    .collect(),
-                None => vec![],
-            }
-        };
         let mut ally_list_state = ListState::default();
         ally_list_state.select(Some(2));
-        let ally_widget = List::new(items)
+        let ally_widget = List::new(app_state.ally_list_items.clone())
             .block(
                 Block::default()
                     .title(" Ally Team Choices ")
@@ -205,10 +318,10 @@ fn render<'a>(
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
-        frame.render_stateful_widget(ally_widget, chunks[0], &mut ally_list_state);
+        frame.render_stateful_widget(ally_widget, chunks[0], &mut app_state.ally_list_state);
 
-        // Message log widget
-        let text = battle_context
+        // Message Log Widget
+        let text = app_state
             .message_buffer
             .iter()
             .map(|element| Spans::from(Span::raw(element)))
@@ -224,32 +337,7 @@ fn render<'a>(
         frame.render_widget(paragraph_widget, chunks[1]);
 
         // Opponent Monster Stats Widget
-        let items = {
-            match action_choices {
-                Some(choices) => choices
-                    .opponent_team_choices
-                    .iter()
-                    .map(|choice| {
-                        ListItem::new(
-                            battle_context
-                                .move_({
-                                    let ActionChoice::Move {
-                                        move_uid,
-                                        target_uid: _,
-                                    } = choice;
-                                    *move_uid
-                                })
-                                .species
-                                .name,
-                        )
-                    })
-                    .collect(),
-                None => vec![],
-            }
-        };
-        let mut opponent_list_state = ListState::default();
-        opponent_list_state.select(Some(0));
-        let opponent_widget = List::new(items)
+        let opponent_widget = List::new(app_state.opponent_list_items.clone())
             .block(
                 Block::default()
                     .title(" Opponent Team Choices ")
@@ -258,7 +346,11 @@ fn render<'a>(
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
-        frame.render_stateful_widget(opponent_widget, chunks[2], &mut opponent_list_state);
+        frame.render_stateful_widget(
+            opponent_widget,
+            chunks[2],
+            &mut app_state.opponent_list_state,
+        );
     })
 }
 enum TUIEvent<I> {

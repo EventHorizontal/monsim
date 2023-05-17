@@ -37,17 +37,16 @@ impl Battle {
         }
     }
 
-    pub fn simulate_turn(&mut self, user_input: &UserInput) -> BattleResult {
+    pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActions) -> BattleResult {
         let mut result = Ok(());
-        let mut action_choices = todo!("We don't have a method yet to return the action choices");
 
-        Battle::priority_sort(&mut self.prng, &mut action_choices, &mut |choice| {
+        Battle::priority_sort(&mut self.prng, &mut chosen_actions, &mut |choice| {
             self.context.choice_activation_order(choice)
         });
 
-        for action_choice in action_choices.into_iter() {
-            self.context.current_action = Some(action_choice);
-            result = match action_choice {
+        for chosen_action in chosen_actions.into_iter() {
+            self.context.current_action = Some(chosen_action);
+            result = match chosen_action {
                 ActionChoice::Move {
                     move_uid,
                     target_uid,

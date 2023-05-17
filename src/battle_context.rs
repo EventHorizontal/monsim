@@ -18,8 +18,8 @@ pub struct BattleContext {
     pub message_buffer: MessageBuffer,
 }
 
-type MessageBuffer = Vec<String>;
-const MESSAGE_BUFFER_SIZE: usize = 20;
+pub type MessageBuffer = Vec<String>;
+pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
 impl BattleContext {
     pub fn new(ally_team: BattlerTeam, opponent_team: BattlerTeam) -> Self {
@@ -40,7 +40,7 @@ impl BattleContext {
             },
             ally_team,
             opponent_team,
-            message_buffer: Vec::with_capacity(MESSAGE_BUFFER_SIZE),
+            message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
         }
     }
 

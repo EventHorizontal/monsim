@@ -228,7 +228,7 @@ impl BattleContext {
         }
     }
 
-    pub fn generate_action_choices(&self) -> AvailableActions {
+    pub fn generate_available_actions(&self) -> AvailableActions {
         let ally_active_battler = self.ally_team.active_battler();
         let opponent_active_battler = self.opponent_team.active_battler();
 

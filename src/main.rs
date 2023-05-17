@@ -45,7 +45,7 @@ impl<'a> AppState<'a> {
     fn new(battle_context: &mut BattleContext) -> Self {
         let mut state = Self {
             app_mode: AppMode::AwaitingUserInput {
-                available_actions: battle_context.generate_action_choices(),
+                available_actions: battle_context.generate_available_actions(),
             },
             ally_list_items: Vec::with_capacity(4),
             ally_list_state: {
@@ -67,7 +67,7 @@ impl<'a> AppState<'a> {
     }
 
     fn build_list_items(&mut self, battle_context: &BattleContext) {
-        let available_actions = battle_context.generate_action_choices();
+        let available_actions = battle_context.generate_available_actions();
         (self.ally_list_items, self.opponent_list_items) = {
             (
                 available_actions
@@ -296,7 +296,7 @@ fn main() -> MonsimIOResult {
                     battle.context.message_buffer.push(String::from("The battle ended."));
                 }
                 app_state.app_mode = AppMode::AwaitingUserInput {
-                    available_actions: battle.context.generate_action_choices(),
+                    available_actions: battle.context.generate_available_actions(),
                 };
                 app_state.message_buffer = battle.context.message_buffer.clone();
                 battle.context.message_buffer.clear();

@@ -21,7 +21,7 @@ pub use bcontext_macro::bcontext;
 #[allow(unused_imports)]
 use bcontext_macro::bcontext_internal;
 
-type BattleResult = Result<(), BattleError>;
+type TurnOutcome = Result<(), BattleError>;
 
 #[derive(Debug)]
 pub struct Battle {
@@ -37,7 +37,7 @@ impl Battle {
         }
     }
 
-    pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActions) -> BattleResult {
+    pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActions) -> TurnOutcome {
         let mut result = Ok(());
 
         Battle::priority_sort(&mut self.prng, &mut chosen_actions, &mut |choice| {

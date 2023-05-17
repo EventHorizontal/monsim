@@ -5,7 +5,7 @@ use super::{
     event::{event_dex::*, EventResolver},
     game_mechanics::{monster::Stat, move_::MoveCategory, BattlerUID, MoveUID},
     global_constants::{type_matchup, FAILURE, INEFFECTIVE, SUCCESS},
-    BattleError, BattleResult,
+    BattleError, TurnOutcome,
 };
 use std::fmt::Display;
 
@@ -22,7 +22,7 @@ impl Action {
         prng: &mut Lcrng,
         move_uid: MoveUID,
         target_uid: BattlerUID,
-    ) -> BattleResult {
+    ) -> TurnOutcome {
         let attacker_uid = move_uid.battler_uid;
         let attacker = context.monster(attacker_uid);
         let move_ = context.move_(move_uid);
@@ -54,7 +54,7 @@ impl Action {
             }
             MoveCategory::Status => {
                 return Err(BattleError::WrongState(
-                    "The function is not supposed to be able to receive a Status move.",
+                    "SimError: The damaging_move function is not expected to receive status moves.",
                 ))
             }
         }

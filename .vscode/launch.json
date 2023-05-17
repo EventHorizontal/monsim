@@ -7,15 +7,10 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Cargo test",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib"
-                ]
-            },
-            "args": []
-        }
+            "name": "Launch",
+            "program": "${workspaceFolder}/target/debug/monsim_tui.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }

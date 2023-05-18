@@ -1,5 +1,6 @@
 use std::io::Stdout;
 
+use monsim::BattleContext;
 use tui::{Terminal, backend::CrosstermBackend, terminal::CompletedFrame, layout::{Layout, Direction, Constraint, Alignment}, widgets::{ListState, List, Block, Borders, Paragraph, Wrap}, style::{Style, Modifier}, text::{Spans, Span}};
 
 use crate::AppState;
@@ -7,6 +8,7 @@ use crate::AppState;
 pub fn render<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
     app_state: &mut AppState,
+	context: &BattleContext,
 ) -> std::io::Result<CompletedFrame<'a>> {
     terminal.draw(|frame| {
         // Chunks
@@ -35,11 +37,18 @@ pub fn render<'a>(
 				.as_ref()
 			)
 			.split(chunks[0]);
-        // Ally Monster Stats Widget
-		let ally_stats_widget = Block::default()
-			.title(" Ally Active Monster ")
-			.borders(Borders::ALL);
-		frame.render_widget(ally_stats_widget, ally_panel_chunks[0]);	
+
+        // Ally Active Monster Status Widget
+		let ally_active_monster_text = BattleContext::monster_status_string(context.ally_team.active_battler());
+		let ally_stats_widget = Paragraph::new(ally_active_monster_text)
+			.block(
+				Block::default()
+					.title(" Ally Active Monster ")
+					.borders(Borders::ALL),
+			)
+			.alignment(Alignment::Left)
+			.wrap(Wrap { trim: true });
+		frame.render_widget(ally_stats_widget, ally_panel_chunks[0]);
 		
 		// Ally Choice List Menu
         let mut ally_list_state = ListState::default();
@@ -55,9 +64,16 @@ pub fn render<'a>(
         frame.render_stateful_widget(ally_choices_widget, ally_panel_chunks[1], &mut app_state.ally_list_state);
 
 		// Opponent Team Roster Widget
-		let ally_roster_widget = Block::default()
-			.title(" Ally Team ")
-			.borders(Borders::ALL);
+		let ally_team_text = context.ally_team_string();
+
+		let ally_roster_widget = Paragraph::new(ally_team_text)
+		.block(
+			Block::default()
+				.title(" Opponent Team ")
+				.borders(Borders::ALL),
+		)
+		.alignment(Alignment::Left)
+		.wrap(Wrap { trim: true });
 		frame.render_widget(ally_roster_widget, ally_panel_chunks[2]);
 
         // Message Log Widget
@@ -97,10 +113,16 @@ pub fn render<'a>(
 			)
 			.split(chunks[2]);
         
-		// Opponent Monster Stats Widget
-		let opponent_stats_widget = Block::default()
-			.title(" Opponent Active Monster ")
-			.borders(Borders::ALL);
+		// Opponent Active Monster Status Widget
+		let opponent_active_monster_text = BattleContext::monster_status_string(context.opponent_team.active_battler());
+		let opponent_stats_widget = Paragraph::new(opponent_active_monster_text)
+			.block(
+				Block::default()
+					.title(" Opponent Active Monster ")
+					.borders(Borders::ALL),
+			)
+			.alignment(Alignment::Left)
+			.wrap(Wrap { trim: true });
 		frame.render_widget(opponent_stats_widget, opponent_panel_chunks[0]);	
 		
 		// Opponent Choice List Menu
@@ -119,9 +141,16 @@ pub fn render<'a>(
         );
 
 		// Opponent Team Roster Widget
-		let opponent_roster_widget = Block::default()
-			.title(" Opponent Team ")
-			.borders(Borders::ALL);
-		frame.render_widget(opponent_roster_widget, opponent_panel_chunks[2]);
+		let opponent_team_text = context.opponent_team_string();
+
+		let opponent_roster_widget = Paragraph::new(opponent_team_text)
+		.block(
+			Block::default()
+				.title(" Opponent Team ")
+				.borders(Borders::ALL),
+		)
+		.alignment(Alignment::Left)
+		.wrap(Wrap { trim: true });
+	frame.render_widget(opponent_roster_widget, opponent_panel_chunks[2]);
     })
 }

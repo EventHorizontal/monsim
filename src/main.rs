@@ -321,7 +321,8 @@ fn main() -> MonsimIOResult {
             }
         }
 
-        render(&mut terminal, &mut app_state)?;
+        //TODO: Move the context usage inside app state
+        render(&mut terminal, &mut app_state, &battle.context)?;
     }
 
     println!("monsim_tui exited successfully");

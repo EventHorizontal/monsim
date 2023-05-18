@@ -256,6 +256,37 @@ impl BattleContext {
             opponent_team_choices,
         }
     }
+
+    pub fn ally_team_string(&self) -> String {
+        let mut out = String::new();
+        for battler in self.ally_team.battlers() {
+            out.push_str(&Self::monster_status_string(battler));
+        }
+        out
+    }
+    
+    pub fn opponent_team_string(&self) -> String {
+        let mut out = String::new();
+        for battler in self.opponent_team.battlers() {
+            out.push_str(&Self::monster_status_string(battler));
+        }
+        out
+    }
+
+    pub fn monster_status_string(battler: &Battler) -> String {
+        let mut out = String::new();
+        out.push_str(&format![
+                "{} the {} ({}) [HP: {}/{}]\n",
+                battler.monster.nickname,
+                battler.monster.species.name,
+                battler.uid,
+                battler.monster.current_health,
+                battler.monster.max_health
+            ]
+        );
+        out
+    }
+
 }
 
 impl Display for BattleContext {

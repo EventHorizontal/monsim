@@ -30,7 +30,7 @@ pub struct BattlerUID {
 
 impl Display for BattlerUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}_{:?}", self.battler_number, self.team_id)
+        write!(f, "{:?}{:?}", self.team_id, self.battler_number)
     }
 }
 

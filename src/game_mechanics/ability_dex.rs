@@ -26,7 +26,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     on_activate: |context, _owner_uid| {
         context
             .message_buffer
-            .push("Flash Fire activated".to_string())
+            .push(String::from("Flash Fire activated"))
     },
     event_handler_filters: EventHandlerFilters::default(),
     order: 0,

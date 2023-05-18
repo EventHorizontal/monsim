@@ -5,7 +5,7 @@ use super::{
     event::{event_dex::*, EventResolver},
     game_mechanics::{monster::Stat, move_::MoveCategory, BattlerUID, MoveUID},
     global_constants::{type_matchup, FAILURE, INEFFECTIVE, SUCCESS},
-    BattleError, TurnOutcome,
+    SimError, TurnOutcome,
 };
 use std::fmt::Display;
 
@@ -53,8 +53,8 @@ impl Action {
                 targets_defense_stat = context.monster(target_uid).stats[Stat::SpecialDefense];
             }
             MoveCategory::Status => {
-                return Err(BattleError::WrongState(
-                    "SimError: The damaging_move function is not expected to receive status moves.",
+                return Err(SimError::InvalidStateError(
+                    "The damaging_move function is not expected to receive status moves.",
                 ))
             }
         }

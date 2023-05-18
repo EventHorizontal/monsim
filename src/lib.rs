@@ -21,7 +21,7 @@ pub use bcontext_macro::bcontext;
 #[allow(unused_imports)]
 use bcontext_macro::bcontext_internal;
 
-type TurnOutcome = Result<(), BattleError>;
+type TurnOutcome = Result<(), SimError>;
 
 #[derive(Debug)]
 pub struct Battle {
@@ -139,7 +139,7 @@ impl Battle {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BattleError {
-    WrongState(&'static str),
+pub enum SimError {
+    InvalidStateError(&'static str),
     InputError(String),
 }

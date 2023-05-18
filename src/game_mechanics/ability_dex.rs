@@ -11,23 +11,10 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     name: "Flash Fire",
     event_handlers: EventHandlerSet {
         on_try_move: Some(|context, prng, owner_uid, _relay| {
-            // TEMP: This ugly predicate will be easier on the eyes once more of the API is written
-            if context
-                .move_({
-                    if let Some(crate::ActionChoice::Move {
-                        move_uid,
-                        target_uid: _,
-                    }) = context.current_action
-                    {
-                        move_uid
-                    } else {
-                        panic!()
-                    }
-                })
-                .species
-                .type_
-                == MonType::Fire
-            {
+            let current_move = context
+                .get_current_action_as_move()
+                .expect("The current action should be a move within on_try_move handler context.");
+            if current_move.species.type_ == MonType::Fire {
                 if Action::activate_ability(context, prng, owner_uid) {
                     return FAILURE;
                 }

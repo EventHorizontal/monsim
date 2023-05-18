@@ -285,6 +285,15 @@ impl BattleContext {
         ]);
         out
     }
+
+    pub fn get_current_action_as_move(&self) -> Option<&Move> {
+        match self.current_action.unwrap() {
+            ActionChoice::Move {
+                move_uid,
+                target_uid: _,
+            } => Some(self.move_(move_uid)),
+        }
+    }
 }
 
 impl Display for BattleContext {

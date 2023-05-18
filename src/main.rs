@@ -362,13 +362,7 @@ fn main() -> MonsimIOResult {
                 let result = battle.simulate_turn(chosen_actions); // <- This is the main use of the monsim library
                 match result {
                     Ok(_) => {
-                        battle.context.message_buffer.extend(
-                            [
-                                String::from("(The turn was calculated successfully.)"),
-                                String::from("---"),
-                                String::from(EMPTY_LINE),
-                            ].into_iter()
-                        );
+                        battle.context.message_buffer.push(String::from("(The turn was calculated successfully.)"));
                     },
                     Err(error) => battle.context.message_buffer.push(format!["{:?}", error]),
                 }
@@ -376,6 +370,12 @@ fn main() -> MonsimIOResult {
                     app_state.is_battle_ongoing = false;
                     battle.context.message_buffer.push(String::from("The battle ended."));
                 }
+                battle.context.message_buffer.extend(
+                    [
+                        String::from("---"),
+                        String::from(EMPTY_LINE),
+                    ].into_iter()
+                );
                 app_state.app_mode = AppMode::AwaitingUserInput {
                     available_actions: battle.context.generate_available_actions(),
                 };

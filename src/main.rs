@@ -70,7 +70,7 @@ impl<'a> AppState<'a> {
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
             selected_list: ScrollableWidgets::MessageLog,
             message_log_scroll_idx: 0,
-            is_battle_ongoing: true
+            is_battle_ongoing: true,
         };
         state.build_list_items(battle_context);
         state
@@ -178,10 +178,12 @@ fn main() -> MonsimIOResult {
                 .unwrap_or_else(|| Duration::from_secs(0));
 
             if event::poll(timeout).expect("Polling should be OK") {
-                if let Event::Key(key) = event::read().expect(
-                    "The poll should always be successful",
-                ) {
-                    sender.send(TUIEvent::Input(key)).expect("The event should always be sendable.");
+                if let Event::Key(key) =
+                    event::read().expect("The poll should always be successful")
+                {
+                    sender
+                        .send(TUIEvent::Input(key))
+                        .expect("The event should always be sendable.");
                 }
             }
 
@@ -231,7 +233,7 @@ fn main() -> MonsimIOResult {
                                             } else {
                                                 app_state.ally_list_state.select(Some(0));
                                             }
-                                        },
+                                        }
                                         ScrollableWidgets::OpponentTeamChoices => {
                                             if let Some(selected_index) =
                                                 app_state.opponent_list_state.selected()
@@ -239,20 +241,22 @@ fn main() -> MonsimIOResult {
                                                 let opponent_list_items_length =
                                                     app_state.opponent_list_length();
                                                 app_state.opponent_list_state.select(Some(
-                                                    (selected_index + opponent_list_items_length - 1)
+                                                    (selected_index + opponent_list_items_length
+                                                        - 1)
                                                         % opponent_list_items_length,
                                                 ));
                                             } else {
                                                 app_state.opponent_list_state.select(Some(0));
                                             }
-                                        },
+                                        }
                                         ScrollableWidgets::MessageLog => {
-                                            app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.saturating_sub(1);
-                                        },
+                                            app_state.message_log_scroll_idx =
+                                                app_state.message_log_scroll_idx.saturating_sub(1);
+                                        }
                                         ScrollableWidgets::AllyTeamStatus => todo!(),
                                         ScrollableWidgets::OpponentTeamStatus => todo!(),
                                     }
-                                },
+                                }
                                 (KeyCode::Down, KeyEventKind::Release) => {
                                     match app_state.selected_list {
                                         ScrollableWidgets::AllyTeamChoices => {
@@ -260,13 +264,13 @@ fn main() -> MonsimIOResult {
                                                 app_state.ally_list_state.selected()
                                             {
                                                 let ally_list_length = app_state.ally_list_length();
-                                                app_state
-                                                    .ally_list_state
-                                                    .select(Some((selected_index + 1) % ally_list_length))
+                                                app_state.ally_list_state.select(Some(
+                                                    (selected_index + 1) % ally_list_length,
+                                                ))
                                             } else {
                                                 app_state.ally_list_state.select(Some(0));
                                             }
-                                        },
+                                        }
                                         ScrollableWidgets::OpponentTeamChoices => {
                                             if let Some(selected_index) =
                                                 app_state.opponent_list_state.selected()
@@ -274,50 +278,57 @@ fn main() -> MonsimIOResult {
                                                 let opponent_list_items_length =
                                                     app_state.opponent_list_length();
                                                 app_state.opponent_list_state.select(Some(
-                                                    (selected_index + 1) % opponent_list_items_length,
+                                                    (selected_index + 1)
+                                                        % opponent_list_items_length,
                                                 ))
                                             } else {
                                                 app_state.opponent_list_state.select(Some(0));
                                             }
-                                        },
+                                        }
                                         ScrollableWidgets::MessageLog => {
-                                            app_state.message_log_scroll_idx = (app_state.message_log_scroll_idx + 1).min(battle.context.message_buffer.len());
-                                        },
+                                            app_state.message_log_scroll_idx =
+                                                (app_state.message_log_scroll_idx + 1)
+                                                    .min(battle.context.message_buffer.len());
+                                        }
                                         ScrollableWidgets::AllyTeamStatus => todo!(),
                                         ScrollableWidgets::OpponentTeamStatus => todo!(),
                                     }
-                                },
+                                }
                                 (KeyCode::Left, KeyEventKind::Release) => {
                                     match app_state.selected_list {
                                         ScrollableWidgets::AllyTeamStatus => todo!(),
                                         ScrollableWidgets::OpponentTeamStatus => todo!(),
                                         ScrollableWidgets::MessageLog => {
-                                            app_state.selected_list = ScrollableWidgets::AllyTeamChoices;
-                                        },
+                                            app_state.selected_list =
+                                                ScrollableWidgets::AllyTeamChoices;
+                                        }
                                         ScrollableWidgets::AllyTeamChoices => {
-                                            app_state.selected_list = ScrollableWidgets::OpponentTeamChoices;
+                                            app_state.selected_list =
+                                                ScrollableWidgets::OpponentTeamChoices;
                                             app_state.ally_list_state.select(None);
-                                        },
+                                        }
                                         ScrollableWidgets::OpponentTeamChoices => {
                                             app_state.selected_list = ScrollableWidgets::MessageLog;
-                                        },
+                                        }
                                     }
-                                },
+                                }
                                 (KeyCode::Right, KeyEventKind::Release) => {
                                     match app_state.selected_list {
                                         ScrollableWidgets::AllyTeamStatus => todo!(),
                                         ScrollableWidgets::OpponentTeamStatus => todo!(),
                                         ScrollableWidgets::MessageLog => {
-                                            app_state.selected_list = ScrollableWidgets::OpponentTeamChoices;
-                                        },
+                                            app_state.selected_list =
+                                                ScrollableWidgets::OpponentTeamChoices;
+                                        }
                                         ScrollableWidgets::AllyTeamChoices => {
                                             app_state.selected_list = ScrollableWidgets::MessageLog;
-                                        },
+                                        }
                                         ScrollableWidgets::OpponentTeamChoices => {
-                                            app_state.selected_list = ScrollableWidgets::AllyTeamChoices;
-                                        },
+                                            app_state.selected_list =
+                                                ScrollableWidgets::AllyTeamChoices;
+                                        }
                                     }
-                                },
+                                }
                                 (KeyCode::Tab, KeyEventKind::Release) => {
                                     if let (
                                         Some(selected_ally_choice_index),
@@ -334,7 +345,7 @@ fn main() -> MonsimIOResult {
                                         ];
                                         app_state.app_mode = AppMode::Simulating { chosen_actions };
                                     }
-                                },
+                                }
                                 _ => (),
                             }
                         } else {
@@ -344,14 +355,17 @@ fn main() -> MonsimIOResult {
                                     execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                     terminal.show_cursor()?;
                                     break 'app;
-                                },
+                                }
                                 (KeyCode::Up, KeyEventKind::Release) => {
-                                    app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.saturating_sub(1);
+                                    app_state.message_log_scroll_idx =
+                                        app_state.message_log_scroll_idx.saturating_sub(1);
                                 }
                                 (KeyCode::Down, KeyEventKind::Release) => {
-                                    app_state.message_log_scroll_idx = (app_state.message_log_scroll_idx + 1).min(battle.context.message_buffer.len());
-                                },
-                                _ => ()
+                                    app_state.message_log_scroll_idx =
+                                        (app_state.message_log_scroll_idx + 1)
+                                            .min(battle.context.message_buffer.len());
+                                }
+                                _ => (),
                             }
                         }
                     }
@@ -362,20 +376,24 @@ fn main() -> MonsimIOResult {
                 let result = battle.simulate_turn(chosen_actions); // <- This is the main use of the monsim library
                 match result {
                     Ok(_) => {
-                        battle.context.message_buffer.push(String::from("(The turn was calculated successfully.)"));
-                    },
+                        battle
+                            .context
+                            .message_buffer
+                            .push(String::from("(The turn was calculated successfully.)"));
+                    }
                     Err(error) => battle.context.message_buffer.push(format!["{:?}", error]),
                 }
                 if battle.context.state == BattleState::Finished {
                     app_state.is_battle_ongoing = false;
-                    battle.context.message_buffer.push(String::from("The battle ended."));
+                    battle
+                        .context
+                        .message_buffer
+                        .push(String::from("The battle ended."));
                 }
-                battle.context.message_buffer.extend(
-                    [
-                        String::from("---"),
-                        String::from(EMPTY_LINE),
-                    ].into_iter()
-                );
+                battle
+                    .context
+                    .message_buffer
+                    .extend([String::from("---"), String::from(EMPTY_LINE)].into_iter());
                 app_state.app_mode = AppMode::AwaitingUserInput {
                     available_actions: battle.context.generate_available_actions(),
                 };

@@ -264,7 +264,7 @@ impl BattleContext {
         }
         out
     }
-    
+
     pub fn opponent_team_string(&self) -> String {
         let mut out = String::new();
         for battler in self.opponent_team.battlers() {
@@ -276,17 +276,15 @@ impl BattleContext {
     pub fn monster_status_string(battler: &Battler) -> String {
         let mut out = String::new();
         out.push_str(&format![
-                "{} the {} ({}) [HP: {}/{}]\n",
-                battler.monster.nickname,
-                battler.monster.species.name,
-                battler.uid,
-                battler.monster.current_health,
-                battler.monster.max_health
-            ]
-        );
+            "{} the {} ({}) [HP: {}/{}]\n",
+            battler.monster.nickname,
+            battler.monster.species.name,
+            battler.uid,
+            battler.monster.current_health,
+            battler.monster.max_health
+        ]);
         out
     }
-
 }
 
 impl Display for BattleContext {
@@ -294,28 +292,27 @@ impl Display for BattleContext {
         let mut out = String::new();
 
         push_teamwise_pretty_tree(
-            &mut out, 
-            "Ally Team\n", 
-            &self.ally_team, 
-            self.ally_team
-                .battlers()
-                .iter()
-                .count()
+            &mut out,
+            "Ally Team\n",
+            &self.ally_team,
+            self.ally_team.battlers().iter().count(),
         );
         push_teamwise_pretty_tree(
-            &mut out, 
-            "Opponent Team\n", 
-            &self.opponent_team, 
-            self.opponent_team
-                .battlers()
-                .iter()
-                .count()
+            &mut out,
+            "Opponent Team\n",
+            &self.opponent_team,
+            self.opponent_team.battlers().iter().count(),
         );
         write!(f, "{}", out)
     }
 }
 
-fn push_teamwise_pretty_tree(out: &mut String, team_name: &str, team: &BattlerTeam, number_of_monsters: usize) {
+fn push_teamwise_pretty_tree(
+    out: &mut String,
+    team_name: &str,
+    team: &BattlerTeam,
+    number_of_monsters: usize,
+) {
     out.push_str(team_name);
     for (i, battler) in team.battlers().iter().enumerate() {
         let is_not_last_monster = i < number_of_monsters - 1;
@@ -339,8 +336,7 @@ fn push_teamwise_pretty_tree(out: &mut String, team_name: &str, team: &BattlerTe
             out.push_str(
                 format![
                     "type {:?}/{:?} \n",
-                    battler.monster.species.primary_type,
-                    battler.monster.species.secondary_type
+                    battler.monster.species.primary_type, battler.monster.species.secondary_type
                 ]
                 .as_str(),
             );
@@ -377,8 +373,7 @@ fn push_teamwise_pretty_tree(out: &mut String, team_name: &str, team: &BattlerTe
             out.push_str(
                 format![
                     "type {:?}/{:?} \n",
-                    battler.monster.species.primary_type,
-                    battler.monster.species.secondary_type
+                    battler.monster.species.primary_type, battler.monster.species.secondary_type
                 ]
                 .as_str(),
             );

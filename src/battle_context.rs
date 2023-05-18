@@ -150,7 +150,7 @@ impl BattleContext {
             .move_mut(move_uid.move_number)
     }
 
-    pub fn event_handler_sets_plus_info(&self) -> EventHandlerSetInfoList {
+    pub fn event_handler_set_instances(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
         out.append(&mut self.ally_team.event_handlers());
         out.append(&mut self.opponent_team.event_handlers());

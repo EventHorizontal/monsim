@@ -9,8 +9,8 @@ use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{
-    ActivationOrder, EventHandlerFilters, EventHandlerSet, EventHandlerSetInfo,
-    EventHandlerSetInfoList,
+    ActivationOrder, EventHandlerFilters, EventHandlerSet, EventHandlerSetInstance,
+    EventHandlerSetInstanceList,
 };
 pub use ability::*;
 pub use monster::*;
@@ -65,7 +65,7 @@ impl BattlerTeam {
         &mut self.battlers
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInfoList {
+    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
         for battler in self.battlers.iter() {
             out.append(&mut battler.event_handlers())
@@ -149,13 +149,13 @@ impl Battler {
         self.monster.is_type(test_type)
     }
 
-    pub fn monster_event_handler_info(&self) -> EventHandlerSetInfo {
+    pub fn monster_event_handler_instance(&self) -> EventHandlerSetInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: 0,
         };
-        EventHandlerSetInfo {
+        EventHandlerSetInstance {
             event_handler_set: self.monster.event_handlers(),
             owner_uid: self.uid,
             activation_order,
@@ -163,13 +163,13 @@ impl Battler {
         }
     }
 
-    pub fn ability_event_handler_info(&self) -> EventHandlerSetInfo {
+    pub fn ability_event_handler_instance(&self) -> EventHandlerSetInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: self.ability.species.order,
         };
-        EventHandlerSetInfo {
+        EventHandlerSetInstance {
             event_handler_set: self.ability.event_handlers(),
             owner_uid: self.uid,
             activation_order,
@@ -177,10 +177,10 @@ impl Battler {
         }
     }
 
-    pub fn moveset_event_handler_info(&self, uid: BattlerUID) -> EventHandlerSetInfoList {
+    pub fn moveset_event_handler_instance_list(&self, uid: BattlerUID) -> EventHandlerSetInstanceList {
         self.moveset
             .moves()
-            .map(|it| EventHandlerSetInfo {
+            .map(|it| EventHandlerSetInstance {
                 event_handler_set: it.species.event_handlers,
                 owner_uid: uid,
                 activation_order: ActivationOrder {
@@ -197,11 +197,11 @@ impl Battler {
         self.monster.fainted()
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInfoList {
+    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
-        out.push(self.monster_event_handler_info());
-        out.append(&mut self.moveset_event_handler_info(self.uid));
-        out.push(self.ability_event_handler_info());
+        out.push(self.monster_event_handler_instance());
+        out.append(&mut self.moveset_event_handler_instance_list(self.uid));
+        out.push(self.ability_event_handler_instance());
         out
     }
 

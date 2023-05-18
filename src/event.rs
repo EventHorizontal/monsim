@@ -11,22 +11,22 @@ pub type ExplicitlyAnnotatedEventHandler<'a, R> =
     fn(&'a mut BattleContext, &'a mut Lcrng, BattlerUID, R) -> EventReturn<R>;
 
 #[derive(Debug, Clone, Copy)]
-pub struct EventHandlerSetInfo {
+pub struct EventHandlerSetInstance {
     pub event_handler_set: EventHandlerSet,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
     pub filters: EventHandlerFilters,
 }
-pub type EventHandlerSetInfoList = Vec<EventHandlerSetInfo>;
+pub type EventHandlerSetInstanceList = Vec<EventHandlerSetInstance>;
 
 #[derive(Clone, Copy)]
-pub struct EventHandlerInfo<R: Clone + Copy> {
+pub struct EventHandlerInstance<R: Clone + Copy> {
     pub event_handler: EventHandler<R>,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
     pub filters: EventHandlerFilters,
 }
-pub type EventHandlerInfoList<R> = Vec<EventHandlerInfo<R>>;
+pub type EventHandlerInstanceList<R> = Vec<EventHandlerInstance<R>>;
 pub type EventReturn<R> = R;
 
 #[derive(Clone, Copy)]
@@ -93,17 +93,17 @@ impl EventResolver {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let event_handler_set_plus_info = context.event_handler_sets_plus_info();
-        let mut unwrapped_event_handler_plus_info = event_handler_set_plus_info
+        let event_handlers_set_instances = context.event_handler_set_instances();
+        let mut event_handler_instances = event_handlers_set_instances
             .iter()
-            .filter_map(|event_handler_set_info| {
+            .filter_map(|event_handler_set_instance| {
                 if let Some(handler) =
-                    event.corresponding_handler(&event_handler_set_info.event_handler_set)
+                    event.corresponding_handler(&event_handler_set_instance.event_handler_set)
                 {
-                    Some(EventHandlerInfo {
+                    Some(EventHandlerInstance {
                         event_handler: handler,
-                        owner_uid: event_handler_set_info.owner_uid,
-                        activation_order: event_handler_set_info.activation_order,
+                        owner_uid: event_handler_set_instance.owner_uid,
+                        activation_order: event_handler_set_instance.activation_order,
                         filters: EventHandlerFilters::default(),
                     })
                 } else {
@@ -112,23 +112,23 @@ impl EventResolver {
             })
             .collect::<Vec<_>>();
 
-        Battle::priority_sort::<EventHandlerInfo<R>>(
+        Battle::priority_sort::<EventHandlerInstance<R>>(
             prng,
-            &mut unwrapped_event_handler_plus_info,
+            &mut event_handler_instances,
             &mut |it| it.activation_order,
         );
 
-        if unwrapped_event_handler_plus_info.is_empty() {
+        if event_handler_instances.is_empty() {
             return default;
         }
 
         let mut relay = default;
-        for EventHandlerInfo {
+        for EventHandlerInstance {
             event_handler,
             owner_uid,
             activation_order: _,
             filters,
-        } in unwrapped_event_handler_plus_info.into_iter()
+        } in event_handler_instances.into_iter()
         {
             if context.filter_event_handlers(caller_uid, owner_uid, filters) {
                 relay = event_handler(context, prng, owner_uid, relay);

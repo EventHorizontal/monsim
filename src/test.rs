@@ -140,7 +140,7 @@ mod bcontext {
 
     use crate::{
         prng::{self, Lcrng},
-        Battle, BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters, EventHandlerInfo,
+        Battle, BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters, EventHandlerInstance,
         InBattleEvent, TeamID,
     };
 
@@ -179,18 +179,18 @@ mod bcontext {
 
             let mut prng = Lcrng::new(prng::seed_from_time_now());
 
-            let event_handler_set_plus_info = test_bcontext.event_handler_sets_plus_info();
+            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
             use crate::event::event_dex::OnTryMove;
-            let mut unwrapped_event_handler_plus_info = event_handler_set_plus_info
+            let mut event_handler_instances = event_handler_set_instances
                 .iter()
-                .filter_map(|event_handler_set_info| {
+                .filter_map(|event_handler_set_instance| {
                     if let Some(handler) =
-                        OnTryMove.corresponding_handler(&event_handler_set_info.event_handler_set)
+                        OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
                     {
-                        Some(EventHandlerInfo {
+                        Some(EventHandlerInstance {
                             event_handler: handler,
-                            owner_uid: event_handler_set_info.owner_uid,
-                            activation_order: event_handler_set_info.activation_order,
+                            owner_uid: event_handler_set_instance.owner_uid,
+                            activation_order: event_handler_set_instance.activation_order,
                             filters: EventHandlerFilters::default(),
                         })
                     } else {
@@ -199,16 +199,16 @@ mod bcontext {
                 })
                 .collect::<Vec<_>>();
 
-            Battle::priority_sort::<EventHandlerInfo<bool>>(
+            Battle::priority_sort::<EventHandlerInstance<bool>>(
                 &mut prng,
-                &mut unwrapped_event_handler_plus_info,
+                &mut event_handler_instances,
                 &mut |it| it.activation_order,
             );
 
-            result[i] = unwrapped_event_handler_plus_info
+            result[i] = event_handler_instances
                 .into_iter()
-                .map(|event_handler_info| {
-                    test_bcontext.monster(event_handler_info.owner_uid).nickname
+                .map(|event_handler_instance| {
+                    test_bcontext.monster(event_handler_instance.owner_uid).nickname
                 })
                 .collect::<Vec<_>>();
         }
@@ -334,18 +334,18 @@ mod bcontext {
             );
             let mut prng = Lcrng::new(i as u64);
 
-            let event_handler_set_plus_info = test_bcontext.event_handler_sets_plus_info();
+            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
             use crate::event::event_dex::OnTryMove;
-            let mut unwrapped_event_handler_plus_info = event_handler_set_plus_info
+            let mut event_handler_instances = event_handler_set_instances
                 .iter()
-                .filter_map(|event_handler_set_info| {
+                .filter_map(|event_handler_set_instance| {
                     if let Some(handler) =
-                        OnTryMove.corresponding_handler(&event_handler_set_info.event_handler_set)
+                        OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
                     {
-                        Some(EventHandlerInfo {
+                        Some(EventHandlerInstance {
                             event_handler: handler,
-                            owner_uid: event_handler_set_info.owner_uid,
-                            activation_order: event_handler_set_info.activation_order,
+                            owner_uid: event_handler_set_instance.owner_uid,
+                            activation_order: event_handler_set_instance.activation_order,
                             filters: EventHandlerFilters::default(),
                         })
                     } else {
@@ -354,16 +354,16 @@ mod bcontext {
                 })
                 .collect::<Vec<_>>();
 
-            Battle::priority_sort::<EventHandlerInfo<bool>>(
+            Battle::priority_sort::<EventHandlerInstance<bool>>(
                 &mut prng,
-                &mut unwrapped_event_handler_plus_info,
+                &mut event_handler_instances,
                 &mut |it| it.activation_order,
             );
 
-            result[i] = unwrapped_event_handler_plus_info
+            result[i] = event_handler_instances
                 .into_iter()
-                .map(|event_handler_info| {
-                    test_bcontext.monster(event_handler_info.owner_uid).nickname
+                .map(|event_handler_instance| {
+                    test_bcontext.monster(event_handler_instance.owner_uid).nickname
                 })
                 .collect::<Vec<_>>();
         }

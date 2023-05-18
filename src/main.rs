@@ -35,6 +35,7 @@ pub struct AppState<'a> {
     opponent_list_items: Vec<ListItem<'a>>,
     opponent_list_state: ListState,
     message_buffer: MessageBuffer,
+    message_log_scroll_idx: usize,
     is_battle_ongoing: bool,
 }
 
@@ -57,6 +58,7 @@ impl<'a> AppState<'a> {
                 list
             },
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+            message_log_scroll_idx: 0,
             is_battle_ongoing: true
         };
         state.build_list_items(battle_context);
@@ -265,6 +267,12 @@ fn main() -> MonsimIOResult {
                                             .select(Some((selected_index + 1) % ally_list_length))
                                     }
                                 },
+                                (KeyCode::Char('i'), KeyEventKind::Release) => {
+                                    app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.saturating_sub(1);
+                                },
+                                (KeyCode::Char('k'), KeyEventKind::Release) => {
+                                    app_state.message_log_scroll_idx = (app_state.message_log_scroll_idx + 1).min(battle.context.message_buffer.len());
+                                },
                                 _ => (),
                             }
                         } else {
@@ -274,6 +282,12 @@ fn main() -> MonsimIOResult {
                                     execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                     terminal.show_cursor()?;
                                     break 'app;
+                                },
+                                (KeyCode::Char('i'), KeyEventKind::Release) => {
+                                    app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.saturating_sub(1);
+                                },
+                                (KeyCode::Char('k'), KeyEventKind::Release) => {
+                                    app_state.message_log_scroll_idx = (app_state.message_log_scroll_idx + 1).min(battle.context.message_buffer.len());
                                 },
                                 _ => ()
                             }
@@ -285,7 +299,15 @@ fn main() -> MonsimIOResult {
             AppMode::Simulating { chosen_actions } => {
                 let result = battle.simulate_turn(chosen_actions); // <- This is the main use of the monsim library
                 match result {
-                    Ok(_) => battle.context.message_buffer.push(String::from("(The turn was calculated successfully.)")),
+                    Ok(_) => {
+                        battle.context.message_buffer.extend(
+                            [
+                                String::from("(The turn was calculated successfully.)"),
+                                String::from("---"),
+                                String::from(EMPTY_LINE),
+                            ].into_iter()
+                        );
+                    },
                     Err(error) => battle.context.message_buffer.push(format!["{:?}", error]),
                 }
                 if battle.context.state == BattleState::Finished {
@@ -296,7 +318,6 @@ fn main() -> MonsimIOResult {
                     available_actions: battle.context.generate_available_actions(),
                 };
                 app_state.message_buffer = battle.context.message_buffer.clone();
-                battle.context.message_buffer.clear();
             }
         }
 

@@ -27,7 +27,7 @@ enum AppMode {
     Simulating { chosen_actions: ChosenActions },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 enum ScrollableWidgets {
     AllyTeamStatus,
     OpponentTeamStatus,

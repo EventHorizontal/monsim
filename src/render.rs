@@ -4,14 +4,14 @@ use monsim::BattleContext;
 use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     terminal::CompletedFrame,
     text::{Span, Spans},
     widgets::{Block, Borders, List, ListState, Paragraph, Wrap},
     Terminal,
 };
 
-use crate::AppState;
+use crate::{AppState, ScrollableWidgets};
 
 pub fn render<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
@@ -62,32 +62,47 @@ pub fn render<'a>(
         // Ally Choice List Menu
         let mut ally_list_state = ListState::default();
         ally_list_state.select(Some(2));
-        let ally_choices_widget = List::new(app_state.ally_list_items.clone())
+        let ally_choice_menu_widget = List::new(app_state.ally_list_items.clone())
             .block(
                 Block::default()
-                    .title(" Ally Monster Choices ")
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::AllyTeamChoices {
+                            Span::styled(
+                                " Ally Monster Choices ",
+                                Style::default().fg(Color::Yellow),
+                            )
+                        } else {
+                            Span::raw(" Ally Monster Choices ")
+                        },
+                    )
                     .borders(Borders::ALL),
             )
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
         frame.render_stateful_widget(
-            ally_choices_widget,
+            ally_choice_menu_widget,
             ally_panel_chunks[1],
             &mut app_state.ally_list_state,
         );
 
         // Opponent Team Roster Widget
-        let ally_team_text = context.ally_team_string();
+        let ally_team_status_text = context.ally_team_string();
 
-        let ally_roster_widget = Paragraph::new(ally_team_text)
+        let ally_team_status_widget = Paragraph::new(ally_team_status_text)
             .block(
                 Block::default()
-                    .title(" Opponent Team ")
+                    .title({
+                        if app_state.selected_list == ScrollableWidgets::AllyTeamStatus {
+                            Span::styled(" Ally Team Status ", Style::default().fg(Color::Yellow))
+                        } else {
+                            Span::raw(" Ally Team Status ")
+                        }
+                    })
                     .borders(Borders::ALL),
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true });
-        frame.render_widget(ally_roster_widget, ally_panel_chunks[2]);
+        frame.render_widget(ally_team_status_widget, ally_panel_chunks[2]);
 
         // Message Log Widget
         let text = app_state
@@ -105,7 +120,13 @@ pub fn render<'a>(
         let paragraph_widget = Paragraph::new(text)
             .block(
                 Block::default()
-                    .title(" Message Log ")
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::MessageLog {
+                            Span::styled(" Message Log ", Style::default().fg(Color::Yellow))
+                        } else {
+                            Span::raw(" Message Log ")
+                        },
+                    )
                     .borders(Borders::ALL),
             )
             .alignment(Alignment::Center)
@@ -139,31 +160,49 @@ pub fn render<'a>(
         frame.render_widget(opponent_stats_widget, opponent_panel_chunks[0]);
 
         // Opponent Choice List Menu
-        let opponent_widget = List::new(app_state.opponent_list_items.clone())
+        let opponent_choice_menu_widget = List::new(app_state.opponent_list_items.clone())
             .block(
                 Block::default()
-                    .title(" Opponent Monster Choices ")
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::OpponentTeamChoices {
+                            Span::styled(
+                                " Opponent Monster Choices ",
+                                Style::default().fg(Color::Yellow),
+                            )
+                        } else {
+                            Span::raw(" Opponent Monster Choices ")
+                        },
+                    )
                     .borders(Borders::ALL),
             )
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
             .highlight_symbol(">>");
         frame.render_stateful_widget(
-            opponent_widget,
+            opponent_choice_menu_widget,
             opponent_panel_chunks[1],
             &mut app_state.opponent_list_state,
         );
 
         // Opponent Team Roster Widget
-        let opponent_team_text = context.opponent_team_string();
+        let opponent_team_status_text = context.opponent_team_string();
 
-        let opponent_roster_widget = Paragraph::new(opponent_team_text)
+        let opponent_team_status_widget = Paragraph::new(opponent_team_status_text)
             .block(
                 Block::default()
-                    .title(" Opponent Team ")
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::OpponentTeamStatus {
+                            Span::styled(
+                                " Opponent Team Status ",
+                                Style::default().fg(Color::Yellow),
+                            )
+                        } else {
+                            Span::raw(" Opponent Team Status ")
+                        },
+                    )
                     .borders(Borders::ALL),
             )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true });
-        frame.render_widget(opponent_roster_widget, opponent_panel_chunks[2]);
+        frame.render_widget(opponent_team_status_widget, opponent_panel_chunks[2]);
     })
 }

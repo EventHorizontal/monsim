@@ -145,7 +145,7 @@ impl Battler {
         }
     }
 
-    fn is_type(&self, test_type: MonType) -> bool {
+    pub fn is_type(&self, test_type: MonType) -> bool {
         self.monster.is_type(test_type)
     }
 

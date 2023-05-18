@@ -2,8 +2,10 @@ use core::fmt::Debug;
 
 use crate::prng::Lcrng;
 
-use super::{game_mechanics::BattlerUID, global_constants::void, Battle, BattleContext};
+use super::{game_mechanics::BattlerUID, Battle, BattleContext};
 
+#[allow(non_camel_case_types)]
+type void = ();
 pub type EventHandler<R> = fn(&mut BattleContext, &mut Lcrng, BattlerUID, R) -> EventReturn<R>;
 pub type ExplicitlyAnnotatedEventHandler<'a, R> =
     fn(&'a mut BattleContext, &'a mut Lcrng, BattlerUID, R) -> EventReturn<R>;

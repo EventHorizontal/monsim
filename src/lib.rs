@@ -63,7 +63,7 @@ impl Battle {
         }
         self.context
             .message_buffer
-            .push("\n".to_string());
+            .push(String::from(EMPTY_LINE));
 
         result
     }

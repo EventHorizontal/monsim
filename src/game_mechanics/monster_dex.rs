@@ -34,7 +34,7 @@ pub const Mudkip: MonsterSpecies = MonsterSpecies {
 };
 
 pub const Drifloon: MonsterSpecies = MonsterSpecies {
-    name: "Drifoon",
+    name: "Drifloon",
     dex_number: 425,
     primary_type: MonType::Ghost,
     secondary_type: MonType::Flying,

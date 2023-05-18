@@ -155,7 +155,7 @@ fn main() -> MonsimIOResult {
     let mut app_state = AppState::new(&mut battle.context);
 
     // Raw mode allows to not require enter presses to get
-    enable_raw_mode().expect("can run in raw mode");
+    enable_raw_mode().expect("Raw mode should always enableable.");
 
     // Construct an mpsc channel to communicate between main thread and io thread
     let (sender, receiver) = mpsc::channel();
@@ -169,9 +169,9 @@ fn main() -> MonsimIOResult {
 
             if event::poll(timeout).expect("Polling should be OK") {
                 if let Event::Key(key) = event::read().expect(
-                    "We should always be able to read the events after the poll is successful",
+                    "The poll should always be successful",
                 ) {
-                    sender.send(TUIEvent::Input(key)).expect("can send events");
+                    sender.send(TUIEvent::Input(key)).expect("The event should always be sendable.");
                 }
             }
 

@@ -177,7 +177,10 @@ impl Battler {
         }
     }
 
-    pub fn moveset_event_handler_instance_list(&self, uid: BattlerUID) -> EventHandlerSetInstanceList {
+    pub fn moveset_event_handler_instance_list(
+        &self,
+        uid: BattlerUID,
+    ) -> EventHandlerSetInstanceList {
         self.moveset
             .moves()
             .map(|it| EventHandlerSetInstance {

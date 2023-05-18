@@ -140,8 +140,8 @@ mod bcontext {
 
     use crate::{
         prng::{self, Lcrng},
-        Battle, BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters, EventHandlerInstance,
-        InBattleEvent, TeamID,
+        Battle, BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters,
+        EventHandlerInstance, InBattleEvent, TeamID,
     };
 
     #[test]
@@ -184,8 +184,8 @@ mod bcontext {
             let mut event_handler_instances = event_handler_set_instances
                 .iter()
                 .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) =
-                        OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
+                    if let Some(handler) = OnTryMove
+                        .corresponding_handler(&event_handler_set_instance.event_handler_set)
                     {
                         Some(EventHandlerInstance {
                             event_handler: handler,
@@ -208,7 +208,9 @@ mod bcontext {
             result[i] = event_handler_instances
                 .into_iter()
                 .map(|event_handler_instance| {
-                    test_bcontext.monster(event_handler_instance.owner_uid).nickname
+                    test_bcontext
+                        .monster(event_handler_instance.owner_uid)
+                        .nickname
                 })
                 .collect::<Vec<_>>();
         }
@@ -339,8 +341,8 @@ mod bcontext {
             let mut event_handler_instances = event_handler_set_instances
                 .iter()
                 .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) =
-                        OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
+                    if let Some(handler) = OnTryMove
+                        .corresponding_handler(&event_handler_set_instance.event_handler_set)
                     {
                         Some(EventHandlerInstance {
                             event_handler: handler,
@@ -363,7 +365,9 @@ mod bcontext {
             result[i] = event_handler_instances
                 .into_iter()
                 .map(|event_handler_instance| {
-                    test_bcontext.monster(event_handler_instance.owner_uid).nickname
+                    test_bcontext
+                        .monster(event_handler_instance.owner_uid)
+                        .nickname
                 })
                 .collect::<Vec<_>>();
         }

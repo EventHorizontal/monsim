@@ -22,9 +22,18 @@ const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
 type MonsimIOResult = Result<(), Box<dyn std::error::Error>>;
 
 #[derive(Debug)]
-pub enum AppMode {
+enum AppMode {
     AwaitingUserInput { available_actions: AvailableActions },
     Simulating { chosen_actions: ChosenActions },
+}
+
+#[derive(Debug)]
+enum ScrollableWidgets {
+    AllyTeamStatus,
+    OpponentTeamStatus,
+    MessageLog,
+    AllyTeamChoices,
+    OpponentTeamChoices,
 }
 
 #[derive(Debug)]
@@ -35,6 +44,7 @@ pub struct AppState<'a> {
     opponent_list_items: Vec<ListItem<'a>>,
     opponent_list_state: ListState,
     message_buffer: MessageBuffer,
+    selected_list: ScrollableWidgets,
     message_log_scroll_idx: usize,
     is_battle_ongoing: bool,
 }
@@ -58,6 +68,7 @@ impl<'a> AppState<'a> {
                 list
             },
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+            selected_list: ScrollableWidgets::MessageLog,
             message_log_scroll_idx: 0,
             is_battle_ongoing: true
         };
@@ -207,28 +218,106 @@ fn main() -> MonsimIOResult {
                                     break 'app;
                                 }
                                 (KeyCode::Up, KeyEventKind::Release) => {
-                                    if let Some(selected_index) =
-                                        app_state.opponent_list_state.selected()
-                                    {
-                                        let opponent_list_items_length =
-                                            app_state.opponent_list_length();
-                                        app_state.opponent_list_state.select(Some(
-                                            (selected_index + opponent_list_items_length - 1)
-                                                % opponent_list_items_length,
-                                        ));
+                                    match app_state.selected_list {
+                                        ScrollableWidgets::AllyTeamChoices => {
+                                            if let Some(selected_index) =
+                                                app_state.ally_list_state.selected()
+                                            {
+                                                let ally_list_length = app_state.ally_list_length();
+                                                app_state.ally_list_state.select(Some(
+                                                    (selected_index + ally_list_length - 1)
+                                                        % ally_list_length,
+                                                ));
+                                            } else {
+                                                app_state.ally_list_state.select(Some(0));
+                                            }
+                                        },
+                                        ScrollableWidgets::OpponentTeamChoices => {
+                                            if let Some(selected_index) =
+                                                app_state.opponent_list_state.selected()
+                                            {
+                                                let opponent_list_items_length =
+                                                    app_state.opponent_list_length();
+                                                app_state.opponent_list_state.select(Some(
+                                                    (selected_index + opponent_list_items_length - 1)
+                                                        % opponent_list_items_length,
+                                                ));
+                                            } else {
+                                                app_state.opponent_list_state.select(Some(0));
+                                            }
+                                        },
+                                        ScrollableWidgets::MessageLog => {
+                                            app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.saturating_sub(1);
+                                        },
+                                        ScrollableWidgets::AllyTeamStatus => todo!(),
+                                        ScrollableWidgets::OpponentTeamStatus => todo!(),
                                     }
-                                }
+                                },
                                 (KeyCode::Down, KeyEventKind::Release) => {
-                                    if let Some(selected_index) =
-                                        app_state.opponent_list_state.selected()
-                                    {
-                                        let opponent_list_items_length =
-                                            app_state.opponent_list_length();
-                                        app_state.opponent_list_state.select(Some(
-                                            (selected_index + 1) % opponent_list_items_length,
-                                        ))
+                                    match app_state.selected_list {
+                                        ScrollableWidgets::AllyTeamChoices => {
+                                            if let Some(selected_index) =
+                                                app_state.ally_list_state.selected()
+                                            {
+                                                let ally_list_length = app_state.ally_list_length();
+                                                app_state
+                                                    .ally_list_state
+                                                    .select(Some((selected_index + 1) % ally_list_length))
+                                            } else {
+                                                app_state.ally_list_state.select(Some(0));
+                                            }
+                                        },
+                                        ScrollableWidgets::OpponentTeamChoices => {
+                                            if let Some(selected_index) =
+                                                app_state.opponent_list_state.selected()
+                                            {
+                                                let opponent_list_items_length =
+                                                    app_state.opponent_list_length();
+                                                app_state.opponent_list_state.select(Some(
+                                                    (selected_index + 1) % opponent_list_items_length,
+                                                ))
+                                            } else {
+                                                app_state.opponent_list_state.select(Some(0));
+                                            }
+                                        },
+                                        ScrollableWidgets::MessageLog => {
+                                            app_state.message_log_scroll_idx = (app_state.message_log_scroll_idx + 1).min(battle.context.message_buffer.len());
+                                        },
+                                        ScrollableWidgets::AllyTeamStatus => todo!(),
+                                        ScrollableWidgets::OpponentTeamStatus => todo!(),
                                     }
-                                }
+                                },
+                                (KeyCode::Left, KeyEventKind::Release) => {
+                                    match app_state.selected_list {
+                                        ScrollableWidgets::AllyTeamStatus => todo!(),
+                                        ScrollableWidgets::OpponentTeamStatus => todo!(),
+                                        ScrollableWidgets::MessageLog => {
+                                            app_state.selected_list = ScrollableWidgets::AllyTeamChoices;
+                                        },
+                                        ScrollableWidgets::AllyTeamChoices => {
+                                            app_state.selected_list = ScrollableWidgets::OpponentTeamChoices;
+                                            app_state.ally_list_state.select(None);
+                                        },
+                                        ScrollableWidgets::OpponentTeamChoices => {
+                                            app_state.selected_list = ScrollableWidgets::MessageLog;
+                                        },
+                                    }
+                                },
+                                (KeyCode::Right, KeyEventKind::Release) => {
+                                    match app_state.selected_list {
+                                        ScrollableWidgets::AllyTeamStatus => todo!(),
+                                        ScrollableWidgets::OpponentTeamStatus => todo!(),
+                                        ScrollableWidgets::MessageLog => {
+                                            app_state.selected_list = ScrollableWidgets::OpponentTeamChoices;
+                                        },
+                                        ScrollableWidgets::AllyTeamChoices => {
+                                            app_state.selected_list = ScrollableWidgets::MessageLog;
+                                        },
+                                        ScrollableWidgets::OpponentTeamChoices => {
+                                            app_state.selected_list = ScrollableWidgets::AllyTeamChoices;
+                                        },
+                                    }
+                                },
                                 (KeyCode::Tab, KeyEventKind::Release) => {
                                     if let (
                                         Some(selected_ally_choice_index),
@@ -245,33 +334,6 @@ fn main() -> MonsimIOResult {
                                         ];
                                         app_state.app_mode = AppMode::Simulating { chosen_actions };
                                     }
-                                }
-                                (KeyCode::Char('w'), KeyEventKind::Release) => {
-                                    if let Some(selected_index) =
-                                        app_state.ally_list_state.selected()
-                                    {
-                                        let ally_list_length = app_state.ally_list_length();
-                                        app_state.ally_list_state.select(Some(
-                                            (selected_index + ally_list_length - 1)
-                                                % ally_list_length,
-                                        ));
-                                    }
-                                }
-                                (KeyCode::Char('s'), KeyEventKind::Release) => {
-                                    if let Some(selected_index) =
-                                        app_state.ally_list_state.selected()
-                                    {
-                                        let ally_list_length = app_state.ally_list_length();
-                                        app_state
-                                            .ally_list_state
-                                            .select(Some((selected_index + 1) % ally_list_length))
-                                    }
-                                },
-                                (KeyCode::Char('i'), KeyEventKind::Release) => {
-                                    app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.saturating_sub(1);
-                                },
-                                (KeyCode::Char('k'), KeyEventKind::Release) => {
-                                    app_state.message_log_scroll_idx = (app_state.message_log_scroll_idx + 1).min(battle.context.message_buffer.len());
                                 },
                                 _ => (),
                             }
@@ -283,10 +345,10 @@ fn main() -> MonsimIOResult {
                                     terminal.show_cursor()?;
                                     break 'app;
                                 },
-                                (KeyCode::Char('i'), KeyEventKind::Release) => {
+                                (KeyCode::Up, KeyEventKind::Release) => {
                                     app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.saturating_sub(1);
-                                },
-                                (KeyCode::Char('k'), KeyEventKind::Release) => {
+                                }
+                                (KeyCode::Down, KeyEventKind::Release) => {
                                     app_state.message_log_scroll_idx = (app_state.message_log_scroll_idx + 1).min(battle.context.message_buffer.len());
                                 },
                                 _ => ()

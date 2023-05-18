@@ -110,11 +110,11 @@ impl<'a> AppState<'a> {
         };
     }
 
-    fn ally_list_items_length(&self) -> usize {
+    fn ally_list_length(&self) -> usize {
         self.ally_list_items.len()
     }
 
-    fn opponent_list_items_length(&self) -> usize {
+    fn opponent_list_length(&self) -> usize {
         self.opponent_list_items.len()
     }
 }
@@ -212,7 +212,7 @@ fn main() -> MonsimIOResult {
                                         app_state.opponent_list_state.selected()
                                     {
                                         let opponent_list_items_length =
-                                            app_state.opponent_list_items_length();
+                                            app_state.opponent_list_length();
                                         app_state.opponent_list_state.select(Some(
                                             (selected_index + opponent_list_items_length - 1)
                                                 % opponent_list_items_length,
@@ -224,7 +224,7 @@ fn main() -> MonsimIOResult {
                                         app_state.opponent_list_state.selected()
                                     {
                                         let opponent_list_items_length =
-                                            app_state.opponent_list_items_length();
+                                            app_state.opponent_list_length();
                                         app_state.opponent_list_state.select(Some(
                                             (selected_index + 1) % opponent_list_items_length,
                                         ))
@@ -251,7 +251,7 @@ fn main() -> MonsimIOResult {
                                     if let Some(selected_index) =
                                         app_state.ally_list_state.selected()
                                     {
-                                        let ally_list_length = app_state.ally_list_items_length();
+                                        let ally_list_length = app_state.ally_list_length();
                                         app_state.ally_list_state.select(Some(
                                             (selected_index + ally_list_length - 1)
                                                 % ally_list_length,
@@ -262,7 +262,7 @@ fn main() -> MonsimIOResult {
                                     if let Some(selected_index) =
                                         app_state.ally_list_state.selected()
                                     {
-                                        let ally_list_length = app_state.ally_list_items_length();
+                                        let ally_list_length = app_state.ally_list_length();
                                         app_state
                                             .ally_list_state
                                             .select(Some((selected_index + 1) % ally_list_length))

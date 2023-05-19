@@ -32,7 +32,9 @@ impl Action {
             .push(format!["{} used {}", attacker.nickname, move_.species.name]);
 
         if EventResolver::broadcast_try_event(context, prng, attacker_uid, &OnTryMove) == FAILURE {
-            context.message_buffer.push(String::from("The move failed!"));
+            context
+                .message_buffer
+                .push(String::from("The move failed!"));
             return Ok(());
         }
 

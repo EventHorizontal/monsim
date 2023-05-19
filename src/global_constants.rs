@@ -10,11 +10,6 @@ pub const SUPER_EFFECTIVE: f64 = 2.0;
 
 pub const EMPTY_LINE: &str = "";
 
-#[inline(always)]
-pub fn print_empty_line() {
-    println!("");
-}
-
 pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
     match (move_type, target_type) {
         (MonType::None, MonType::None) => EFFECTIVE,

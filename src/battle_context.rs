@@ -48,14 +48,14 @@ impl BattleContext {
         let left = self.ally_team.battlers();
         let right = self.opponent_team.battlers();
 
-        left.into_iter().chain(right)
+        left.iter().chain(right)
     }
 
     fn battlers_mut(&mut self) -> MutableBattlerIterator {
         let left = self.ally_team.battlers_mut();
         let right = self.opponent_team.battlers_mut();
 
-        left.into_iter().chain(right)
+        left.iter_mut().chain(right)
     }
 
     fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
@@ -77,11 +77,8 @@ impl BattleContext {
     }
 
     pub fn is_current_action_user(&self, test_monster_uid: BattlerUID) -> Option<bool> {
-        if let Some(current_action) = self.current_action {
-            Some(test_monster_uid == current_action.chooser())
-        } else {
-            None
-        }
+        self.current_action
+            .map(|current_action| test_monster_uid == current_action.chooser())
     }
 
     pub fn current_action_target(&self) -> Option<&Battler> {
@@ -93,18 +90,15 @@ impl BattleContext {
     }
 
     pub fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> Option<bool> {
-        if let Some(current_action) = self.current_action {
-            Some(test_monster_uid == current_action.target())
-        } else {
-            None
-        }
+        self.current_action
+            .map(|current_action| test_monster_uid == current_action.target())
     }
 
     pub fn monster(&self, uid: BattlerUID) -> &Monster {
         &self
             .battlers()
             .find(|it| it.uid == uid)
-            .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
+            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", uid))
             .monster
     }
 
@@ -112,7 +106,7 @@ impl BattleContext {
         &mut self
             .battlers_mut()
             .find(|it| it.uid == uid)
-            .expect(format!["Theres should exist a monster with id {:?}", uid].as_str())
+            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", uid))
             .monster
     }
 
@@ -120,7 +114,7 @@ impl BattleContext {
         &self
             .battlers()
             .find(|it| it.uid == owner_uid)
-            .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
+            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
             .ability
     }
 
@@ -128,7 +122,7 @@ impl BattleContext {
         &mut self
             .battlers_mut()
             .find(|it| it.uid == owner_uid)
-            .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
+            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
             .ability
     }
 
@@ -136,7 +130,7 @@ impl BattleContext {
         let owner_uid = move_uid.battler_uid;
         self.battlers()
             .find(|it| it.uid == owner_uid)
-            .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
+            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
             .moveset
             .move_(move_uid.move_number)
     }
@@ -145,7 +139,7 @@ impl BattleContext {
         let owner_uid = move_uid.battler_uid;
         self.battlers_mut()
             .find(|it| it.uid == owner_uid)
-            .expect(format!["Theres should exist a monster with id {:?}", owner_uid].as_str())
+            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
             .moveset
             .move_mut(move_uid.move_number)
     }

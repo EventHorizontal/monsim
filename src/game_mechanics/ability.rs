@@ -36,7 +36,7 @@ impl Ability {
         Ability { species }
     }
 
-    pub fn on_activate(&self, context: &mut BattleContext, owner_uid: BattlerUID) -> () {
+    pub fn on_activate(&self, context: &mut BattleContext, owner_uid: BattlerUID) {
         (self.species.on_activate)(context, owner_uid);
     }
 

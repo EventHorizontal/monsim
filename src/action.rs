@@ -13,10 +13,6 @@ use std::fmt::Display;
 pub struct Action;
 
 impl Action {
-    pub fn _display_message(message: &dyn Display) -> () {
-        println!("{}", message);
-    }
-
     pub fn damaging_move(
         context: &mut BattleContext,
         prng: &mut Lcrng,
@@ -133,7 +129,7 @@ impl Action {
         Ok(())
     }
 
-    pub fn damage(context: &mut BattleContext, target_uid: BattlerUID, damage: u16) -> () {
+    pub fn damage(context: &mut BattleContext, target_uid: BattlerUID, damage: u16) {
         context.monster_mut(target_uid).current_health = context
             .monster(target_uid)
             .current_health
@@ -146,7 +142,7 @@ impl Action {
         owner_uid: BattlerUID,
     ) -> bool {
         if EventResolver::broadcast_try_event(context, prng, owner_uid, &OnTryActivateAbility) {
-            let ability = context.ability(owner_uid).clone();
+            let ability = *context.ability(owner_uid);
             ability.on_activate(context, owner_uid);
             EventResolver::broadcast_event(context, prng, owner_uid, &OnAbilityActivated, (), None);
             SUCCESS

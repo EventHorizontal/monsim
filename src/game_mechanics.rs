@@ -50,11 +50,11 @@ const MAX_BATTLERS_PER_TEAM: usize = 6;
 impl BattlerTeam {
     pub fn new(monsters: Vec<Battler>) -> Self {
         assert!(
-            monsters.first() != None,
+            monsters.first().is_some(),
             "There is not a single monster in the team."
         );
         assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
-        return BattlerTeam { battlers: monsters };
+        BattlerTeam { battlers: monsters }
     }
 
     pub fn battlers(&self) -> &Vec<Battler> {

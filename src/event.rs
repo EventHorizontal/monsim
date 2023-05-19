@@ -97,18 +97,14 @@ impl EventResolver {
         let mut event_handler_instances = event_handlers_set_instances
             .iter()
             .filter_map(|event_handler_set_instance| {
-                if let Some(handler) =
-                    event.corresponding_handler(&event_handler_set_instance.event_handler_set)
-                {
-                    Some(EventHandlerInstance {
-                        event_handler: handler,
+                event
+                    .corresponding_handler(&event_handler_set_instance.event_handler_set)
+                    .map(|event_handler| EventHandlerInstance {
+                        event_handler,
                         owner_uid: event_handler_set_instance.owner_uid,
                         activation_order: event_handler_set_instance.activation_order,
                         filters: EventHandlerFilters::default(),
                     })
-                } else {
-                    None
-                }
             })
             .collect::<Vec<_>>();
 

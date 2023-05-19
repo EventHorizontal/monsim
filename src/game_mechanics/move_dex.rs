@@ -1,4 +1,4 @@
-#![allow(non_upper_case_globals)]
+#![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use super::{
     move_::{MoveCategory, MoveSpecies},

@@ -1,4 +1,4 @@
-#![allow(non_upper_case_globals)]
+#![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use super::{ability::AbilitySpecies, MonType};
 use crate::{
@@ -11,13 +11,12 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     name: "Flash Fire",
     event_handlers: EventHandlerSet {
         on_try_move: Some(|context, prng, owner_uid, _relay| {
-            let current_move = context
+            let current_move = *context
                 .get_current_action_as_move()
                 .expect("The current action should be a move within on_try_move handler context.");
-            if current_move.species.type_ == MonType::Fire {
-                if Action::activate_ability(context, prng, owner_uid) {
-                    return FAILURE;
-                }
+            let activation_succeeded = Action::activate_ability(context, prng, owner_uid);
+            if current_move.species.type_ == MonType::Fire && activation_succeeded {
+                return FAILURE;
             }
             SUCCESS
         }),

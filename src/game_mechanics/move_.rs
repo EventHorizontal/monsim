@@ -87,9 +87,9 @@ impl Index<usize> for MoveSet {
 
 impl MoveSet {
     pub fn new(moves: Vec<Move>) -> Self {
-        assert!(moves.first() != None, "There is no first move.");
+        assert!(moves.first().is_some(), "There is no first move.");
         assert!(moves.len() <= MAX_MOVES_PER_MOVESET);
-        return MoveSet { moves };
+        MoveSet { moves }
     }
 
     pub fn moves(&self) -> Iter<Move> {
@@ -99,13 +99,13 @@ impl MoveSet {
     pub fn move_(&self, id: MoveNumber) -> &Move {
         self.moves
             .get(id as usize)
-            .expect(&format!["The move at the {:?} index should exist.", id])
+            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
     }
 
     pub fn move_mut(&mut self, id: MoveNumber) -> &mut Move {
         self.moves
             .get_mut(id as usize)
-            .expect(&format!["The move at the {:?} index should exist.", id])
+            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
     }
 }
 

@@ -34,12 +34,11 @@ impl Lcrng {
     }
 
     /// Returns each u16 in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
-    pub(crate) fn generate_number_in_range(&mut self, range: RangeInclusive<u16>) -> u16 {
-        let mut range_iter = range.into_iter();
-        let start = range_iter
+    pub(crate) fn generate_number_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
+        let start = range
             .next()
             .expect("The range given to generate_number_in_range must have a first element.");
-        let end = range_iter
+        let end = range
             .next_back()
             .expect("The range given to generate_number_in_range must have a last element.");
         assert!(end >= 1u16, "The end of the range should be 1 or higher");
@@ -49,11 +48,11 @@ impl Lcrng {
         let random_number = self.next();
         let range = (end - start + 1) as f64;
 
-        let result = ((random_number as f64 / MAX as f64) * range) as u16 + start;
-        result
+        ((random_number as f64 / MAX as f64) * range) as u16 + start
     }
 
-    pub(crate) fn chance(&mut self, num: u16, denom: u16) -> bool {
+    // TEMP: Unsure whether this will find use. Either this comment or the function will be removed in the future.
+    pub(crate) fn _chance(&mut self, num: u16, denom: u16) -> bool {
         assert!(denom != 0);
         self.generate_number_in_range(1..=denom) <= num
     }

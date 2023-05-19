@@ -188,10 +188,8 @@ fn main() -> MonsimIOResult {
             }
 
             // Nothing happened, send a tick event
-            if last_tick.elapsed() >= time_out_duration {
-                if let Ok(_) = sender.send(TUIEvent::Tick) {
-                    last_tick = Instant::now();
-                }
+            if last_tick.elapsed() >= time_out_duration && sender.send(TUIEvent::Tick).is_ok() {
+                last_tick = Instant::now();
             }
         }
     });

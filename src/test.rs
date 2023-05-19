@@ -424,7 +424,7 @@ mod event {
     #[test]
     fn test_print_event_handler_set() {
         use crate::ability_dex::FlashFire;
-        println!("{:?}", FlashFire.event_handlers);
+        println!("{:#?}", FlashFire.event_handlers);
     }
 }
 
@@ -479,7 +479,7 @@ mod prng {
 
         let mut success = 0.0;
         for _ in 0..=10_000_000 {
-            if lcrng.chance(33, 100) {
+            if lcrng._chance(33, 100) {
                 success += 1.0;
             }
         }

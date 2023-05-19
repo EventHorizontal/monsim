@@ -14,8 +14,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             let current_move = *context
                 .get_current_action_as_move()
                 .expect("The current action should be a move within on_try_move handler context.");
-            let activation_succeeded = SecondaryAction::activate_ability(context, prng, owner_uid);
-            if current_move.species.type_ == MonType::Fire && activation_succeeded {
+            if current_move.species.type_ == MonType::Fire && SecondaryAction::activate_ability(context, prng, owner_uid) {
                 return FAILURE;
             }
             SUCCESS
@@ -23,9 +22,10 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         ..DEFAULT_HANDLERS
     },
     on_activate: |context, _owner_uid| {
+        dbg!(_owner_uid);
         context
             .message_buffer
-            .push(String::from("Flash Fire activated"))
+            .push(String::from("Flash Fire activated!"))
     },
     event_handler_filters: EventHandlerFilters::default(),
     order: 0,

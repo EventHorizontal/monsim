@@ -15,8 +15,8 @@ use tui::{
     widgets::{ListItem, ListState},
     Terminal,
 };
-mod render;
-use render::render;
+mod rendering;
+use rendering::render_interface;
 
 const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
 type MonsimIOResult = Result<(), Box<dyn std::error::Error>>;
@@ -405,7 +405,7 @@ fn main() -> MonsimIOResult {
         }
 
         //TODO: Move the context usage inside app state
-        render(&mut terminal, &mut app_state, &battle.context)?;
+        render_interface(&mut terminal, &mut app_state, &battle.context)?;
     }
 
     println!("monsim_tui exited successfully");

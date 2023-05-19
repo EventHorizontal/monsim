@@ -13,7 +13,7 @@ use tui::{
 
 use crate::{AppState, ScrollableWidgets};
 
-pub fn render<'a>(
+pub fn render_interface<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
     app_state: &mut AppState,
     context: &BattleContext,

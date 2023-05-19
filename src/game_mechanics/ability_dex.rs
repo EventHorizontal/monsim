@@ -22,7 +22,6 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         ..DEFAULT_HANDLERS
     },
     on_activate: |context, _owner_uid| {
-        dbg!(_owner_uid);
         context
             .message_buffer
             .push(String::from("Flash Fire activated!"))

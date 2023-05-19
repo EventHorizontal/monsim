@@ -65,8 +65,8 @@ impl Battle {
                 self.context.state = BattleState::Finished;
                 break;
             };
+            self.context.message_buffer.push(String::from(EMPTY_LINE));
         }
-        self.context.message_buffer.push(String::from(EMPTY_LINE));
 
         result
     }

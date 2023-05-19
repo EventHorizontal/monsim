@@ -13,9 +13,9 @@ pub struct PrimaryAction;
 
 impl PrimaryAction {
     /// Primary action: A monster's turn may be initiated by this Action.
-    /// 
-    /// Calculates and applies the effects of a damaging move 
-    /// corresponding to `move_uid` being used on `target_uid` 
+    ///
+    /// Calculates and applies the effects of a damaging move
+    /// corresponding to `move_uid` being used on `target_uid`
     pub fn damaging_move(
         context: &mut BattleContext,
         prng: &mut Lcrng,
@@ -138,10 +138,10 @@ pub struct SecondaryAction;
 
 impl SecondaryAction {
     /// Secondary Action: This action can only be triggered by other Actions.
-    /// 
+    ///
     /// Deducts `damage` from HP of target corresponding to `target_uid`.
-    /// 
-    /// This function should be used when an amount of damage has already been calculated, 
+    ///
+    /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
     pub(crate) fn damage(context: &mut BattleContext, target_uid: BattlerUID, damage: u16) {
         context.monster_mut(target_uid).current_health = context
@@ -151,9 +151,9 @@ impl SecondaryAction {
     }
 
     /// Secondary Action: This action can only be triggered by other Actions.
-    /// 
+    ///
     /// Resolves activation of any ability.
-    /// 
+    ///
     /// Returns a `bool` indicating whether the ability succeeded.
     pub(crate) fn activate_ability(
         context: &mut BattleContext,

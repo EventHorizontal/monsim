@@ -188,6 +188,7 @@ mod bcontext {
                         .corresponding_handler(&event_handler_set_instance.event_handler_set)
                     {
                         Some(EventHandlerInstance {
+                            event_name: OnTryMove.name(),
                             event_handler: handler,
                             owner_uid: event_handler_set_instance.owner_uid,
                             activation_order: event_handler_set_instance.activation_order,
@@ -345,6 +346,7 @@ mod bcontext {
                         .corresponding_handler(&event_handler_set_instance.event_handler_set)
                     {
                         Some(EventHandlerInstance {
+                            event_name: OnTryMove.name(),
                             event_handler: handler,
                             owner_uid: event_handler_set_instance.owner_uid,
                             activation_order: event_handler_set_instance.activation_order,
@@ -421,14 +423,31 @@ mod bcontext {
 
 #[cfg(test)]
 mod event {
+    use crate::{EventHandlerInstance, BattlerUID, event_dex::OnTryMove, InBattleEvent};
+
 
     #[test]
     fn test_print_event_handler_set() {
         use crate::ability_dex::FlashFire;
-        println!("{:?}", FlashFire.event_handlers);
-        let expected_string = String::from("EventHandlerSet { on_try_move: Some(0x7ff60e2af070), on_damage_dealt: None, on_try_activate_ability: None, on_ability_activated: None, on_modify_accuracy: None }");
-        assert_eq!(format!["{:?}", FlashFire.event_handlers][..36], expected_string[..36]);
-        assert_eq!(format!["{:?}", FlashFire.event_handlers][50..], expected_string[50..]);
+        println!("{:#?}", FlashFire.event_handlers);
+        assert_eq!(format!["{:#?}", FlashFire.event_handlers], "EventHandlerSet {\n    on_try_move: Some(\n        \"fn(&mut monsim::battle_context::BattleContext, &mut monsim::prng::Lcrng, monsim::game_mechanics::BattlerUID, bool) -> bool\",\n    ),\n    on_damage_dealt: None,\n    on_try_activate_ability: None,\n    on_ability_activated: None,\n    on_modify_accuracy: None,\n}")
+    }
+
+    #[test]
+    fn test_print_event_handler_instance() {
+        use crate::ability_dex::FlashFire;
+        let event_handler_instance = EventHandlerInstance {
+            event_name: OnTryMove.name(),
+            event_handler: FlashFire.event_handlers.on_try_move.unwrap(),
+            owner_uid: BattlerUID {
+                team_id: crate::TeamID::Ally,
+                battler_number: crate::BattlerNumber::_1,
+            },
+            activation_order: crate::ActivationOrder { priority: 1, speed: 99, order: 0 },
+            filters: crate::EventHandlerFilters::default(),
+        };
+        println!("{:#?}", event_handler_instance);
+        assert_eq!(format!["{:#?}", event_handler_instance], "EventHandlerInstance {\n    event_name: \"OnTryMove\",\n    event_handler: \"fn(&mut monsim::battle_context::BattleContext, &mut monsim::prng::Lcrng, monsim::game_mechanics::BattlerUID, bool) -> bool\",\n    owner_uid: BattlerUID {\n        team_id: Ally,\n        battler_number: _1,\n    },\n    activation_order: ActivationOrder {\n        priority: 1,\n        speed: 99,\n        order: 0,\n    },\n    filters: EventHandlerFilters {\n        whose_event: OPPONENTS,\n        on_battlefield: true,\n    },\n}");
     }
 }
 

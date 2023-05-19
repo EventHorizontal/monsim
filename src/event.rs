@@ -21,11 +21,25 @@ pub type EventHandlerSetInstanceList = Vec<EventHandlerSetInstance>;
 
 #[derive(Clone, Copy)]
 pub struct EventHandlerInstance<R: Clone + Copy> {
+    pub event_name: &'static str,
     pub event_handler: EventHandler<R>,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
     pub filters: EventHandlerFilters,
 }
+
+impl<R: Debug + Clone + Copy> Debug for EventHandlerInstance<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EventHandlerInstance")
+            .field("event_name", &self.event_name)
+            .field("event_handler", &std::any::type_name::<EventHandler<R>>())
+            .field("owner_uid", &self.owner_uid)
+            .field("activation_order", &self.activation_order)
+            .field("filters", &self.filters)
+            .finish()
+    }
+}
+
 pub type EventHandlerInstanceList<R> = Vec<EventHandlerInstance<R>>;
 pub type EventReturn<R> = R;
 
@@ -39,33 +53,33 @@ pub struct EventHandlerSet {
 }
 
 impl Debug for EventHandlerSet {
-    fn fmt<'a>(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventHandlerSet")
-            .field(
-                "on_try_move",
-                &(self.on_try_move as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>)
-                    as &dyn Debug,
-            )
-            .field(
-                "on_damage_dealt",
-                &(self.on_damage_dealt as Option<ExplicitlyAnnotatedEventHandler<'a, void>>)
-                    as &dyn Debug,
-            )
-            .field(
-                "on_try_activate_ability",
-                &(self.on_try_activate_ability as Option<ExplicitlyAnnotatedEventHandler<'a, bool>>)
-                    as &dyn Debug,
-            )
-            .field(
-                "on_ability_activated",
-                &(self.on_ability_activated as Option<ExplicitlyAnnotatedEventHandler<'a, void>>)
-                    as &dyn Debug,
-            )
-            .field(
-                "on_modify_accuracy",
-                &(self.on_modify_accuracy as Option<ExplicitlyAnnotatedEventHandler<'a, u16>>)
-                    as &dyn Debug,
-            )
+            .field("on_try_move", {
+                &self
+                    .on_try_move
+                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
+            })
+            .field("on_damage_dealt", {
+                &self
+                    .on_damage_dealt
+                    .map(|_it| std::any::type_name::<EventHandler<void>>())
+            })
+            .field("on_try_activate_ability", {
+                &self
+                    .on_try_activate_ability
+                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
+            })
+            .field("on_ability_activated", {
+                &self
+                    .on_ability_activated
+                    .map(|_it| std::any::type_name::<EventHandler<void>>())
+            })
+            .field("on_modify_accuracy", {
+                &self
+                    .on_modify_accuracy
+                    .map(|_it| std::any::type_name::<EventHandler<u16>>())
+            })
             .finish()
     }
 }
@@ -100,6 +114,7 @@ impl EventResolver {
                 event
                     .corresponding_handler(&event_handler_set_instance.event_handler_set)
                     .map(|event_handler| EventHandlerInstance {
+                        event_name: event.name(),
                         event_handler,
                         owner_uid: event_handler_set_instance.owner_uid,
                         activation_order: event_handler_set_instance.activation_order,
@@ -120,6 +135,7 @@ impl EventResolver {
 
         let mut relay = default;
         for EventHandlerInstance {
+            event_name: _,
             event_handler,
             owner_uid,
             activation_order: _,
@@ -188,6 +204,8 @@ pub trait InBattleEvent {
         &self,
         event_handler_set: &EventHandlerSet,
     ) -> Option<EventHandler<Self::EventReturnType>>;
+
+    fn name(&self) -> &'static str;
 }
 
 pub mod event_dex {

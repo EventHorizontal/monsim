@@ -50,12 +50,20 @@ impl Battle {
                 ActionChoice::Move {
                     move_uid,
                     target_uid,
-                } => PrimaryAction::damaging_move(
-                    &mut self.context,
-                    &mut self.prng,
-                    move_uid,
-                    target_uid,
-                ),
+                } => match self.context.move_(move_uid).category() {
+                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(
+                        &mut self.context,
+                        &mut self.prng,
+                        move_uid,
+                        target_uid,
+                    ),
+                    MoveCategory::Status => PrimaryAction::status_move(
+                        &mut self.context,
+                        &mut self.prng,
+                        move_uid,
+                        target_uid,
+                    ),
+                },
             };
             // Check if any monster fainted due to the last action.
             if let Some(battler) = self.context.battlers().find(|it| it.fainted()) {

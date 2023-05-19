@@ -131,6 +131,15 @@ impl PrimaryAction {
 
         Ok(())
     }
+
+    pub(crate) fn status_move(
+        context: &mut BattleContext,
+        prng: &mut Lcrng,
+        move_uid: MoveUID,
+        target_uid: BattlerUID,
+    ) -> Result<(), SimError> {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

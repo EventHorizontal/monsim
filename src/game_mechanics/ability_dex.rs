@@ -14,7 +14,9 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             let current_move = *context
                 .get_current_action_as_move()
                 .expect("The current action should be a move within on_try_move handler context.");
-            if current_move.species.type_ == MonType::Fire && SecondaryAction::activate_ability(context, prng, owner_uid) {
+            if current_move.species.type_ == MonType::Fire
+                && SecondaryAction::activate_ability(context, prng, owner_uid)
+            {
                 return FAILURE;
             }
             SUCCESS

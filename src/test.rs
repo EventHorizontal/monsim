@@ -423,8 +423,7 @@ mod bcontext {
 
 #[cfg(test)]
 mod event {
-    use crate::{EventHandlerInstance, BattlerUID, event_dex::OnTryMove, InBattleEvent};
-
+    use crate::{event_dex::OnTryMove, BattlerUID, EventHandlerInstance, InBattleEvent};
 
     #[test]
     fn test_print_event_handler_set() {
@@ -443,7 +442,11 @@ mod event {
                 team_id: crate::TeamID::Ally,
                 battler_number: crate::BattlerNumber::_1,
             },
-            activation_order: crate::ActivationOrder { priority: 1, speed: 99, order: 0 },
+            activation_order: crate::ActivationOrder {
+                priority: 1,
+                speed: 99,
+                order: 0,
+            },
             filters: crate::EventHandlerFilters::default(),
         };
         println!("{:#?}", event_handler_instance);

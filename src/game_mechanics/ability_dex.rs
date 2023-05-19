@@ -3,7 +3,7 @@
 use super::{ability::AbilitySpecies, MonType};
 use crate::{
     event::{EventHandlerFilters, EventHandlerSet, DEFAULT_HANDLERS},
-    Action, FAILURE, SUCCESS,
+    SecondaryAction, FAILURE, SUCCESS,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -14,7 +14,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             let current_move = *context
                 .get_current_action_as_move()
                 .expect("The current action should be a move within on_try_move handler context.");
-            let activation_succeeded = Action::activate_ability(context, prng, owner_uid);
+            let activation_succeeded = SecondaryAction::activate_ability(context, prng, owner_uid);
             if current_move.species.type_ == MonType::Fire && activation_succeeded {
                 return FAILURE;
             }

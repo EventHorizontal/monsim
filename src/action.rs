@@ -9,9 +9,9 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Action;
+pub struct PrimaryAction;
 
-impl Action {
+impl PrimaryAction {
     /// Primary action: A monster's turn may be initiated by this Action.
     /// 
     /// Calculates and applies the effects of a damaging move 
@@ -100,7 +100,7 @@ impl Action {
         // TODO: Introduce more damage multipliers as we implement them.
 
         // Do the calculated damage to the target
-        Action::damage(context, target_uid, damage);
+        SecondaryAction::damage(context, target_uid, damage);
         EventResolver::broadcast_event(context, prng, attacker_uid, &OnDamageDealt, (), None);
 
         let type_matchup_multiplier_times_hundred =
@@ -131,7 +131,12 @@ impl Action {
 
         Ok(())
     }
+}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SecondaryAction;
+
+impl SecondaryAction {
     /// Secondary Action: This action can only be triggered by other Actions.
     /// 
     /// Deducts `damage` from HP of target corresponding to `target_uid`.

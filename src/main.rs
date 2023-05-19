@@ -129,6 +129,11 @@ impl<'a> AppState<'a> {
     }
 }
 
+enum TuiEvent<I> {
+    Input(I),
+    Tick,
+}
+
 fn main() -> MonsimIOResult {
     let mut battle = Battle::new(bcontext!(
         {
@@ -182,13 +187,13 @@ fn main() -> MonsimIOResult {
                     event::read().expect("The poll should always be successful")
                 {
                     sender
-                        .send(TUIEvent::Input(key))
+                        .send(TuiEvent::Input(key))
                         .expect("The event should always be sendable.");
                 }
             }
 
             // Nothing happened, send a tick event
-            if last_tick.elapsed() >= time_out_duration && sender.send(TUIEvent::Tick).is_ok() {
+            if last_tick.elapsed() >= time_out_duration && sender.send(TuiEvent::Tick).is_ok() {
                 last_tick = Instant::now();
             }
         }
@@ -208,7 +213,7 @@ fn main() -> MonsimIOResult {
             } => {
                 // Do appropriate thing based on input receieved
                 match receiver.recv()? {
-                    TUIEvent::Input(event) => {
+                    TuiEvent::Input(event) => {
                         if app_state.is_battle_ongoing {
                             match (event.code, event.kind) {
                                 (KeyCode::Esc, KeyEventKind::Release) => {
@@ -367,7 +372,7 @@ fn main() -> MonsimIOResult {
                             }
                         }
                     }
-                    TUIEvent::Tick => {}
+                    TuiEvent::Tick => {}
                 };
             }
             AppMode::Simulating { chosen_actions } => {
@@ -405,9 +410,4 @@ fn main() -> MonsimIOResult {
 
     println!("monsim_tui exited successfully");
     Ok(())
-}
-
-enum TUIEvent<I> {
-    Input(I),
-    Tick,
 }

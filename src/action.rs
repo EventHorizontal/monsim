@@ -29,10 +29,10 @@ impl Action {
 
         context
             .message_buffer
-            .push(format!["{} used {}", attacker.nickname, move_.species.name].to_string());
+            .push(format!["{} used {}", attacker.nickname, move_.species.name]);
 
         if EventResolver::broadcast_try_event(context, prng, attacker_uid, &OnTryMove) == FAILURE {
-            context.message_buffer.push("The move failed!".to_string());
+            context.message_buffer.push(String::from("The move failed!"));
             return Ok(());
         }
 
@@ -82,7 +82,7 @@ impl Action {
         if type_matchup_multiplier == INEFFECTIVE {
             context
                 .message_buffer
-                .push("It was ineffective...".to_string());
+                .push(String::from("It was ineffective..."));
             return Ok(());
         }
 

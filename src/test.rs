@@ -415,6 +415,7 @@ mod bcontext {
             }
         );
         println!("{}", test_bcontext);
+        assert_eq!(format!["{}", test_bcontext], String::from("Ally Team\n\t├── Ruby the Torchic (Ally_1) [HP: 152/152]\n\t│\t│\n\t│\t├── type Fire/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Ember\n\t│\t└── mov Scratch\n\t│\t\n\t├── Sapphire the Mudkip (Ally_2) [HP: 157/157]\n\t│\t│\n\t│\t├── type Water/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Tackle\n\t│\t└── mov Bubble\n\t│\t\n\t└── Emerald the Mudkip (Ally_3) [HP: 147/147]\n\t\t│\n\t\t├── type Grass/None \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\nOpponent Team\n\t└── Cheerio the Drifloon (Opponent_1) [HP: 197/197]\n\t\t│\n\t\t├── type Ghost/Flying \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\n"))
     }
 }
 
@@ -424,7 +425,10 @@ mod event {
     #[test]
     fn test_print_event_handler_set() {
         use crate::ability_dex::FlashFire;
-        println!("{:#?}", FlashFire.event_handlers);
+        println!("{:?}", FlashFire.event_handlers);
+        let expected_string = String::from("EventHandlerSet { on_try_move: Some(0x7ff60e2af070), on_damage_dealt: None, on_try_activate_ability: None, on_ability_activated: None, on_modify_accuracy: None }");
+        assert_eq!(format!["{:?}", FlashFire.event_handlers][..36], expected_string[..36]);
+        assert_eq!(format!["{:?}", FlashFire.event_handlers][50..], expected_string[50..]);
     }
 }
 

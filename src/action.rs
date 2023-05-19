@@ -7,7 +7,6 @@ use super::{
     global_constants::{type_matchup, FAILURE, INEFFECTIVE, SUCCESS},
     SimError, TurnOutcome,
 };
-use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Action;

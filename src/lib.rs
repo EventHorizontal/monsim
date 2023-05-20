@@ -1,10 +1,12 @@
-mod action;
 pub mod battle_context;
-mod event;
 pub mod game_mechanics;
 pub mod global_constants;
 pub mod io;
+
+mod action;
+mod event;
 mod prng;
+mod test;
 
 pub use action::*;
 pub use battle_context::*;
@@ -12,215 +14,89 @@ pub use event::*;
 pub use game_mechanics::*;
 pub use global_constants::*;
 pub use io::*;
-use prng::LCRNG;
+use prng::Prng;
 
 pub use battle_context::BattleContext;
-pub use bcontext_macro::bcontext;
-#[allow(unused_imports)]
-use bcontext_macro::bcontext_internal;
+pub use battle_context_macro::battle_context;
 
-#[test]
-fn test_bcontext_macro() {
-    let test_bcontext = bcontext_internal!(
-        {
-            AllyTeam {
-                mon Torchic "Ruby" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-                mon Torchic "Sapphire" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-                mon Torchic "Emerald" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-            },
-            OpponentTeam {
-                mon Torchic "Cheerio" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
-                },
-            }
-        }
-    );
-    assert_eq!(
-        test_bcontext,
-        BattleContext::new(
-            MonsterTeam::new([
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::First,
-                    },
-                    true,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Ruby",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
-                        )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
-                        )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::Second,
-                    },
-                    false,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Sapphire",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
-                        )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
-                        )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Ally,
-                        battler_number: BattlerNumber::Third,
-                    },
-                    false,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Emerald",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
-                        )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
-                        )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                None,
-                None,
-                None,
-            ]),
-            MonsterTeam::new([
-                Some(Battler::new(
-                    BattlerUID {
-                        team_id: TeamID::Opponent,
-                        battler_number: BattlerNumber::First,
-                    },
-                    true,
-                    Monster::new(
-                        monster_dex::Torchic,
-                        "Cheerio",
-                    ),
-                    move_::MoveSet::new([
-                        Some(move_::Move::new(
-                            move_dex::Scratch,
-                        )),
-                        Some(move_::Move::new(
-                            move_dex::Ember,
-                        )),
-                        None,
-                        None,
-                    ]),
-                    ability::Ability::new(
-                        ability_dex::FlashFire,
-                    ),
-                )),
-                None,
-                None,
-                None,
-                None,
-                None,
-            ]),
-        )
-    );
-}
-
-type BattleResult = Result<(), BattleError>;
+type TurnOutcome = Result<(), SimError>;
 
 #[derive(Debug)]
 pub struct Battle {
-    pub context: BattleContext,
+    pub ctx: BattleContext,
+    pub prng: Prng,
+    pub turn_number: u8,
 }
 
 impl Battle {
-    pub fn new(context: BattleContext) -> Self {
-        Battle { context }
+    pub fn new(ctx: BattleContext) -> Self {
+        Battle {
+            ctx,
+            prng: Prng::new(prng::seed_from_time_now()),
+            turn_number: 0,
+        }
     }
 
-    pub fn simulate_turn(&mut self, user_input: UserInput) -> BattleResult {
+    pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActions) -> TurnOutcome {
+        match self.turn_number.checked_add(1) {
+            Some(turn_number) => self.turn_number = turn_number,
+            None => {
+                return Err(SimError::InvalidStateError(
+                    "Turn limit exceeded (Limit = 255 turns)",
+                ))
+            }
+        };
+
+        self.ctx
+            .push_messages(&[&format!["Turn {}", self.turn_number], &EMPTY_LINE]);
+
+        Battle::priority_sort(&mut self.prng, &mut chosen_actions, &mut |choice| {
+            self.ctx.choice_activation_order(choice)
+        });
+
         let mut result = Ok(());
-        let mut action_choices = user_input.choices();
-        {
-            // TODO: We need to revamp the BattleContext so that we can send it smaller chunks of info as/when it
-            // needs to read/write and so we can split borrows here.
-            let battle_context: BattleContext = self.context.clone();
-            Battle::priority_sort(
-                &mut self.context.prng,
-                &mut action_choices,
-                &mut |it| battle_context.choice_activation_order(it),
-            );
-        }
-        for action_choice in action_choices.into_iter() {
-            self.context.current_action = action_choice;
-            result = match action_choice {
+        for chosen_action in chosen_actions.into_iter() {
+            self.ctx.current_action = Some(chosen_action);
+            result = match chosen_action {
                 ActionChoice::Move {
                     move_uid,
                     target_uid,
-                } => Action::damaging_move(&mut self.context, move_uid, target_uid),
-                ActionChoice::None => {
-                    Err(BattleError::WrongState("No action was taken by a Monster."))
-                }
+                } => match self.ctx.move_(move_uid).category() {
+                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(
+                        &mut self.ctx,
+                        &mut self.prng,
+                        move_uid,
+                        target_uid,
+                    ),
+                    MoveCategory::Status => PrimaryAction::status_move(
+                        &mut self.ctx,
+                        &mut self.prng,
+                        move_uid,
+                        target_uid,
+                    ),
+                },
             };
             // Check if any monster fainted due to the last action.
-            if let Some(battler) = self.context.battlers().flatten().find(|it| it.fainted()) {
-                let battler = *battler;
-                self.context.message_buffer.push(format!["{} fainted!", battler.monster.nickname]);
-                self.context.state = BattleState::Finished;
+            if let Some(battler) = self.ctx.battlers().find(|it| it.fainted()) {
+                self.ctx
+                    .push_message(&format!["{} fainted!", battler.monster.nickname]);
+                self.ctx.sim_state = SimState::Finished;
                 break;
             };
+            self.ctx.push_message(&EMPTY_LINE);
         }
-        self.context.message_buffer.push("\n-------------------------------------\n".to_string());
 
         result
     }
 
     /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
     pub(crate) fn priority_sort<T: Clone + Copy>(
-        prng: &mut LCRNG,
+        prng: &mut Prng,
         vector: &mut Vec<T>,
         activation_order: &mut dyn FnMut(T) -> ActivationOrder,
     ) {
         // Sort without resolving speed ties, this sorting is stable, so it doesn't affect the order of condition-wise equal elements.
-        vector.sort_by(|a, b| activation_order(*a).cmp(&activation_order(*b)));
+        vector.sort_by_key(|a| activation_order(*a));
         // Sorting is ascending, but we want descending sorting, so reverse the vector.
         vector.reverse();
 
@@ -241,15 +117,23 @@ impl Battle {
                     let previous_item = activation_order(vector[i - 1]);
                     let this_item = activation_order(vector[i]);
                     // If the item we are looking at has the same speed as the previous, add its index to the tied queue.
-                    if previous_item == this_item {
-                        tied_monster_indices.push(i);
-                        if i == (vector_length - 1) {
-                            Self::resolve_speed_tie::<T>(prng, vector, &mut tied_monster_indices);
+                    use std::cmp::Ordering::{Equal, Greater, Less};
+                    match previous_item.cmp(&this_item) {
+                        Equal => {
+                            tied_monster_indices.push(i);
+                            if i == (vector_length - 1) {
+                                Self::resolve_speed_tie::<T>(
+                                    prng,
+                                    vector,
+                                    &mut tied_monster_indices,
+                                );
+                            }
                         }
-                    // If the priority or speed of the last item is higher, sort the current tied items using the PRNG and then reset the tied queue.
-                    } else if previous_item > this_item {
-                        Self::resolve_speed_tie::<T>(prng, vector, &mut tied_monster_indices);
-                        tied_monster_indices = vec![i];
+                        Greater => {
+                            Self::resolve_speed_tie::<T>(prng, vector, &mut tied_monster_indices);
+                            tied_monster_indices = vec![i];
+                        }
+                        Less => unreachable!(),
                     }
                 }
             }
@@ -258,17 +142,17 @@ impl Battle {
 
     /// Shuffles the event handler order for consecutive speed-tied items in place using their associated activation orders.
     fn resolve_speed_tie<T: Clone + Copy>(
-        prng: &mut LCRNG,
-        vector: &mut Vec<T>,
+        prng: &mut Prng,
+        vector: &mut [T],
         tied_monster_indices: &mut Vec<usize>,
     ) {
         if tied_monster_indices.len() < 2 {
             return;
         }
         let mut i: usize = 0;
-        let vector_copy = vector.clone();
+        let vector_copy = vector.to_owned();
         let offset = tied_monster_indices[0];
-        'iteration_over_tied_indices: while tied_monster_indices.len() > 0 {
+        'iteration_over_tied_indices: while !tied_monster_indices.is_empty() {
             let number_tied = tied_monster_indices.len() as u16;
             // Roll an n-sided die and put the monster corresponding to the roll at the front of the tied order.
             let prng_roll = prng.generate_number_in_range(0..=number_tied - 1) as usize;
@@ -284,7 +168,7 @@ impl Battle {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BattleError {
-    WrongState(&'static str),
+pub enum SimError {
+    InvalidStateError(&'static str),
     InputError(String),
 }

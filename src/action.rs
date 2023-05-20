@@ -1,86 +1,85 @@
+use crate::prng::Prng;
+
 use super::{
     battle_context::BattleContext,
     event::{event_dex::*, EventResolver},
     game_mechanics::{monster::Stat, move_::MoveCategory, BattlerUID, MoveUID},
     global_constants::{type_matchup, FAILURE, INEFFECTIVE, SUCCESS},
-    BattleError, BattleResult,
+    SimError, TurnOutcome,
 };
-use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Action;
+pub struct PrimaryAction;
 
-impl Action {
-    pub fn _display_message(message: &dyn Display) -> () {
-        println!("{}", message);
-    }
-
+impl PrimaryAction {
+    /// Primary action: A monster's turn may be initiated by this Action.
+    ///
+    /// Calculates and applies the effects of a damaging move
+    /// corresponding to `move_uid` being used on `target_uid`
     pub fn damaging_move(
-        context: &mut BattleContext,
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
         move_uid: MoveUID,
         target_uid: BattlerUID,
-    ) -> BattleResult {
+    ) -> TurnOutcome {
         let attacker_uid = move_uid.battler_uid;
-        let attacker = context.read_monster(attacker_uid);
-        let move_ = context.read_move(move_uid);
+        let attacker = ctx.monster(attacker_uid);
+        let move_ = ctx.move_(move_uid);
 
-        context.message_buffer.push(format![
+        ctx.push_message(&format![
             "{} used {}",
             attacker.nickname, move_.species.name
-        ].to_string());
+        ]);
 
-        if EventResolver::broadcast_try_event(context, attacker_uid, &OnTryMove) == FAILURE {
-            context.message_buffer.push("The move failed!".to_string());
+        if EventResolver::broadcast_try_event(ctx, prng, attacker_uid, &OnTryMove) == FAILURE {
+            ctx.push_message(&"The move failed!");
             return Ok(());
         }
 
-        let level = context.read_monster(attacker_uid).level;
-        let move_power = context.read_move(move_uid).base_power();
+        let level = ctx.monster(attacker_uid).level;
+        let move_power = ctx.move_(move_uid).base_power();
 
         let attackers_attacking_stat;
         let targets_defense_stat;
 
-        match context.read_move(move_uid).category() {
+        match ctx.move_(move_uid).category() {
             MoveCategory::Physical => {
-                attackers_attacking_stat =
-                    context.read_monster(attacker_uid).stats[Stat::PhysicalAttack];
-                targets_defense_stat =
-                    context.read_monster(target_uid).stats[Stat::PhysicalDefense];
+                attackers_attacking_stat = ctx.monster(attacker_uid).stats[Stat::PhysicalAttack];
+                targets_defense_stat = ctx.monster(target_uid).stats[Stat::PhysicalDefense];
             }
             MoveCategory::Special => {
-                attackers_attacking_stat =
-                    context.read_monster(attacker_uid).stats[Stat::SpecialAttack];
-                targets_defense_stat = context.read_monster(target_uid).stats[Stat::SpecialDefense];
+                attackers_attacking_stat = ctx.monster(attacker_uid).stats[Stat::SpecialAttack];
+                targets_defense_stat = ctx.monster(target_uid).stats[Stat::SpecialDefense];
             }
             MoveCategory::Status => {
-                return Err(BattleError::WrongState(
-                    "The function is not supposed to be able to receive a Status move.",
+                return Err(SimError::InvalidStateError(
+                    "The damaging_move function is not expected to receive status moves.",
                 ))
             }
         }
 
-        let random_multiplier = context.prng.generate_number_in_range(85..=100);
+        let random_multiplier = prng.generate_number_in_range(85..=100);
         let random_multiplier = random_multiplier as f64 / 100.0;
 
         let stab_multiplier = {
-            let move_type = context.read_move(move_uid).species.type_;
-            if context.read_monster(attacker_uid).is_type(move_type) {
+            let move_type = ctx.move_(move_uid).species.type_;
+            if ctx.monster(attacker_uid).is_type(move_type) {
                 1.25f64
             } else {
                 1.00f64
             }
         };
 
-        let move_type = context.read_move(move_uid).species.type_;
-        let target_primary_type = context.read_monster(target_uid).species.primary_type;
-        let target_secondary_type = context.read_monster(target_uid).species.secondary_type;
+        let move_type = ctx.move_(move_uid).species.type_;
+        let target_primary_type = ctx.monster(target_uid).species.primary_type;
+        let target_secondary_type = ctx.monster(target_uid).species.secondary_type;
 
         let type_matchup_multiplier = type_matchup(move_type, target_primary_type)
             * type_matchup(move_type, target_secondary_type);
 
         // If the opponent is immune, damage calculation is skipped.
         if type_matchup_multiplier == INEFFECTIVE {
-            context.message_buffer.push("It was ineffective...".to_string());
+            ctx.push_message(&"It was ineffective...");
             return Ok(());
         }
 
@@ -97,11 +96,9 @@ impl Action {
         // TODO: Introduce more damage multipliers as we implement them.
 
         // Do the calculated damage to the target
-        Action::damage(context, target_uid, damage);
-        EventResolver::broadcast_event(context, attacker_uid, &OnDamageDealt, (), None);
+        SecondaryAction::damage(ctx, target_uid, damage);
+        EventResolver::broadcast_event(ctx, prng, attacker_uid, &OnDamageDealt, (), None);
 
-        let target = context.read_monster(target_uid); // We need to reread data to make sure it is updated.
-        
         let type_matchup_multiplier_times_hundred =
             f64::floor(type_matchup_multiplier * 100.0) as u16;
         // INFO: We cannot match against floats so we match against 100 x the multiplier rounded to an int.
@@ -114,27 +111,147 @@ impl Action {
                 type_matchup_multiplier
             ),
         };
-        context.message_buffer.push(format!["It was {}!", type_effectiveness]);
-        context.message_buffer.push(format!["{} took {} damage!", target.nickname, damage]);
-        context.message_buffer.push(format!["{} has {} health left.", target.nickname, target.current_health]);
+        ctx.push_message(&format!["It was {}!", type_effectiveness]);
+        ctx.push_message(&format![
+            "{} took {} damage!",
+            ctx.monster(target_uid).nickname,
+            damage
+        ]);
+        ctx.push_message(&format![
+            "{} has {} health left.",
+            ctx.monster(target_uid).nickname,
+            ctx.monster(target_uid).current_health
+        ]);
 
         Ok(())
     }
 
-    pub fn damage(context: &mut BattleContext, target_uid: BattlerUID, damage: u16) -> () {
-        context.write_monster(target_uid, &mut |mut it| {
-            it.current_health = it.current_health.saturating_sub(damage);
-            it
-        });
+    pub(crate) fn status_move(
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
+        move_uid: MoveUID,
+        target_uid: BattlerUID,
+    ) -> TurnOutcome {
+        let attacker_uid = move_uid.battler_uid;
+        let attacker = ctx.monster(attacker_uid);
+        let move_ = *ctx.move_(move_uid);
+
+        ctx.push_message(&format![
+            "{} used {}",
+            attacker.nickname, move_.species.name
+        ]);
+
+        if EventResolver::broadcast_try_event(ctx, prng, attacker_uid, &OnTryMove) == FAILURE {
+            ctx.push_message(&"The move failed!");
+            return Ok(());
+        }
+
+        move_.on_activate(ctx, prng, attacker_uid, target_uid);
+        EventResolver::broadcast_event(ctx, prng, attacker_uid, &OnStatusMoveUsed, (), None);
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SecondaryAction;
+
+impl SecondaryAction {
+    /// **Secondary Action** This action can only be triggered by other Actions.
+    ///
+    /// Deducts `damage` from HP of target corresponding to `target_uid`.
+    ///
+    /// This function should be used when an amount of damage has already been calculated,
+    /// and the only thing left to do is to deduct it from the HP of the target.
+    pub(crate) fn damage(ctx: &mut BattleContext, target_uid: BattlerUID, damage: u16) {
+        ctx.monster_mut(target_uid).current_health = ctx
+            .monster(target_uid)
+            .current_health
+            .saturating_sub(damage);
     }
 
-    pub fn activate_ability(context: &mut BattleContext, owner_uid: BattlerUID) -> bool {
-        if EventResolver::broadcast_try_event(context, owner_uid, &OnTryActivateAbility) {
-            let ability = context.read_ability(owner_uid);
-            ability.on_activate(context, owner_uid);
-            EventResolver::broadcast_event(context, owner_uid, &OnAbilityActivated, (), None);
+    /// **Secondary Action** This action can only be triggered by other Actions.
+    ///
+    /// Resolves activation of any ability.
+    ///
+    /// Returns a `bool` indicating whether the ability succeeded.
+    pub(crate) fn activate_ability(
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
+        owner_uid: BattlerUID,
+    ) -> bool {
+        if EventResolver::broadcast_try_event(ctx, prng, owner_uid, &OnTryActivateAbility) {
+            let ability = *ctx.ability(owner_uid);
+            ability.on_activate(ctx, owner_uid);
+            EventResolver::broadcast_event(ctx, prng, owner_uid, &OnAbilityActivated, (), None);
             SUCCESS
         } else {
+            FAILURE
+        }
+    }
+
+    /// **Secondary Action** This action can only be triggered by other Actions.
+    ///
+    /// Resolves raising the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
+    ///
+    /// Returns a `bool` indicating whether the stat raising succeeded.
+    pub(crate) fn raise_stat(
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
+        battler_uid: BattlerUID,
+        stat: Stat,
+        number_of_stages: u8,
+    ) -> bool {
+        if EventResolver::broadcast_try_event(ctx, prng, battler_uid, &OnTryRaiseStat) {
+            let effective_stages = ctx
+                .monster_mut(battler_uid)
+                .stat_modifiers
+                .raise_stat(stat, number_of_stages);
+            ctx.push_message(&format![
+                "{}\'s {:?} was raised by {} stage(s)!",
+                ctx.monster(battler_uid).name(),
+                stat,
+                effective_stages
+            ]);
+            SUCCESS
+        } else {
+            ctx.push_message(&format![
+                "{}'s stats were not raised.",
+                ctx.monster(battler_uid).name()
+            ]);
+            FAILURE
+        }
+    }
+
+    /// **Secondary Action** This action can only be triggered by other Actions.
+    ///
+    /// Resolves lowering the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
+    ///
+    /// Returns a `bool` indicating whether the stat lowering succeeded.
+    pub(crate) fn lower_stat(
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
+        battler_uid: BattlerUID,
+        stat: Stat,
+        number_of_stages: u8,
+    ) -> bool {
+        if EventResolver::broadcast_try_event(ctx, prng, battler_uid, &OnTryLowerStat) {
+            let effective_stages = ctx
+                .monster_mut(battler_uid)
+                .stat_modifiers
+                .lower_stat(stat, number_of_stages);
+            ctx.push_message(&format![
+                "{}\'s {:?} was lowered by {} stage(s)!",
+                ctx.monster(battler_uid).name(),
+                stat,
+                effective_stages
+            ]);
+            SUCCESS
+        } else {
+            ctx.push_message(&format![
+                "{}'s stats were not lowered.",
+                ctx.monster(battler_uid).name()
+            ]);
             FAILURE
         }
     }

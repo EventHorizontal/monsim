@@ -1,15 +1,164 @@
-use std::{thread, time::{Duration, Instant}, sync::mpsc};
+use std::{
+    sync::mpsc::{self, Receiver},
+    thread,
+    time::{Duration, Instant}, io::Stdout,
+};
 
 use monsim::*;
-use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, execute};
-use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, Paragraph, Wrap}, style::{Style, Color, Modifier}, layout::{Alignment}, text::{Spans, Span}};
 
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEventKind, KeyEvent},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    terminal::CompletedFrame,
+    text::{Span, Spans},
+    widgets::{ListItem, ListState, Block, Borders, List, Paragraph, Wrap},
+    Terminal,
+};
 
 const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
-type MonsimIOResult = Result<(), Box<dyn std::error::Error>>; 
+type MonsimIoResult = Result<bool, Box<dyn std::error::Error>>;
 
-fn main() -> MonsimIOResult {
-    let mut battle = Battle::new(bcontext!(
+#[derive(Debug, Clone)]
+enum AppMode {
+    AwaitingUserInput { available_actions: AvailableActions },
+    Simulating { chosen_actions: ChosenActions },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ScrollableWidgets {
+    AllyTeamStatus,
+    OpponentTeamStatus,
+    MessageLog,
+    AllyTeamChoices,
+    OpponentTeamChoices,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppState<'a> {
+    app_mode: AppMode,
+    ally_list_items: Vec<ListItem<'a>>,
+    ally_list_state: ListState,
+    opponent_list_items: Vec<ListItem<'a>>,
+    opponent_list_state: ListState,
+    message_buffer: MessageBuffer,
+    selected_list: ScrollableWidgets,
+    message_log_scroll_idx: usize,
+    is_battle_ongoing: bool,
+    ally_active_battler_string: String,
+    ally_team_string: String,
+    opponent_active_battler_string: String,
+    opponent_team_string: String,
+}
+
+impl<'a> AppState<'a> {
+    fn new(ctx: &mut BattleContext) -> Self {
+        let mut state = Self {
+            app_mode: AppMode::AwaitingUserInput {
+                available_actions: ctx.generate_available_actions(),
+            },
+            ally_list_items: Vec::with_capacity(4),
+            ally_list_state: {
+                let mut list = ListState::default();
+                list.select(Some(0));
+                list
+            },
+            opponent_list_items: Vec::with_capacity(4),
+            opponent_list_state: {
+                let mut list = ListState::default();
+                list.select(Some(0));
+                list
+            },
+            message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+            selected_list: ScrollableWidgets::MessageLog,
+            message_log_scroll_idx: 0,
+            is_battle_ongoing: true,
+            ally_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            ally_team_string: ctx.ally_team_string(),
+            opponent_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            opponent_team_string: ctx.opponent_team_string(),
+        };
+        state.build_list_items(ctx);
+        state
+    }
+
+    fn build_list_items(&mut self, battle_context: &BattleContext) {
+        let available_actions = battle_context.generate_available_actions();
+        (self.ally_list_items, self.opponent_list_items) = {
+            (
+                available_actions
+                    .ally_team_choices
+                    .iter()
+                    .map(|choice| {
+                        ListItem::new(
+                            battle_context
+                                .move_({
+                                    let ActionChoice::Move {
+                                        move_uid,
+                                        target_uid: _,
+                                    } = choice;
+                                    *move_uid
+                                })
+                                .species
+                                .name,
+                        )
+                    })
+                    .collect(),
+                available_actions
+                    .opponent_team_choices
+                    .iter()
+                    .map(|choice| {
+                        ListItem::new(
+                            battle_context
+                                .move_({
+                                    let ActionChoice::Move {
+                                        move_uid,
+                                        target_uid: _,
+                                    } = choice;
+                                    *move_uid
+                                })
+                                .species
+                                .name,
+                        )
+                    })
+                    .collect(),
+            )
+        };
+    }
+
+    fn update_battle_related_state(&mut self, ctx: &mut BattleContext) {
+        *self = Self {
+            message_buffer: ctx.message_buffer.clone(),
+            is_battle_ongoing: ctx.sim_state != SimState::Finished,
+            ally_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            ally_team_string: ctx.ally_team_string(),
+            opponent_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            opponent_team_string: ctx.opponent_team_string(),
+            ..self.clone()
+        }
+    }
+
+    fn ally_list_length(&self) -> usize {
+        self.ally_list_items.len()
+    }
+
+    fn opponent_list_length(&self) -> usize {
+        self.opponent_list_items.len()
+    }
+}
+
+enum TuiEvent<I> {
+    Input(I),
+    Tick,
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut battle = Battle::new(battle_context!(
         {
             AllyTeam {
                 mon Torchic "Ruby" {
@@ -24,7 +173,7 @@ fn main() -> MonsimIOResult {
                     mov Bubble,
                     abl FlashFire,
                 },
-                mon Torchic "Emerald" {
+                mon Treecko "Emerald" {
                     mov Scratch,
                     mov Ember,
                     abl FlashFire,
@@ -39,10 +188,13 @@ fn main() -> MonsimIOResult {
             }
         }
     ));
-    
-    // Raw mode allows to not require enter presses to get 
-    enable_raw_mode().expect("can run in raw mode");
-    
+
+    // Initialise the Program
+    let mut app_state = AppState::new(&mut battle.ctx);
+
+    // Raw mode allows to not require enter presses to get input
+    enable_raw_mode().expect("Raw mode should always enableable.");
+
     // Construct an mpsc channel to communicate between main thread and io thread
     let (sender, receiver) = mpsc::channel();
     let time_out_duration = Duration::from_millis(TUI_INPUT_POLL_TIMEOUT_MILLISECONDS);
@@ -54,16 +206,18 @@ fn main() -> MonsimIOResult {
                 .unwrap_or_else(|| Duration::from_secs(0));
 
             if event::poll(timeout).expect("Polling should be OK") {
-                if let Event::Key(key) = event::read().expect("We should always be able to read the events after the poll is successful") {
-                    sender.send(TUIEvent::Input(key)).expect("can send events");
+                if let Event::Key(key) =
+                    event::read().expect("The poll should always be successful")
+                {
+                    sender
+                        .send(TuiEvent::Input(key))
+                        .expect("The event should always be sendable.");
                 }
             }
 
             // Nothing happened, send a tick event
-            if last_tick.elapsed() >= time_out_duration {
-                if let Ok(_) = sender.send(TUIEvent::Tick) {
-                    last_tick = Instant::now();
-                }
+            if last_tick.elapsed() >= time_out_duration && sender.send(TuiEvent::Tick).is_ok() {
+                last_tick = Instant::now();
             }
         }
     });
@@ -75,52 +229,404 @@ fn main() -> MonsimIOResult {
     terminal.clear()?;
     execute!(std::io::stdout(), EnterAlternateScreen)?;
 
-    loop {
-
-        // Do appropriate thing based on input receieved
-        match receiver.recv()? {
-            TUIEvent::Input(event) => match event {
-                // Quit
-                KeyEvent { code, modifiers: _, kind: KeyEventKind::Release, state: _ } => {
-                    if code == KeyCode::Esc {
-                        disable_raw_mode()?;
-                        execute!(std::io::stdout(), LeaveAlternateScreen)?;
-                        terminal.show_cursor()?;
-                        break;
-                    // Keep simulating turns until the battle is finished.
-                    } else if code == KeyCode::Char('n') && battle.context.state != BattleState::Finished {
-                        battle.context.message_buffer.clear();
-                        let user_input = UserInput::receive_input(&battle.context);
-                        _ = battle.simulate_turn(user_input);
-                    }
-                },
-                _ => {},
-            },
-            TUIEvent::Tick => {},
+    'app: loop {
+        let should_exit = update_state_from_input(&mut terminal, &mut app_state, &mut battle, &receiver)?;
+        if should_exit {
+            break 'app;
         }
-
-        // Draw the result of the current turn to the terminal
-        terminal.draw( |frame| {    
-            let text = battle.context.message_buffer.iter().map(|element| { Spans::from(Span::raw(element))}).collect::<Vec<_>>();
-            let paragraph_widget = Paragraph::new(text)
-                .block(Block::default()
-                    .title(Span::styled(" Monsim TUI ", Style::default().fg(Color::White).add_modifier(Modifier::ITALIC)))
-                    .style(Style::default().fg(Color::Blue))
-                    .borders(Borders::ALL)
-                )
-                .style(Style::default().fg(Color::White).bg(Color::Black))
-                .alignment(Alignment::Center)
-                .wrap(Wrap { trim: true });
-            frame.render_widget(paragraph_widget, frame.size());
-        })?;
+        //TODO: Move the context usage inside app state
+        render_interface(&mut terminal, &mut app_state)?;
     }
-    
-    battle.context.message_buffer.clear();
-    println!("The Battle ended with no errors.\n");
+
+    println!("monsim_tui exited successfully");
     Ok(())
 }
 
-enum TUIEvent<I> {
-    Input(I),
-    Tick,
+fn update_state_from_input(
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>, 
+    app_state: &mut AppState, 
+    battle: &mut Battle, 
+    receiver: &Receiver<TuiEvent<KeyEvent>>
+) -> MonsimIoResult {
+    let mut result: MonsimIoResult = Ok(false);
+    match app_state.app_mode {
+        AppMode::AwaitingUserInput {
+            ref available_actions,
+        } => {
+            // Do appropriate thing based on input receieved
+            match receiver.recv()? {
+                TuiEvent::Input(event) => {
+                    if app_state.is_battle_ongoing {
+                        match (event.code, event.kind) {
+                            (KeyCode::Esc, KeyEventKind::Release) => {
+                                disable_raw_mode()?;
+                                execute!(std::io::stdout(), LeaveAlternateScreen)?;
+                                terminal.show_cursor()?;
+                                result = Ok(true);
+                            }
+                            (KeyCode::Up, KeyEventKind::Release) => {
+                                match app_state.selected_list {
+                                    ScrollableWidgets::AllyTeamChoices => {
+                                        if let Some(selected_index) =
+                                            app_state.ally_list_state.selected()
+                                        {
+                                            let ally_list_length = app_state.ally_list_length();
+                                            app_state.ally_list_state.select(Some(
+                                                (selected_index + ally_list_length - 1)
+                                                    % ally_list_length,
+                                            ));
+                                        } else {
+                                            app_state.ally_list_state.select(Some(0));
+                                        }
+                                    }
+                                    ScrollableWidgets::OpponentTeamChoices => {
+                                        if let Some(selected_index) =
+                                            app_state.opponent_list_state.selected()
+                                        {
+                                            let opponent_list_items_length =
+                                                app_state.opponent_list_length();
+                                            app_state.opponent_list_state.select(Some(
+                                                (selected_index + opponent_list_items_length
+                                                    - 1)
+                                                    % opponent_list_items_length,
+                                            ));
+                                        } else {
+                                            app_state.opponent_list_state.select(Some(0));
+                                        }
+                                    }
+                                    ScrollableWidgets::MessageLog => {
+                                        app_state.message_log_scroll_idx =
+                                            app_state.message_log_scroll_idx.saturating_sub(1);
+                                    }
+                                    ScrollableWidgets::AllyTeamStatus => todo!(),
+                                    ScrollableWidgets::OpponentTeamStatus => todo!(),
+                                }
+                            }
+                            (KeyCode::Down, KeyEventKind::Release) => {
+                                match app_state.selected_list {
+                                    ScrollableWidgets::AllyTeamChoices => {
+                                        if let Some(selected_index) =
+                                            app_state.ally_list_state.selected()
+                                        {
+                                            let ally_list_length = app_state.ally_list_length();
+                                            app_state.ally_list_state.select(Some(
+                                                (selected_index + 1) % ally_list_length,
+                                            ))
+                                        } else {
+                                            app_state.ally_list_state.select(Some(0));
+                                        }
+                                    }
+                                    ScrollableWidgets::OpponentTeamChoices => {
+                                        if let Some(selected_index) =
+                                            app_state.opponent_list_state.selected()
+                                        {
+                                            let opponent_list_items_length =
+                                                app_state.opponent_list_length();
+                                            app_state.opponent_list_state.select(Some(
+                                                (selected_index + 1)
+                                                    % opponent_list_items_length,
+                                            ))
+                                        } else {
+                                            app_state.opponent_list_state.select(Some(0));
+                                        }
+                                    }
+                                    ScrollableWidgets::MessageLog => {
+                                        app_state.message_log_scroll_idx =
+                                            (app_state.message_log_scroll_idx + 1)
+                                                .min(battle.ctx.message_buffer.len());
+                                    }
+                                    ScrollableWidgets::AllyTeamStatus => todo!(),
+                                    ScrollableWidgets::OpponentTeamStatus => todo!(),
+                                }
+                            }
+                            (KeyCode::Left, KeyEventKind::Release) => {
+                                match app_state.selected_list {
+                                    ScrollableWidgets::AllyTeamStatus => todo!(),
+                                    ScrollableWidgets::OpponentTeamStatus => todo!(),
+                                    ScrollableWidgets::MessageLog => {
+                                        app_state.selected_list =
+                                            ScrollableWidgets::AllyTeamChoices;
+                                    }
+                                    ScrollableWidgets::AllyTeamChoices => {
+                                        app_state.selected_list =
+                                            ScrollableWidgets::OpponentTeamChoices;
+                                    }
+                                    ScrollableWidgets::OpponentTeamChoices => {
+                                        app_state.selected_list = ScrollableWidgets::MessageLog;
+                                    }
+                                }
+                            }
+                            (KeyCode::Right, KeyEventKind::Release) => {
+                                match app_state.selected_list {
+                                    ScrollableWidgets::AllyTeamStatus => todo!(),
+                                    ScrollableWidgets::OpponentTeamStatus => todo!(),
+                                    ScrollableWidgets::MessageLog => {
+                                        app_state.selected_list =
+                                            ScrollableWidgets::OpponentTeamChoices;
+                                    }
+                                    ScrollableWidgets::AllyTeamChoices => {
+                                        app_state.selected_list = ScrollableWidgets::MessageLog;
+                                    }
+                                    ScrollableWidgets::OpponentTeamChoices => {
+                                        app_state.selected_list =
+                                            ScrollableWidgets::AllyTeamChoices;
+                                    }
+                                }
+                            }
+                            (KeyCode::Tab, KeyEventKind::Release) => {
+                                if let (
+                                    Some(selected_ally_choice_index),
+                                    Some(selected_opponent_choice_index),
+                                ) = (
+                                    app_state.ally_list_state.selected(),
+                                    app_state.opponent_list_state.selected(),
+                                ) {
+                                    let chosen_actions = vec![
+                                        available_actions.ally_team_choices
+                                            [selected_ally_choice_index],
+                                        available_actions.opponent_team_choices
+                                            [selected_opponent_choice_index],
+                                    ];
+                                    app_state.app_mode = AppMode::Simulating { chosen_actions };
+                                }
+                            }
+                            _ => (),
+                        }
+                    } else {
+                        match (event.code, event.kind) {
+                            (KeyCode::Esc, KeyEventKind::Release) => {
+                                disable_raw_mode()?;
+                                execute!(std::io::stdout(), LeaveAlternateScreen)?;
+                                terminal.show_cursor()?;
+                                result = Ok(true);
+                            }
+                            (KeyCode::Up, KeyEventKind::Release) => {
+                                app_state.message_log_scroll_idx =
+                                    app_state.message_log_scroll_idx.saturating_sub(1);
+                            }
+                            (KeyCode::Down, KeyEventKind::Release) => {
+                                app_state.message_log_scroll_idx =
+                                    (app_state.message_log_scroll_idx + 1)
+                                        .min(battle.ctx.message_buffer.len());
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                TuiEvent::Tick => {}
+            };
+        }
+        AppMode::Simulating { ref chosen_actions } => {
+            let result = battle.simulate_turn(chosen_actions.clone()); // <- This is the main use of the monsim library
+            match result {
+                Ok(_) => {
+                    battle
+                        .ctx
+                        .push_message(&"(The turn was calculated successfully.)");
+                }
+                Err(error) => battle.ctx.message_buffer.push(format!["{:?}", error]),
+            }
+            if battle.ctx.sim_state == SimState::Finished {
+                battle.ctx.push_message(&"The battle ended.");
+            }
+            battle.ctx.push_messages(&[&"---", &EMPTY_LINE]);
+            app_state.app_mode = AppMode::AwaitingUserInput {
+                available_actions: battle.ctx.generate_available_actions(),
+            };
+            app_state.update_battle_related_state(&mut battle.ctx);
+        }
+    }
+    result
+}
+
+pub fn render_interface<'a>(
+    terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
+    app_state: &mut AppState,
+) -> std::io::Result<CompletedFrame<'a>> {
+    terminal.draw(|frame| {
+        // Chunks
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .margin(1)
+            .constraints(
+                [
+                    Constraint::Percentage(33),
+                    Constraint::Percentage(33),
+                    Constraint::Percentage(33),
+                ]
+                .as_ref(),
+            )
+            .split(frame.size());
+
+        // Divide Chunks on Ally Panels
+        let ally_panel_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Percentage(33),
+                    Constraint::Length(6),
+                    Constraint::Length(6),
+                ]
+                .as_ref(),
+            )
+            .split(chunks[0]);
+
+        // Ally Active Monster Status Widget
+        let ally_stats_widget = Paragraph::new(app_state.ally_active_battler_string.as_str())
+            .block(
+                Block::default()
+                    .title(" Ally Active Monster ")
+                    .borders(Borders::ALL),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(ally_stats_widget, ally_panel_chunks[0]);
+
+        // Ally Choice List Menu
+        let mut ally_list_state = ListState::default();
+        ally_list_state.select(Some(2));
+        let ally_choice_menu_widget = List::new(app_state.ally_list_items.clone())
+            .block(
+                Block::default()
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::AllyTeamChoices {
+                            Span::styled(
+                                " Ally Monster Choices ",
+                                Style::default().fg(Color::Yellow),
+                            )
+                        } else {
+                            Span::raw(" Ally Monster Choices ")
+                        },
+                    )
+                    .borders(Borders::ALL),
+            )
+            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+            .highlight_symbol(">>");
+        frame.render_stateful_widget(
+            ally_choice_menu_widget,
+            ally_panel_chunks[1],
+            &mut app_state.ally_list_state,
+        );
+
+        // Opponent Team Roster Widget
+        let ally_team_status_widget = Paragraph::new(app_state.ally_team_string.as_str())
+            .block(
+                Block::default()
+                    .title({
+                        if app_state.selected_list == ScrollableWidgets::AllyTeamStatus {
+                            Span::styled(" Ally Team Status ", Style::default().fg(Color::Yellow))
+                        } else {
+                            Span::raw(" Ally Team Status ")
+                        }
+                    })
+                    .borders(Borders::ALL),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(ally_team_status_widget, ally_panel_chunks[2]);
+
+        // Message Log Widget
+        // This clamps the scrolling such that the last line of the text never rises above the bottom of the screen, as would be expected from a scrollable text window.
+        app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.min(
+            app_state
+                .message_buffer
+                .len()
+                .saturating_sub(chunks[1].height as usize - 1),
+        );
+        let text = app_state
+            .message_buffer
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, element)| {
+                if idx >= app_state.message_log_scroll_idx {
+                    Some(Spans::from(Span::raw(element)))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        let paragraph_widget = Paragraph::new(text)
+            .block(
+                Block::default()
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::MessageLog {
+                            Span::styled(" Message Log ", Style::default().fg(Color::Yellow))
+                        } else {
+                            Span::raw(" Message Log ")
+                        },
+                    )
+                    .borders(Borders::ALL),
+            )
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(paragraph_widget, chunks[1]);
+
+        // Divide Chunks on Opponent Panel
+        let opponent_panel_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Percentage(33),
+                    Constraint::Length(6),
+                    Constraint::Length(6),
+                ]
+                .as_ref(),
+            )
+            .split(chunks[2]);
+
+        // Opponent Active Monster Status Widget
+        let opponent_stats_widget = Paragraph::new(app_state.opponent_active_battler_string.as_str())
+            .block(
+                Block::default()
+                    .title(" Opponent Active Monster ")
+                    .borders(Borders::ALL),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(opponent_stats_widget, opponent_panel_chunks[0]);
+
+        // Opponent Choice List Menu
+        let opponent_choice_menu_widget = List::new(app_state.opponent_list_items.clone())
+            .block(
+                Block::default()
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::OpponentTeamChoices {
+                            Span::styled(
+                                " Opponent Monster Choices ",
+                                Style::default().fg(Color::Yellow),
+                            )
+                        } else {
+                            Span::raw(" Opponent Monster Choices ")
+                        },
+                    )
+                    .borders(Borders::ALL),
+            )
+            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+            .highlight_symbol(">>");
+        frame.render_stateful_widget(
+            opponent_choice_menu_widget,
+            opponent_panel_chunks[1],
+            &mut app_state.opponent_list_state,
+        );
+
+        // Opponent Team Roster Widget
+        let opponent_team_status_widget = Paragraph::new(app_state.opponent_team_string.as_str())
+            .block(
+                Block::default()
+                    .title(
+                        if app_state.selected_list == ScrollableWidgets::OpponentTeamStatus {
+                            Span::styled(
+                                " Opponent Team Status ",
+                                Style::default().fg(Color::Yellow),
+                            )
+                        } else {
+                            Span::raw(" Opponent Team Status ")
+                        },
+                    )
+                    .borders(Borders::ALL),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(opponent_team_status_widget, opponent_panel_chunks[2]);
+    })
 }

@@ -3,18 +3,12 @@ pub const FAILURE: bool = false;
 
 use super::MonType;
 
-#[allow(non_camel_case_types)]
-pub type void = ();
-
 pub const INEFFECTIVE: f64 = 0.0;
 pub const NOT_VERY_EFFECTIVE: f64 = 0.5;
 pub const EFFECTIVE: f64 = 1.0;
 pub const SUPER_EFFECTIVE: f64 = 2.0;
 
-#[inline(always)]
-pub fn print_empty_line() {
-    println!("");
-}
+pub const EMPTY_LINE: &str = "";
 
 pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
     match (move_type, target_type) {

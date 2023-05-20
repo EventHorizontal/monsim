@@ -1,4 +1,4 @@
-#![allow(non_upper_case_globals)]
+#![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use super::{
     monster::{MonsterSpecies, StatSet},
@@ -7,7 +7,7 @@ use super::{
 use crate::event::DEFAULT_HANDLERS;
 
 pub const Treecko: MonsterSpecies = MonsterSpecies {
-    name: "Mudkip",
+    name: "Treecko",
     dex_number: 252,
     primary_type: MonType::Grass,
     secondary_type: MonType::None,
@@ -34,7 +34,7 @@ pub const Mudkip: MonsterSpecies = MonsterSpecies {
 };
 
 pub const Drifloon: MonsterSpecies = MonsterSpecies {
-    name: "Drifoon",
+    name: "Drifloon",
     dex_number: 425,
     primary_type: MonType::Ghost,
     secondary_type: MonType::Flying,

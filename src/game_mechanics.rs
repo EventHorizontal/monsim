@@ -9,8 +9,8 @@ use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{
-    ActivationOrder, EventHandlerFilters, EventHandlerSet, EventHandlerSetInfo,
-    EventHandlerSetInfoList,
+    ActivationOrder, EventHandlerFilters, EventHandlerSet, EventHandlerSetInstance,
+    EventHandlerSetInstanceList,
 };
 pub use ability::*;
 pub use monster::*;
@@ -30,7 +30,7 @@ pub struct BattlerUID {
 
 impl Display for BattlerUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}_{:?}", self.battler_number, self.team_id)
+        write!(f, "{:?}{:?}", self.team_id, self.battler_number)
     }
 }
 
@@ -40,40 +40,45 @@ pub struct MoveUID {
     pub move_number: MoveNumber,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct MonsterTeam {
-    battlers: [Option<Battler>; 6],
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BattlerTeam {
+    battlers: Vec<Battler>,
 }
 
-impl MonsterTeam {
-    pub fn new(monsters: [Option<Battler>; 6]) -> Self {
+const MAX_BATTLERS_PER_TEAM: usize = 6;
+
+impl BattlerTeam {
+    pub fn new(monsters: Vec<Battler>) -> Self {
         assert!(
-            monsters.first() != None,
+            monsters.first().is_some(),
             "There is not a single monster in the team."
         );
-        return MonsterTeam { battlers: monsters };
+        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
+        BattlerTeam { battlers: monsters }
     }
 
-    pub fn battlers(&self) -> &[Option<Battler>; 6] {
+    pub fn battlers(&self) -> &Vec<Battler> {
         &self.battlers
     }
 
-    pub fn battlers_mut(&mut self) -> &mut [Option<Battler>; 6] {
+    pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
         &mut self.battlers
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInfoList {
+    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
-        for optional_battler in self.battlers.iter() {
-            if let Some(battler) = optional_battler {
-                out.append(&mut battler.event_handlers())
-            }
+        for battler in self.battlers.iter() {
+            out.append(&mut battler.event_handlers())
         }
         out
     }
+
+    pub fn active_battler(&self) -> &Battler {
+        &self.battlers[0]
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battler {
     pub uid: BattlerUID,
     pub on_field: bool,
@@ -96,7 +101,7 @@ impl Display for Battler {
             ]
             .as_str(),
         );
-        let number_of_effects = self.moveset.moves().flatten().count();
+        let number_of_effects = self.moveset.moves().count();
 
         out.push_str("\t│\t├── ");
         out.push_str(
@@ -110,7 +115,7 @@ impl Display for Battler {
         out.push_str("\t│\t├── ");
         out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
 
-        for (i, move_) in self.moveset.moves().flatten().enumerate() {
+        for (i, move_) in self.moveset.moves().enumerate() {
             if i < number_of_effects - 1 {
                 out.push_str("\t│\t├── ");
             } else {
@@ -140,17 +145,17 @@ impl Battler {
         }
     }
 
-    fn is_type(&self, test_type: MonType) -> bool {
+    pub fn is_type(&self, test_type: MonType) -> bool {
         self.monster.is_type(test_type)
     }
 
-    pub fn monster_event_handler_info(&self) -> EventHandlerSetInfo {
+    pub fn monster_event_handler_instance(&self) -> EventHandlerSetInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: 0,
         };
-        EventHandlerSetInfo {
+        EventHandlerSetInstance {
             event_handler_set: self.monster.event_handlers(),
             owner_uid: self.uid,
             activation_order,
@@ -158,13 +163,13 @@ impl Battler {
         }
     }
 
-    pub fn ability_event_handler_info(&self) -> EventHandlerSetInfo {
+    pub fn ability_event_handler_instance(&self) -> EventHandlerSetInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: self.ability.species.order,
         };
-        EventHandlerSetInfo {
+        EventHandlerSetInstance {
             event_handler_set: self.ability.event_handlers(),
             owner_uid: self.uid,
             activation_order,
@@ -172,11 +177,13 @@ impl Battler {
         }
     }
 
-    pub fn moveset_event_handler_info(&self, uid: BattlerUID) -> EventHandlerSetInfoList {
+    pub fn moveset_event_handler_instance_list(
+        &self,
+        uid: BattlerUID,
+    ) -> EventHandlerSetInstanceList {
         self.moveset
             .moves()
-            .flatten()
-            .map(|it| EventHandlerSetInfo {
+            .map(|it| EventHandlerSetInstance {
                 event_handler_set: it.species.event_handlers,
                 owner_uid: uid,
                 activation_order: ActivationOrder {
@@ -193,12 +200,23 @@ impl Battler {
         self.monster.fainted()
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInfoList {
+    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
-        out.push(self.monster_event_handler_info());
-        out.append(&mut self.moveset_event_handler_info(self.uid));
-        out.push(self.ability_event_handler_info());
+        out.push(self.monster_event_handler_instance());
+        out.append(&mut self.moveset_event_handler_instance_list(self.uid));
+        out.push(self.ability_event_handler_instance());
         out
+    }
+
+    pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
+        self.moveset
+            .moves()
+            .enumerate()
+            .map(|(idx, _)| MoveUID {
+                battler_uid: self.uid,
+                move_number: MoveNumber::from(idx),
+            })
+            .collect()
     }
 }
 

@@ -1,4 +1,5 @@
-use std::ops::Index;
+use core::panic;
+use std::ops::{Index, IndexMut};
 
 use super::{Debug, EventHandlerSet, MonType};
 
@@ -69,14 +70,70 @@ impl StatSet {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Monster {
-    pub nickname: &'static str,
-    pub level: u16,
-    pub max_health: u16,
-    pub nature: MonsterNature,
-    pub stats: StatSet,
-    pub current_health: u16,
-    pub species: MonsterSpecies,
+pub struct StatModifierSet {
+    att: i8,
+    def: i8,
+    spa: i8,
+    spd: i8,
+    spe: i8,
+}
+
+impl Index<Stat> for StatModifierSet {
+    type Output = i8;
+
+    fn index(&self, index: Stat) -> &Self::Output {
+        match index {
+            Stat::Hp => panic!("Error: StatModifierSet does not have an HP entry and so cannot be indexed by Stat::HP."),
+            Stat::PhysicalAttack => &self.att,
+            Stat::PhysicalDefense => &self.def,
+            Stat::SpecialAttack => &self.spa,
+            Stat::SpecialDefense => &self.spd,
+            Stat::Speed => &self.spe,
+        }
+    }
+}
+
+impl IndexMut<Stat> for StatModifierSet {
+    fn index_mut(&mut self, index: Stat) -> &mut Self::Output {
+        match index {
+            Stat::Hp => panic!("Error: StatModifierSet does not have an HP entry and so cannot be indexed by Stat::HP."),
+            Stat::PhysicalAttack => &mut self.att,
+            Stat::PhysicalDefense => &mut self.def,
+            Stat::SpecialAttack => &mut self.spa,
+            Stat::SpecialDefense => &mut self.spd,
+            Stat::Speed => &mut self.spe,
+        }
+    }
+}
+
+impl StatModifierSet {
+    pub const fn new(att: i8, def: i8, spa: i8, spd: i8, spe: i8) -> Self {
+        Self {
+            att,
+            def,
+            spa,
+            spd,
+            spe,
+        }
+    }
+
+    pub fn raise_stat(&mut self, stat: Stat, number_of_stages: u8) -> u8 {
+        // So far stat raises have never been larger than +3, but this might be removed in the
+        // interest of innovation.
+        assert!(number_of_stages <= 3);
+        let effective_stages = (6 - self[stat]).min(number_of_stages as i8);
+        self[stat] += effective_stages;
+        effective_stages as u8
+    }
+
+    pub fn lower_stat(&mut self, stat: Stat, number_of_stages: u8) -> u8 {
+        // So far stat drops have never been larger than -3, but this might be removed in the
+        // interest of innovation.
+        assert!(number_of_stages <= 3);
+        let effective_stages = (-6 - self[stat]).max(number_of_stages as i8);
+        self[stat] -= effective_stages;
+        effective_stages as u8
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,6 +144,18 @@ pub enum Stat {
     SpecialAttack,
     SpecialDefense,
     Speed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Monster {
+    pub nickname: &'static str,
+    pub level: u16,
+    pub max_health: u16,
+    pub nature: MonsterNature,
+    pub stats: StatSet,
+    pub stat_modifiers: StatModifierSet,
+    pub current_health: u16,
+    pub species: MonsterSpecies,
 }
 
 impl Monster {
@@ -126,6 +195,13 @@ impl Monster {
                 spd: get_non_hp_stat(Stat::SpecialDefense),
                 spe: get_non_hp_stat(Stat::Speed),
             },
+            stat_modifiers: StatModifierSet {
+                att: 0,
+                def: 0,
+                spa: 0,
+                spd: 0,
+                spe: 0,
+            },
             max_health: health_stat,
             current_health: health_stat,
         }
@@ -142,16 +218,34 @@ impl Monster {
     pub(crate) fn fainted(&self) -> bool {
         self.current_health == 0
     }
+
+    pub fn name(&self) -> String {
+        self.nickname.to_owned()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BattlerNumber {
-    First,
-    Second,
-    Third,
-    Fourth,
-    Fifth,
-    Sixth,
+    _1,
+    _2,
+    _3,
+    _4,
+    _5,
+    _6,
+}
+
+impl From<usize> for BattlerNumber {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => BattlerNumber::_1,
+            1 => BattlerNumber::_2,
+            2 => BattlerNumber::_3,
+            3 => BattlerNumber::_4,
+            4 => BattlerNumber::_5,
+            5 => BattlerNumber::_6,
+            _ => panic!("BattlerNumber can only be formed from usize 0 to 5."),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

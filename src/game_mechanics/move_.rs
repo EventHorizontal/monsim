@@ -1,4 +1,4 @@
-use crate::event::EventHandlerFilters;
+use crate::{event::EventHandlerFilters, prng::Prng, BattleContext, BattlerUID};
 use core::slice::Iter;
 use std::ops::Index;
 
@@ -15,6 +15,7 @@ pub struct MoveSpecies {
     pub priority: u16,
     pub event_handlers: EventHandlerSet,
     pub event_handler_filters: EventHandlerFilters,
+    pub on_activate: fn(&mut BattleContext, &mut Prng, BattlerUID, BattlerUID) -> (),
 }
 
 impl Debug for MoveSpecies {
@@ -56,6 +57,16 @@ impl Move {
     pub fn base_accuracy(&self) -> u16 {
         self.species.base_accuracy
     }
+
+    pub(crate) fn on_activate(
+        &self,
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
+        owner_uid: BattlerUID,
+        target_uid: BattlerUID,
+    ) {
+        (self.species.on_activate)(ctx, prng, owner_uid, target_uid);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,17 +76,19 @@ pub enum MoveCategory {
     Status,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+const MAX_MOVES_PER_MOVESET: usize = 4;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MoveSet {
-    moves: [Option<Move>; 4],
+    moves: Vec<Move>,
 }
 
 impl Index<usize> for MoveSet {
-    type Output = Option<Move>;
+    type Output = Move;
 
     fn index(&self, index: usize) -> &Self::Output {
         assert!(
-            index < 4,
+            index < MAX_MOVES_PER_MOVESET,
             "MoveSet can only be indexed with 0-3. The index passed was {}",
             index
         );
@@ -84,39 +97,45 @@ impl Index<usize> for MoveSet {
 }
 
 impl MoveSet {
-    pub fn new(moves: [Option<Move>; 4]) -> Self {
-        assert!(moves.first() != None, "There is no first move.");
-        return MoveSet { moves };
+    pub fn new(moves: Vec<Move>) -> Self {
+        assert!(moves.first().is_some(), "There is no first move.");
+        assert!(moves.len() <= MAX_MOVES_PER_MOVESET);
+        MoveSet { moves }
     }
 
-    pub fn moves(&self) -> Iter<Option<Move>> {
+    pub fn moves(&self) -> Iter<Move> {
         return self.moves.iter();
     }
 
-    pub fn move_(&self, id: MoveNumber) -> &Option<Move> {
-        &self
-            .moves
+    pub fn move_(&self, id: MoveNumber) -> &Move {
+        self.moves
             .get(id as usize)
-            .expect(&format!["The move at the {:?} index should exist.", id])
+            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
+    }
+
+    pub fn move_mut(&mut self, id: MoveNumber) -> &mut Move {
+        self.moves
+            .get_mut(id as usize)
+            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MoveNumber {
-    First,
-    Second,
-    Third,
-    Fourth,
+    _1,
+    _2,
+    _3,
+    _4,
 }
 
-impl MoveNumber {
-    pub fn from(number: usize) -> Self {
-        match number {
-            0 => MoveNumber::First,
-            1 => MoveNumber::Second,
-            2 => MoveNumber::Third,
-            3 => MoveNumber::Fourth,
-            _ => panic!("Move Number must be an integer between 0 and 3."),
+impl From<usize> for MoveNumber {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => MoveNumber::_1,
+            1 => MoveNumber::_2,
+            2 => MoveNumber::_3,
+            3 => MoveNumber::_4,
+            _ => panic!("MoveNumber can only be formed from usize 0 to 3."),
         }
     }
 }

@@ -1,10 +1,23 @@
-#![allow(non_upper_case_globals)]
+#![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use super::{
     move_::{MoveCategory, MoveSpecies},
     MonType,
 };
-use crate::event::{EventHandlerFilters, DEFAULT_HANDLERS};
+use crate::{
+    event::{EventHandlerFilters, DEFAULT_HANDLERS},
+    prng::Prng,
+    BattleContext, BattlerUID, SecondaryAction, Stat,
+};
+
+// TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate
+fn no_on_activate(
+    _context: &mut BattleContext,
+    _prng: &mut Prng,
+    _attacker_uid: BattlerUID,
+    _target_uid: BattlerUID,
+) {
+}
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -16,6 +29,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     event_handlers: DEFAULT_HANDLERS,
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
+    on_activate: no_on_activate,
 };
 
 pub const Scratch: MoveSpecies = MoveSpecies {
@@ -28,6 +42,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     event_handlers: DEFAULT_HANDLERS,
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
+    on_activate: no_on_activate,
 };
 
 pub const Ember: MoveSpecies = MoveSpecies {
@@ -40,6 +55,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     event_handlers: DEFAULT_HANDLERS,
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
+    on_activate: no_on_activate,
 };
 
 pub const Bubble: MoveSpecies = MoveSpecies {
@@ -52,6 +68,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     event_handlers: DEFAULT_HANDLERS,
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
+    on_activate: no_on_activate,
 };
 
 pub const Growl: MoveSpecies = MoveSpecies {
@@ -64,4 +81,10 @@ pub const Growl: MoveSpecies = MoveSpecies {
     event_handlers: DEFAULT_HANDLERS,
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
+    on_activate: |ctx: &mut BattleContext,
+                  prng,
+                  _attacker_uid: BattlerUID,
+                  target_uid: BattlerUID| {
+        let _ = SecondaryAction::lower_stat(ctx, prng, target_uid, Stat::PhysicalAttack, 1);
+    },
 };

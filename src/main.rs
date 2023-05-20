@@ -230,7 +230,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     execute!(std::io::stdout(), EnterAlternateScreen)?;
 
     'app: loop {
-        let should_exit = update_state_from_input(&mut app_state, &mut battle, &mut terminal, &receiver)?;
+        let should_exit = update_state_from_input(&mut terminal, &mut app_state, &mut battle, &receiver)?;
         if should_exit {
             break 'app;
         }
@@ -243,9 +243,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn update_state_from_input(
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>, 
     app_state: &mut AppState, 
     battle: &mut Battle, 
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>, 
     receiver: &Receiver<TuiEvent<KeyEvent>>
 ) -> MonsimIoResult {
     let mut result: MonsimIoResult = Ok(false);

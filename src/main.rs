@@ -192,7 +192,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialise the Program
     let mut app_state = AppState::new(&mut battle.ctx);
 
-    // Raw mode allows to not require enter presses to get
+    // Raw mode allows to not require enter presses to get input
     enable_raw_mode().expect("Raw mode should always enableable.");
 
     // Construct an mpsc channel to communicate between main thread and io thread

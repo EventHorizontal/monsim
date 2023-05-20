@@ -6,7 +6,36 @@ use super::{game_mechanics::BattlerUID, Battle, BattleContext};
 
 #[allow(non_camel_case_types)]
 type void = ();
-pub type EventHandler<R> = fn(&mut BattleContext, &mut Prng, BattlerUID, R) -> EventReturn<R>;
+
+#[cfg(not(feature="debug"))]
+#[derive(Clone, Copy)]
+pub struct EventHandler<R: Clone + Copy> {
+    pub callback: fn(&mut BattleContext, &mut Prng, BattlerUID, R) -> EventReturn<R>,
+}
+
+
+#[cfg(not(feature="debug"))]
+impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EventHandler").field("callback", &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>)).finish()
+    }
+}
+
+#[cfg(feature="debug")]
+#[derive(Clone, Copy)]
+pub struct EventHandler<R: Clone + Copy> {
+    pub callback: fn(&mut BattleContext, &mut Prng, BattlerUID, R) -> EventReturn<R>,
+    #[cfg(feature="debug")]
+    pub dbg_location: &'static str,
+}
+
+#[cfg(feature="debug")]
+impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EventHandler").field("callback", &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>)).field("location", &self.dbg_location).finish()
+    }
+}
+
 pub type ExplicitlyAnnotatedEventHandler<'a, R> =
     fn(&'a mut BattleContext, &'a mut Prng, BattlerUID, R) -> EventReturn<R>;
 
@@ -19,7 +48,7 @@ pub struct EventHandlerSetInstance {
 }
 pub type EventHandlerSetInstanceList = Vec<EventHandlerSetInstance>;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct EventHandlerInstance<R: Clone + Copy> {
     pub event_name: &'static str,
     pub event_handler: EventHandler<R>,
@@ -28,22 +57,22 @@ pub struct EventHandlerInstance<R: Clone + Copy> {
     pub filters: EventHandlerFilters,
 }
 
-impl<R: Debug + Clone + Copy> Debug for EventHandlerInstance<R> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandlerInstance")
-            .field("event_name", &self.event_name)
-            .field("event_handler", &std::any::type_name::<EventHandler<R>>())
-            .field("owner_uid", &self.owner_uid)
-            .field("activation_order", &self.activation_order)
-            .field("filters", &self.filters)
-            .finish()
-    }
-}
+// impl<R: Debug + Clone + Copy> Debug for EventHandlerInstance<R> {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         f.debug_struct("EventHandlerInstance")
+//             .field("event_name", &self.event_name)
+//             .field("event_handler", &std::any::type_name::<EventHandler<R>>())
+//             .field("owner_uid", &self.owner_uid)
+//             .field("activation_order", &self.activation_order)
+//             .field("filters", &self.filters)
+//             .finish()
+//     }
+// }
 
 pub type EventHandlerInstanceList<R> = Vec<EventHandlerInstance<R>>;
 pub type EventReturn<R> = R;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct EventHandlerSet {
     pub on_try_move: Option<EventHandler<bool>>,
     pub on_damage_dealt: Option<EventHandler<void>>,
@@ -55,47 +84,47 @@ pub struct EventHandlerSet {
     pub on_status_move_used: Option<EventHandler<void>>,
 }
 
-impl Debug for EventHandlerSet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandlerSet")
-            .field("on_try_move", {
-                &self
-                    .on_try_move
-                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
-            })
-            .field("on_damage_dealt", {
-                &self
-                    .on_damage_dealt
-                    .map(|_it| std::any::type_name::<EventHandler<void>>())
-            })
-            .field("on_try_activate_ability", {
-                &self
-                    .on_try_activate_ability
-                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
-            })
-            .field("on_ability_activated", {
-                &self
-                    .on_ability_activated
-                    .map(|_it| std::any::type_name::<EventHandler<void>>())
-            })
-            .field("on_modify_accuracy", {
-                &self
-                    .on_modify_accuracy
-                    .map(|_it| std::any::type_name::<EventHandler<u16>>())
-            })
-            .field("on_try_raise_stat", {
-                &self
-                    .on_modify_accuracy
-                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
-            })
-            .field("on_try_lower_stat", {
-                &self
-                    .on_modify_accuracy
-                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
-            })
-            .finish()
-    }
-}
+// impl Debug for EventHandlerSet {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         f.debug_struct("EventHandlerSet")
+//             .field("on_try_move", {
+//                 &self
+//                     .on_try_move
+//                     .map(|_it| std::any::type_name::<EventHandler<bool>>())
+//             })
+//             .field("on_damage_dealt", {
+//                 &self
+//                     .on_damage_dealt
+//                     .map(|_it| std::any::type_name::<EventHandler<void>>())
+//             })
+//             .field("on_try_activate_ability", {
+//                 &self
+//                     .on_try_activate_ability
+//                     .map(|_it| std::any::type_name::<EventHandler<bool>>())
+//             })
+//             .field("on_ability_activated", {
+//                 &self
+//                     .on_ability_activated
+//                     .map(|_it| std::any::type_name::<EventHandler<void>>())
+//             })
+//             .field("on_modify_accuracy", {
+//                 &self
+//                     .on_modify_accuracy
+//                     .map(|_it| std::any::type_name::<EventHandler<u16>>())
+//             })
+//             .field("on_try_raise_stat", {
+//                 &self
+//                     .on_modify_accuracy
+//                     .map(|_it| std::any::type_name::<EventHandler<bool>>())
+//             })
+//             .field("on_try_lower_stat", {
+//                 &self
+//                     .on_modify_accuracy
+//                     .map(|_it| std::any::type_name::<EventHandler<bool>>())
+//             })
+//             .finish()
+//     }
+// }
 
 pub const DEFAULT_HANDLERS: EventHandlerSet = EventHandlerSet {
     on_try_move: None,
@@ -159,7 +188,7 @@ impl EventResolver {
         } in event_handler_instances.into_iter()
         {
             if ctx.filter_event_handlers(caller_uid, owner_uid, filters) {
-                relay = event_handler(ctx, prng, owner_uid, relay);
+                relay = (event_handler.callback)(ctx, prng, owner_uid, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -214,7 +243,7 @@ bitflags! {
 }
 
 pub trait InBattleEvent {
-    type EventReturnType: Sized;
+    type EventReturnType: Sized + Clone + Copy;
 
     fn corresponding_handler(
         &self,

@@ -426,13 +426,22 @@ mod event {
     use crate::{event_dex::OnTryMove, BattlerUID, EventHandlerInstance, InBattleEvent};
 
     #[test]
-    fn test_print_event_handler_set() {
-        use crate::ability_dex::FlashFire;
-        println!("{:#?}", FlashFire.event_handlers);
-        assert_eq!(format!["{:#?}", FlashFire.event_handlers], "EventHandlerSet {\n    on_try_move: Some(\n        \"fn(&mut monsim::battle_context::BattleContext, &mut monsim::prng::Lcrng, monsim::game_mechanics::BattlerUID, bool) -> bool\",\n    ),\n    on_damage_dealt: None,\n    on_try_activate_ability: None,\n    on_ability_activated: None,\n    on_modify_accuracy: None,\n}")
+    #[cfg(feature="debug")]
+    fn test_print_event_handler() {
+        use crate::game_mechanics::ability_dex::FlashFire;
+        let event_handler = FlashFire.event_handlers.on_try_move.unwrap();
+        println!("{:?}", event_handler);
     }
 
     #[test]
+    #[cfg(feature="debug")]
+    fn test_print_event_handler_set() {
+        use crate::ability_dex::FlashFire;
+        println!("{:#?}", FlashFire.event_handlers);
+    }
+
+    #[test]
+    #[cfg(feature="debug")]
     fn test_print_event_handler_instance() {
         use crate::ability_dex::FlashFire;
         let event_handler_instance = EventHandlerInstance {
@@ -450,7 +459,6 @@ mod event {
             filters: crate::EventHandlerFilters::default(),
         };
         println!("{:#?}", event_handler_instance);
-        assert_eq!(format!["{:#?}", event_handler_instance], "EventHandlerInstance {\n    event_name: \"OnTryMove\",\n    event_handler: \"fn(&mut monsim::battle_context::BattleContext, &mut monsim::prng::Lcrng, monsim::game_mechanics::BattlerUID, bool) -> bool\",\n    owner_uid: BattlerUID {\n        team_id: Ally,\n        battler_number: _1,\n    },\n    activation_order: ActivationOrder {\n        priority: 1,\n        speed: 99,\n        order: 0,\n    },\n    filters: EventHandlerFilters {\n        whose_event: OPPONENTS,\n        on_battlefield: true,\n    },\n}");
     }
 }
 

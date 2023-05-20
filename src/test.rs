@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod main {
-    use bcontext_macro::battle_context;
+    use battle_context_macro::battle_context;
 
     use crate::BattleContext;
 
@@ -137,7 +137,7 @@ mod main {
 #[cfg(test)]
 mod bcontext {
 
-    use bcontext_macro::battle_context;
+    use battle_context_macro::battle_context;
 
     use crate::{
         prng::{self, Prng},
@@ -226,7 +226,7 @@ mod bcontext {
 
     #[test]
     fn test_event_filtering_for_event_sources() {
-        let test_bcontext = battle_context!(
+        let test_battle_context = battle_context!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {
@@ -250,7 +250,7 @@ mod bcontext {
             }
         );
 
-        let passed_filter = test_bcontext.filter_event_handlers(
+        let passed_filter = test_battle_context.filter_event_handlers(
             BattlerUID {
                 team_id: TeamID::Ally,
                 battler_number: BattlerNumber::_1,

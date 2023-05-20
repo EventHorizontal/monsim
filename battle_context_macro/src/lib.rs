@@ -1,6 +1,6 @@
-mod customsyntax;
+mod dsl_syntax;
 
-use customsyntax::{BattleStateExpr, EffectType, MonsterExpr};
+use dsl_syntax::{BattleStateExpr, EffectType, MonsterExpr};
 
 use proc_macro2::{Literal, TokenStream};
 use quote::quote;

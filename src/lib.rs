@@ -17,7 +17,7 @@ pub use io::*;
 use prng::Prng;
 
 pub use battle_context::BattleContext;
-pub use bcontext_macro::battle_context;
+pub use battle_context_macro::battle_context;
 
 type TurnOutcome = Result<(), SimError>;
 

@@ -31,16 +31,7 @@ use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
 /// ```
 /// and produces a `battle::BattleContext`.
 #[proc_macro]
-pub fn bcontext(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    construct_output(input, quote!(monsim))
-}
-
-#[proc_macro]
-pub fn bcontext_internal(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    construct_output(input, quote!(crate))
-}
-
-fn construct_output(input: proc_macro::TokenStream, crate_name: TokenStream) -> proc_macro::TokenStream {
+pub fn battle_context(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the expression ________________________________________________________________
     let context_expr = parse_macro_input!(input as BattleStateExpr);
 
@@ -51,28 +42,29 @@ fn construct_output(input: proc_macro::TokenStream, crate_name: TokenStream) -> 
     } = context_expr;
     
     let ally_monsters_vec = construct_team_token_stream(
-        crate_name.clone(),
+        quote!(monsim),
         ally_team_fields, 
         quote!(Ally)
     );
     let opponent_monsters_vec = construct_team_token_stream(
-        crate_name,
+        quote!(monsim),
         opponent_team_fields, 
         quote!(Opponent),
     );
     
-    let entities = quote!(crate::game_mechanics);
-    let output = quote!( 
-        BattleContext::new(
-            #entities::BattlerTeam::new(#ally_monsters_vec),
-            #entities::BattlerTeam::new(#opponent_monsters_vec),
-        )
+    let entities = quote!(monsim::game_mechanics);
+    let output = quote!({ 
+            extern crate self as monsim;
+            BattleContext::new(
+                #entities::BattlerTeam::new(#ally_monsters_vec),
+                #entities::BattlerTeam::new(#opponent_monsters_vec),
+            )
+        }
     );
     
     // Return the final stream of Tokens ______________________________________________________
     output.into()
 }
-
 
 fn construct_team_token_stream<'a>(
     package_ident: TokenStream,

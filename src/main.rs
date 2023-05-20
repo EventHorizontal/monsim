@@ -135,7 +135,7 @@ enum TuiEvent<I> {
 }
 
 fn main() -> MonsimIOResult {
-    let mut battle = Battle::new(bcontext!(
+    let mut battle = Battle::new(battle_context!(
         {
             AllyTeam {
                 mon Torchic "Ruby" {

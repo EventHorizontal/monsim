@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod main {
-    use bcontext_macro::bcontext_internal;
+    use bcontext_macro::battle_context;
 
     use crate::BattleContext;
 
     #[test]
     fn test_bcontext_macro() {
-        let test_bcontext = bcontext_internal!(
+        let test_bcontext = battle_context!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {
@@ -136,7 +136,8 @@ mod main {
 
 #[cfg(test)]
 mod bcontext {
-    use bcontext_macro::bcontext_internal;
+
+    use bcontext_macro::battle_context;
 
     use crate::{
         prng::{self, Prng},
@@ -148,7 +149,7 @@ mod bcontext {
     fn test_priority_sorting_deterministic() {
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_bcontext = bcontext_internal!(
+            let test_bcontext = battle_context!(
                 {
                     AllyTeam {
                         mon Torchic "Ruby" {
@@ -225,7 +226,7 @@ mod bcontext {
 
     #[test]
     fn test_event_filtering_for_event_sources() {
-        let test_bcontext = bcontext_internal!(
+        let test_bcontext = battle_context!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {
@@ -267,7 +268,7 @@ mod bcontext {
     fn test_priority_sorting_with_speed_ties() {
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_bcontext = bcontext_internal!(
+            let test_bcontext = battle_context!(
                 {
                     AllyTeam {
                         mon Torchic "A" {
@@ -388,7 +389,7 @@ mod bcontext {
 
     #[test]
     fn test_display_battle_context() {
-        let test_bcontext = bcontext_internal!(
+        let test_bcontext = battle_context!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {
@@ -417,7 +418,7 @@ mod bcontext {
             }
         );
         println!("{}", test_bcontext);
-        assert_eq!(format!["{}", test_bcontext], String::from("Ally Team\n\t├── Ruby the Torchic (Ally_1) [HP: 152/152]\n\t│\t│\n\t│\t├── type Fire/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Ember\n\t│\t└── mov Scratch\n\t│\t\n\t├── Sapphire the Mudkip (Ally_2) [HP: 157/157]\n\t│\t│\n\t│\t├── type Water/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Tackle\n\t│\t└── mov Bubble\n\t│\t\n\t└── Emerald the Mudkip (Ally_3) [HP: 147/147]\n\t\t│\n\t\t├── type Grass/None \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\nOpponent Team\n\t└── Cheerio the Drifloon (Opponent_1) [HP: 197/197]\n\t\t│\n\t\t├── type Ghost/Flying \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\n"))
+        assert_eq!(format!["{}", test_bcontext], String::from("Ally Team\n\t├── Ruby the Torchic (Ally_1) [HP: 152/152]\n\t│\t│\n\t│\t├── type Fire/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Ember\n\t│\t└── mov Scratch\n\t│\t\n\t├── Sapphire the Mudkip (Ally_2) [HP: 157/157]\n\t│\t│\n\t│\t├── type Water/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Tackle\n\t│\t└── mov Bubble\n\t│\t\n\t└── Emerald the Treecko (Ally_3) [HP: 147/147]\n\t\t│\n\t\t├── type Grass/None \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\nOpponent Team\n\t└── Cheerio the Drifloon (Opponent_1) [HP: 197/197]\n\t\t│\n\t\t├── type Ghost/Flying \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\n"))
     }
 }
 

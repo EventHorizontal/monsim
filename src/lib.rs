@@ -17,9 +17,7 @@ pub use io::*;
 use prng::Prng;
 
 pub use battle_context::BattleContext;
-pub use bcontext_macro::bcontext;
-#[allow(unused_imports)]
-use bcontext_macro::bcontext_internal;
+pub use bcontext_macro::battle_context;
 
 type TurnOutcome = Result<(), SimError>;
 

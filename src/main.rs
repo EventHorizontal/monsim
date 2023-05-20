@@ -350,7 +350,6 @@ fn update_state_from_input(
                                     ScrollableWidgets::AllyTeamChoices => {
                                         app_state.selected_list =
                                             ScrollableWidgets::OpponentTeamChoices;
-                                        app_state.ally_list_state.select(None);
                                     }
                                     ScrollableWidgets::OpponentTeamChoices => {
                                         app_state.selected_list = ScrollableWidgets::MessageLog;

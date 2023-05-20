@@ -14,7 +14,7 @@ pub use event::*;
 pub use game_mechanics::*;
 pub use global_constants::*;
 pub use io::*;
-use prng::Lcrng;
+use prng::Prng;
 
 pub use battle_context::BattleContext;
 pub use bcontext_macro::bcontext;
@@ -25,15 +25,15 @@ type TurnOutcome = Result<(), SimError>;
 
 #[derive(Debug)]
 pub struct Battle {
-    pub context: BattleContext,
-    pub prng: Lcrng,
+    pub ctx: BattleContext,
+    pub prng: Prng,
 }
 
 impl Battle {
-    pub fn new(context: BattleContext) -> Self {
+    pub fn new(ctx: BattleContext) -> Self {
         Battle {
-            context,
-            prng: Lcrng::new(prng::seed_from_time_now()),
+            ctx,
+            prng: Prng::new(prng::seed_from_time_now()),
         }
     }
 
@@ -41,24 +41,24 @@ impl Battle {
         let mut result = Ok(());
 
         Battle::priority_sort(&mut self.prng, &mut chosen_actions, &mut |choice| {
-            self.context.choice_activation_order(choice)
+            self.ctx.choice_activation_order(choice)
         });
 
         for chosen_action in chosen_actions.into_iter() {
-            self.context.current_action = Some(chosen_action);
+            self.ctx.current_action = Some(chosen_action);
             result = match chosen_action {
                 ActionChoice::Move {
                     move_uid,
                     target_uid,
-                } => match self.context.move_(move_uid).category() {
+                } => match self.ctx.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(
-                        &mut self.context,
+                        &mut self.ctx,
                         &mut self.prng,
                         move_uid,
                         target_uid,
                     ),
                     MoveCategory::Status => PrimaryAction::status_move(
-                        &mut self.context,
+                        &mut self.ctx,
                         &mut self.prng,
                         move_uid,
                         target_uid,
@@ -66,14 +66,13 @@ impl Battle {
                 },
             };
             // Check if any monster fainted due to the last action.
-            if let Some(battler) = self.context.battlers().find(|it| it.fainted()) {
-                self.context
-                    .message_buffer
-                    .push(format!["{} fainted!", battler.monster.nickname]);
-                self.context.state = BattleState::Finished;
+            if let Some(battler) = self.ctx.battlers().find(|it| it.fainted()) {
+                self.ctx
+                    .push_message(&format!["{} fainted!", battler.monster.nickname]);
+                self.ctx.state = BattleState::Finished;
                 break;
             };
-            self.context.message_buffer.push(String::from(EMPTY_LINE));
+            self.ctx.push_message(&EMPTY_LINE);
         }
 
         result
@@ -81,7 +80,7 @@ impl Battle {
 
     /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
     pub(crate) fn priority_sort<T: Clone + Copy>(
-        prng: &mut Lcrng,
+        prng: &mut Prng,
         vector: &mut Vec<T>,
         activation_order: &mut dyn FnMut(T) -> ActivationOrder,
     ) {
@@ -132,7 +131,7 @@ impl Battle {
 
     /// Shuffles the event handler order for consecutive speed-tied items in place using their associated activation orders.
     fn resolve_speed_tie<T: Clone + Copy>(
-        prng: &mut Lcrng,
+        prng: &mut Prng,
         vector: &mut [T],
         tied_monster_indices: &mut Vec<usize>,
     ) {

@@ -4,7 +4,7 @@ use std::ops::RangeInclusive;
 
 // LCRNG -> Linear Congruential Random Number Generator
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Lcrng {
+pub struct Prng {
     start_seed: u64,
     current_seed: u64,
 }
@@ -19,7 +19,7 @@ pub fn seed_from_time_now() -> u64 {
 const A: u64 = 0x5D588B656C078965;
 const C: u64 = 0x00269EC3;
 
-impl Lcrng {
+impl Prng {
     pub(crate) fn new(start_seed: u64) -> Self {
         Self {
             start_seed,

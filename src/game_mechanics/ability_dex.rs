@@ -10,12 +10,12 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
     event_handlers: EventHandlerSet {
-        on_try_move: Some(|context, prng, owner_uid, _relay| {
-            let current_move = *context
+        on_try_move: Some(|ctx, prng, owner_uid, _relay| {
+            let current_move = *ctx
                 .get_current_action_as_move()
                 .expect("The current action should be a move within on_try_move handler context.");
             if current_move.species.type_ == MonType::Fire
-                && SecondaryAction::activate_ability(context, prng, owner_uid)
+                && SecondaryAction::activate_ability(ctx, prng, owner_uid)
             {
                 return FAILURE;
             }
@@ -23,10 +23,8 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         }),
         ..DEFAULT_HANDLERS
     },
-    on_activate: |context, _owner_uid| {
-        context
-            .message_buffer
-            .push(String::from("Flash Fire activated!"))
+    on_activate: |ctx, _owner_uid| {
+        ctx.push_message(&"Flash Fire activated!");
     },
     event_handler_filters: EventHandlerFilters::default(),
     order: 0,

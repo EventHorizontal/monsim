@@ -139,7 +139,7 @@ mod bcontext {
     use bcontext_macro::bcontext_internal;
 
     use crate::{
-        prng::{self, Lcrng},
+        prng::{self, Prng},
         Battle, BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters,
         EventHandlerInstance, InBattleEvent, TeamID,
     };
@@ -177,7 +177,7 @@ mod bcontext {
                 }
             );
 
-            let mut prng = Lcrng::new(prng::seed_from_time_now());
+            let mut prng = Prng::new(prng::seed_from_time_now());
 
             let event_handler_set_instances = test_bcontext.event_handler_set_instances();
             use crate::event::event_dex::OnTryMove;
@@ -335,7 +335,7 @@ mod bcontext {
                     }
                 }
             );
-            let mut prng = Lcrng::new(i as u64);
+            let mut prng = Prng::new(i as u64);
 
             let event_handler_set_instances = test_bcontext.event_handler_set_instances();
             use crate::event::event_dex::OnTryMove;
@@ -462,7 +462,7 @@ mod prng {
 
     #[test]
     fn test_prng_percentage_chance() {
-        let mut lcrng = Lcrng::new(seed_from_time_now());
+        let mut lcrng = Prng::new(seed_from_time_now());
         let mut dist = [0u64; 100];
         for _ in 0..=10_000_000 {
             let n = lcrng.generate_number_in_range(0..=99) as usize;
@@ -485,8 +485,8 @@ mod prng {
     #[test]
     fn test_prng_idempotence() {
         let seed = seed_from_time_now();
-        let mut lcrng_1 = Lcrng::new(seed);
-        let mut lcrng_2 = Lcrng::new(seed);
+        let mut lcrng_1 = Prng::new(seed);
+        let mut lcrng_2 = Prng::new(seed);
         for i in 0..10_000 {
             let generated_number_1 = lcrng_1.generate_number_in_range(0..=u16::MAX - 1);
             let generated_number_2 = lcrng_2.generate_number_in_range(0..=u16::MAX - 1);
@@ -496,7 +496,7 @@ mod prng {
 
     #[test]
     fn test_prng_chance() {
-        let mut lcrng = Lcrng::new(
+        let mut lcrng = Prng::new(
             time::SystemTime::now()
                 .duration_since(time::UNIX_EPOCH)
                 .unwrap()

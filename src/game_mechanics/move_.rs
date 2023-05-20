@@ -1,4 +1,4 @@
-use crate::event::EventHandlerFilters;
+use crate::{event::EventHandlerFilters, prng::Prng, BattleContext, BattlerUID};
 use core::slice::Iter;
 use std::ops::Index;
 
@@ -15,6 +15,7 @@ pub struct MoveSpecies {
     pub priority: u16,
     pub event_handlers: EventHandlerSet,
     pub event_handler_filters: EventHandlerFilters,
+    pub on_activate: fn(&mut BattleContext, &mut Prng, BattlerUID, BattlerUID) -> (),
 }
 
 impl Debug for MoveSpecies {
@@ -55,6 +56,16 @@ impl Move {
 
     pub fn base_accuracy(&self) -> u16 {
         self.species.base_accuracy
+    }
+
+    pub(crate) fn on_activate(
+        &self,
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
+        owner_uid: BattlerUID,
+        target_uid: BattlerUID,
+    ) {
+        (self.species.on_activate)(ctx, prng, owner_uid, target_uid);
     }
 }
 

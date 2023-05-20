@@ -16,7 +16,7 @@ use crate::{AppState, ScrollableWidgets};
 pub fn render_interface<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
     app_state: &mut AppState,
-    context: &BattleContext,
+    ctx: &BattleContext,
 ) -> std::io::Result<CompletedFrame<'a>> {
     terminal.draw(|frame| {
         // Chunks
@@ -48,7 +48,7 @@ pub fn render_interface<'a>(
 
         // Ally Active Monster Status Widget
         let ally_active_monster_text =
-            BattleContext::monster_status_string(context.ally_team.active_battler());
+            BattleContext::monster_status_string(ctx.ally_team.active_battler());
         let ally_stats_widget = Paragraph::new(ally_active_monster_text)
             .block(
                 Block::default()
@@ -86,7 +86,7 @@ pub fn render_interface<'a>(
         );
 
         // Opponent Team Roster Widget
-        let ally_team_status_text = context.ally_team_string();
+        let ally_team_status_text = ctx.ally_team_string();
 
         let ally_team_status_widget = Paragraph::new(ally_team_status_text)
             .block(
@@ -148,7 +148,7 @@ pub fn render_interface<'a>(
 
         // Opponent Active Monster Status Widget
         let opponent_active_monster_text =
-            BattleContext::monster_status_string(context.opponent_team.active_battler());
+            BattleContext::monster_status_string(ctx.opponent_team.active_battler());
         let opponent_stats_widget = Paragraph::new(opponent_active_monster_text)
             .block(
                 Block::default()
@@ -184,7 +184,7 @@ pub fn render_interface<'a>(
         );
 
         // Opponent Team Roster Widget
-        let opponent_team_status_text = context.opponent_team_string();
+        let opponent_team_status_text = ctx.opponent_team_string();
 
         let opponent_team_status_widget = Paragraph::new(opponent_team_status_text)
             .block(

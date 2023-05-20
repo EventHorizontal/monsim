@@ -1,14 +1,14 @@
 use core::fmt::Debug;
 
-use crate::prng::Lcrng;
+use crate::prng::Prng;
 
 use super::{game_mechanics::BattlerUID, Battle, BattleContext};
 
 #[allow(non_camel_case_types)]
 type void = ();
-pub type EventHandler<R> = fn(&mut BattleContext, &mut Lcrng, BattlerUID, R) -> EventReturn<R>;
+pub type EventHandler<R> = fn(&mut BattleContext, &mut Prng, BattlerUID, R) -> EventReturn<R>;
 pub type ExplicitlyAnnotatedEventHandler<'a, R> =
-    fn(&'a mut BattleContext, &'a mut Lcrng, BattlerUID, R) -> EventReturn<R>;
+    fn(&'a mut BattleContext, &'a mut Prng, BattlerUID, R) -> EventReturn<R>;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventHandlerSetInstance {
@@ -50,6 +50,9 @@ pub struct EventHandlerSet {
     pub on_try_activate_ability: Option<EventHandler<bool>>,
     pub on_ability_activated: Option<EventHandler<void>>,
     pub on_modify_accuracy: Option<EventHandler<u16>>,
+    pub on_try_raise_stat: Option<EventHandler<bool>>,
+    pub on_try_lower_stat: Option<EventHandler<bool>>,
+    pub on_status_move_used: Option<EventHandler<void>>,
 }
 
 impl Debug for EventHandlerSet {
@@ -80,6 +83,16 @@ impl Debug for EventHandlerSet {
                     .on_modify_accuracy
                     .map(|_it| std::any::type_name::<EventHandler<u16>>())
             })
+            .field("on_try_raise_stat", {
+                &self
+                    .on_modify_accuracy
+                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
+            })
+            .field("on_try_lower_stat", {
+                &self
+                    .on_modify_accuracy
+                    .map(|_it| std::any::type_name::<EventHandler<bool>>())
+            })
             .finish()
     }
 }
@@ -90,6 +103,9 @@ pub const DEFAULT_HANDLERS: EventHandlerSet = EventHandlerSet {
     on_try_activate_ability: None,
     on_ability_activated: None,
     on_modify_accuracy: None,
+    on_try_raise_stat: None,
+    on_try_lower_stat: None,
+    on_status_move_used: None,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,14 +116,14 @@ impl EventResolver {
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
     pub fn broadcast_event<R: PartialEq + Copy>(
-        context: &mut BattleContext,
-        prng: &mut Lcrng,
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
         caller_uid: BattlerUID,
         event: &dyn InBattleEvent<EventReturnType = R>,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let event_handlers_set_instances = context.event_handler_set_instances();
+        let event_handlers_set_instances = ctx.event_handler_set_instances();
         let mut event_handler_instances = event_handlers_set_instances
             .iter()
             .filter_map(|event_handler_set_instance| {
@@ -142,8 +158,8 @@ impl EventResolver {
             filters,
         } in event_handler_instances.into_iter()
         {
-            if context.filter_event_handlers(caller_uid, owner_uid, filters) {
-                relay = event_handler(context, prng, owner_uid, relay);
+            if ctx.filter_event_handlers(caller_uid, owner_uid, filters) {
+                relay = event_handler(ctx, prng, owner_uid, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -156,12 +172,12 @@ impl EventResolver {
     }
 
     pub fn broadcast_try_event(
-        context: &mut BattleContext,
-        prng: &mut Lcrng,
+        ctx: &mut BattleContext,
+        prng: &mut Prng,
         caller_uid: BattlerUID,
         event: &dyn InBattleEvent<EventReturnType = bool>,
     ) -> bool {
-        Self::broadcast_event(context, prng, caller_uid, event, true, Some(false))
+        Self::broadcast_event(ctx, prng, caller_uid, event, true, Some(false))
     }
 }
 
@@ -219,12 +235,12 @@ pub mod event_dex {
     pub struct OnTryMove;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(())]
+    #[return_type(void)]
     #[callback(on_ability_activated)]
     pub struct OnAbilityActivated;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(())]
+    #[return_type(void)]
     #[callback(on_damage_dealt)]
     pub struct OnDamageDealt;
 
@@ -237,4 +253,19 @@ pub mod event_dex {
     #[return_type(u16)]
     #[callback(on_modify_accuracy)]
     pub struct OnModifyAccuracy;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(bool)]
+    #[callback(on_try_raise_stat)]
+    pub struct OnTryRaiseStat;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(bool)]
+    #[callback(on_try_lower_stat)]
+    pub struct OnTryLowerStat;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
+    #[return_type(void)]
+    #[callback(on_status_move_used)]
+    pub struct OnStatusMoveUsed;
 }

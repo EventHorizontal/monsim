@@ -36,8 +36,8 @@ impl Ability {
         Ability { species }
     }
 
-    pub fn on_activate(&self, context: &mut BattleContext, owner_uid: BattlerUID) {
-        (self.species.on_activate)(context, owner_uid);
+    pub fn on_activate(&self, ctx: &mut BattleContext, owner_uid: BattlerUID) {
+        (self.species.on_activate)(ctx, owner_uid);
     }
 
     pub fn event_handlers(&self) -> EventHandlerSet {

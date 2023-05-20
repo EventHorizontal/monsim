@@ -167,7 +167,7 @@ fn main() -> MonsimIOResult {
     ));
 
     // Initialise the Program
-    let mut app_state = AppState::new(&mut battle.context);
+    let mut app_state = AppState::new(&mut battle.ctx);
 
     // Raw mode allows to not require enter presses to get
     enable_raw_mode().expect("Raw mode should always enableable.");
@@ -291,7 +291,7 @@ fn main() -> MonsimIOResult {
                                         ScrollableWidgets::MessageLog => {
                                             app_state.message_log_scroll_idx =
                                                 (app_state.message_log_scroll_idx + 1)
-                                                    .min(battle.context.message_buffer.len());
+                                                    .min(battle.ctx.message_buffer.len());
                                         }
                                         ScrollableWidgets::AllyTeamStatus => todo!(),
                                         ScrollableWidgets::OpponentTeamStatus => todo!(),
@@ -366,7 +366,7 @@ fn main() -> MonsimIOResult {
                                 (KeyCode::Down, KeyEventKind::Release) => {
                                     app_state.message_log_scroll_idx =
                                         (app_state.message_log_scroll_idx + 1)
-                                            .min(battle.context.message_buffer.len());
+                                            .min(battle.ctx.message_buffer.len());
                                 }
                                 _ => (),
                             }
@@ -380,32 +380,25 @@ fn main() -> MonsimIOResult {
                 match result {
                     Ok(_) => {
                         battle
-                            .context
-                            .message_buffer
-                            .push(String::from("(The turn was calculated successfully.)"));
+                            .ctx
+                            .push_message(&"(The turn was calculated successfully.)");
                     }
-                    Err(error) => battle.context.message_buffer.push(format!["{:?}", error]),
+                    Err(error) => battle.ctx.message_buffer.push(format!["{:?}", error]),
                 }
-                if battle.context.state == BattleState::Finished {
+                if battle.ctx.state == BattleState::Finished {
                     app_state.is_battle_ongoing = false;
-                    battle
-                        .context
-                        .message_buffer
-                        .push(String::from("The battle ended."));
+                    battle.ctx.push_message(&"The battle ended.");
                 }
-                battle
-                    .context
-                    .message_buffer
-                    .extend([String::from("---"), String::from(EMPTY_LINE)].into_iter());
+                battle.ctx.push_messages(&[&"---", &EMPTY_LINE]);
                 app_state.app_mode = AppMode::AwaitingUserInput {
-                    available_actions: battle.context.generate_available_actions(),
+                    available_actions: battle.ctx.generate_available_actions(),
                 };
-                app_state.message_buffer = battle.context.message_buffer.clone();
+                app_state.message_buffer = battle.ctx.message_buffer.clone();
             }
         }
 
         //TODO: Move the context usage inside app state
-        render_interface(&mut terminal, &mut app_state, &battle.context)?;
+        render_interface(&mut terminal, &mut app_state, &battle.ctx)?;
     }
 
     println!("monsim_tui exited successfully");

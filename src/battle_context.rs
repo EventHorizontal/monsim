@@ -288,6 +288,16 @@ impl BattleContext {
             } => Some(self.move_(move_uid)),
         }
     }
+
+    pub fn push_message(&mut self, message: &dyn Display) {
+        self.message_buffer.push(format!["{}", message]);
+    }
+
+    pub fn push_messages(&mut self, messages: &[&dyn Display]) {
+        for message in messages {
+            self.message_buffer.push(format!["{}", message]);
+        }
+    }
 }
 
 impl Display for BattleContext {

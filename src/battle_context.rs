@@ -12,7 +12,7 @@ type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battle
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattleContext {
     pub current_action: Option<ActionChoice>,
-    pub state: BattleState,
+    pub sim_state: SimState,
     pub ally_team: BattlerTeam,
     pub opponent_team: BattlerTeam,
     pub message_buffer: MessageBuffer,
@@ -25,7 +25,7 @@ impl BattleContext {
     pub fn new(ally_team: BattlerTeam, opponent_team: BattlerTeam) -> Self {
         Self {
             current_action: None,
-            state: BattleState::UsingMove {
+            sim_state: SimState::UsingMove {
                 move_uid: MoveUID {
                     battler_uid: BattlerUID {
                         team_id: TeamID::Ally,
@@ -409,7 +409,7 @@ fn push_teamwise_pretty_tree(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BattleState {
+pub enum SimState {
     UsingMove {
         move_uid: MoveUID,
         target_uid: BattlerUID,

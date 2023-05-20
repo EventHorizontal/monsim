@@ -7,32 +7,42 @@ use super::{game_mechanics::BattlerUID, Battle, BattleContext};
 #[allow(non_camel_case_types)]
 type void = ();
 
-#[cfg(not(feature="debug"))]
+#[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
 pub struct EventHandler<R: Clone + Copy> {
     pub callback: fn(&mut BattleContext, &mut Prng, BattlerUID, R) -> EventReturn<R>,
 }
 
-
-#[cfg(not(feature="debug"))]
+#[cfg(not(feature = "debug"))]
 impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandler").field("callback", &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>)).finish()
+        f.debug_struct("EventHandler")
+            .field(
+                "callback",
+                &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>),
+            )
+            .finish()
     }
 }
 
-#[cfg(feature="debug")]
+#[cfg(feature = "debug")]
 #[derive(Clone, Copy)]
 pub struct EventHandler<R: Clone + Copy> {
     pub callback: fn(&mut BattleContext, &mut Prng, BattlerUID, R) -> EventReturn<R>,
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     pub dbg_location: &'static str,
 }
 
-#[cfg(feature="debug")]
+#[cfg(feature = "debug")]
 impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandler").field("callback", &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>)).field("location", &self.dbg_location).finish()
+        f.debug_struct("EventHandler")
+            .field(
+                "callback",
+                &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>),
+            )
+            .field("location", &self.dbg_location)
+            .finish()
     }
 }
 

@@ -426,7 +426,7 @@ mod event {
     use crate::{event_dex::OnTryMove, BattlerUID, EventHandlerInstance, InBattleEvent};
 
     #[test]
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     fn test_print_event_handler() {
         use crate::game_mechanics::ability_dex::FlashFire;
         let event_handler = FlashFire.event_handlers.on_try_move.unwrap();
@@ -434,14 +434,14 @@ mod event {
     }
 
     #[test]
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     fn test_print_event_handler_set() {
         use crate::ability_dex::FlashFire;
         println!("{:#?}", FlashFire.event_handlers);
     }
 
     #[test]
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     fn test_print_event_handler_instance() {
         use crate::ability_dex::FlashFire;
         let event_handler_instance = EventHandlerInstance {

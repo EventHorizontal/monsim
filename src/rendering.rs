@@ -105,6 +105,13 @@ pub fn render_interface<'a>(
         frame.render_widget(ally_team_status_widget, ally_panel_chunks[2]);
 
         // Message Log Widget
+        // This clamps the scrolling such that the last line of the text never rises above the bottom of the screen, as would be expected from a scrollable text window.
+        app_state.message_log_scroll_idx = app_state.message_log_scroll_idx.min(
+            app_state
+                .message_buffer
+                .len()
+                .saturating_sub(chunks[1].height as usize - 1),
+        );
         let text = app_state
             .message_buffer
             .iter()

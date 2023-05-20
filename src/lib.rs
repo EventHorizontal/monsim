@@ -27,6 +27,7 @@ type TurnOutcome = Result<(), SimError>;
 pub struct Battle {
     pub ctx: BattleContext,
     pub prng: Prng,
+    pub turn_number: u8,
 }
 
 impl Battle {
@@ -34,16 +35,28 @@ impl Battle {
         Battle {
             ctx,
             prng: Prng::new(prng::seed_from_time_now()),
+            turn_number: 0,
         }
     }
 
     pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActions) -> TurnOutcome {
-        let mut result = Ok(());
+        match self.turn_number.checked_add(1) {
+            Some(turn_number) => self.turn_number = turn_number,
+            None => {
+                return Err(SimError::InvalidStateError(
+                    "Turn limit exceeded (Limit = 255 turns)",
+                ))
+            }
+        };
+
+        self.ctx
+            .push_messages(&[&format!["Turn {}", self.turn_number], &EMPTY_LINE]);
 
         Battle::priority_sort(&mut self.prng, &mut chosen_actions, &mut |choice| {
             self.ctx.choice_activation_order(choice)
         });
 
+        let mut result = Ok(());
         for chosen_action in chosen_actions.into_iter() {
             self.ctx.current_action = Some(chosen_action);
             result = match chosen_action {
@@ -69,7 +82,7 @@ impl Battle {
             if let Some(battler) = self.ctx.battlers().find(|it| it.fainted()) {
                 self.ctx
                     .push_message(&format!["{} fainted!", battler.monster.nickname]);
-                self.ctx.state = BattleState::Finished;
+                self.ctx.sim_state = SimState::Finished;
                 break;
             };
             self.ctx.push_message(&EMPTY_LINE);

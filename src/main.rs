@@ -385,7 +385,7 @@ fn main() -> MonsimIOResult {
                     }
                     Err(error) => battle.ctx.message_buffer.push(format!["{:?}", error]),
                 }
-                if battle.ctx.state == BattleState::Finished {
+                if battle.ctx.sim_state == SimState::Finished {
                     app_state.is_battle_ongoing = false;
                     battle.ctx.push_message(&"The battle ended.");
                 }

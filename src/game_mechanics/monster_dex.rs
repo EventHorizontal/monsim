@@ -7,7 +7,7 @@ use super::{
 use crate::event::DEFAULT_HANDLERS;
 
 pub const Treecko: MonsterSpecies = MonsterSpecies {
-    name: "Mudkip",
+    name: "Treecko",
     dex_number: 252,
     primary_type: MonType::Grass,
     secondary_type: MonType::None,

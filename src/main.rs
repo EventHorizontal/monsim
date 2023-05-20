@@ -150,7 +150,7 @@ fn main() -> MonsimIOResult {
                     mov Bubble,
                     abl FlashFire,
                 },
-                mon Torchic "Emerald" {
+                mon Treecko "Emerald" {
                     mov Scratch,
                     mov Ember,
                     abl FlashFire,

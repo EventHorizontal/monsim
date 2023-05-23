@@ -78,7 +78,7 @@ impl<'a> AppState<'a> {
             selected_list: ScrollableWidgets::MessageLog,
             message_log_scroll_idx: 0,
             is_battle_ongoing: true,
-            ally_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            ally_active_battler_string: BattleContext::monster_status_string(ctx.ally_team.active_battler()),
             ally_team_string: ctx.ally_team_string(),
             opponent_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
             opponent_team_string: ctx.opponent_team_string(),
@@ -135,7 +135,7 @@ impl<'a> AppState<'a> {
         *self = Self {
             message_buffer: ctx.message_buffer.clone(),
             is_battle_ongoing: ctx.sim_state != SimState::Finished,
-            ally_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            ally_active_battler_string: BattleContext::monster_status_string(ctx.ally_team.active_battler()),
             ally_team_string: ctx.ally_team_string(),
             opponent_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
             opponent_team_string: ctx.opponent_team_string(),

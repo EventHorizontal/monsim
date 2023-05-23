@@ -53,7 +53,7 @@ impl PrimaryAction {
             }
             MoveCategory::Status => {
                 return Err(SimError::InvalidStateError(
-                    "The damaging_move function is not expected to receive status moves.",
+                    String::from("The damaging_move function is not expected to receive status moves.")
                 ))
             }
         }
@@ -106,10 +106,7 @@ impl PrimaryAction {
             25 | 50 => "not very effective",
             100 => "effective",
             200 | 400 => "super effective",
-            _ => panic!(
-                "type multiplier is unexpectedly {}",
-                type_matchup_multiplier
-            ),
+            value => return Err(SimError::InvalidStateError(format!["Type Effectiveness Multiplier is unexpectedly {}", value])),
         };
         ctx.push_message(&format!["It was {}!", type_effectiveness]);
         ctx.push_message(&format![

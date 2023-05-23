@@ -44,7 +44,7 @@ impl Battle {
             Some(turn_number) => self.turn_number = turn_number,
             None => {
                 return Err(SimError::InvalidStateError(
-                    "Turn limit exceeded (Limit = 255 turns)",
+                    String::from("Turn limit exceeded (Limit = 255 turns)"),
                 ))
             }
         };
@@ -171,8 +171,8 @@ impl Battle {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
-    InvalidStateError(&'static str),
+    InvalidStateError(String),
     InputError(String),
 }

@@ -1,13 +1,14 @@
 use std::{
+    io::Stdout,
     sync::mpsc::{self, Receiver},
     thread,
-    time::{Duration, Instant}, io::Stdout,
+    time::{Duration, Instant},
 };
 
 use monsim::*;
 
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind, KeyEvent},
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -17,7 +18,7 @@ use tui::{
     style::{Color, Modifier, Style},
     terminal::CompletedFrame,
     text::{Span, Spans},
-    widgets::{ListItem, ListState, Block, Borders, List, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Terminal,
 };
 
@@ -78,9 +79,13 @@ impl<'a> AppState<'a> {
             selected_list: ScrollableWidgets::MessageLog,
             message_log_scroll_idx: 0,
             is_battle_ongoing: true,
-            ally_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            ally_active_battler_string: BattleContext::monster_status_string(
+                ctx.opponent_team.active_battler(),
+            ),
             ally_team_string: ctx.ally_team_string(),
-            opponent_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            opponent_active_battler_string: BattleContext::monster_status_string(
+                ctx.opponent_team.active_battler(),
+            ),
             opponent_team_string: ctx.opponent_team_string(),
         };
         state.build_list_items(ctx);
@@ -135,9 +140,13 @@ impl<'a> AppState<'a> {
         *self = Self {
             message_buffer: ctx.message_buffer.clone(),
             is_battle_ongoing: ctx.sim_state != SimState::Finished,
-            ally_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            ally_active_battler_string: BattleContext::monster_status_string(
+                ctx.opponent_team.active_battler(),
+            ),
             ally_team_string: ctx.ally_team_string(),
-            opponent_active_battler_string: BattleContext::monster_status_string(ctx.opponent_team.active_battler()),
+            opponent_active_battler_string: BattleContext::monster_status_string(
+                ctx.opponent_team.active_battler(),
+            ),
             opponent_team_string: ctx.opponent_team_string(),
             ..self.clone()
         }
@@ -230,7 +239,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     execute!(std::io::stdout(), EnterAlternateScreen)?;
 
     'app: loop {
-        let should_exit = update_state_from_input(&mut terminal, &mut app_state, &mut battle, &receiver)?;
+        let should_exit =
+            update_state_from_input(&mut terminal, &mut app_state, &mut battle, &receiver)?;
         if should_exit {
             break 'app;
         }
@@ -243,10 +253,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn update_state_from_input(
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>, 
-    app_state: &mut AppState, 
-    battle: &mut Battle, 
-    receiver: &Receiver<TuiEvent<KeyEvent>>
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    app_state: &mut AppState,
+    battle: &mut Battle,
+    receiver: &Receiver<TuiEvent<KeyEvent>>,
 ) -> MonsimIoResult {
     let mut result: MonsimIoResult = Ok(false);
     match app_state.app_mode {
@@ -266,44 +276,41 @@ fn update_state_from_input(
                                 std::fs::remove_file("debug_output.txt")?;
                                 result = Ok(true);
                             }
-                            (KeyCode::Up, KeyEventKind::Release) => {
-                                match app_state.selected_list {
-                                    ScrollableWidgets::AllyTeamChoices => {
-                                        if let Some(selected_index) =
-                                            app_state.ally_list_state.selected()
-                                        {
-                                            let ally_list_length = app_state.ally_list_length();
-                                            app_state.ally_list_state.select(Some(
-                                                (selected_index + ally_list_length - 1)
-                                                    % ally_list_length,
-                                            ));
-                                        } else {
-                                            app_state.ally_list_state.select(Some(0));
-                                        }
+                            (KeyCode::Up, KeyEventKind::Release) => match app_state.selected_list {
+                                ScrollableWidgets::AllyTeamChoices => {
+                                    if let Some(selected_index) =
+                                        app_state.ally_list_state.selected()
+                                    {
+                                        let ally_list_length = app_state.ally_list_length();
+                                        app_state.ally_list_state.select(Some(
+                                            (selected_index + ally_list_length - 1)
+                                                % ally_list_length,
+                                        ));
+                                    } else {
+                                        app_state.ally_list_state.select(Some(0));
                                     }
-                                    ScrollableWidgets::OpponentTeamChoices => {
-                                        if let Some(selected_index) =
-                                            app_state.opponent_list_state.selected()
-                                        {
-                                            let opponent_list_items_length =
-                                                app_state.opponent_list_length();
-                                            app_state.opponent_list_state.select(Some(
-                                                (selected_index + opponent_list_items_length
-                                                    - 1)
-                                                    % opponent_list_items_length,
-                                            ));
-                                        } else {
-                                            app_state.opponent_list_state.select(Some(0));
-                                        }
-                                    }
-                                    ScrollableWidgets::MessageLog => {
-                                        app_state.message_log_scroll_idx =
-                                            app_state.message_log_scroll_idx.saturating_sub(1);
-                                    }
-                                    ScrollableWidgets::AllyTeamStatus => todo!(),
-                                    ScrollableWidgets::OpponentTeamStatus => todo!(),
                                 }
-                            }
+                                ScrollableWidgets::OpponentTeamChoices => {
+                                    if let Some(selected_index) =
+                                        app_state.opponent_list_state.selected()
+                                    {
+                                        let opponent_list_items_length =
+                                            app_state.opponent_list_length();
+                                        app_state.opponent_list_state.select(Some(
+                                            (selected_index + opponent_list_items_length - 1)
+                                                % opponent_list_items_length,
+                                        ));
+                                    } else {
+                                        app_state.opponent_list_state.select(Some(0));
+                                    }
+                                }
+                                ScrollableWidgets::MessageLog => {
+                                    app_state.message_log_scroll_idx =
+                                        app_state.message_log_scroll_idx.saturating_sub(1);
+                                }
+                                ScrollableWidgets::AllyTeamStatus => todo!(),
+                                ScrollableWidgets::OpponentTeamStatus => todo!(),
+                            },
                             (KeyCode::Down, KeyEventKind::Release) => {
                                 match app_state.selected_list {
                                     ScrollableWidgets::AllyTeamChoices => {
@@ -325,8 +332,7 @@ fn update_state_from_input(
                                             let opponent_list_items_length =
                                                 app_state.opponent_list_length();
                                             app_state.opponent_list_state.select(Some(
-                                                (selected_index + 1)
-                                                    % opponent_list_items_length,
+                                                (selected_index + 1) % opponent_list_items_length,
                                             ))
                                         } else {
                                             app_state.opponent_list_state.select(Some(0));
@@ -578,14 +584,15 @@ pub fn render_interface<'a>(
             .split(chunks[2]);
 
         // Opponent Active Monster Status Widget
-        let opponent_stats_widget = Paragraph::new(app_state.opponent_active_battler_string.as_str())
-            .block(
-                Block::default()
-                    .title(" Opponent Active Monster ")
-                    .borders(Borders::ALL),
-            )
-            .alignment(Alignment::Left)
-            .wrap(Wrap { trim: true });
+        let opponent_stats_widget =
+            Paragraph::new(app_state.opponent_active_battler_string.as_str())
+                .block(
+                    Block::default()
+                        .title(" Opponent Active Monster ")
+                        .borders(Borders::ALL),
+                )
+                .alignment(Alignment::Left)
+                .wrap(Wrap { trim: true });
         frame.render_widget(opponent_stats_widget, opponent_panel_chunks[0]);
 
         // Opponent Choice List Menu

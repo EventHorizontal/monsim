@@ -1,9 +1,9 @@
 pub mod battle_context;
+#[cfg(feature = "debug")]
+pub mod debug;
 pub mod game_mechanics;
 pub mod global_constants;
 pub mod io;
-#[cfg(feature = "debug")]
-pub mod debug;
 
 mod action;
 mod event;
@@ -43,18 +43,20 @@ impl Battle {
         match self.turn_number.checked_add(1) {
             Some(turn_number) => self.turn_number = turn_number,
             None => {
-                return Err(SimError::InvalidStateError(
-                    String::from("Turn limit exceeded (Limit = 255 turns)"),
-                ))
+                return Err(SimError::InvalidStateError(String::from(
+                    "Turn limit exceeded (Limit = 255 turns)",
+                )))
             }
         };
 
         self.ctx
             .push_messages(&[&format!["Turn {}", self.turn_number], &EMPTY_LINE]);
 
-        Battle::sort_items_by_activation_order(&mut self.prng, &mut chosen_actions, &mut |choice| {
-            self.ctx.choice_activation_order(choice)
-        });
+        Battle::sort_items_by_activation_order(
+            &mut self.prng,
+            &mut chosen_actions,
+            &mut |choice| self.ctx.choice_activation_order(choice),
+        );
 
         let mut result = Ok(());
         for chosen_action in chosen_actions.into_iter() {

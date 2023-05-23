@@ -201,7 +201,7 @@ mod bcontext {
                 })
                 .collect::<Vec<_>>();
 
-            Battle::priority_sort::<EventHandlerInstance<bool>>(
+            Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
                 &mut prng,
                 &mut event_handler_instances,
                 &mut |it| it.activation_order,
@@ -359,7 +359,7 @@ mod bcontext {
                 })
                 .collect::<Vec<_>>();
 
-            Battle::priority_sort::<EventHandlerInstance<bool>>(
+            Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
                 &mut prng,
                 &mut event_handler_instances,
                 &mut |it| it.activation_order,

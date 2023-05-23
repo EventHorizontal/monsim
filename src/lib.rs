@@ -52,7 +52,7 @@ impl Battle {
         self.ctx
             .push_messages(&[&format!["Turn {}", self.turn_number], &EMPTY_LINE]);
 
-        Battle::priority_sort(&mut self.prng, &mut chosen_actions, &mut |choice| {
+        Battle::sort_items_by_activation_order(&mut self.prng, &mut chosen_actions, &mut |choice| {
             self.ctx.choice_activation_order(choice)
         });
 
@@ -94,7 +94,7 @@ impl Battle {
     }
 
     /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
-    pub(crate) fn priority_sort<T: Clone + Copy>(
+    pub(crate) fn sort_items_by_activation_order<T: Clone + Copy>(
         prng: &mut Prng,
         vector: &mut Vec<T>,
         activation_order: &mut dyn FnMut(T) -> ActivationOrder,

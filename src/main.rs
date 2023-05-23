@@ -262,6 +262,8 @@ fn update_state_from_input(
                                 disable_raw_mode()?;
                                 execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                 terminal.show_cursor()?;
+                                #[cfg(feature = "debug")]
+                                std::fs::remove_file("debug_output.txt")?;
                                 result = Ok(true);
                             }
                             (KeyCode::Up, KeyEventKind::Release) => {

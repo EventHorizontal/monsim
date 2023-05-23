@@ -2,6 +2,8 @@ pub mod battle_context;
 pub mod game_mechanics;
 pub mod global_constants;
 pub mod io;
+#[cfg(feature = "debug")]
+pub mod debug;
 
 mod action;
 mod event;
@@ -57,6 +59,8 @@ impl Battle {
         let mut result = Ok(());
         for chosen_action in chosen_actions.into_iter() {
             self.ctx.current_action = Some(chosen_action);
+            #[cfg(feature = "debug")]
+            let  _ = debug::debug_log_to_file(&monsim_debug!(self.ctx.current_action));
             result = match chosen_action {
                 ActionChoice::Move {
                     move_uid,

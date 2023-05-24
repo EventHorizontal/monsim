@@ -448,6 +448,17 @@ pub fn render_interface<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
     app_state: &mut AppState,
 ) -> std::io::Result<CompletedFrame<'a>> {
+    let terminal_height = terminal.size()?.height as usize;
+
+    let longest_message_length = app_state.message_buffer.iter()
+    .fold(0usize, |acc, x| {
+        if x.len() > acc {
+            x.len()
+        } else {
+            acc
+        }
+    });
+
     terminal.draw(|frame| {
         // Chunks
         let chunks = Layout::default()
@@ -456,7 +467,7 @@ pub fn render_interface<'a>(
             .constraints(
                 [
                     Constraint::Percentage(33),
-                    Constraint::Percentage(33),
+                    Constraint::Min(longest_message_length as u16 + 2),
                     Constraint::Percentage(33),
                 ]
                 .as_ref(),
@@ -536,10 +547,9 @@ pub fn render_interface<'a>(
             app_state
                 .message_buffer
                 .len()
-                .saturating_sub(chunks[1].height as usize - 1),
+                .saturating_sub(terminal_height as usize - 4),
         );
-        let text = app_state
-            .message_buffer
+        let text = app_state.message_buffer
             .iter()
             .enumerate()
             .filter_map(|(idx, element)| {

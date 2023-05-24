@@ -269,7 +269,15 @@ fn update_state_from_input(
                                 execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                 terminal.show_cursor()?;
                                 #[cfg(feature = "debug")]
-                                std::fs::remove_file("debug_output.txt")?;
+                                {
+                                    let removal_result = std::fs::remove_file("debug_output.txt");
+                                    if let Err(e) = removal_result {
+                                        match e.kind() {
+                                            std::io::ErrorKind::NotFound => (),
+                                            _ => { return Err(Box::new(e)); },
+                                        }
+                                    }
+                                }
                                 result = Ok(true);
                             }
                             (KeyCode::Up, KeyEventKind::Release) => match app_state.selected_list {
@@ -402,7 +410,16 @@ fn update_state_from_input(
                                 disable_raw_mode()?;
                                 execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                 terminal.show_cursor()?;
-                                std::fs::remove_file("debug_output.txt")?;
+                                #[cfg(feature = "debug")]
+                                {
+                                    let removal_result = std::fs::remove_file("debug_output.txt");
+                                    if let Err(e) = removal_result {
+                                        match e.kind() {
+                                            std::io::ErrorKind::NotFound => (),
+                                            _ => { return Err(Box::new(e)); },
+                                        }
+                                    }
+                                }
                                 result = Ok(true);
                             }
                             (KeyCode::Up, KeyEventKind::Release) => {
@@ -448,6 +465,17 @@ pub fn render_interface<'a>(
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
     app_state: &mut AppState,
 ) -> std::io::Result<CompletedFrame<'a>> {
+    let terminal_height = terminal.size()?.height as usize;
+
+    let longest_message_length = app_state.message_buffer.iter()
+    .fold(0usize, |acc, x| {
+        if x.len() > acc {
+            x.len()
+        } else {
+            acc
+        }
+    });
+
     terminal.draw(|frame| {
         // Chunks
         let chunks = Layout::default()
@@ -456,7 +484,7 @@ pub fn render_interface<'a>(
             .constraints(
                 [
                     Constraint::Percentage(33),
-                    Constraint::Percentage(33),
+                    Constraint::Min(longest_message_length as u16 + 2),
                     Constraint::Percentage(33),
                 ]
                 .as_ref(),
@@ -536,10 +564,9 @@ pub fn render_interface<'a>(
             app_state
                 .message_buffer
                 .len()
-                .saturating_sub(chunks[1].height as usize - 1),
+                .saturating_sub(terminal_height as usize - 4),
         );
-        let text = app_state
-            .message_buffer
+        let text = app_state.message_buffer
             .iter()
             .enumerate()
             .filter_map(|(idx, element)| {

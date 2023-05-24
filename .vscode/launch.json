@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch",
             "program": "${workspaceFolder}/target/debug/monsim_tui.exe",
-            "args": [],
+            "args": ["--features \"debug\""],
             "cwd": "${workspaceFolder}"
         },
     ]

@@ -1,5 +1,6 @@
-pub fn debug_log_to_file(message: &str) -> std::io::Result<()> {
-    use std::fs::{read_to_string, write};
+
+pub fn write_debug_to_file(message: String) -> std::io::Result<()> {
+	use std::fs::{read_to_string, write};
     let debug_file_result = read_to_string("debug_output.txt");
     match debug_file_result {
         Ok(mut debug_file) => {
@@ -25,8 +26,9 @@ pub fn debug_log_to_file(message: &str) -> std::io::Result<()> {
 }
 
 #[macro_export]
-macro_rules! monsim_debug {
+#[cfg(feature = "debug")]
+macro_rules! debug_to_file {
 	($x: expr) => {
-		format!["[{}:{}:{}]: {} = {:#?}", std::file!(), std::line!(), std::column!(), stringify!($x), $x.clone()]
+		crate::debug::write_debug_to_file(format!["[{}:{}:{}]: {} = {:#?}", std::file!(), std::line!(), std::column!(), stringify!($x), $x.clone()])
 	};
 }

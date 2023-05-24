@@ -269,7 +269,15 @@ fn update_state_from_input(
                                 execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                 terminal.show_cursor()?;
                                 #[cfg(feature = "debug")]
-                                std::fs::remove_file("debug_output.txt")?;
+                                {
+                                    let removal_result = std::fs::remove_file("debug_output.txt");
+                                    if let Err(e) = removal_result {
+                                        match e.kind() {
+                                            std::io::ErrorKind::NotFound => (),
+                                            _ => { return Err(Box::new(e)); },
+                                        }
+                                    }
+                                }
                                 result = Ok(true);
                             }
                             (KeyCode::Up, KeyEventKind::Release) => match app_state.selected_list {
@@ -402,7 +410,16 @@ fn update_state_from_input(
                                 disable_raw_mode()?;
                                 execute!(std::io::stdout(), LeaveAlternateScreen)?;
                                 terminal.show_cursor()?;
-                                std::fs::remove_file("debug_output.txt")?;
+                                #[cfg(feature = "debug")]
+                                {
+                                    let removal_result = std::fs::remove_file("debug_output.txt");
+                                    if let Err(e) = removal_result {
+                                        match e.kind() {
+                                            std::io::ErrorKind::NotFound => (),
+                                            _ => { return Err(Box::new(e)); },
+                                        }
+                                    }
+                                }
                                 result = Ok(true);
                             }
                             (KeyCode::Up, KeyEventKind::Release) => {

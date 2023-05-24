@@ -13,8 +13,8 @@ type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battle
 pub struct BattleContext {
     pub current_action: Option<ActionChoice>,
     pub sim_state: SimState,
-    pub ally_team: BattlerTeam,
-    pub opponent_team: BattlerTeam,
+    pub ally_team: AllyBattlerTeam,
+    pub opponent_team: OpponentBattlerTeam,
     pub message_buffer: MessageBuffer,
 }
 
@@ -22,7 +22,7 @@ pub type MessageBuffer = Vec<String>;
 pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
 impl BattleContext {
-    pub fn new(ally_team: BattlerTeam, opponent_team: BattlerTeam) -> Self {
+    pub fn new(ally_team: AllyBattlerTeam, opponent_team: OpponentBattlerTeam) -> Self {
         Self {
             current_action: None,
             sim_state: SimState::UsingMove {
@@ -45,15 +45,15 @@ impl BattleContext {
     }
 
     pub fn battlers(&self) -> BattlerIterator {
-        let left = self.ally_team.battlers();
-        let right = self.opponent_team.battlers();
+        let left = self.ally_team.0.battlers();
+        let right = self.opponent_team.0.battlers();
 
         left.iter().chain(right)
     }
 
     fn battlers_mut(&mut self) -> MutableBattlerIterator {
-        let left = self.ally_team.battlers_mut();
-        let right = self.opponent_team.battlers_mut();
+        let left = self.ally_team.0.battlers_mut();
+        let right = self.opponent_team.0.battlers_mut();
 
         left.iter_mut().chain(right)
     }
@@ -146,8 +146,8 @@ impl BattleContext {
 
     pub fn event_handler_set_instances(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team.event_handlers());
-        out.append(&mut self.opponent_team.event_handlers());
+        out.append(&mut self.ally_team.0.event_handlers());
+        out.append(&mut self.opponent_team.0.event_handlers());
         out
     }
 
@@ -178,11 +178,11 @@ impl BattleContext {
     }
 
     fn is_on_ally_team(&self, uid: BattlerUID) -> bool {
-        self.ally_team.battlers().iter().any(|it| it.uid == uid)
+        self.ally_team.0.battlers().iter().any(|it| it.uid == uid)
     }
 
     fn is_on_opponent_team(&self, uid: BattlerUID) -> bool {
-        self.opponent_team.battlers().iter().any(|it| it.uid == uid)
+        self.opponent_team.0.battlers().iter().any(|it| it.uid == uid)
     }
 
     fn are_opponents(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
@@ -223,8 +223,8 @@ impl BattleContext {
     }
 
     pub fn generate_available_actions(&self) -> AvailableActions {
-        let ally_active_battler = self.ally_team.active_battler();
-        let opponent_active_battler = self.opponent_team.active_battler();
+        let ally_active_battler = self.ally_team.0.active_battler();
+        let opponent_active_battler = self.opponent_team.0.active_battler();
 
         let ally_moves = ally_active_battler.move_uids();
         let opponent_moves = opponent_active_battler.move_uids();
@@ -253,7 +253,7 @@ impl BattleContext {
 
     pub fn ally_team_string(&self) -> String {
         let mut out = String::new();
-        for battler in self.ally_team.battlers() {
+        for battler in self.ally_team.0.battlers() {
             out.push_str(&Self::monster_status_string(battler));
         }
         out
@@ -261,7 +261,7 @@ impl BattleContext {
 
     pub fn opponent_team_string(&self) -> String {
         let mut out = String::new();
-        for battler in self.opponent_team.battlers() {
+        for battler in self.opponent_team.0.battlers() {
             out.push_str(&Self::monster_status_string(battler));
         }
         out
@@ -307,14 +307,14 @@ impl Display for BattleContext {
         push_teamwise_pretty_tree(
             &mut out,
             "Ally Team\n",
-            &self.ally_team,
-            self.ally_team.battlers().iter().count(),
+            &self.ally_team.0,
+            self.ally_team.0.battlers().iter().count(),
         );
         push_teamwise_pretty_tree(
             &mut out,
             "Opponent Team\n",
-            &self.opponent_team,
-            self.opponent_team.battlers().iter().count(),
+            &self.opponent_team.0,
+            self.opponent_team.0.battlers().iter().count(),
         );
         write!(f, "{}", out)
     }

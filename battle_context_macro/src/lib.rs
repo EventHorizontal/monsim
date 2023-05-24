@@ -56,8 +56,8 @@ pub fn battle_context(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     let output = quote!({ 
             extern crate self as monsim;
             BattleContext::new(
-                #entities::BattlerTeam::new(#ally_monsters_vec),
-                #entities::BattlerTeam::new(#opponent_monsters_vec),
+                monsim::game_mechanics::AllyBattlerTeam(#entities::BattlerTeam::new(#ally_monsters_vec)),
+                monsim::game_mechanics::OpponentBattlerTeam(#entities::BattlerTeam::new(#opponent_monsters_vec)),
             )
         }
     );

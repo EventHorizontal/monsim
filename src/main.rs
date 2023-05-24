@@ -45,16 +45,16 @@ pub struct AppState<'a> {
     app_mode: AppMode,
     ally_list_items: Vec<ListItem<'a>>,
     ally_list_state: ListState,
+    ally_active_battler_string: String,
+    ally_team_string: String,
     opponent_list_items: Vec<ListItem<'a>>,
     opponent_list_state: ListState,
+    opponent_active_battler_string: String,
+    opponent_team_string: String,
     message_buffer: MessageBuffer,
     selected_list: ScrollableWidgets,
     message_log_scroll_idx: usize,
     is_battle_ongoing: bool,
-    ally_active_battler_string: String,
-    ally_team_string: String,
-    opponent_active_battler_string: String,
-    opponent_team_string: String,
 }
 
 impl<'a> AppState<'a> {
@@ -80,11 +80,11 @@ impl<'a> AppState<'a> {
             message_log_scroll_idx: 0,
             is_battle_ongoing: true,
             ally_active_battler_string: BattleContext::monster_status_string(
-                ctx.opponent_team.active_battler(),
+                ctx.opponent_team.0.active_battler(),
             ),
             ally_team_string: ctx.ally_team_string(),
             opponent_active_battler_string: BattleContext::monster_status_string(
-                ctx.opponent_team.active_battler(),
+                ctx.opponent_team.0.active_battler(),
             ),
             opponent_team_string: ctx.opponent_team_string(),
         };
@@ -141,11 +141,11 @@ impl<'a> AppState<'a> {
             message_buffer: ctx.message_buffer.clone(),
             is_battle_ongoing: ctx.sim_state != SimState::Finished,
             ally_active_battler_string: BattleContext::monster_status_string(
-                ctx.opponent_team.active_battler(),
+                ctx.opponent_team.0.active_battler(),
             ),
             ally_team_string: ctx.ally_team_string(),
             opponent_active_battler_string: BattleContext::monster_status_string(
-                ctx.opponent_team.active_battler(),
+                ctx.opponent_team.0.active_battler(),
             ),
             opponent_team_string: ctx.opponent_team_string(),
             ..self.clone()

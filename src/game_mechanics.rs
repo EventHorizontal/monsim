@@ -41,6 +41,11 @@ pub struct MoveUID {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AllyBattlerTeam(pub BattlerTeam);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpponentBattlerTeam(pub BattlerTeam);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattlerTeam {
     battlers: Vec<Battler>,
 }
@@ -86,6 +91,11 @@ pub struct Battler {
     pub moveset: MoveSet,
     pub ability: Ability,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AllyBattler(Battler);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpponentBattler(Battler);
 
 impl Display for Battler {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

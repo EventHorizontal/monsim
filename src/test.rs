@@ -2,7 +2,7 @@
 mod main {
     use battle_context_macro::battle_context;
 
-    use crate::sim::BattleContext;
+    use crate::sim::{battle_context::BattleContext, monster_dex::{Treecko, Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle, Growl}};
 
     #[test]
     fn test_bcontext_macro() {
@@ -10,7 +10,7 @@ mod main {
         let test_bcontext = battle_context!(
             {
                 AllyTeam {
-                    mon Torchic "Ruby" {
+                    mon Treecko "Ruby" {
                         mov Scratch,
                         mov Ember,
                         abl FlashFire,
@@ -20,16 +20,16 @@ mod main {
                         mov Ember,
                         abl FlashFire,
                     },
-                    mon Torchic "Emerald" {
+                    mon Mudkip "Emerald" {
+                        mov Bubble,
                         mov Scratch,
-                        mov Ember,
                         abl FlashFire,
                     },
                 },
                 OpponentTeam {
-                    mon Torchic "Cheerio" {
-                        mov Scratch,
-                        mov Ember,
+                    mon Drifblim "Cheerio" {
+                        mov Tackle,
+                        mov Growl,
                         abl FlashFire,
                     },
                 }
@@ -140,11 +140,12 @@ mod bcontext {
 
     use battle_context_macro::battle_context;
 
-    use crate::sim::{ BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters, TeamID, };
+    use crate::sim::{BattlerNumber, BattlerUID, EventHandlerFilters, TeamID, };
 
     #[test]
     fn test_event_filtering_for_event_sources() {
         extern crate self as monsim;
+        use crate::sim::{battle_context::BattleContext, monster_dex::{Treecko, Torchic, Mudkip}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
         let test_battle_context = battle_context!(
             {
                 AllyTeam {
@@ -186,6 +187,7 @@ mod bcontext {
     #[test]
     fn test_display_battle_context() {
         extern crate self as monsim;
+        use crate::sim::{battle_context::BattleContext, monster_dex::{Treecko, Torchic, Mudkip, Drifloon}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
         let test_bcontext = battle_context!(
             {
                 AllyTeam {

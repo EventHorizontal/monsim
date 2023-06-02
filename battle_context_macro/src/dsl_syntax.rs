@@ -4,7 +4,7 @@ use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     token::Comma,
-    Error, Result,
+    Error, Result, ExprPath,
 };
 
 #[derive(Clone, Debug)]
@@ -97,7 +97,7 @@ fn is_expected_keyword(expected_keyword_name: &str, keyword: &Ident) -> bool {
 // mon <MonsterName>  <Nickname> { <EffectExpression>, ... }
 #[derive(Clone, Debug)]
 pub struct MonsterExpr {
-    pub monster_ident: Ident,
+    pub monster_ident: ExprPath,
     pub nickname_ident: Option<Literal>,
     pub fields: Punctuated<EffectExpr, Comma>,
     pub move_count: usize,
@@ -112,7 +112,7 @@ impl Parse for MonsterExpr {
             .parse()
             .expect("Error: Failed to parse keyword in expected MonsterExpression.");
         
-        let monster_ident: Ident = input
+        let monster_ident: ExprPath = input
             .parse()
             .expect("Error: Failed to parse Monster identifier in expected MonsterExpression.");
         
@@ -138,7 +138,7 @@ impl Parse for MonsterExpr {
                         if let Some(v) = nickname_ident {
                             v.to_string()
                         } else {
-                            monster_ident.to_string()
+                            format!("{:?}", monster_ident.path)
                         } 
                     },
                     move_count,
@@ -160,7 +160,7 @@ impl Parse for MonsterExpr {
                         if let Some(v) = nickname_ident {
                             v.to_string()
                         } else {
-                            monster_ident.to_string()
+                            format!("{:?}", monster_ident.path)
                         } 
                     }
                 ),
@@ -170,7 +170,7 @@ impl Parse for MonsterExpr {
         // Alerting the user if the monster has more than one of any type of effect.
         let effect_names = fields.iter()
             .map(|it| {
-                it.effect_ident.clone()
+                it.effect_path.clone()
             })
             .collect::<Vec<_>>();
             
@@ -186,7 +186,7 @@ impl Parse for MonsterExpr {
                         if let Some(v) = nickname_ident {
                             v.to_string()
                         } else {
-                            monster_ident.to_string()
+                            format!("{:?}", monster_ident.path)
                         } 
                     }
                 ),
@@ -219,7 +219,7 @@ impl Parse for MonsterExpr {
 /// By effect we mean anything that belongs to a monster such as abilities, moves and items.
 #[derive(Clone, Debug)]
 pub struct EffectExpr {
-    pub effect_ident: Ident,
+    pub effect_path: ExprPath,
     pub effect_type: EffectType,
 }
 
@@ -232,7 +232,7 @@ impl Parse for EffectExpr {
         let effect_keyword: Ident = input
             .parse()
             .expect("Error: Failed to parse keyword in expected EffectExpression.");
-        let effect_ident: Ident = input
+        let effect_ident: ExprPath = input
             .parse()
             .expect("Error: Failed to parse Effect identifier in expected MonsterExpression.");
         let effect_type;
@@ -252,7 +252,7 @@ impl Parse for EffectExpr {
             ));
         }
         Ok(EffectExpr {
-            effect_ident,
+            effect_path: effect_ident,
             effect_type,
         })
     }

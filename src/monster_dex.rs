@@ -1,10 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use super::{
-    monster::{MonsterSpecies, StatSet},
-    MonType,
-};
-use crate::sim::event::DEFAULT_HANDLERS;
+use monsim::sim::{MonsterSpecies, StatSet, MonType, DEFAULT_HANDLERS};
 
 pub const Treecko: MonsterSpecies = MonsterSpecies {
     name: "Treecko",

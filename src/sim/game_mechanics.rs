@@ -1,9 +1,9 @@
 pub mod ability;
-pub mod ability_dex;
+pub(crate) mod ability_dex;
 pub mod monster;
-pub mod monster_dex;
+pub(crate) mod monster_dex;
 pub mod move_;
-pub mod move_dex;
+pub(crate) mod move_dex;
 
 use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};

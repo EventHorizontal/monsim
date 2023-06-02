@@ -1,9 +1,9 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use super::{ability::AbilitySpecies, MonType};
-use crate::sim::{
-    event::{EventHandlerFilters, EventHandlerSet, DEFAULT_HANDLERS},
+use monsim::sim::{
+    EventHandlerFilters, EventHandlerSet, DEFAULT_HANDLERS,
     EventHandler, SecondaryAction, FAILURE, SUCCESS,
+	ability::AbilitySpecies, MonType,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -12,7 +12,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     event_handlers: EventHandlerSet {
         on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
-            dbg_location: crate::debug_location!("FlashFire.OnTryMove"),
+            dbg_location: monsim::debug_location!("FlashFire.OnTryMove"),
             callback: |ctx, prng, owner_uid, _relay| {
                 let current_move = *ctx.get_current_action_as_move().expect(
                     "The current action should be a move within on_try_move handler context.",

@@ -1,13 +1,11 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use super::{
+use monsim::sim::{
     move_::{MoveCategory, MoveSpecies},
     MonType,
-};
-use crate::sim::{
-    event::{EventHandlerFilters, DEFAULT_HANDLERS},
-    prng::Prng,
-    BattleContext, BattlerUID, SecondaryAction, Stat,
+	EventHandlerFilters, DEFAULT_HANDLERS,
+	prng::Prng,
+	BattleContext, BattlerUID, SecondaryAction, Stat,
 };
 
 // TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate

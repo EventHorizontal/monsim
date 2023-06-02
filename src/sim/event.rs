@@ -191,7 +191,7 @@ impl EventResolver {
  #[test]
 fn test_if_priority_sorting_is_deterministic() {
     extern crate self as monsim;
-    use crate::sim::battle_context;
+    use crate::sim::{battle_context, monster_dex::{Treecko, Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
         let test_bcontext = battle_context!(
@@ -272,7 +272,7 @@ fn test_if_priority_sorting_is_deterministic() {
 #[test]
 fn test_priority_sorting_with_speed_ties() {
     extern crate self as monsim;
-    use crate::sim::battle_context;
+    use crate::sim::{battle_context, monster_dex::{Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
         let test_bcontext = battle_context!(
@@ -408,7 +408,7 @@ pub struct EventHandlerFilters {
 }
 
 impl EventHandlerFilters {
-    pub(crate) const fn default() -> EventHandlerFilters {
+    pub const fn default() -> EventHandlerFilters {
         EventHandlerFilters {
             whose_event: TargetFlags::OPPONENTS,
             on_battlefield: true,

@@ -9,7 +9,7 @@ pub mod prng;
 
 pub use action::*;
 pub use battle_context::*;
-pub use event::{EventHandler, EventHandlerFilters, EventHandlerSet, ActivationOrder, InBattleEvent, event_dex, TargetFlags};
+pub use event::{EventHandler, EventHandlerFilters, EventHandlerSet, ActivationOrder, InBattleEvent, event_dex, TargetFlags, DEFAULT_HANDLERS};
 pub use game_mechanics::*;
 pub use global_constants::*;
 pub use io::*;

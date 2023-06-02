@@ -71,13 +71,10 @@ fn construct_team_token_stream<'a>(
     let sim_ident = quote!(monsim::sim);
     
     let monster_mod = quote!(#sim_ident::monster);
-    let monster_dex_mod = quote!(#sim_ident::monster_dex);
     
     let move_mod = quote!(#sim_ident::move_);
-    let move_dex_mod = quote!(#sim_ident::move_dex);
     
     let ability_mod = quote!(#sim_ident::ability);
-    let ability_dex_mod = quote!(#sim_ident::ability_dex);
 
     let monster_iterator = team_fields.into_iter();
 
@@ -86,21 +83,21 @@ fn construct_team_token_stream<'a>(
     // Iterate through monsters
     for (index, monster) in monster_iterator.enumerate() {
         let monster_species = monster.monster_ident.clone();
-        let monster_nickname = monster.nickname_ident.unwrap_or(Literal::string(&monster.monster_ident.to_string()));
+        let monster_nickname = monster.nickname_ident.unwrap_or(Literal::string(&format!("{:?}", &monster.monster_ident.path)));
         let mut ability_species = quote!();
         let mut moves_vec = quote!();
         // Iterate through efects on monster
         for effect_expr in monster.fields.iter() {
             match effect_expr.effect_type {
                 EffectType::Move => {
-                    let move_ident = effect_expr.effect_ident.clone();
+                    let move_ident = effect_expr.effect_path.clone();
                     // Add to the moves array
                     moves_vec = quote!(
-                        #moves_vec #move_mod::Move::new(#move_dex_mod::#move_ident),
+                        #moves_vec #move_mod::Move::new(#move_ident),
                     );
                 },
                 EffectType::Ability => {
-                    let ability_ident = effect_expr.effect_ident.clone();
+                    let ability_ident = effect_expr.effect_path.clone();
                     ability_species = quote!(#ability_ident);
                 },
                 EffectType::Item => todo!(),
@@ -117,9 +114,9 @@ fn construct_team_token_stream<'a>(
             #sim_ident::Battler::new(
                 #sim_ident::BattlerUID { team_id: #sim_ident::TeamID::#team_name_ident, battler_number: #monster_mod::#monster_number },
                 #is_first_monster,
-                #monster_mod::Monster::new(#monster_dex_mod::#monster_species, #monster_nickname),
+                #monster_mod::Monster::new(#monster_species, #monster_nickname),
                 #move_mod::MoveSet::new(#moves_vec),
-                #ability_mod::Ability::new(#ability_dex_mod::#ability_species),
+                #ability_mod::Ability::new(#ability_species),
             ),        
         );
     }

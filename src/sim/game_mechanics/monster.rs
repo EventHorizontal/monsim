@@ -1,7 +1,7 @@
-use core::panic;
+use core::{panic, fmt::Debug};
 use std::ops::{Index, IndexMut};
 
-use super::{Debug, EventHandlerSet, MonType};
+use crate::sim::{EventHandlerSet, MonType};
 
 #[derive(Clone, Copy)]
 pub struct MonsterSpecies {

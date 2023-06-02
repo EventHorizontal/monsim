@@ -42,22 +42,19 @@ pub fn battle_context(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     } = context_expr;
     
     let ally_monsters_vec = construct_team_token_stream(
-        quote!(monsim),
         ally_team_fields, 
         quote!(Ally)
     );
     let opponent_monsters_vec = construct_team_token_stream(
-        quote!(monsim),
         opponent_team_fields, 
         quote!(Opponent),
     );
     
-    let entities = quote!(monsim::game_mechanics);
+    let entities = quote!(monsim::sim);
     let output = quote!({ 
-            extern crate self as monsim;
             BattleContext::new(
-                monsim::game_mechanics::AllyBattlerTeam(#entities::BattlerTeam::new(#ally_monsters_vec)),
-                monsim::game_mechanics::OpponentBattlerTeam(#entities::BattlerTeam::new(#opponent_monsters_vec)),
+                #entities::AllyBattlerTeam(#entities::BattlerTeam::new(#ally_monsters_vec)),
+                #entities::OpponentBattlerTeam(#entities::BattlerTeam::new(#opponent_monsters_vec)),
             )
         }
     );
@@ -67,21 +64,20 @@ pub fn battle_context(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 }
 
 fn construct_team_token_stream<'a>(
-    package_ident: TokenStream,
     team_fields: Punctuated<MonsterExpr, Comma>,
     team_name_ident: TokenStream,
 ) -> TokenStream {
 
-    let game_mechanics = quote!(#package_ident::game_mechanics);
+    let sim_ident = quote!(monsim::sim);
     
-    let monster_mod = quote!(#game_mechanics::monster);
-    let monster_dex_mod = quote!(#game_mechanics::monster_dex);
+    let monster_mod = quote!(#sim_ident::monster);
+    let monster_dex_mod = quote!(#sim_ident::monster_dex);
     
-    let move_mod = quote!(#game_mechanics::move_);
-    let move_dex_mod = quote!(#game_mechanics::move_dex);
+    let move_mod = quote!(#sim_ident::move_);
+    let move_dex_mod = quote!(#sim_ident::move_dex);
     
-    let ability_mod = quote!(#game_mechanics::ability);
-    let ability_dex_mod = quote!(#game_mechanics::ability_dex);
+    let ability_mod = quote!(#sim_ident::ability);
+    let ability_dex_mod = quote!(#sim_ident::ability_dex);
 
     let monster_iterator = team_fields.into_iter();
 
@@ -118,8 +114,8 @@ fn construct_team_token_stream<'a>(
         let is_first_monster = index == 0;
         monsters = quote!(
             #monsters 
-            #game_mechanics::Battler::new(
-                #game_mechanics::BattlerUID { team_id: #game_mechanics::TeamID::#team_name_ident, battler_number: #monster_mod::#monster_number },
+            #sim_ident::Battler::new(
+                #sim_ident::BattlerUID { team_id: #sim_ident::TeamID::#team_name_ident, battler_number: #monster_mod::#monster_number },
                 #is_first_monster,
                 #monster_mod::Monster::new(#monster_dex_mod::#monster_species, #monster_nickname),
                 #move_mod::MoveSet::new(#moves_vec),

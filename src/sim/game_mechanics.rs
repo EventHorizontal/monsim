@@ -9,7 +9,7 @@ use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{
-    ActivationOrder, EventHandlerFilters, EventHandlerSet, EventHandlerSetInstance,
+    ActivationOrder, EventHandlerFilters, EventHandlerSetInstance,
     EventHandlerSetInstanceList,
 };
 pub use ability::*;

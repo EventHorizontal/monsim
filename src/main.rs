@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use monsim::*;
+use monsim::sim::*;
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind},

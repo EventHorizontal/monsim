@@ -21,6 +21,7 @@ pub struct BattleContext {
 pub type MessageBuffer = Vec<String>;
 pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
+use crate::sim::event::EventHandlerSetInstanceList;
 impl BattleContext {
     pub fn new(ally_team: AllyBattlerTeam, opponent_team: OpponentBattlerTeam) -> Self {
         Self {

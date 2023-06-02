@@ -4,7 +4,7 @@ use super::{
     move_::{MoveCategory, MoveSpecies},
     MonType,
 };
-use crate::{
+use crate::sim::{
     event::{EventHandlerFilters, DEFAULT_HANDLERS},
     prng::Prng,
     BattleContext, BattlerUID, SecondaryAction, Stat,

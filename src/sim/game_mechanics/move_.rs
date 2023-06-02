@@ -1,8 +1,6 @@
-use crate::{event::EventHandlerFilters, prng::Prng, BattleContext, BattlerUID};
-use core::slice::Iter;
+use crate::sim::{event::{EventHandlerFilters, EventHandlerSet}, prng::Prng, BattleContext, BattlerUID, MonType};
+use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
-
-use super::{Debug, EventHandlerSet, MonType};
 
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {

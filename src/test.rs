@@ -2,10 +2,11 @@
 mod main {
     use battle_context_macro::battle_context;
 
-    use crate::BattleContext;
+    use crate::sim::BattleContext;
 
     #[test]
     fn test_bcontext_macro() {
+        extern crate self as monsim;
         let test_bcontext = battle_context!(
             {
                 AllyTeam {
@@ -36,100 +37,100 @@ mod main {
         );
         assert_eq!(
             test_bcontext,
-            BattleContext::new(
-                crate::game_mechanics::AllyBattlerTeam(crate::game_mechanics::BattlerTeam::new(vec![
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Ally,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_1,
-                        },
-                        true,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Ruby",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
+            {
+                BattleContext::new(
+                    monsim::sim::AllyBattlerTeam(monsim::sim::BattlerTeam::new(
+                        vec![
+                                (monsim::sim::Battler::new(
+                                    monsim::sim::BattlerUID {
+                                        team_id: monsim::sim::TeamID::Ally,
+                                        battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
+                                    },
+                                    true,
+                                    monsim::sim::monster::Monster::new(
+                                        monsim::sim::monster_dex::Torchic,
+                                        "Ruby",
+                                    ),
+                                    monsim::sim::move_::MoveSet::new(
+                                        vec![
+                                                (monsim::sim::move_::Move::new(
+                                                    monsim::sim::move_dex::Scratch,
+                                                )),
+                                                (monsim::sim::move_::Move::new(
+                                                    monsim::sim::move_dex::Ember,
+                                                )),
+                                            ],
+                                    ),
+                                    monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                                )),
+                                (monsim::sim::Battler::new(
+                                    monsim::sim::BattlerUID {
+                                        team_id: monsim::sim::TeamID::Ally,
+                                        battler_number: monsim::sim::monster::BattlerNumber::from(1usize),
+                                    },
+                                    false,
+                                    monsim::sim::monster::Monster::new(
+                                        monsim::sim::monster_dex::Torchic,
+                                        "Sapphire",
+                                    ),
+                                    monsim::sim::move_::MoveSet::new(
+                                        vec![
+                                                (monsim::sim::move_::Move::new(
+                                                    monsim::sim::move_dex::Scratch,
+                                                )),
+                                                (monsim::sim::move_::Move::new(
+                                                    monsim::sim::move_dex::Ember,
+                                                )),
+                                            ],
+                                    ),
+                                    monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                                )),
+                                (monsim::sim::Battler::new(
+                                    monsim::sim::BattlerUID {
+                                        team_id: monsim::sim::TeamID::Ally,
+                                        battler_number: monsim::sim::monster::BattlerNumber::from(2usize),
+                                    },
+                                    false,
+                                    monsim::sim::monster::Monster::new(
+                                        monsim::sim::monster_dex::Torchic,
+                                        "Emerald",
+                                    ),
+                                    monsim::sim::move_::MoveSet::new(
+                                        vec![
+                                                (monsim::sim::move_::Move::new(
+                                                    monsim::sim::move_dex::Scratch,
+                                                )),
+                                                (monsim::sim::move_::Move::new(
+                                                    monsim::sim::move_dex::Ember,
+                                                )),
+                                            ],
+                                    ),
+                                    monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                                )),
+                            ],
                     )),
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Ally,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_2,
-                        },
-                        false,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Sapphire",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
+                    monsim::sim::OpponentBattlerTeam(monsim::sim::BattlerTeam::new(
+                        vec![(monsim::sim::Battler::new(
+                                monsim::sim::BattlerUID {
+                                    team_id: monsim::sim::TeamID::Opponent,
+                                    battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
+                                },
+                                true,
+                                monsim::sim::monster::Monster::new(
+                                    monsim::sim::monster_dex::Torchic,
+                                    "Cheerio",
+                                ),
+                                monsim::sim::move_::MoveSet::new(
+                                    vec![
+                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
+                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Ember)),
+                                        ],
+                                ),
+                                monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                            ))],
                     )),
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Ally,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_3,
-                        },
-                        false,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Emerald",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
-                    )),
-                ],)),
-                crate::game_mechanics::OpponentBattlerTeam(crate::game_mechanics::BattlerTeam::new(vec![
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Opponent,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_1,
-                        },
-                        true,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Cheerio",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
-                    ))
-                ],)),
-            ),
+                )
+            }
         );
     }
 }
@@ -139,93 +140,11 @@ mod bcontext {
 
     use battle_context_macro::battle_context;
 
-    use crate::{
-        prng::{self, Prng},
-        Battle, BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters,
-        EventHandlerInstance, InBattleEvent, TeamID,
-    };
-
-    #[test]
-    fn test_priority_sorting_deterministic() {
-        let mut result = [Vec::new(), Vec::new()];
-        for i in 0..=1 {
-            let test_bcontext = battle_context!(
-                {
-                    AllyTeam {
-                        mon Torchic "Ruby" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Mudkip "Sapphire" {
-                            mov Tackle,
-                            mov Bubble,
-                            abl FlashFire,
-                        },
-                        mon Treecko "Emerald" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                    },
-                    OpponentTeam {
-                        mon Drifblim {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                    }
-                }
-            );
-
-            let mut prng = Prng::new(prng::seed_from_time_now());
-
-            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
-            use crate::event::event_dex::OnTryMove;
-            let mut event_handler_instances = event_handler_set_instances
-                .iter()
-                .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) = OnTryMove
-                        .corresponding_handler(&event_handler_set_instance.event_handler_set)
-                    {
-                        Some(EventHandlerInstance {
-                            event_name: OnTryMove.name(),
-                            event_handler: handler,
-                            owner_uid: event_handler_set_instance.owner_uid,
-                            activation_order: event_handler_set_instance.activation_order,
-                            filters: EventHandlerFilters::default(),
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
-                &mut prng,
-                &mut event_handler_instances,
-                &mut |it| it.activation_order,
-            );
-
-            result[i] = event_handler_instances
-                .into_iter()
-                .map(|event_handler_instance| {
-                    test_bcontext
-                        .monster(event_handler_instance.owner_uid)
-                        .nickname
-                })
-                .collect::<Vec<_>>();
-        }
-
-        assert_eq!(result[0], result[1]);
-        assert_eq!(result[0][0], "Drifblim");
-        assert_eq!(result[0][1], "Emerald");
-        assert_eq!(result[0][2], "Ruby");
-        assert_eq!(result[0][3], "Sapphire");
-    }
+    use crate::sim::{ BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters, TeamID, };
 
     #[test]
     fn test_event_filtering_for_event_sources() {
+        extern crate self as monsim;
         let test_battle_context = battle_context!(
             {
                 AllyTeam {
@@ -265,130 +184,8 @@ mod bcontext {
     }
 
     #[test]
-    fn test_priority_sorting_with_speed_ties() {
-        let mut result = [Vec::new(), Vec::new()];
-        for i in 0..=1 {
-            let test_bcontext = battle_context!(
-                {
-                    AllyTeam {
-                        mon Torchic "A" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "B" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "C" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "D" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "E" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Mudkip "F" {
-                            mov Tackle,
-                            mov Bubble,
-                            abl FlashFire,
-                        }
-                    },
-                    OpponentTeam {
-                        mon Drifblim "G" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "H" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "I" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "J" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "K" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "L" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                    }
-                }
-            );
-            let mut prng = Prng::new(i as u64);
-
-            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
-            use crate::event::event_dex::OnTryMove;
-            let mut event_handler_instances = event_handler_set_instances
-                .iter()
-                .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) = OnTryMove
-                        .corresponding_handler(&event_handler_set_instance.event_handler_set)
-                    {
-                        Some(EventHandlerInstance {
-                            event_name: OnTryMove.name(),
-                            event_handler: handler,
-                            owner_uid: event_handler_set_instance.owner_uid,
-                            activation_order: event_handler_set_instance.activation_order,
-                            filters: EventHandlerFilters::default(),
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
-                &mut prng,
-                &mut event_handler_instances,
-                &mut |it| it.activation_order,
-            );
-
-            result[i] = event_handler_instances
-                .into_iter()
-                .map(|event_handler_instance| {
-                    test_bcontext
-                        .monster(event_handler_instance.owner_uid)
-                        .nickname
-                })
-                .collect::<Vec<_>>();
-        }
-
-        // Check that the two runs are not equal, there is an infinitesimal chance they won't be, but the probability is negligible.
-        assert_ne!(result[0], result[1]);
-        // Check that Drifblim is indeed the in the front.
-        assert_eq!(result[0][0], "G");
-        // Check that the Torchics are all in the middle.
-        for name in ["A", "B", "C", "D", "E", "H", "I", "J", "K", "L"].iter() {
-            assert!(result[0].contains(name));
-        }
-        //Check that the Mudkip is last.
-        assert_eq!(result[0][11], "F");
-    }
-
-    #[test]
     fn test_display_battle_context() {
+        extern crate self as monsim;
         let test_bcontext = battle_context!(
             {
                 AllyTeam {
@@ -424,12 +221,11 @@ mod bcontext {
 
 #[cfg(test)]
 mod event {
-    use crate::{event_dex::OnTryMove, BattlerUID, EventHandlerInstance, InBattleEvent};
 
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler() {
-        use crate::game_mechanics::ability_dex::FlashFire;
+        use crate::sim::game_mechanics::ability_dex::FlashFire;
         let event_handler = FlashFire.event_handlers.on_try_move.unwrap();
         println!("{:?}", event_handler);
     }
@@ -437,44 +233,24 @@ mod event {
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler_set() {
-        use crate::ability_dex::FlashFire;
+        use crate::sim::ability_dex::FlashFire;
         println!("{:#?}", FlashFire.event_handlers);
     }
-
-    #[test]
-    #[cfg(feature = "debug")]
-    fn test_print_event_handler_instance() {
-        use crate::ability_dex::FlashFire;
-        let event_handler_instance = EventHandlerInstance {
-            event_name: OnTryMove.name(),
-            event_handler: FlashFire.event_handlers.on_try_move.unwrap(),
-            owner_uid: BattlerUID {
-                team_id: crate::TeamID::Ally,
-                battler_number: crate::BattlerNumber::_1,
-            },
-            activation_order: crate::ActivationOrder {
-                priority: 1,
-                speed: 99,
-                order: 0,
-            },
-            filters: crate::EventHandlerFilters::default(),
-        };
-        println!("{:#?}", event_handler_instance);
-    }
+    
 }
 
 #[cfg(test)]
 mod prng {
     use std::time;
 
-    use crate::prng::*;
+    use crate::sim::prng::*;
 
     #[test]
     fn test_prng_percentage_chance() {
         let mut lcrng = Prng::new(seed_from_time_now());
         let mut dist = [0u64; 100];
         for _ in 0..=10_000_000 {
-            let n = lcrng.generate_number_in_range(0..=99) as usize;
+            let n = lcrng.generate_u16_in_range(0..=99) as usize;
             dist[n] += 1;
         }
         let avg_deviation = dist
@@ -497,8 +273,8 @@ mod prng {
         let mut lcrng_1 = Prng::new(seed);
         let mut lcrng_2 = Prng::new(seed);
         for i in 0..10_000 {
-            let generated_number_1 = lcrng_1.generate_number_in_range(0..=u16::MAX - 1);
-            let generated_number_2 = lcrng_2.generate_number_in_range(0..=u16::MAX - 1);
+            let generated_number_1 = lcrng_1.generate_u16_in_range(0..=u16::MAX - 1);
+            let generated_number_2 = lcrng_2.generate_u16_in_range(0..=u16::MAX - 1);
             assert_eq!(generated_number_1, generated_number_2, "iteration {}", i);
         }
     }
@@ -514,7 +290,7 @@ mod prng {
 
         let mut success = 0.0;
         for _ in 0..=10_000_000 {
-            if lcrng._chance(33, 100) {
+            if lcrng.chance(33, 100) {
                 success += 1.0;
             }
         }

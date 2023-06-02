@@ -1,4 +1,4 @@
-use crate::prng::Prng;
+use crate::sim::prng::Prng;
 
 use super::{
     battle_context::BattleContext,
@@ -8,6 +8,8 @@ use super::{
     SimError, TurnOutcome,
 };
 
+/// Primary Actions are functions that are meant to be called by the 
+/// simulator to initiate a monster's turn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PrimaryAction;
 
@@ -58,7 +60,7 @@ impl PrimaryAction {
             }
         }
 
-        let random_multiplier = prng.generate_number_in_range(85..=100);
+        let random_multiplier = prng.generate_u16_in_range(85..=100);
         let random_multiplier = random_multiplier as f64 / 100.0;
 
         let stab_multiplier = {
@@ -128,7 +130,7 @@ impl PrimaryAction {
         Ok(())
     }
 
-    pub(crate) fn status_move(
+    pub fn status_move(
         ctx: &mut BattleContext,
         prng: &mut Prng,
         move_uid: MoveUID,
@@ -155,6 +157,9 @@ impl PrimaryAction {
     }
 }
 
+/// Secondary Actions are meant to be called by other Actions (both Primary 
+/// and Secondary). This leads to a chain-reaction of Actions. It is up to the
+/// user to avoid making loops of actions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SecondaryAction;
 
@@ -165,7 +170,7 @@ impl SecondaryAction {
     ///
     /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
-    pub(crate) fn damage(ctx: &mut BattleContext, target_uid: BattlerUID, damage: u16) {
+    pub fn damage(ctx: &mut BattleContext, target_uid: BattlerUID, damage: u16) {
         ctx.monster_mut(target_uid).current_health = ctx
             .monster(target_uid)
             .current_health
@@ -177,7 +182,7 @@ impl SecondaryAction {
     /// Resolves activation of any ability.
     ///
     /// Returns a `bool` indicating whether the ability succeeded.
-    pub(crate) fn activate_ability(
+    pub fn activate_ability(
         ctx: &mut BattleContext,
         prng: &mut Prng,
         owner_uid: BattlerUID,
@@ -197,7 +202,7 @@ impl SecondaryAction {
     /// Resolves raising the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
     ///
     /// Returns a `bool` indicating whether the stat raising succeeded.
-    pub(crate) fn raise_stat(
+    pub fn raise_stat(
         ctx: &mut BattleContext,
         prng: &mut Prng,
         battler_uid: BattlerUID,
@@ -230,7 +235,7 @@ impl SecondaryAction {
     /// Resolves lowering the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
     ///
     /// Returns a `bool` indicating whether the stat lowering succeeded.
-    pub(crate) fn lower_stat(
+    pub fn lower_stat(
         ctx: &mut BattleContext,
         prng: &mut Prng,
         battler_uid: BattlerUID,

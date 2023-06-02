@@ -33,3 +33,11 @@ macro_rules! debug_to_file {
 		let debug_file_output_error = crate::debug::write_debug_to_file(format!["[{}:{}:{}]: {} = {:#?}", std::file!(), std::line!(), std::column!(), stringify!($x), $x.clone()]);
 	};
 }
+
+#[macro_export]
+#[cfg(feature = "debug")]
+macro_rules! debug_location {
+	($x: expr) => {
+		const_format::formatcp!["[{}:{}:{}] {}", std::file!(), std::line!(), std::column!(), $x]
+	};
+}

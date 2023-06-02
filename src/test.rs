@@ -37,7 +37,7 @@ mod main {
         assert_eq!(
             test_bcontext,
             BattleContext::new(
-                crate::game_mechanics::BattlerTeam::new(vec![
+                crate::game_mechanics::AllyBattlerTeam(crate::game_mechanics::BattlerTeam::new(vec![
                     (crate::game_mechanics::Battler::new(
                         crate::game_mechanics::BattlerUID {
                             team_id: crate::game_mechanics::TeamID::Ally,
@@ -104,8 +104,8 @@ mod main {
                             crate::game_mechanics::ability_dex::FlashFire,
                         ),
                     )),
-                ],),
-                crate::game_mechanics::BattlerTeam::new(vec![
+                ],)),
+                crate::game_mechanics::OpponentBattlerTeam(crate::game_mechanics::BattlerTeam::new(vec![
                     (crate::game_mechanics::Battler::new(
                         crate::game_mechanics::BattlerUID {
                             team_id: crate::game_mechanics::TeamID::Opponent,
@@ -128,7 +128,7 @@ mod main {
                             crate::game_mechanics::ability_dex::FlashFire,
                         ),
                     ))
-                ],),
+                ],)),
             ),
         );
     }
@@ -201,7 +201,7 @@ mod bcontext {
                 })
                 .collect::<Vec<_>>();
 
-            Battle::priority_sort::<EventHandlerInstance<bool>>(
+            Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
                 &mut prng,
                 &mut event_handler_instances,
                 &mut |it| it.activation_order,
@@ -359,7 +359,7 @@ mod bcontext {
                 })
                 .collect::<Vec<_>>();
 
-            Battle::priority_sort::<EventHandlerInstance<bool>>(
+            Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
                 &mut prng,
                 &mut event_handler_instances,
                 &mut |it| it.activation_order,

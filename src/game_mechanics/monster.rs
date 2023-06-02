@@ -117,20 +117,22 @@ impl StatModifierSet {
         }
     }
 
-    pub fn raise_stat(&mut self, stat: Stat, number_of_stages: u8) -> u8 {
+    pub fn raise_stat(&mut self, stat: Stat, by_stages: u8) -> u8 {
         // So far stat raises have never been larger than +3, but this might be removed in the
         // interest of innovation.
-        assert!(number_of_stages <= 3);
-        let effective_stages = (6 - self[stat]).min(number_of_stages as i8);
+        assert!(by_stages <= 3);
+        let effective_stages = (6 - self[stat]).min(by_stages as i8);
+        assert!(effective_stages >= 0);
         self[stat] += effective_stages;
         effective_stages as u8
     }
 
-    pub fn lower_stat(&mut self, stat: Stat, number_of_stages: u8) -> u8 {
+    pub fn lower_stat(&mut self, stat: Stat, by_stages: u8) -> u8 {
         // So far stat drops have never been larger than -3, but this might be removed in the
         // interest of innovation.
-        assert!(number_of_stages <= 3);
-        let effective_stages = (-6 - self[stat]).max(number_of_stages as i8);
+        assert!(by_stages <= 3);
+        let effective_stages = (6 + self[stat]).min(by_stages as i8);
+        assert!(effective_stages >= 0);
         self[stat] -= effective_stages;
         effective_stages as u8
     }

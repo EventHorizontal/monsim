@@ -1,4 +1,6 @@
 pub mod battle_context;
+#[cfg(feature = "debug")]
+pub mod debug;
 pub mod game_mechanics;
 pub mod global_constants;
 pub mod io;
@@ -41,18 +43,20 @@ impl Battle {
         match self.turn_number.checked_add(1) {
             Some(turn_number) => self.turn_number = turn_number,
             None => {
-                return Err(SimError::InvalidStateError(
+                return Err(SimError::InvalidStateError(String::from(
                     "Turn limit exceeded (Limit = 255 turns)",
-                ))
+                )))
             }
         };
 
         self.ctx
             .push_messages(&[&format!["Turn {}", self.turn_number], &EMPTY_LINE]);
 
-        Battle::priority_sort(&mut self.prng, &mut chosen_actions, &mut |choice| {
-            self.ctx.choice_activation_order(choice)
-        });
+        Battle::sort_items_by_activation_order(
+            &mut self.prng,
+            &mut chosen_actions,
+            &mut |choice| self.ctx.choice_activation_order(choice),
+        );
 
         let mut result = Ok(());
         for chosen_action in chosen_actions.into_iter() {
@@ -90,7 +94,7 @@ impl Battle {
     }
 
     /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
-    pub(crate) fn priority_sort<T: Clone + Copy>(
+    pub(crate) fn sort_items_by_activation_order<T: Clone + Copy>(
         prng: &mut Prng,
         vector: &mut Vec<T>,
         activation_order: &mut dyn FnMut(T) -> ActivationOrder,
@@ -167,8 +171,8 @@ impl Battle {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
-    InvalidStateError(&'static str),
+    InvalidStateError(String),
     InputError(String),
 }

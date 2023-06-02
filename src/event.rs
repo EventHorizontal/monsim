@@ -178,7 +178,7 @@ impl EventResolver {
             })
             .collect::<Vec<_>>();
 
-        Battle::priority_sort::<EventHandlerInstance<R>>(
+        Battle::sort_items_by_activation_order::<EventHandlerInstance<R>>(
             prng,
             &mut event_handler_instances,
             &mut |it| it.activation_order,

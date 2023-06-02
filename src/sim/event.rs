@@ -19,7 +19,7 @@ impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
         f.debug_struct("EventHandler")
             .field(
                 "callback",
-                &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>),
+                &&(self.callback as EventHandlerWithLifeTime<'a, R>),
             )
             .finish()
     }
@@ -39,14 +39,14 @@ impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
         f.debug_struct("EventHandler")
             .field(
                 "callback",
-                &&(self.callback as ExplicitlyAnnotatedEventHandler<'a, R>),
+                &&(self.callback as EventHandlerWithLifeTime<'a, R>),
             )
             .field("location", &self.dbg_location)
             .finish()
     }
 }
 
-pub type ExplicitlyAnnotatedEventHandler<'a, R> =
+pub type EventHandlerWithLifeTime<'a, R> =
     fn(&'a mut BattleContext, &'a mut Prng, BattlerUID, R) -> EventReturn<R>;
 
 #[derive(Debug, Clone, Copy)]

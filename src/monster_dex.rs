@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{MonsterSpecies, StatSet, MonType, DEFAULT_HANDLERS};
+use monsim::sim::{MonType, MonsterSpecies, StatSet, DEFAULT_HANDLERS};
 
 pub const Treecko: MonsterSpecies = MonsterSpecies {
     name: "Treecko",

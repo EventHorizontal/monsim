@@ -1,5 +1,5 @@
-use core::fmt::Debug;
 use crate::sim::{event::EventHandlerFilters, BattleContext, BattlerUID, EventHandlerSet};
+use core::fmt::Debug;
 
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {

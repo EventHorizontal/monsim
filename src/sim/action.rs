@@ -8,7 +8,7 @@ use super::{
     SimError, TurnOutcome,
 };
 
-/// Primary Actions are functions that are meant to be called by the 
+/// Primary Actions are functions that are meant to be called by the
 /// simulator to initiate a monster's turn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PrimaryAction;
@@ -157,7 +157,7 @@ impl PrimaryAction {
     }
 }
 
-/// Secondary Actions are meant to be called by other Actions (both Primary 
+/// Secondary Actions are meant to be called by other Actions (both Primary
 /// and Secondary). This leads to a chain-reaction of Actions. It is up to the
 /// user to avoid making loops of actions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

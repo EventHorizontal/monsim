@@ -1,19 +1,22 @@
 pub mod battle_context;
+pub mod choice;
 pub mod game_mechanics;
 pub mod global_constants;
-pub mod choice;
+pub mod prng;
 
 mod action;
 mod event;
 mod ordering;
-pub mod prng;
 
 pub use action::*;
 pub use battle_context::*;
-pub use event::{EventHandler, EventHandlerFilters, EventHandlerSet, ActivationOrder, InBattleEvent, event_dex, TargetFlags, DEFAULT_HANDLERS};
+pub use choice::*;
+pub use event::{
+    event_dex, ActivationOrder, EventHandler, EventHandlerFilters, EventHandlerSet, InBattleEvent,
+    TargetFlags, DEFAULT_HANDLERS,
+};
 pub use game_mechanics::*;
 pub use global_constants::*;
-pub use choice::*;
 use prng::Prng;
 
 pub use battle_context::BattleContext;
@@ -50,11 +53,9 @@ impl Battle {
         self.ctx
             .push_messages(&[&format!["Turn {}", self.turn_number], &EMPTY_LINE]);
 
-        ordering::sort_by_activation_order(
-            &mut self.prng,
-            &mut chosen_actions,
-            &mut |choice| self.ctx.choice_activation_order(choice),
-        );
+        ordering::sort_by_activation_order(&mut self.prng, &mut chosen_actions, &mut |choice| {
+            self.ctx.choice_activation_order(choice)
+        });
 
         let mut result = Ok(());
         for chosen_action in chosen_actions.into_iter() {

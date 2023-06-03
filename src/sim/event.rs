@@ -188,11 +188,16 @@ impl EventResolver {
     }
 }
 
- #[test]
- #[cfg(feature = "debug")]
+#[test]
+#[cfg(feature = "debug")]
 fn test_if_priority_sorting_is_deterministic() {
     extern crate self as monsim;
-    use crate::sim::{battle_context, monster_dex::{Treecko, Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
+    use crate::sim::{
+        ability_dex::FlashFire,
+        battle_context,
+        monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+        move_dex::{Bubble, Ember, Scratch, Tackle},
+    };
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
         let test_bcontext = battle_context!(
@@ -227,12 +232,12 @@ fn test_if_priority_sorting_is_deterministic() {
         let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
 
         let event_handler_set_instances = test_bcontext.event_handler_set_instances();
-        use crate::sim::{InBattleEvent, event_dex::OnTryMove};
+        use crate::sim::{event_dex::OnTryMove, InBattleEvent};
         let mut event_handler_instances = event_handler_set_instances
             .iter()
             .filter_map(|event_handler_set_instance| {
-                if let Some(handler) = OnTryMove
-                    .corresponding_handler(&event_handler_set_instance.event_handler_set)
+                if let Some(handler) =
+                    OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
                 {
                     Some(EventHandlerInstance {
                         event_name: OnTryMove.name(),
@@ -247,7 +252,7 @@ fn test_if_priority_sorting_is_deterministic() {
             })
             .collect::<Vec<_>>();
 
-            crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
+        crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
             &mut prng,
             &mut event_handler_instances,
             &mut |it| it.activation_order,
@@ -274,7 +279,12 @@ fn test_if_priority_sorting_is_deterministic() {
 #[cfg(feature = "debug")]
 fn test_priority_sorting_with_speed_ties() {
     extern crate self as monsim;
-    use crate::sim::{battle_context, monster_dex::{Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
+    use crate::sim::{
+        ability_dex::FlashFire,
+        battle_context,
+        monster_dex::{Drifblim, Mudkip, Torchic},
+        move_dex::{Bubble, Ember, Scratch, Tackle},
+    };
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
         let test_bcontext = battle_context!(
@@ -348,12 +358,12 @@ fn test_priority_sorting_with_speed_ties() {
         let mut prng = Prng::new(i as u64);
 
         let event_handler_set_instances = test_bcontext.event_handler_set_instances();
-        use crate::sim::{InBattleEvent, event_dex::OnTryMove};
+        use crate::sim::{event_dex::OnTryMove, InBattleEvent};
         let mut event_handler_instances = event_handler_set_instances
             .iter()
             .filter_map(|event_handler_set_instance| {
-                if let Some(handler) = OnTryMove
-                    .corresponding_handler(&event_handler_set_instance.event_handler_set)
+                if let Some(handler) =
+                    OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
                 {
                     Some(EventHandlerInstance {
                         event_name: OnTryMove.name(),
@@ -368,7 +378,7 @@ fn test_priority_sorting_with_speed_ties() {
             })
             .collect::<Vec<_>>();
 
-            crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
+        crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
             &mut prng,
             &mut event_handler_instances,
             &mut |it| it.activation_order,

@@ -1,4 +1,8 @@
-use crate::sim::{event::{EventHandlerFilters, EventHandlerSet}, prng::Prng, BattleContext, BattlerUID, MonType};
+use crate::sim::{
+    event::{EventHandlerFilters, EventHandlerSet},
+    prng::Prng,
+    BattleContext, BattlerUID, MonType,
+};
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
 

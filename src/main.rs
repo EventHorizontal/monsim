@@ -1,11 +1,14 @@
-use monsim::{app::{self, MonsimResult}, sim::*};
+use monsim::{
+    app::{self, MonsimResult},
+    sim::*,
+};
 mod ability_dex;
 mod monster_dex;
 mod move_dex;
 
 use ability_dex::FlashFire;
-use monster_dex::{Treecko, Torchic, Mudkip, Drifloon};
-use move_dex::{Bubble, Ember, Scratch, Growl, Tackle};
+use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
+use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 
 fn main() -> MonsimResult {
     let battle = Battle::new(battle_context!(

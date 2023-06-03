@@ -12,8 +12,7 @@ use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{
-    ActivationOrder, EventHandlerFilters, EventHandlerSetInstance,
-    EventHandlerSetInstanceList,
+    ActivationOrder, EventHandlerFilters, EventHandlerSetInstance, EventHandlerSetInstanceList,
 };
 pub use ability::*;
 pub use monster::*;
@@ -127,7 +126,7 @@ impl Display for Battler {
                 .as_str(),
             );
         }
-        
+
         let number_of_effects = self.moveset.moves().count();
 
         out.push_str("\t│\t├── ");

@@ -1,5 +1,5 @@
 pub mod app;
-pub mod sim;
 #[cfg(feature = "debug")]
 pub mod debug;
+pub mod sim;
 mod test;

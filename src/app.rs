@@ -79,7 +79,9 @@ impl<'a> AppState<'a> {
             selected_list: ScrollableWidgets::MessageLog,
             message_log_scroll_idx: 0,
             is_battle_ongoing: true,
-            ally_active_battler_string: BattleContext::monster_status_string(ctx.ally_team.0.active_battler()),
+            ally_active_battler_string: BattleContext::monster_status_string(
+                ctx.ally_team.0.active_battler(),
+            ),
             ally_team_string: ctx.ally_team_string(),
             opponent_active_battler_string: BattleContext::monster_status_string(
                 ctx.opponent_team.0.active_battler(),
@@ -138,7 +140,9 @@ impl<'a> AppState<'a> {
         *self = Self {
             message_buffer: ctx.message_buffer.clone(),
             is_battle_ongoing: ctx.sim_state != SimState::Finished,
-            ally_active_battler_string: BattleContext::monster_status_string(ctx.ally_team.0.active_battler()),
+            ally_active_battler_string: BattleContext::monster_status_string(
+                ctx.ally_team.0.active_battler(),
+            ),
             ally_team_string: ctx.ally_team_string(),
             opponent_active_battler_string: BattleContext::monster_status_string(
                 ctx.opponent_team.0.active_battler(),
@@ -165,8 +169,7 @@ enum TuiEvent<I> {
 pub type MonsimResult = Result<(), Box<dyn std::error::Error>>;
 
 pub fn run(mut battle: Battle) -> MonsimResult {
-	extern crate self as monsim;
-    
+    extern crate self as monsim;
 
     // Initialise the Program
     let mut app_state = AppState::new(&mut battle.ctx);
@@ -247,7 +250,9 @@ fn update_state_from_input(
                                     if let Err(e) = removal_result {
                                         match e.kind() {
                                             std::io::ErrorKind::NotFound => (),
-                                            _ => { return Err(Box::new(e)); },
+                                            _ => {
+                                                return Err(Box::new(e));
+                                            }
                                         }
                                     }
                                 }
@@ -440,14 +445,17 @@ pub fn render_interface<'a>(
 ) -> std::io::Result<CompletedFrame<'a>> {
     let terminal_height = terminal.size()?.height as usize;
 
-    let longest_message_length = app_state.message_buffer.iter()
-    .fold(0usize, |acc, x| {
-        if x.len() > acc {
-            x.len()
-        } else {
-            acc
-        }
-    });
+    let longest_message_length =
+        app_state.message_buffer.iter().fold(
+            0usize,
+            |acc, x| {
+                if x.len() > acc {
+                    x.len()
+                } else {
+                    acc
+                }
+            },
+        );
 
     terminal.draw(|frame| {
         // Chunks
@@ -539,7 +547,8 @@ pub fn render_interface<'a>(
                 .len()
                 .saturating_sub(terminal_height as usize - 4),
         );
-        let text = app_state.message_buffer
+        let text = app_state
+            .message_buffer
             .iter()
             .enumerate()
             .filter_map(|(idx, element)| {

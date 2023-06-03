@@ -1,4 +1,4 @@
-use core::{panic, fmt::Debug};
+use core::{fmt::Debug, panic};
 use std::ops::{Index, IndexMut};
 
 use crate::sim::{EventHandlerSet, MonType};

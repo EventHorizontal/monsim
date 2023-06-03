@@ -2,10 +2,9 @@
 
 use monsim::sim::{
     move_::{MoveCategory, MoveSpecies},
-    MonType,
-	EventHandlerFilters, DEFAULT_HANDLERS,
-	prng::Prng,
-	BattleContext, BattlerUID, SecondaryAction, Stat,
+    prng::Prng,
+    BattleContext, BattlerUID, EventHandlerFilters, MonType, SecondaryAction, Stat,
+    DEFAULT_HANDLERS,
 };
 
 // TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate

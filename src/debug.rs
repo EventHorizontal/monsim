@@ -1,6 +1,5 @@
-
 pub fn write_debug_to_file(message: String) -> std::io::Result<()> {
-	use std::fs::{read_to_string, write};
+    use std::fs::{read_to_string, write};
     let debug_file_result = read_to_string("debug_output.txt");
     match debug_file_result {
         Ok(mut debug_file) => {

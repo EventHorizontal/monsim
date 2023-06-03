@@ -183,7 +183,11 @@ impl BattleContext {
     }
 
     fn is_on_opponent_team(&self, uid: BattlerUID) -> bool {
-        self.opponent_team.0.battlers().iter().any(|it| it.uid == uid)
+        self.opponent_team
+            .0
+            .battlers()
+            .iter()
+            .any(|it| it.uid == uid)
     }
 
     fn are_opponents(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {

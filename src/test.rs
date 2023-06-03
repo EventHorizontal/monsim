@@ -2,7 +2,12 @@
 mod main {
     use battle_context_macro::battle_context;
 
-    use crate::sim::{battle_context::BattleContext, monster_dex::{Treecko, Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle, Growl}};
+    use crate::sim::{
+        ability_dex::FlashFire,
+        battle_context::BattleContext,
+        monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+        move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
+    };
 
     #[test]
     fn test_bcontext_macro() {
@@ -35,103 +40,78 @@ mod main {
                 }
             }
         );
-        assert_eq!(
-            test_bcontext,
-            {
-                BattleContext::new(
-                    monsim::sim::AllyBattlerTeam(monsim::sim::BattlerTeam::new(
-                        vec![
-                                (monsim::sim::Battler::new(
-                                    monsim::sim::BattlerUID {
-                                        team_id: monsim::sim::TeamID::Ally,
-                                        battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
-                                    },
-                                    true,
-                                    monsim::sim::monster::Monster::new(
-                                        monsim::sim::monster_dex::Torchic,
-                                        "Ruby",
-                                    ),
-                                    monsim::sim::move_::MoveSet::new(
-                                        vec![
-                                                (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Scratch,
-                                                )),
-                                                (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Ember,
-                                                )),
-                                            ],
-                                    ),
-                                    monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
-                                )),
-                                (monsim::sim::Battler::new(
-                                    monsim::sim::BattlerUID {
-                                        team_id: monsim::sim::TeamID::Ally,
-                                        battler_number: monsim::sim::monster::BattlerNumber::from(1usize),
-                                    },
-                                    false,
-                                    monsim::sim::monster::Monster::new(
-                                        monsim::sim::monster_dex::Mudkip,
-                                        "Sapphire",
-                                    ),
-                                    monsim::sim::move_::MoveSet::new(
-                                        vec![
-                                                (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Scratch,
-                                                )),
-                                                (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Ember,
-                                                )),
-                                            ],
-                                    ),
-                                    monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
-                                )),
-                                (monsim::sim::Battler::new(
-                                    monsim::sim::BattlerUID {
-                                        team_id: monsim::sim::TeamID::Ally,
-                                        battler_number: monsim::sim::monster::BattlerNumber::from(2usize),
-                                    },
-                                    false,
-                                    monsim::sim::monster::Monster::new(
-                                        monsim::sim::monster_dex::Treecko,
-                                        "Emerald",
-                                    ),
-                                    monsim::sim::move_::MoveSet::new(
-                                        vec![
-                                                (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Bubble,
-                                                )),
-                                                (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Scratch,
-                                                )),
-                                            ],
-                                    ),
-                                    monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
-                                )),
-                            ],
+        assert_eq!(test_bcontext, {
+            BattleContext::new(
+                monsim::sim::AllyBattlerTeam(monsim::sim::BattlerTeam::new(vec![
+                    (monsim::sim::Battler::new(
+                        monsim::sim::BattlerUID {
+                            team_id: monsim::sim::TeamID::Ally,
+                            battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
+                        },
+                        true,
+                        monsim::sim::monster::Monster::new(
+                            monsim::sim::monster_dex::Torchic,
+                            "Ruby",
+                        ),
+                        monsim::sim::move_::MoveSet::new(vec![
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Ember)),
+                        ]),
+                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
                     )),
-                    monsim::sim::OpponentBattlerTeam(monsim::sim::BattlerTeam::new(
-                        vec![(monsim::sim::Battler::new(
-                                monsim::sim::BattlerUID {
-                                    team_id: monsim::sim::TeamID::Opponent,
-                                    battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
-                                },
-                                true,
-                                monsim::sim::monster::Monster::new(
-                                    monsim::sim::monster_dex::Drifblim,
-                                    "Cheerio",
-                                ),
-                                monsim::sim::move_::MoveSet::new(
-                                    vec![
-                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Tackle)),
-                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Growl)),
-                                        ],
-                                ),
-                                monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
-                            ))],
+                    (monsim::sim::Battler::new(
+                        monsim::sim::BattlerUID {
+                            team_id: monsim::sim::TeamID::Ally,
+                            battler_number: monsim::sim::monster::BattlerNumber::from(1usize),
+                        },
+                        false,
+                        monsim::sim::monster::Monster::new(
+                            monsim::sim::monster_dex::Mudkip,
+                            "Sapphire",
+                        ),
+                        monsim::sim::move_::MoveSet::new(vec![
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Ember)),
+                        ]),
+                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
                     )),
-                )
-            }
-        );
+                    (monsim::sim::Battler::new(
+                        monsim::sim::BattlerUID {
+                            team_id: monsim::sim::TeamID::Ally,
+                            battler_number: monsim::sim::monster::BattlerNumber::from(2usize),
+                        },
+                        false,
+                        monsim::sim::monster::Monster::new(
+                            monsim::sim::monster_dex::Treecko,
+                            "Emerald",
+                        ),
+                        monsim::sim::move_::MoveSet::new(vec![
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Bubble)),
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
+                        ]),
+                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                    )),
+                ])),
+                monsim::sim::OpponentBattlerTeam(monsim::sim::BattlerTeam::new(vec![
+                    (monsim::sim::Battler::new(
+                        monsim::sim::BattlerUID {
+                            team_id: monsim::sim::TeamID::Opponent,
+                            battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
+                        },
+                        true,
+                        monsim::sim::monster::Monster::new(
+                            monsim::sim::monster_dex::Drifblim,
+                            "Cheerio",
+                        ),
+                        monsim::sim::move_::MoveSet::new(vec![
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Tackle)),
+                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Growl)),
+                        ]),
+                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                    )),
+                ])),
+            )
+        });
     }
 }
 
@@ -140,12 +120,17 @@ mod bcontext {
 
     use battle_context_macro::battle_context;
 
-    use crate::sim::{BattlerNumber, BattlerUID, EventHandlerFilters, TeamID, };
+    use crate::sim::{BattlerNumber, BattlerUID, EventHandlerFilters, TeamID};
 
     #[test]
     fn test_event_filtering_for_event_sources() {
         extern crate self as monsim;
-        use crate::sim::{battle_context::BattleContext, monster_dex::{Treecko, Torchic, Mudkip}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
+        use crate::sim::{
+            ability_dex::FlashFire,
+            battle_context::BattleContext,
+            monster_dex::{Mudkip, Torchic, Treecko},
+            move_dex::{Bubble, Ember, Scratch, Tackle},
+        };
         let test_battle_context = battle_context!(
             {
                 AllyTeam {
@@ -187,7 +172,12 @@ mod bcontext {
     #[test]
     fn test_display_battle_context() {
         extern crate self as monsim;
-        use crate::sim::{battle_context::BattleContext, monster_dex::{Treecko, Torchic, Mudkip, Drifloon}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
+        use crate::sim::{
+            ability_dex::FlashFire,
+            battle_context::BattleContext,
+            monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
+            move_dex::{Bubble, Ember, Scratch, Tackle},
+        };
         let test_bcontext = battle_context!(
             {
                 AllyTeam {
@@ -238,7 +228,6 @@ mod event {
         use crate::sim::ability_dex::FlashFire;
         println!("{:#?}", FlashFire.event_handlers);
     }
-    
 }
 
 #[cfg(all(test, feature = "debug"))]

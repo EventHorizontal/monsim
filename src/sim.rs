@@ -1,7 +1,7 @@
 pub mod battle_context;
 pub mod game_mechanics;
 pub mod global_constants;
-pub mod io;
+pub mod choice;
 
 mod action;
 mod event;
@@ -12,7 +12,7 @@ pub use battle_context::*;
 pub use event::{EventHandler, EventHandlerFilters, EventHandlerSet, ActivationOrder, InBattleEvent, event_dex, TargetFlags, DEFAULT_HANDLERS};
 pub use game_mechanics::*;
 pub use global_constants::*;
-pub use io::*;
+pub use choice::*;
 use prng::Prng;
 
 pub use battle_context::BattleContext;

@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use crate::sim::prng::Prng;
 
-use super::{game_mechanics::BattlerUID, Battle, BattleContext};
+use super::{game_mechanics::BattlerUID, BattleContext};
 
 #[allow(non_camel_case_types)]
 type void = ();
@@ -146,7 +146,7 @@ impl EventResolver {
             })
             .collect::<Vec<_>>();
 
-        Battle::sort_items_by_activation_order::<EventHandlerInstance<R>>(
+        crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<R>>(
             prng,
             &mut event_handler_instances,
             &mut |it| it.activation_order,
@@ -247,7 +247,7 @@ fn test_if_priority_sorting_is_deterministic() {
             })
             .collect::<Vec<_>>();
 
-        Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
+            crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
             &mut prng,
             &mut event_handler_instances,
             &mut |it| it.activation_order,
@@ -368,7 +368,7 @@ fn test_priority_sorting_with_speed_ties() {
             })
             .collect::<Vec<_>>();
 
-        Battle::sort_items_by_activation_order::<EventHandlerInstance<bool>>(
+            crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
             &mut prng,
             &mut event_handler_instances,
             &mut |it| it.activation_order,

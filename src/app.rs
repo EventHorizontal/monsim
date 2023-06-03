@@ -545,7 +545,7 @@ pub fn render_interface<'a>(
             app_state
                 .message_buffer
                 .len()
-                .saturating_sub(terminal_height as usize - 4),
+                .saturating_sub(terminal_height - 4),
         );
         let text = app_state
             .message_buffer

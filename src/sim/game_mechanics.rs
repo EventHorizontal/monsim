@@ -1,8 +1,11 @@
 pub mod ability;
+#[cfg(feature = "debug")]
 pub(crate) mod ability_dex;
 pub mod monster;
+#[cfg(feature = "debug")]
 pub(crate) mod monster_dex;
 pub mod move_;
+#[cfg(feature = "debug")]
 pub(crate) mod move_dex;
 
 use core::marker::Copy;
@@ -100,17 +103,31 @@ pub struct OpponentBattler(Battler);
 impl Display for Battler {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
-        out.push_str(
-            format![
-                "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                self.monster.nickname,
-                self.monster.species.name,
-                self.uid,
-                self.monster.current_health,
-                self.monster.max_health
-            ]
-            .as_str(),
-        );
+        if self.monster.nickname == self.monster.species.name {
+            out.push_str(
+                format![
+                    "{} ({}) [HP: {}/{}]\n\t│\t│\n",
+                    self.monster.species.name,
+                    self.uid,
+                    self.monster.current_health,
+                    self.monster.max_health
+                ]
+                .as_str(),
+            );
+        } else {
+            out.push_str(
+                format![
+                    "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
+                    self.monster.nickname,
+                    self.monster.species.name,
+                    self.uid,
+                    self.monster.current_health,
+                    self.monster.max_health
+                ]
+                .as_str(),
+            );
+        }
+        
         let number_of_effects = self.moveset.moves().count();
 
         out.push_str("\t│\t├── ");

@@ -82,22 +82,39 @@ fn construct_team_token_stream<'a>(
 
     // Iterate through monsters
     for (index, monster) in monster_iterator.enumerate() {
-        let monster_species = monster.monster_ident.clone();
-        let monster_nickname = monster.nickname_ident.unwrap_or(Literal::string(&format!("{:?}", &monster.monster_ident.path)));
+        let monster_species = monster.monster_path.clone();
+        let monster_nickname = monster.nickname_ident.unwrap_or(Literal::string(&format!("{}", 
+        &monster.monster_path
+            .path
+            .segments
+            .last()
+            .expect("There should be at least one segment in the path to the monster.")
+            .ident
+            .to_string()
+        )));
         let mut ability_species = quote!();
         let mut moves_vec = quote!();
         // Iterate through efects on monster
         for effect_expr in monster.fields.iter() {
             match effect_expr.effect_type {
                 EffectType::Move => {
-                    let move_ident = effect_expr.effect_path.clone();
+                    let move_ident = effect_expr
+                        .effect_path
+                        .path.segments
+                        .last()
+                        .expect("There should be at least one segment in the path to the move.")
+                        .clone();
                     // Add to the moves array
                     moves_vec = quote!(
                         #moves_vec #move_mod::Move::new(#move_ident),
                     );
                 },
                 EffectType::Ability => {
-                    let ability_ident = effect_expr.effect_path.clone();
+                    let ability_ident = effect_expr.effect_path
+                        .path.segments
+                        .last()
+                        .expect("There should be at least one segment in the path to the ability.")
+                        .clone();
                     ability_species = quote!(#ability_ident);
                 },
                 EffectType::Item => todo!(),

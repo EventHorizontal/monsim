@@ -189,6 +189,7 @@ impl EventResolver {
 }
 
  #[test]
+ #[cfg(feature = "debug")]
 fn test_if_priority_sorting_is_deterministic() {
     extern crate self as monsim;
     use crate::sim::{battle_context, monster_dex::{Treecko, Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};
@@ -270,6 +271,7 @@ fn test_if_priority_sorting_is_deterministic() {
 }
 
 #[test]
+#[cfg(feature = "debug")]
 fn test_priority_sorting_with_speed_ties() {
     extern crate self as monsim;
     use crate::sim::{battle_context, monster_dex::{Torchic, Mudkip, Drifblim}, ability_dex::FlashFire, move_dex::{Scratch, Ember, Bubble, Tackle}};

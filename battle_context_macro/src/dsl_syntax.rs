@@ -97,7 +97,7 @@ fn is_expected_keyword(expected_keyword_name: &str, keyword: &Ident) -> bool {
 // mon <MonsterName>  <Nickname> { <EffectExpression>, ... }
 #[derive(Clone, Debug)]
 pub struct MonsterExpr {
-    pub monster_ident: ExprPath,
+    pub monster_path: ExprPath,
     pub nickname_ident: Option<Literal>,
     pub fields: Punctuated<EffectExpr, Comma>,
     pub move_count: usize,
@@ -112,15 +112,17 @@ impl Parse for MonsterExpr {
             .parse()
             .expect("Error: Failed to parse keyword in expected MonsterExpression.");
         
-        let monster_ident: ExprPath = input
+        let monster_path: ExprPath = input
             .parse()
             .expect("Error: Failed to parse Monster identifier in expected MonsterExpression.");
+
+
         
         let nickname_ident =  input
-            .parse::<Literal>();
-
+        .parse::<Literal>();
+    
         let nickname_ident = nickname_ident.ok();
-        
+    
         if is_expected_keyword(MONSTER_KEYWORD, &monster_keyword) {
         let fields = parse_braced_comma_separated_list::<EffectExpr>(input)?;
             
@@ -131,14 +133,20 @@ impl Parse for MonsterExpr {
         
         if move_count > 4 || move_count < 1 {
             return Err(Error::new_spanned(
-                monster_ident.clone(),
+                monster_path.clone(),
                 format!(
                     "Error: You can put betweeen one and four moves on a monster. {:?} has {} moves.", 
                     {
                         if let Some(v) = nickname_ident {
                             v.to_string()
                         } else {
-                            format!("{:?}", monster_ident.path)
+                            format!("{:?}", monster_path
+                                .path
+                                .segments
+                                .last()
+                                .expect("There should be at least one segment in the path to the monster.")
+                                .ident
+                            )
                         } 
                     },
                     move_count,
@@ -153,14 +161,20 @@ impl Parse for MonsterExpr {
         
         if ability_count != 1 {
             return Err(Error::new_spanned(
-                monster_ident.clone(),
+                monster_path.clone(),
                 format!(
                     "Error: You can only put one ability on a monster.{:?} has more than one ability.", 
                     {
                         if let Some(v) = nickname_ident {
                             v.to_string()
                         } else {
-                            format!("{:?}", monster_ident.path)
+                            format!("{:?}", monster_path
+                                .path
+                                .segments
+                                .last()
+                                .expect("There should be at least one segment in the path to the monster.")
+                                .ident
+                            )
                         } 
                     }
                 ),
@@ -170,7 +184,13 @@ impl Parse for MonsterExpr {
         // Alerting the user if the monster has more than one of any type of effect.
         let effect_names = fields.iter()
             .map(|it| {
-                it.effect_path.clone()
+                it.effect_path
+                .path
+                .segments
+                .last()
+                .expect("There should be at least one path segment")
+                .ident
+                .clone()
             })
             .collect::<Vec<_>>();
             
@@ -179,21 +199,27 @@ impl Parse for MonsterExpr {
         );
         if has_duplicate_names {
             return Err(Error::new_spanned(
-                monster_ident.clone(),
+                monster_path.clone(),
                 format!(
                     "Error: More than one of any effect, i.e. move, ability etc. is not allowed. Please check if you have duplicated any attribute of {:?}", 
                     {
                         if let Some(v) = nickname_ident {
                             v.to_string()
                         } else {
-                            format!("{:?}", monster_ident.path)
+                            format!("{:?}", monster_path
+                                .path
+                                .segments
+                                .last()
+                                .expect("There should be at least one segment in the path to the monster.")
+                                .ident
+                            )
                         } 
                     }
                 ),
             ));
         }
         return Ok(MonsterExpr {
-            monster_ident,
+            monster_path,
             nickname_ident,
             fields,
             move_count,
@@ -232,7 +258,7 @@ impl Parse for EffectExpr {
         let effect_keyword: Ident = input
             .parse()
             .expect("Error: Failed to parse keyword in expected EffectExpression.");
-        let effect_ident: ExprPath = input
+        let effect_path: ExprPath = input
             .parse()
             .expect("Error: Failed to parse Effect identifier in expected MonsterExpression.");
         let effect_type;
@@ -252,7 +278,7 @@ impl Parse for EffectExpr {
             ));
         }
         Ok(EffectExpr {
-            effect_path: effect_ident,
+            effect_path,
             effect_type,
         })
     }

@@ -1,4 +1,4 @@
-#[cfg(test)]
+#[cfg(all(test, feature = "debug"))]
 mod main {
     use battle_context_macro::battle_context;
 
@@ -10,17 +10,17 @@ mod main {
         let test_bcontext = battle_context!(
             {
                 AllyTeam {
-                    mon Treecko "Ruby" {
+                    mon Torchic "Ruby" {
                         mov Scratch,
                         mov Ember,
                         abl FlashFire,
                     },
-                    mon Torchic "Sapphire" {
+                    mon Mudkip "Sapphire" {
                         mov Scratch,
                         mov Ember,
                         abl FlashFire,
                     },
-                    mon Mudkip "Emerald" {
+                    mon Treecko "Emerald" {
                         mov Bubble,
                         mov Scratch,
                         abl FlashFire,
@@ -70,7 +70,7 @@ mod main {
                                     },
                                     false,
                                     monsim::sim::monster::Monster::new(
-                                        monsim::sim::monster_dex::Torchic,
+                                        monsim::sim::monster_dex::Mudkip,
                                         "Sapphire",
                                     ),
                                     monsim::sim::move_::MoveSet::new(
@@ -92,16 +92,16 @@ mod main {
                                     },
                                     false,
                                     monsim::sim::monster::Monster::new(
-                                        monsim::sim::monster_dex::Torchic,
+                                        monsim::sim::monster_dex::Treecko,
                                         "Emerald",
                                     ),
                                     monsim::sim::move_::MoveSet::new(
                                         vec![
                                                 (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Scratch,
+                                                    monsim::sim::move_dex::Bubble,
                                                 )),
                                                 (monsim::sim::move_::Move::new(
-                                                    monsim::sim::move_dex::Ember,
+                                                    monsim::sim::move_dex::Scratch,
                                                 )),
                                             ],
                                     ),
@@ -117,13 +117,13 @@ mod main {
                                 },
                                 true,
                                 monsim::sim::monster::Monster::new(
-                                    monsim::sim::monster_dex::Torchic,
+                                    monsim::sim::monster_dex::Drifblim,
                                     "Cheerio",
                                 ),
                                 monsim::sim::move_::MoveSet::new(
                                     vec![
-                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
-                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Ember)),
+                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Tackle)),
+                                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Growl)),
                                         ],
                                 ),
                                 monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
@@ -135,7 +135,7 @@ mod main {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "debug"))]
 mod bcontext {
 
     use battle_context_macro::battle_context;
@@ -196,7 +196,7 @@ mod bcontext {
                         mov Scratch,
                         abl FlashFire,
                     },
-                    mon Mudkip "Sapphire" {
+                    mon Mudkip {
                         mov Tackle,
                         mov Bubble,
                         abl FlashFire,
@@ -217,11 +217,11 @@ mod bcontext {
             }
         );
         println!("{}", test_bcontext);
-        assert_eq!(format!["{}", test_bcontext], String::from("Ally Team\n\t├── Ruby the Torchic (Ally_1) [HP: 152/152]\n\t│\t│\n\t│\t├── type Fire/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Ember\n\t│\t└── mov Scratch\n\t│\t\n\t├── Sapphire the Mudkip (Ally_2) [HP: 157/157]\n\t│\t│\n\t│\t├── type Water/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Tackle\n\t│\t└── mov Bubble\n\t│\t\n\t└── Emerald the Treecko (Ally_3) [HP: 147/147]\n\t\t│\n\t\t├── type Grass/None \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\nOpponent Team\n\t└── Cheerio the Drifloon (Opponent_1) [HP: 197/197]\n\t\t│\n\t\t├── type Ghost/Flying \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\n"))
+        assert_eq!(format!["{}", test_bcontext], String::from("Ally Team\n\t├── Ruby the Torchic (Ally_1) [HP: 152/152]\n\t│\t│\n\t│\t├── type Fire/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Ember\n\t│\t└── mov Scratch\n\t│\t\n\t├── Mudkip (Ally_2) [HP: 157/157]\n\t│\t│\n\t│\t├── type Water/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Tackle\n\t│\t└── mov Bubble\n\t│\t\n\t└── Emerald the Treecko (Ally_3) [HP: 147/147]\n\t\t│\n\t\t├── type Grass/None \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\nOpponent Team\n\t└── Cheerio the Drifloon (Opponent_1) [HP: 197/197]\n\t\t│\n\t\t├── type Ghost/Flying \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\n"))
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "debug"))]
 mod event {
 
     #[test]
@@ -241,7 +241,7 @@ mod event {
     
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "debug"))]
 mod prng {
     use std::time;
 

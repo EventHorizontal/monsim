@@ -332,18 +332,30 @@ fn push_teamwise_pretty_tree(
         let is_not_last_monster = i < number_of_monsters - 1;
         if is_not_last_monster {
             out.push_str("\t├── ");
-            out.push_str(
-                format![
-                    "{} the {} ({}) [HP: {}/{}]\n",
-                    battler.monster.nickname,
-                    battler.monster.species.name,
-                    battler.uid,
-                    battler.monster.current_health,
-                    battler.monster.max_health
-                ]
-                .as_str(),
-            );
-            out.push_str("\t│\t│\n");
+            if battler.monster.nickname == battler.monster.species.name {
+                out.push_str(
+                    format![
+                        "{} ({}) [HP: {}/{}]\n\t│\t│\n",
+                        battler.monster.species.name,
+                        battler.uid,
+                        battler.monster.current_health,
+                        battler.monster.max_health
+                    ]
+                    .as_str(),
+                );
+            } else {
+                out.push_str(
+                    format![
+                        "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
+                        battler.monster.nickname,
+                        battler.monster.species.name,
+                        battler.uid,
+                        battler.monster.current_health,
+                        battler.monster.max_health
+                    ]
+                    .as_str(),
+                );
+            }
             let number_of_effects = battler.moveset.moves().count();
             out.push_str("\t│\t├── ");
 

@@ -1,15 +1,15 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    move_::{MoveCategory, MoveSpecies},
+    MoveCategory, MoveSpecies,
     prng::Prng,
-    BattleContext, BattlerUID, EventHandlerFilters, MonType, SecondaryAction, Stat,
+    Battle, BattlerUID, EventHandlerFilters, MonType, SecondaryAction, Stat,
     DEFAULT_HANDLERS,
 };
 
 // TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate
 fn no_on_activate(
-    _context: &mut BattleContext,
+    _context: &mut Battle,
     _prng: &mut Prng,
     _attacker_uid: BattlerUID,
     _target_uid: BattlerUID,
@@ -78,10 +78,10 @@ pub const Growl: MoveSpecies = MoveSpecies {
     event_handlers: DEFAULT_HANDLERS,
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
-    on_activate: |ctx: &mut BattleContext,
-                  prng,
+    on_activate: |battle: &mut Battle,
+                  prng: &mut Prng,
                   _attacker_uid: BattlerUID,
                   target_uid: BattlerUID| {
-        let _ = SecondaryAction::lower_stat(ctx, prng, target_uid, Stat::PhysicalAttack, 1);
+        _ = SecondaryAction::lower_stat(battle, prng, target_uid, Stat::PhysicalAttack, 1);
     },
 };

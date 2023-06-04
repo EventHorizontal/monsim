@@ -58,10 +58,10 @@ pub struct AppState<'a> {
 }
 
 impl<'a> AppState<'a> {
-    fn new(ctx: &mut BattleContext) -> Self {
+    fn new(battle: &mut Battle) -> Self {
         let mut state = Self {
             app_mode: AppMode::AwaitingUserInput {
-                available_actions: ctx.generate_available_actions(),
+                available_actions: battle.generate_available_actions(),
             },
             ally_list_items: Vec::with_capacity(4),
             ally_list_state: {
@@ -79,20 +79,20 @@ impl<'a> AppState<'a> {
             selected_list: ScrollableWidgets::MessageLog,
             message_log_scroll_idx: 0,
             is_battle_ongoing: true,
-            ally_active_battler_string: BattleContext::monster_status_string(
-                ctx.ally_team.0.active_battler(),
+            ally_active_battler_string: Battle::monster_status_string(
+                battle.ally_team.0.active_battler(),
             ),
-            ally_team_string: ctx.ally_team_string(),
-            opponent_active_battler_string: BattleContext::monster_status_string(
-                ctx.opponent_team.0.active_battler(),
+            ally_team_string: battle.ally_team_string(),
+            opponent_active_battler_string: Battle::monster_status_string(
+                battle.opponent_team.0.active_battler(),
             ),
-            opponent_team_string: ctx.opponent_team_string(),
+            opponent_team_string: battle.opponent_team_string(),
         };
-        state.build_list_items(ctx);
+        state.build_list_items(battle);
         state
     }
 
-    fn build_list_items(&mut self, battle_context: &BattleContext) {
+    fn build_list_items(&mut self, battle_context: &Battle) {
         let available_actions = battle_context.generate_available_actions();
         (self.ally_list_items, self.opponent_list_items) = {
             (
@@ -136,18 +136,18 @@ impl<'a> AppState<'a> {
         };
     }
 
-    fn update_battle_related_state(&mut self, ctx: &mut BattleContext) {
+    fn update_battle_related_state(&mut self, battle: &mut Battle) {
         *self = Self {
-            message_buffer: ctx.message_buffer.clone(),
-            is_battle_ongoing: ctx.sim_state != SimState::Finished,
-            ally_active_battler_string: BattleContext::monster_status_string(
-                ctx.ally_team.0.active_battler(),
+            message_buffer: battle.message_buffer.clone(),
+            is_battle_ongoing: battle.sim_state != SimState::Finished,
+            ally_active_battler_string: Battle::monster_status_string(
+                battle.ally_team.0.active_battler(),
             ),
-            ally_team_string: ctx.ally_team_string(),
-            opponent_active_battler_string: BattleContext::monster_status_string(
-                ctx.opponent_team.0.active_battler(),
+            ally_team_string: battle.ally_team_string(),
+            opponent_active_battler_string: Battle::monster_status_string(
+                battle.opponent_team.0.active_battler(),
             ),
-            opponent_team_string: ctx.opponent_team_string(),
+            opponent_team_string: battle.opponent_team_string(),
             ..self.clone()
         }
     }
@@ -168,11 +168,11 @@ enum TuiEvent<I> {
 
 pub type MonsimResult = Result<(), Box<dyn std::error::Error>>;
 
-pub fn run(mut battle: Battle) -> MonsimResult {
+pub fn run(mut battle: BattleSimulator) -> MonsimResult {
     extern crate self as monsim;
 
     // Initialise the Program
-    let mut app_state = AppState::new(&mut battle.ctx);
+    let mut app_state = AppState::new(&mut battle.battle);
 
     // Raw mode allows to not require enter presses to get input
     enable_raw_mode().expect("Raw mode should always enableable.");
@@ -227,7 +227,7 @@ pub fn run(mut battle: Battle) -> MonsimResult {
 fn update_state_from_input(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     app_state: &mut AppState,
-    battle: &mut Battle,
+    battle: &mut BattleSimulator,
     receiver: &Receiver<TuiEvent<KeyEvent>>,
 ) -> MonsimIoResult {
     let mut result: MonsimIoResult = Ok(false);
@@ -323,7 +323,7 @@ fn update_state_from_input(
                                     ScrollableWidgets::MessageLog => {
                                         app_state.message_log_scroll_idx =
                                             (app_state.message_log_scroll_idx + 1)
-                                                .min(battle.ctx.message_buffer.len());
+                                                .min(battle.battle.message_buffer.len());
                                     }
                                     ScrollableWidgets::AllyTeamStatus => todo!(),
                                     ScrollableWidgets::OpponentTeamStatus => todo!(),
@@ -407,7 +407,7 @@ fn update_state_from_input(
                             (KeyCode::Down, KeyEventKind::Release) => {
                                 app_state.message_log_scroll_idx =
                                     (app_state.message_log_scroll_idx + 1)
-                                        .min(battle.ctx.message_buffer.len());
+                                        .min(battle.battle.message_buffer.len());
                             }
                             _ => (),
                         }
@@ -421,19 +421,19 @@ fn update_state_from_input(
             match result {
                 Ok(_) => {
                     battle
-                        .ctx
+                        .battle
                         .push_message(&"(The turn was calculated successfully.)");
                 }
-                Err(error) => battle.ctx.message_buffer.push(format!["{:?}", error]),
+                Err(error) => battle.battle.message_buffer.push(format!["{:?}", error]),
             }
-            if battle.ctx.sim_state == SimState::Finished {
-                battle.ctx.push_message(&"The battle ended.");
+            if battle.battle.sim_state == SimState::Finished {
+                battle.battle.push_message(&"The battle ended.");
             }
-            battle.ctx.push_messages(&[&"---", &EMPTY_LINE]);
+            battle.battle.push_messages(&[&"---", &EMPTY_LINE]);
             app_state.app_mode = AppMode::AwaitingUserInput {
-                available_actions: battle.ctx.generate_available_actions(),
+                available_actions: battle.battle.generate_available_actions(),
             };
-            app_state.update_battle_related_state(&mut battle.ctx);
+            app_state.update_battle_related_state(&mut battle.battle);
         }
     }
     result

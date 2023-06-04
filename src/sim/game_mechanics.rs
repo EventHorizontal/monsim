@@ -18,11 +18,37 @@ pub use ability::*;
 pub use monster::*;
 pub use move_::*;
 
+const MAX_BATTLERS_PER_TEAM: usize = 6;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BattlerTeam {
+    battlers: Vec<Battler>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AllyBattlerTeam(pub BattlerTeam);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpponentBattlerTeam(pub BattlerTeam);
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TeamID {
     Ally,
     Opponent,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Battler {
+    pub uid: BattlerUID,
+    pub on_field: bool,
+    pub monster: Monster,
+    pub moveset: MoveSet,
+    pub ability: Ability,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AllyBattler(Battler);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpponentBattler(Battler);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BattlerUID {
@@ -42,26 +68,14 @@ pub struct MoveUID {
     pub move_number: MoveNumber,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AllyBattlerTeam(pub BattlerTeam);
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpponentBattlerTeam(pub BattlerTeam);
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BattlerTeam {
-    battlers: Vec<Battler>,
-}
-
-const MAX_BATTLERS_PER_TEAM: usize = 6;
-
 impl BattlerTeam {
-    pub fn new(monsters: Vec<Battler>) -> Self {
+    pub fn new(battlers: Vec<Battler>) -> Self {
         assert!(
-            monsters.first().is_some(),
+            battlers.first().is_some(),
             "There is not a single monster in the team."
         );
-        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
-        BattlerTeam { battlers: monsters }
+        assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
+        BattlerTeam { battlers }
     }
 
     pub fn battlers(&self) -> &Vec<Battler> {
@@ -85,19 +99,75 @@ impl BattlerTeam {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Battler {
-    pub uid: BattlerUID,
-    pub on_field: bool,
-    pub monster: Monster,
-    pub moveset: MoveSet,
-    pub ability: Ability,
+impl AllyBattlerTeam {
+    pub fn new(battlers: Vec<Battler>) -> Self {
+        assert!(
+            battlers.first().is_some(),
+            "There is not a single monster in the team."
+        );
+        assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
+        Self(BattlerTeam { battlers })
+    }
+
+    pub fn battlers(&self) -> &Vec<Battler> {
+        &self.0.battlers
+    }
+
+    pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
+        &mut self.0.battlers
+    }
+
+    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
+        let mut out = Vec::new();
+        for battler in self.0.battlers.iter() {
+            out.append(&mut battler.event_handlers())
+        }
+        out
+    }
+
+    pub fn active_battler(&self) -> &Battler {
+        &self.0.battlers[0]
+    }
+
+    pub fn unwrap(&self) -> BattlerTeam {
+        self.0.clone()
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AllyBattler(Battler);
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpponentBattler(Battler);
+impl OpponentBattlerTeam {
+    pub fn new(battlers: Vec<Battler>) -> Self {
+        assert!(
+            battlers.first().is_some(),
+            "There is not a single monster in the team."
+        );
+        assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
+        Self(BattlerTeam { battlers })
+    }
+
+    pub fn battlers(&self) -> &Vec<Battler> {
+        &self.0.battlers
+    }
+
+    pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
+        &mut self.0.battlers
+    }
+
+    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
+        let mut out = Vec::new();
+        for battler in self.0.battlers.iter() {
+            out.append(&mut battler.event_handlers())
+        }
+        out
+    }
+
+    pub fn active_battler(&self) -> &Battler {
+        &self.0.battlers[0]
+    }
+
+    pub fn unwrap(&self) -> BattlerTeam {
+        self.0.clone()
+    }
+}
 
 impl Display for Battler {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -243,6 +313,18 @@ impl Battler {
                 move_number: MoveNumber::from(idx),
             })
             .collect()
+    }
+}
+
+impl AllyBattler {
+    pub fn unwrap(&self) -> Battler {
+        self.0.clone()
+    }
+}
+
+impl OpponentBattler {
+    pub fn unwrap(&self) -> Battler {
+        self.0.clone()
     }
 }
 

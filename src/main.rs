@@ -11,7 +11,7 @@ use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
 use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 
 fn main() -> MonsimResult {
-    let battle = Battle::new(battle_context!(
+    let battle = BattleSimulator::new(build_battle!(
         {
             AllyTeam {
                 mon Torchic "Ruby" {

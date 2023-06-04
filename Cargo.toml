@@ -1,10 +1,10 @@
 [package]
 name = "monsim"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 
 [dependencies]
-battle_context_macro = { path = "battle_context_macro" }
+battle_builder_macro = { path = "battle_builder_macro" }
 event_derive_macro = { path = "event_derive_macro" }
 bitflags = "1.3.2"
 tui = "0.19.0"

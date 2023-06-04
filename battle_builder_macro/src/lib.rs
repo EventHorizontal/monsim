@@ -31,7 +31,7 @@ use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
 /// ```
 /// and produces a `battle::BattleContext`.
 #[proc_macro]
-pub fn battle_context(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the expression ________________________________________________________________
     let context_expr = parse_macro_input!(input as BattleStateExpr);
 
@@ -52,7 +52,7 @@ pub fn battle_context(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     
     let entities = quote!(monsim::sim);
     let output = quote!({ 
-            BattleContext::new(
+            Battle::new(
                 #entities::AllyBattlerTeam(#entities::BattlerTeam::new(#ally_monsters_vec)),
                 #entities::OpponentBattlerTeam(#entities::BattlerTeam::new(#opponent_monsters_vec)),
             )

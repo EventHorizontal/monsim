@@ -1,10 +1,10 @@
 #[cfg(all(test, feature = "debug"))]
 mod main {
-    use battle_context_macro::battle_context;
+    use battle_builder_macro::build_battle;
 
     use crate::sim::{
         ability_dex::FlashFire,
-        battle_context::BattleContext,
+        context::Battle,
         monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
         move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
     };
@@ -12,7 +12,7 @@ mod main {
     #[test]
     fn test_bcontext_macro() {
         extern crate self as monsim;
-        let test_bcontext = battle_context!(
+        let test_bcontext = build_battle!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {
@@ -41,7 +41,7 @@ mod main {
             }
         );
         assert_eq!(test_bcontext, {
-            BattleContext::new(
+            Battle::new(
                 monsim::sim::AllyBattlerTeam(monsim::sim::BattlerTeam::new(vec![
                     (monsim::sim::Battler::new(
                         monsim::sim::BattlerUID {
@@ -117,68 +117,18 @@ mod main {
 
 #[cfg(all(test, feature = "debug"))]
 mod bcontext {
-
-    use battle_context_macro::battle_context;
-
-    use crate::sim::{BattlerNumber, BattlerUID, EventHandlerFilters, TeamID};
-
-    #[test]
-    fn test_event_filtering_for_event_sources() {
-        extern crate self as monsim;
-        use crate::sim::{
-            ability_dex::FlashFire,
-            battle_context::BattleContext,
-            monster_dex::{Mudkip, Torchic, Treecko},
-            move_dex::{Bubble, Ember, Scratch, Tackle},
-        };
-        let test_battle_context = battle_context!(
-            {
-                AllyTeam {
-                    mon Torchic "Ruby" {
-                        mov Ember,
-                        mov Scratch,
-                        abl FlashFire,
-                    },
-                    mon Mudkip "Sapphire" {
-                        mov Tackle,
-                        mov Bubble,
-                        abl FlashFire,
-                    },
-                },
-                OpponentTeam {
-                    mon Treecko "Emerald" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
-                    },
-                }
-            }
-        );
-
-        let passed_filter = test_battle_context.filter_event_handlers(
-            BattlerUID {
-                team_id: TeamID::Ally,
-                battler_number: BattlerNumber::_1,
-            },
-            BattlerUID {
-                team_id: TeamID::Opponent,
-                battler_number: BattlerNumber::_1,
-            },
-            EventHandlerFilters::default(),
-        );
-        assert!(passed_filter);
-    }
-
+    use battle_builder_macro::build_battle;
+    
     #[test]
     fn test_display_battle_context() {
         extern crate self as monsim;
         use crate::sim::{
             ability_dex::FlashFire,
-            battle_context::BattleContext,
+            context::Battle,
             monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
             move_dex::{Bubble, Ember, Scratch, Tackle},
         };
-        let test_bcontext = battle_context!(
+        let test_bcontext = build_battle!(
             {
                 AllyTeam {
                     mon Torchic "Ruby" {

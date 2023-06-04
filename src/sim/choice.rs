@@ -28,11 +28,13 @@ impl ActionChoice {
     }
 }
 
+pub type TeamAvailableActions = Vec<ActionChoice>;
+pub type ChosenActions = Vec<ActionChoice>;
+
 #[derive(Debug, Clone)]
 pub struct AvailableActions {
     pub ally_team_choices: TeamAvailableActions,
     pub opponent_team_choices: TeamAvailableActions,
 }
 
-pub type TeamAvailableActions = Vec<ActionChoice>;
-pub type ChosenActions = Vec<ActionChoice>;
+

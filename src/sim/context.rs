@@ -1,16 +1,19 @@
-use super::*;
 
 use std::{
     fmt::Display,
     iter::Chain,
     slice::{Iter, IterMut},
 };
+use crate::sim::{Battler, ActionChoice, AllyBattlerTeam, OpponentBattlerTeam, BattlerTeam, MoveUID, BattlerUID, TeamID, BattlerNumber, MoveNumber, Monster, Move, Ability, ActivationOrder, TeamAvailableActions, AvailableActions, Stat, event::EventHandlerSetInstanceList};
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
 type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
 
+pub type MessageBuffer = Vec<String>;
+pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BattleContext {
+pub struct Battle {
     pub current_action: Option<ActionChoice>,
     pub sim_state: SimState,
     pub ally_team: AllyBattlerTeam,
@@ -18,11 +21,16 @@ pub struct BattleContext {
     pub message_buffer: MessageBuffer,
 }
 
-pub type MessageBuffer = Vec<String>;
-pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SimState {
+    UsingMove {
+        move_uid: MoveUID,
+        target_uid: BattlerUID,
+    },
+    Finished,
+}
 
-use crate::sim::event::EventHandlerSetInstanceList;
-impl BattleContext {
+impl Battle {
     pub fn new(ally_team: AllyBattlerTeam, opponent_team: OpponentBattlerTeam) -> Self {
         Self {
             current_action: None,
@@ -46,20 +54,20 @@ impl BattleContext {
     }
 
     pub fn battlers(&self) -> BattlerIterator {
-        let left = self.ally_team.0.battlers();
-        let right = self.opponent_team.0.battlers();
+        let left = self.ally_team.battlers();
+        let right = self.opponent_team.battlers();
 
         left.iter().chain(right)
     }
 
-    fn battlers_mut(&mut self) -> MutableBattlerIterator {
-        let left = self.ally_team.0.battlers_mut();
-        let right = self.opponent_team.0.battlers_mut();
+    pub fn battlers_mut(&mut self) -> MutableBattlerIterator {
+        let left = self.ally_team.battlers_mut();
+        let right = self.opponent_team.battlers_mut();
 
         left.iter_mut().chain(right)
     }
 
-    fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
+    pub fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
         self.battlers().find(|it| it.uid == battler_uid).expect(
             "Error: Requested look up for a monster with ID that does not exist in this battle.",
         )
@@ -147,50 +155,23 @@ impl BattleContext {
 
     pub fn event_handler_set_instances(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team.0.event_handlers());
-        out.append(&mut self.opponent_team.0.event_handlers());
+        out.append(&mut self.ally_team.event_handlers());
+        out.append(&mut self.opponent_team.event_handlers());
         out
     }
 
-    pub(crate) fn filter_event_handlers(
-        &self,
-        event_caller_uid: BattlerUID,
-        owner_uid: BattlerUID,
-        event_handler_filters: EventHandlerFilters,
-    ) -> bool {
-        let bitmask = {
-            let mut bitmask = 0b0000;
-            if event_caller_uid == owner_uid {
-                bitmask |= TargetFlags::SELF.bits()
-            } // 0x01
-            if self.are_allies(owner_uid, event_caller_uid) {
-                bitmask |= TargetFlags::ALLIES.bits()
-            } // 0x02
-            if self.are_opponents(owner_uid, event_caller_uid) {
-                bitmask |= TargetFlags::OPPONENTS.bits()
-            } //0x04
-              // TODO: When the Environment is implemented, add the environment to the bitmask. (0x08)
-            bitmask
-        };
-        let event_source_filter_passed = event_handler_filters.whose_event.bits() == bitmask;
-        let on_battlefield_passed = self.is_battler_on_field(owner_uid);
-
-        event_source_filter_passed && on_battlefield_passed
+    pub fn is_on_ally_team(&self, uid: BattlerUID) -> bool {
+        self.ally_team.battlers().iter().any(|it| it.uid == uid)
     }
 
-    fn is_on_ally_team(&self, uid: BattlerUID) -> bool {
-        self.ally_team.0.battlers().iter().any(|it| it.uid == uid)
-    }
-
-    fn is_on_opponent_team(&self, uid: BattlerUID) -> bool {
+    pub fn is_on_opponent_team(&self, uid: BattlerUID) -> bool {
         self.opponent_team
-            .0
             .battlers()
             .iter()
             .any(|it| it.uid == uid)
     }
 
-    fn are_opponents(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
+    pub fn are_opponents(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
         if owner_uid == event_caller_uid {
             return false;
         }
@@ -199,7 +180,7 @@ impl BattleContext {
             || (self.is_on_ally_team(event_caller_uid) && self.is_on_opponent_team(owner_uid))
     }
 
-    fn are_allies(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
+    pub fn are_allies(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
         if owner_uid == event_caller_uid {
             return false;
         }
@@ -228,8 +209,8 @@ impl BattleContext {
     }
 
     pub fn generate_available_actions(&self) -> AvailableActions {
-        let ally_active_battler = self.ally_team.0.active_battler();
-        let opponent_active_battler = self.opponent_team.0.active_battler();
+        let ally_active_battler = self.ally_team.active_battler();
+        let opponent_active_battler = self.opponent_team.active_battler();
 
         let ally_moves = ally_active_battler.move_uids();
         let opponent_moves = opponent_active_battler.move_uids();
@@ -258,7 +239,7 @@ impl BattleContext {
 
     pub fn ally_team_string(&self) -> String {
         let mut out = String::new();
-        for battler in self.ally_team.0.battlers() {
+        for battler in self.ally_team.battlers() {
             out.push_str(&Self::monster_status_string(battler));
         }
         out
@@ -266,7 +247,7 @@ impl BattleContext {
 
     pub fn opponent_team_string(&self) -> String {
         let mut out = String::new();
-        for battler in self.opponent_team.0.battlers() {
+        for battler in self.opponent_team.battlers() {
             out.push_str(&Self::monster_status_string(battler));
         }
         out
@@ -305,39 +286,39 @@ impl BattleContext {
     }
 }
 
-impl Display for BattleContext {
+impl Display for Battle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 
-        push_teamwise_pretty_tree(
+        push_pretty_tree_for_team(
             &mut out,
             "Ally Team\n",
-            &self.ally_team.0,
-            self.ally_team.0.battlers().iter().count(),
+            &self.ally_team.unwrap(),
+            self.ally_team.battlers().iter().count(),
         );
-        push_teamwise_pretty_tree(
+        push_pretty_tree_for_team(
             &mut out,
             "Opponent Team\n",
-            &self.opponent_team.0,
-            self.opponent_team.0.battlers().iter().count(),
+            &self.opponent_team.unwrap(),
+            self.opponent_team.battlers().iter().count(),
         );
         write!(f, "{}", out)
     }
 }
 
-fn push_teamwise_pretty_tree(
-    out: &mut String,
+fn push_pretty_tree_for_team(
+    output_string: &mut String,
     team_name: &str,
     team: &BattlerTeam,
     number_of_monsters: usize,
 ) {
-    out.push_str(team_name);
+    output_string.push_str(team_name);
     for (i, battler) in team.battlers().iter().enumerate() {
         let is_not_last_monster = i < number_of_monsters - 1;
         if is_not_last_monster {
-            out.push_str("\t├── ");
+            output_string.push_str("\t├── ");
             if battler.monster.nickname == battler.monster.species.name {
-                out.push_str(
+                output_string.push_str(
                     format![
                         "{} ({}) [HP: {}/{}]\n\t│\t│\n",
                         battler.monster.species.name,
@@ -348,7 +329,7 @@ fn push_teamwise_pretty_tree(
                     .as_str(),
                 );
             } else {
-                out.push_str(
+                output_string.push_str(
                     format![
                         "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
                         battler.monster.nickname,
@@ -361,31 +342,31 @@ fn push_teamwise_pretty_tree(
                 );
             }
             let number_of_effects = battler.moveset.moves().count();
-            out.push_str("\t│\t├── ");
+            output_string.push_str("\t│\t├── ");
 
-            out.push_str(
+            output_string.push_str(
                 format![
                     "type {:?}/{:?} \n",
                     battler.monster.species.primary_type, battler.monster.species.secondary_type
                 ]
                 .as_str(),
             );
-            out.push_str("\t│\t├── ");
-            out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
+            output_string.push_str("\t│\t├── ");
+            output_string.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
 
             for (j, move_) in battler.moveset.moves().enumerate() {
                 let is_not_last_move = j < number_of_effects - 1;
                 if is_not_last_move {
-                    out.push_str("\t│\t├── ");
+                    output_string.push_str("\t│\t├── ");
                 } else {
-                    out.push_str("\t│\t└── ");
+                    output_string.push_str("\t│\t└── ");
                 }
-                out.push_str(format!["mov {}\n", move_.species.name].as_str());
+                output_string.push_str(format!["mov {}\n", move_.species.name].as_str());
             }
-            out.push_str("\t│\t\n");
+            output_string.push_str("\t│\t\n");
         } else {
-            out.push_str("\t└── ");
-            out.push_str(
+            output_string.push_str("\t└── ");
+            output_string.push_str(
                 format![
                     "{} the {} ({}) [HP: {}/{}]\n",
                     battler.monster.nickname,
@@ -396,40 +377,32 @@ fn push_teamwise_pretty_tree(
                 ]
                 .as_str(),
             );
-            out.push_str("\t\t│\n");
+            output_string.push_str("\t\t│\n");
             let number_of_effects = battler.moveset.moves().count();
-            out.push_str("\t\t├── ");
+            output_string.push_str("\t\t├── ");
 
-            out.push_str(
+            output_string.push_str(
                 format![
                     "type {:?}/{:?} \n",
                     battler.monster.species.primary_type, battler.monster.species.secondary_type
                 ]
                 .as_str(),
             );
-            out.push_str("\t\t├── ");
+            output_string.push_str("\t\t├── ");
 
-            out.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
+            output_string.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
 
             for (j, move_) in battler.moveset.moves().enumerate() {
                 let is_not_last_move = j < number_of_effects - 1;
                 if is_not_last_move {
-                    out.push_str("\t\t├── ");
+                    output_string.push_str("\t\t├── ");
                 } else {
-                    out.push_str("\t\t└── ");
+                    output_string.push_str("\t\t└── ");
                 }
-                out.push_str(format!["mov {}\n", move_.species.name].as_str());
+                output_string.push_str(format!["mov {}\n", move_.species.name].as_str());
             }
-            out.push_str("\t\t\n");
+            output_string.push_str("\t\t\n");
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SimState {
-    UsingMove {
-        move_uid: MoveUID,
-        target_uid: BattlerUID,
-    },
-    Finished,
-}

@@ -2,7 +2,7 @@
 
 use super::{ability::AbilitySpecies, MonType};
 use crate::sim::{
-    event::{EventHandlerFilters, EventHandlerSet, DEFAULT_HANDLERS},
+    EventHandlerFilters, EventHandlerSet, DEFAULT_HANDLERS,
     EventHandler, SecondaryAction, FAILURE, SUCCESS,
 };
 
@@ -13,12 +13,12 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
             dbg_location: crate::debug_location!("FlashFire.OnTryMove"),
-            callback: |ctx, prng, owner_uid, _relay| {
-                let current_move = *ctx.get_current_action_as_move().expect(
+            callback: |battle, prng, owner_uid, _relay| {
+                let current_move = *battle.get_current_action_as_move().expect(
                     "The current action should be a move within on_try_move handler context.",
                 );
                 if current_move.species.type_ == MonType::Fire
-                    && SecondaryAction::activate_ability(ctx, prng, owner_uid)
+                    && SecondaryAction::activate_ability(battle, prng, owner_uid)
                 {
                     return FAILURE;
                 }
@@ -27,8 +27,8 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         }),
         ..DEFAULT_HANDLERS
     },
-    on_activate: |ctx, _owner_uid| {
-        ctx.push_message(&"Flash Fire activated!");
+    on_activate: |battle, _owner_uid| {
+        battle.push_message(&"Flash Fire activated!");
     },
     event_handler_filters: EventHandlerFilters::default(),
     order: 0,

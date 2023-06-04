@@ -7,12 +7,12 @@ use super::{
 use crate::sim::{
     event::{EventHandlerFilters, DEFAULT_HANDLERS},
     prng::Prng,
-    BattleContext, BattlerUID, SecondaryAction, Stat,
+    Battle, BattlerUID, action::SecondaryAction, Stat,
 };
 
 // TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate
 fn no_on_activate(
-    _context: &mut BattleContext,
+    _context: &mut Battle,
     _prng: &mut Prng,
     _attacker_uid: BattlerUID,
     _target_uid: BattlerUID,
@@ -81,10 +81,10 @@ pub const Growl: MoveSpecies = MoveSpecies {
     event_handlers: DEFAULT_HANDLERS,
     priority: 0,
     event_handler_filters: EventHandlerFilters::default(),
-    on_activate: |ctx: &mut BattleContext,
+    on_activate: |battle: &mut Battle,
                   prng,
                   _attacker_uid: BattlerUID,
                   target_uid: BattlerUID| {
-        let _ = SecondaryAction::lower_stat(ctx, prng, target_uid, Stat::PhysicalAttack, 1);
+        let _ = SecondaryAction::lower_stat(battle, prng, target_uid, Stat::PhysicalAttack, 1);
     },
 };

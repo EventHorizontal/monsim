@@ -1,7 +1,7 @@
 use crate::sim::{
     event::{EventHandlerFilters, EventHandlerSet},
     prng::Prng,
-    BattleContext, BattlerUID, MonType,
+    Battle, BattlerUID, MonType,
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
@@ -17,7 +17,7 @@ pub struct MoveSpecies {
     pub priority: u16,
     pub event_handlers: EventHandlerSet,
     pub event_handler_filters: EventHandlerFilters,
-    pub on_activate: fn(&mut BattleContext, &mut Prng, BattlerUID, BattlerUID) -> (),
+    pub on_activate: fn(&mut Battle, &mut Prng, BattlerUID, BattlerUID) -> (),
 }
 
 impl Debug for MoveSpecies {
@@ -62,12 +62,12 @@ impl Move {
 
     pub(crate) fn on_activate(
         &self,
-        ctx: &mut BattleContext,
+        battle: &mut Battle,
         prng: &mut Prng,
         owner_uid: BattlerUID,
         target_uid: BattlerUID,
     ) {
-        (self.species.on_activate)(ctx, prng, owner_uid, target_uid);
+        (self.species.on_activate)(battle, prng, owner_uid, target_uid);
     }
 }
 

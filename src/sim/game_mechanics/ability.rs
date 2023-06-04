@@ -1,4 +1,4 @@
-use crate::sim::{event::EventHandlerFilters, BattleContext, BattlerUID, EventHandlerSet};
+use crate::sim::{event::EventHandlerFilters, Battle, BattlerUID, EventHandlerSet};
 use core::fmt::Debug;
 
 #[derive(Clone, Copy)]
@@ -6,7 +6,7 @@ pub struct AbilitySpecies {
     pub dex_number: u16,
     pub name: &'static str,
     pub event_handlers: EventHandlerSet,
-    pub on_activate: fn(&mut BattleContext, BattlerUID) -> (),
+    pub on_activate: fn(&mut Battle, BattlerUID) -> (),
     pub event_handler_filters: EventHandlerFilters,
     pub order: u16,
 }
@@ -35,8 +35,8 @@ impl Ability {
         Ability { species }
     }
 
-    pub fn on_activate(&self, ctx: &mut BattleContext, owner_uid: BattlerUID) {
-        (self.species.on_activate)(ctx, owner_uid);
+    pub fn on_activate(&self, battle: &mut Battle, owner_uid: BattlerUID) {
+        (self.species.on_activate)(battle, owner_uid);
     }
 
     pub fn event_handlers(&self) -> EventHandlerSet {

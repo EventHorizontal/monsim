@@ -4,7 +4,7 @@ use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     token::Comma,
-    Error, Result, ExprPath,
+    Error, Result, ExprPath, Token,
 };
 
 #[derive(Clone, Debug)]
@@ -26,7 +26,7 @@ impl Parse for BattleStateExpr {
 
             let team_ident = team_expr.team_ident.clone();
 
-            if is_expected_keyword(name, &team_ident) {
+            if is_expected_type(name, &team_ident) {
                 Ok(team_expr)
             } else {
                 return Err(Error::new_spanned(
@@ -87,7 +87,7 @@ fn parse_braced_comma_separated_list<T: Parse>(input: ParseStream) -> Result<Pun
     content.parse_terminated::<T, Comma>(T::parse)
 }
 
-fn is_expected_keyword(expected_keyword_name: &str, keyword: &Ident) -> bool {
+fn is_expected_type(expected_keyword_name: &str, keyword: &Ident) -> bool {
     let keyword_as_string = keyword.to_string();
     let keyword_as_str = keyword_as_string.as_str();
     keyword_as_str == expected_keyword_name
@@ -103,27 +103,26 @@ pub struct MonsterExpr {
     pub move_count: usize,
 }
 
-const MONSTER_KEYWORD: &str = "mon";
+const MONSTER_KEYWORD: &str = "Monster";
 
 impl Parse for MonsterExpr {
     fn parse(input: ParseStream) -> Result<Self> {
-        
-        let monster_keyword: Ident = input
-            .parse()
-            .expect("Error: Failed to parse keyword in expected MonsterExpression.");
-        
-        let monster_path: ExprPath = input
-            .parse()
-            .expect("Error: Failed to parse Monster identifier in expected MonsterExpression.");
-
-
-        
-        let nickname_ident =  input
-        .parse::<Literal>();
     
-        let nickname_ident = nickname_ident.ok();
-    
-        if is_expected_keyword(MONSTER_KEYWORD, &monster_keyword) {
+        let _: Token!(let) = input.parse()?;
+
+        let monster_path: ExprPath = input.parse()?;
+
+        let _: Token![:] = input.parse()?;
+        
+        let monster_type: Ident = input.parse()?;
+
+        let mut nickname_ident = None;
+        if input.parse::<Token!(=)>().is_ok() {
+            let nickname_ident_result =  input.parse::<Literal>();
+            nickname_ident = nickname_ident_result.ok();
+        }
+
+        if monster_type.to_string().as_str() == MONSTER_KEYWORD {
         let fields = parse_braced_comma_separated_list::<EffectExpr>(input)?;
             
         // Alerting the user if the number of moves is greater than 4.
@@ -226,10 +225,10 @@ impl Parse for MonsterExpr {
         });
     } else {
         Err(Error::new_spanned(
-                monster_keyword.clone(),
+                monster_type.clone(),
                 format!(
-                    "Error: Expected 'mon' at the start of a MonsterExpression, found {} instead.",
-                    monster_keyword.to_string().as_str()
+                    "Error: Expected 'Monster' as the type parameter of the MonsterExpression, found {} instead.",
+                    monster_type.to_string().as_str()
                     ),
                 )
             )
@@ -238,9 +237,10 @@ impl Parse for MonsterExpr {
 }
 
 // Syntax:
-// mov <MoveName>
-// abl <AbilityName>
-// itm <ItemName>
+// <MoveName>: Move
+// <AbilityName>: Ability
+// <ItemName>: Item
+// etc...
 
 /// By effect we mean anything that belongs to a monster such as abilities, moves and items.
 #[derive(Clone, Debug)]
@@ -249,34 +249,34 @@ pub struct EffectExpr {
     pub effect_type: EffectType,
 }
 
-const MOVE_KEYWORD: &str = "mov";
-const ABILITY_KEYWORD: &str = "abl";
-const ITEM_KEYWORD: &str = "itm";
+const MOVE_KEYWORD: &str = "Move";
+const ABILITY_KEYWORD: &str = "Ability";
+const ITEM_KEYWORD: &str = "Item";
 
 impl Parse for EffectExpr {
     fn parse(input: ParseStream) -> Result<Self> {
-        let effect_keyword: Ident = input
-            .parse()
-            .expect("Error: Failed to parse keyword in expected EffectExpression.");
-        let effect_path: ExprPath = input
-            .parse()
-            .expect("Error: Failed to parse Effect identifier in expected MonsterExpression.");
-        let effect_type;
-        if is_expected_keyword(MOVE_KEYWORD, &effect_keyword) {
-            effect_type = EffectType::Move;
-        } else if is_expected_keyword(ABILITY_KEYWORD, &effect_keyword) {
-            effect_type = EffectType::Ability;
-        } else if is_expected_keyword(ITEM_KEYWORD, &effect_keyword) {
-            effect_type = EffectType::Item;
-        } else {
-            return Err(Error::new_spanned(
-                effect_keyword.clone(),
-                format!(
-                    "Error: Expected a valid Effect identifier, found {} instead.",
-                    effect_keyword.to_string().as_str()
-                ),
-            ));
-        }
+        
+        let effect_path: ExprPath = input.parse()?;
+
+        let _: Token![:] = input.parse()?;
+        
+        let effect_type: Ident = input.parse()?;
+
+        let effect_type = match effect_type.to_string().as_str() {
+            MOVE_KEYWORD => { EffectType::Move },
+            ABILITY_KEYWORD => { EffectType::Ability },
+            ITEM_KEYWORD => { EffectType::Item },
+            _ => {
+                return Err(Error::new_spanned(
+                    effect_type.clone(),
+                    format!(
+                        "Error: Expected a valid Effect identifier, found {} instead.",
+                        effect_type.to_string().as_str()
+                    ),
+                ));
+            }
+        };
+
         Ok(EffectExpr {
             effect_path,
             effect_type,

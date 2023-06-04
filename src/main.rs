@@ -14,29 +14,29 @@ fn main() -> MonsimResult {
     let battle = BattleSimulator::new(build_battle!(
         {
             AllyTeam {
-                mon Torchic "Ruby" {
-                    mov Ember,
-                    mov Scratch,
-                    mov Growl,
-                    mov Bubble,
-                    abl FlashFire,
+                let Torchic: Monster = "Ruby" {
+                    Ember: Move,
+                    Scratch: Move,
+                    Growl: Move,
+                    Bubble: Move,
+                    FlashFire: Ability,
                 },
-                mon Mudkip "Sapphire" {
-                    mov Tackle,
-                    mov Bubble,
-                    abl FlashFire,
+                let Mudkip: Monster = "Sapphire" {
+                    Tackle: Move,
+                    Bubble: Move,
+                    FlashFire: Ability,
                 },
-                mon Treecko "Emerald" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
+                let Treecko: Monster = "Emerald" {
+                    Scratch: Move,
+                    Ember: Move,
+                    FlashFire: Ability,
                 },
             },
             OpponentTeam {
-                mon Drifloon "Cheerio" {
-                    mov Scratch,
-                    mov Ember,
-                    abl FlashFire,
+                let Drifloon: Monster {
+                    Scratch: Move,
+                    Ember: Move,
+                    FlashFire: Ability,
                 },
             }
         }

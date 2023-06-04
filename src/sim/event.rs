@@ -321,27 +321,27 @@ mod tests {
             let test_bcontext = build_battle!(
                 {
                     AllyTeam {
-                        mon Torchic "Ruby" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "Ruby" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Mudkip "Sapphire" {
-                            mov Tackle,
-                            mov Bubble,
-                            abl FlashFire,
+                        let Mudkip: Monster = "Sapphire" {
+                            Tackle: Move,
+                            Bubble: Move,
+                            FlashFire: Ability,
                         },
-                        mon Treecko "Emerald" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Treecko: Monster = "Emerald" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
                     },
                     OpponentTeam {
-                        mon Drifblim {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Drifblim: Monster {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
                     }
                 }
@@ -401,74 +401,74 @@ mod tests {
         use crate::sim::{
             ability_dex::FlashFire,
             monster_dex::{Drifblim, Mudkip, Torchic},
-            move_dex::{Bubble, Ember, Scratch, Tackle},
+            move_dex::{Ember, Scratch},
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
             let test_bcontext = build_battle!(
                 {
                     AllyTeam {
-                        mon Torchic "A" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "A" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "B" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "B" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "C" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "C" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "D" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "D" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "E" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "E" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Mudkip "F" {
-                            mov Tackle,
-                            mov Bubble,
-                            abl FlashFire,
+                        let Mudkip: Monster = "F" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         }
                     },
                     OpponentTeam {
-                        mon Drifblim "G" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Drifblim: Monster = "G" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "H" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "H" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "I" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "I" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "J" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "J" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "K" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "K" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
-                        mon Torchic "L" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
+                        let Torchic: Monster = "L" {
+                            Scratch: Move,
+                            Ember: Move,
+                            FlashFire: Ability,
                         },
                     }
                 }
@@ -538,22 +538,22 @@ mod tests {
         let test_battle_context = build_battle!(
             {
                 AllyTeam {
-                    mon Torchic "Ruby" {
-                        mov Ember,
-                        mov Scratch,
-                        abl FlashFire,
+                    let Torchic: Monster = "Ruby" {
+                        Ember: Move,
+                        Scratch: Move,
+                        FlashFire: Ability,
                     },
-                    mon Mudkip "Sapphire" {
-                        mov Tackle,
-                        mov Bubble,
-                        abl FlashFire,
+                    let Mudkip: Monster = "Sapphire" {
+                        Tackle: Move,
+                        Bubble: Move,
+                        FlashFire: Ability,
                     },
                 },
                 OpponentTeam {
-                    mon Treecko "Emerald" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
+                    let Treecko: Monster = "Emerald" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
                     },
                 }
             }

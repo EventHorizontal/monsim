@@ -10,26 +10,26 @@ use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
 /// ```
 /// {
 ///     AllyTeam {
-///         mon #MonsterNameHere {
-///                 mov #MoveNameHere,
+///         let MonsterNameHere: Monster = OptionalNameStr {
+///                 MoveNameHere: Move,
 ///                 //...up to 3 more
-///                 abl #AbilityNameHere,
-///                 itm #ItemNameHere, //(Not Implemented yet)
+///                 AbilityNameHere: Ability,
+///                 ItemNameHere: Item, //(Not Implemented yet)
 ///             },
 ///         //...up to 5 more
 ///     },
 ///    OpponentTeam {
-///         mon #MonsterNameHere {
-///                 mov #MoveNameHere,
+///         let MonsterNameHere: Monster = OptionalNameStr {
+///                 MoveNameHere: Move,
 ///                 //...up to 3 more
-///                 abl #AbilityNameHere,
-///                 itm #ItemNameHere, //(Not Implemented yet)
+///                 AbilityNameHere: Ability,
+///                 ItemNameHere: Item, //(Not Implemented yet)
 ///             },
 ///         //...up to 5 more
 ///     }
 /// }
 /// ```
-/// and produces a `battle::BattleContext`.
+/// and produces a `battle::Battle`.
 #[proc_macro]
 pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the expression ________________________________________________________________

@@ -15,27 +15,27 @@ mod main {
         let test_bcontext = build_battle!(
             {
                 AllyTeam {
-                    mon Torchic "Ruby" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
+                    let Torchic: Monster = "Ruby" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
                     },
-                    mon Mudkip "Sapphire" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
+                    let Mudkip: Monster = "Sapphire" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
                     },
-                    mon Treecko "Emerald" {
-                        mov Bubble,
-                        mov Scratch,
-                        abl FlashFire,
+                    let Treecko: Monster = "Emerald" {
+                        Bubble: Move,
+                        Scratch: Move,
+                        FlashFire: Ability,
                     },
                 },
                 OpponentTeam {
-                    mon Drifblim "Cheerio" {
-                        mov Tackle,
-                        mov Growl,
-                        abl FlashFire,
+                    let Drifblim: Monster = "Cheerio" {
+                        Tackle: Move,
+                        Growl: Move,
+                        FlashFire: Ability,
                     },
                 }
             }
@@ -131,27 +131,27 @@ mod bcontext {
         let test_bcontext = build_battle!(
             {
                 AllyTeam {
-                    mon Torchic "Ruby" {
-                        mov Ember,
-                        mov Scratch,
-                        abl FlashFire,
+                    let Torchic: Monster = "Ruby" {
+                        Ember: Move,
+                        Scratch: Move,
+                        FlashFire: Ability,
                     },
-                    mon Mudkip {
-                        mov Tackle,
-                        mov Bubble,
-                        abl FlashFire,
+                    let Mudkip: Monster {
+                        Tackle: Move,
+                        Bubble: Move,
+                        FlashFire: Ability,
                     },
-                    mon Treecko "Emerald" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
+                    let Treecko: Monster = "Emerald" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
                     },
                 },
                 OpponentTeam {
-                    mon Drifloon "Cheerio" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
+                    let Drifloon: Monster = "Cheerio" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
                     },
                 }
             }

@@ -37,13 +37,13 @@ impl Battle {
             sim_state: SimState::UsingMove {
                 move_uid: MoveUID {
                     battler_uid: BattlerUID {
-                        team_id: TeamID::Ally,
+                        team_id: TeamID::Allies,
                         battler_number: BattlerNumber::_1,
                     },
                     move_number: MoveNumber::_1,
                 },
                 target_uid: BattlerUID {
-                    team_id: TeamID::Opponent,
+                    team_id: TeamID::Opponents,
                     battler_number: BattlerNumber::_1,
                 },
             },
@@ -346,7 +346,7 @@ fn push_pretty_tree_for_team(
 
             output_string.push_str(
                 format![
-                    "type {:?}/{:?} \n",
+                    "type {:?}/{:?}\n",
                     battler.monster.species.primary_type, battler.monster.species.secondary_type
                 ]
                 .as_str(),
@@ -383,7 +383,7 @@ fn push_pretty_tree_for_team(
 
             output_string.push_str(
                 format![
-                    "type {:?}/{:?} \n",
+                    "type {:?}/{:?}\n",
                     battler.monster.species.primary_type, battler.monster.species.secondary_type
                 ]
                 .as_str(),

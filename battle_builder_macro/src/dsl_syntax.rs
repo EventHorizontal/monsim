@@ -8,74 +8,81 @@ use syn::{
 };
 
 #[derive(Clone, Debug)]
-pub struct BattleStateExpr {
-    pub ally_team_fields: Punctuated<MonsterExpr, Comma>,
-    pub opponent_team_fields: Punctuated<MonsterExpr, Comma>,
+pub struct ExprBattleContext {
+    pub ally_expr_battler_team: ExprBattlerTeam,
+    pub opponent_expr_battler_team: ExprBattlerTeam,
 }
 
-impl Parse for BattleStateExpr {
+impl Parse for ExprBattleContext {
     fn parse(input: ParseStream) -> Result<Self> {
-        let battle_contents = parse_braced_comma_separated_list::<TeamExpr>(input)?;
+        let battle_contents = parse_braced_comma_separated_list::<ExprBattlerTeam>(input)?;
         let mut battle_contents = battle_contents.iter();
 
-        let mut team_id_checker = |name: &str| -> Result<TeamExpr> {
+        let mut check_team_id = |id_to_match: &str| -> Result<ExprBattlerTeam> {
             let team_expr = battle_contents
                 .next()
                 .expect("Error: Failed to parse team identifier.")
                 .clone();
 
-            let team_ident = team_expr.team_ident.clone();
+            let team_path = team_expr.team_path.clone();
 
-            if is_expected_type(name, &team_ident) {
+            if is_expected_type(id_to_match, &path_to_ident(&team_path)) {
                 Ok(team_expr)
             } else {
                 return Err(Error::new_spanned(
-                    team_ident.clone(),
+                    team_path.clone(),
                     format!(
                         "Error: Expected Team identifier {}, found {}.",
-                        name,
-                        team_ident.to_string().as_str()
+                        id_to_match,
+                        path_to_ident(&team_path).to_string().as_str()
                     ),
                 ));
             }
         };
 
-        let ally_team_expr = team_id_checker("AllyTeam")?;
-        let opponent_team_expr = team_id_checker("OpponentTeam")?;
+        let ally_expr_battler_team = check_team_id("Allies")?;
+        let opponent_expr_battler_team = check_team_id("Opponents")?;
 
-        Ok(BattleStateExpr {
-            ally_team_fields: ally_team_expr.monster_fields,
-            opponent_team_fields: opponent_team_expr.monster_fields,
+        Ok(ExprBattleContext {
+            ally_expr_battler_team,
+            opponent_expr_battler_team,
         })
     }
 }
 
 #[derive(Clone, Debug)]
-struct TeamExpr {
-    team_ident: Ident,
-    monster_fields: Punctuated<MonsterExpr, Comma>,
+pub struct ExprBattlerTeam {
+    pub team_path: ExprPath,
+    pub team_type: ExprPath,
+    pub monster_fields: Punctuated<ExprMonster, Comma>,
 }
 
-impl Parse for TeamExpr {
+impl Parse for ExprBattlerTeam {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let team_ident: Ident = input.parse().expect(
+        let team_ident: ExprPath = input.parse().expect(
             "Error: Failed to parse TeamExpression identifier in expected TeamExpression.",
         );
-        let monster_fields = parse_braced_comma_separated_list::<MonsterExpr>(input)?;
+
+        let _: Token![:] = input.parse()?;
+        
+        let team_type: ExprPath = input.parse()?;
+
+        let monster_fields = parse_braced_comma_separated_list::<ExprMonster>(input)?;
         let monster_count = monster_fields.clone().iter().len();
         if monster_count > 6 || monster_count < 1 {
             return Err(Error::new_spanned(
                 team_ident.clone(),
                 format!(
                     "Error: You can put betweeen one and six monsters on a team. {:?} has {} monsters.", 
-                    team_ident.to_string(),
+                    path_to_ident(&team_ident).to_string(),
                     monster_count,
                 ),
             ));
         };
 
-        Ok(TeamExpr {
-            team_ident,
+        Ok(ExprBattlerTeam {
+            team_path: team_ident,
+            team_type,
             monster_fields,
         })
     }
@@ -94,132 +101,101 @@ fn is_expected_type(expected_keyword_name: &str, keyword: &Ident) -> bool {
 }
 
 // Syntax:
-// mon <MonsterName>  <Nickname> { <EffectExpression>, ... }
+// let <MonsterName>: <PathToMonsterType> = <Nickname> { <GameMechanicExpression>, ... }
 #[derive(Clone, Debug)]
-pub struct MonsterExpr {
-    pub monster_path: ExprPath,
-    pub nickname_ident: Option<Literal>,
-    pub fields: Punctuated<EffectExpr, Comma>,
+pub struct ExprMonster {
+    pub monster_instance_path: ExprPath,
+    pub monster_type_path: ExprPath,
+    pub nickname_literal: Option<Literal>,
+    pub fields: Punctuated<ExprGameMechanic, Comma>,
     pub move_count: usize,
 }
 
 const MONSTER_KEYWORD: &str = "Monster";
 
-impl Parse for MonsterExpr {
+impl Parse for ExprMonster {
     fn parse(input: ParseStream) -> Result<Self> {
-    
-        let _: Token!(let) = input.parse()?;
 
-        let monster_path: ExprPath = input.parse()?;
+        let monster_instance_path: ExprPath = input.parse()?;
 
         let _: Token![:] = input.parse()?;
         
-        let monster_type: Ident = input.parse()?;
+        let monster_type_path: ExprPath = input.parse()?;
 
-        let mut nickname_ident = None;
+        let monster_type = path_to_ident(&monster_type_path);
+
+        let mut nickname_literal = None;
         if input.parse::<Token!(=)>().is_ok() {
             let nickname_ident_result =  input.parse::<Literal>();
-            nickname_ident = nickname_ident_result.ok();
+            nickname_literal = nickname_ident_result.ok();
         }
 
         if monster_type.to_string().as_str() == MONSTER_KEYWORD {
-        let fields = parse_braced_comma_separated_list::<EffectExpr>(input)?;
+        let fields = parse_braced_comma_separated_list::<ExprGameMechanic>(input)?;
             
         // Alerting the user if the number of moves is greater than 4.
         let move_count = fields.iter()
-            .filter(|it| { it.effect_type == EffectType::Move })
+            .filter(|it| { it.game_mechanic_type == GameMechanicType::Move })
             .count();
-        
+        let monster_ident = path_to_ident(&monster_instance_path).to_string();
+        let default_nickname_literal = Literal::string(&monster_ident);
+        let nickname_or_default = nickname_literal
+            .clone()
+            .unwrap_or(default_nickname_literal)
+            .to_string();
+        // let nickname_or_default = "TEST";
         if move_count > 4 || move_count < 1 {
-            return Err(Error::new_spanned(
-                monster_path.clone(),
+            let incorrect_move_count_error = Err(Error::new_spanned(
+                monster_instance_path.clone(),
                 format!(
                     "Error: You can put betweeen one and four moves on a monster. {:?} has {} moves.", 
-                    {
-                        if let Some(v) = nickname_ident {
-                            v.to_string()
-                        } else {
-                            format!("{:?}", monster_path
-                                .path
-                                .segments
-                                .last()
-                                .expect("There should be at least one segment in the path to the monster.")
-                                .ident
-                            )
-                        } 
-                    },
+                    nickname_or_default,
                     move_count,
                 ),
             ));
+            return incorrect_move_count_error;
         };
         
         // Alerting the user if the number of abilities is greater than 1.
         let ability_count = fields.iter()
-            .filter(|it| { it.effect_type == EffectType::Ability })
+            .filter(|it| { it.game_mechanic_type == GameMechanicType::Ability })
             .count();
         
         if ability_count != 1 {
-            return Err(Error::new_spanned(
-                monster_path.clone(),
+            let incorrect_ability_count_error = Err(Error::new_spanned(
+                monster_instance_path.clone(),
                 format!(
                     "Error: You can only put one ability on a monster.{:?} has more than one ability.", 
-                    {
-                        if let Some(v) = nickname_ident {
-                            v.to_string()
-                        } else {
-                            format!("{:?}", monster_path
-                                .path
-                                .segments
-                                .last()
-                                .expect("There should be at least one segment in the path to the monster.")
-                                .ident
-                            )
-                        } 
-                    }
+                    nickname_or_default
                 ),
             ));
+            return incorrect_ability_count_error;
         }
         
         // Alerting the user if the monster has more than one of any type of effect.
-        let effect_names = fields.iter()
+        let game_mechanic_names = fields.iter()
             .map(|it| {
-                it.effect_path
-                .path
-                .segments
-                .last()
-                .expect("There should be at least one path segment")
-                .ident
-                .clone()
+                path_to_ident(&it.game_mechanic_instance_path)
             })
             .collect::<Vec<_>>();
             
-        let has_duplicate_names = (1..effect_names.len())
-            .any(|i| effect_names[i..].contains(&effect_names[i - 1])
+        let has_duplicate_names = (1..game_mechanic_names.len())
+            .any(|i| game_mechanic_names[i..].contains(&game_mechanic_names[i - 1])
         );
         if has_duplicate_names {
-            return Err(Error::new_spanned(
-                monster_path.clone(),
+            let duplicate_mechanic_error = Err(Error::new_spanned(
+                monster_instance_path.clone(),
                 format!(
                     "Error: More than one of any effect, i.e. move, ability etc. is not allowed. Please check if you have duplicated any attribute of {:?}", 
-                    {
-                        if let Some(v) = nickname_ident {
-                            v.to_string()
-                        } else {
-                            format!("{:?}", monster_path
-                                .path
-                                .segments
-                                .last()
-                                .expect("There should be at least one segment in the path to the monster.")
-                                .ident
-                            )
-                        } 
-                    }
+                    nickname_or_default,
                 ),
             ));
+            return duplicate_mechanic_error;
         }
-        return Ok(MonsterExpr {
-            monster_path,
-            nickname_ident,
+        return Ok(ExprMonster {
+            monster_instance_path,
+            monster_type_path,
+            nickname_literal,
             fields,
             move_count,
         });
@@ -237,56 +213,64 @@ impl Parse for MonsterExpr {
 }
 
 // Syntax:
-// <MoveName>: Move
-// <AbilityName>: Ability
-// <ItemName>: Item
-// etc...
+// <MoveName>: <PathToMoveType>
+// <AbilityName>: <PathToAbilityType>
+// <ItemName>: <PathToItemType>
 
-/// By effect we mean anything that belongs to a monster such as abilities, moves and items.
 #[derive(Clone, Debug)]
-pub struct EffectExpr {
-    pub effect_path: ExprPath,
-    pub effect_type: EffectType,
+pub struct ExprGameMechanic {
+    pub game_mechanic_instance_path: ExprPath,
+    pub game_mechanic_type_path: ExprPath,
+    pub game_mechanic_type: GameMechanicType
 }
 
 const MOVE_KEYWORD: &str = "Move";
 const ABILITY_KEYWORD: &str = "Ability";
 const ITEM_KEYWORD: &str = "Item";
 
-impl Parse for EffectExpr {
+impl Parse for ExprGameMechanic {
     fn parse(input: ParseStream) -> Result<Self> {
         
-        let effect_path: ExprPath = input.parse()?;
-
+        let game_mechanic_instance_path: ExprPath = input.parse()?;
         let _: Token![:] = input.parse()?;
-        
-        let effect_type: Ident = input.parse()?;
+        let game_mechanic_type_path: ExprPath = input.parse()?;
+        let game_mechanic_type = path_to_ident(&game_mechanic_type_path);
+        let game_mechanic_type = to_enum_value(game_mechanic_type, &game_mechanic_instance_path)?;
 
-        let effect_type = match effect_type.to_string().as_str() {
-            MOVE_KEYWORD => { EffectType::Move },
-            ABILITY_KEYWORD => { EffectType::Ability },
-            ITEM_KEYWORD => { EffectType::Item },
-            _ => {
-                return Err(Error::new_spanned(
-                    effect_type.clone(),
-                    format!(
-                        "Error: Expected a valid Effect identifier, found {} instead.",
-                        effect_type.to_string().as_str()
-                    ),
-                ));
-            }
-        };
-
-        Ok(EffectExpr {
-            effect_path,
-            effect_type,
+        Ok(ExprGameMechanic {
+            game_mechanic_instance_path,
+            game_mechanic_type_path,
+            game_mechanic_type,
         })
     }
 }
 
+pub fn path_to_ident(expr_path: &ExprPath) -> Ident {
+    expr_path
+        .path
+        .segments
+        .last()
+        .expect("There should be at least one segment in the path to the monster.")
+        .ident
+        .clone()
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum EffectType {
+pub enum GameMechanicType {
     Move,
     Ability,
     Item,
+}
+
+fn to_enum_value(game_mechanic_type: Ident, game_mechanic_instance_path: &ExprPath) -> Result<GameMechanicType> {
+    let game_mechanic_type = match game_mechanic_type.to_string().as_str() {
+        MOVE_KEYWORD => { GameMechanicType::Move },
+        ABILITY_KEYWORD => { GameMechanicType::Ability },
+        ITEM_KEYWORD => { GameMechanicType::Item },
+        _ => return Err(Error::new_spanned(game_mechanic_instance_path, format!(
+            "Error: Expected a valid Game Mechanic identifier, found {} instead.",
+            game_mechanic_type.to_string().as_str()
+        ))), 
+    };
+    Ok(game_mechanic_type)
 }

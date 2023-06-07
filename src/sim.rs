@@ -83,7 +83,12 @@ impl BattleSimulator {
             let maybe_fainted_battler = self.battle.battlers().find(|it| it.fainted());
             if let Some(battler) = maybe_fainted_battler {
                 self.battle
-                    .push_message(&format!["{} fainted!", battler.monster.nickname]);
+                    .push_messages(
+                        &[
+                            &format!["{} fainted!", battler.monster.nickname],
+                            &EMPTY_LINE,
+                        ]
+                    );
                 self.battle.sim_state = SimState::Finished;
                 break;
             };

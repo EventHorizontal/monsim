@@ -32,8 +32,8 @@ pub struct OpponentBattlerTeam(pub BattlerTeam);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TeamID {
-    Ally,
-    Opponent,
+    Allies,
+    Opponents,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

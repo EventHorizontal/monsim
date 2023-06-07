@@ -67,7 +67,7 @@ fn test_print_event_handler_instance() {
         event_name: event_dex::OnTryMove.name(),
         event_handler: FlashFire.event_handlers.on_try_move.unwrap(),
         owner_uid: BattlerUID {
-            team_id: crate::sim::TeamID::Ally,
+            team_id: crate::sim::TeamID::Allies,
             battler_number: crate::sim::BattlerNumber::_1,
         },
         activation_order: crate::sim::ActivationOrder {
@@ -306,11 +306,12 @@ pub mod event_dex {
 #[cfg(all(test, feature = "debug"))]
 mod tests {
     use super::*;
-    use crate::sim::{build_battle, context::Battle};
+    use crate::sim::build_battle;
 
     #[test]
     fn test_if_priority_sorting_is_deterministic() {
         extern crate self as monsim;
+        use crate::sim::*;
         use crate::sim::{
             ability_dex::FlashFire,
             monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
@@ -320,25 +321,25 @@ mod tests {
         for i in 0..=1 {
             let test_bcontext = build_battle!(
                 {
-                    AllyTeam {
-                        let Torchic: Monster = "Ruby" {
+                    Allies: BattlerTeam {
+                        Torchic: Monster = "Ruby" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Mudkip: Monster = "Sapphire" {
+                        Mudkip: Monster = "Sapphire" {
                             Tackle: Move,
                             Bubble: Move,
                             FlashFire: Ability,
                         },
-                        let Treecko: Monster = "Emerald" {
+                        Treecko: Monster = "Emerald" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
                     },
-                    OpponentTeam {
-                        let Drifblim: Monster {
+                    Opponents: BattlerTeam {
+                        Drifblim: Monster {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
@@ -350,7 +351,7 @@ mod tests {
             let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
     
             let event_handler_set_instances = test_bcontext.event_handler_set_instances();
-            use crate::sim::{event_dex::OnTryMove};
+            use crate::sim::event_dex::OnTryMove;
             let mut event_handler_instances = event_handler_set_instances
                 .iter()
                 .filter_map(|event_handler_set_instance| {
@@ -398,6 +399,7 @@ mod tests {
     fn test_priority_sorting_with_speed_ties() {
         #[cfg(feature = "debug")]
         extern crate self as monsim;
+        use crate::sim::*;
         use crate::sim::{
             ability_dex::FlashFire,
             monster_dex::{Drifblim, Mudkip, Torchic},
@@ -407,65 +409,65 @@ mod tests {
         for i in 0..=1 {
             let test_bcontext = build_battle!(
                 {
-                    AllyTeam {
-                        let Torchic: Monster = "A" {
+                    Allies: BattlerTeam {
+                        Torchic: Monster = "A" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "B" {
+                        Torchic: Monster = "B" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "C" {
+                        Torchic: Monster = "C" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "D" {
+                        Torchic: Monster = "D" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "E" {
+                        Torchic: Monster = "E" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Mudkip: Monster = "F" {
+                        Mudkip: Monster = "F" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         }
                     },
-                    OpponentTeam {
-                        let Drifblim: Monster = "G" {
+                    Opponents: BattlerTeam {
+                        Drifblim: Monster = "G" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "H" {
+                        Torchic: Monster = "H" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "I" {
+                        Torchic: Monster = "I" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "J" {
+                        Torchic: Monster = "J" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "K" {
+                        Torchic: Monster = "K" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
                         },
-                        let Torchic: Monster = "L" {
+                        Torchic: Monster = "L" {
                             Scratch: Move,
                             Ember: Move,
                             FlashFire: Ability,
@@ -528,29 +530,29 @@ mod tests {
     #[cfg(feature = "debug")]
     fn test_event_filtering_for_event_sources() {
         extern crate self as monsim;
+        use crate::sim::*;
         use crate::sim::{
             ability_dex::FlashFire,
-            context::Battle,
             monster_dex::{Mudkip, Torchic, Treecko},
             move_dex::{Bubble, Ember, Scratch, Tackle},
             TeamID, BattlerNumber
         };
         let test_battle_context = build_battle!(
             {
-                AllyTeam {
-                    let Torchic: Monster = "Ruby" {
+                Allies: BattlerTeam {
+                    Torchic: Monster = "Ruby" {
                         Ember: Move,
                         Scratch: Move,
                         FlashFire: Ability,
                     },
-                    let Mudkip: Monster = "Sapphire" {
+                    Mudkip: Monster = "Sapphire" {
                         Tackle: Move,
                         Bubble: Move,
                         FlashFire: Ability,
                     },
                 },
-                OpponentTeam {
-                    let Treecko: Monster = "Emerald" {
+                Opponents: BattlerTeam {
+                    Treecko: Monster = "Emerald" {
                         Scratch: Move,
                         Ember: Move,
                         FlashFire: Ability,
@@ -562,11 +564,11 @@ mod tests {
         let passed_filter = EventResolver::filter_event_handlers(
             &test_battle_context,
             BattlerUID {
-                team_id: TeamID::Ally,
+                team_id: TeamID::Allies,
                 battler_number: BattlerNumber::_1,
             },
             BattlerUID {
-                team_id: TeamID::Opponent,
+                team_id: TeamID::Opponents,
                 battler_number: BattlerNumber::_1,
             },
             EventHandlerFilters::default(),

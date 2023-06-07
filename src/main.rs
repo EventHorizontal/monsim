@@ -13,27 +13,27 @@ use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 fn main() -> MonsimResult {
     let battle = BattleSimulator::new(build_battle!(
         {
-            AllyTeam {
-                let Torchic: Monster = "Ruby" {
+            Allies: BattlerTeam {
+                Torchic: Monster = "Ruby" {
                     Ember: Move,
                     Scratch: Move,
                     Growl: Move,
                     Bubble: Move,
                     FlashFire: Ability,
                 },
-                let Mudkip: Monster = "Sapphire" {
+                Mudkip: Monster = "Sapphire" {
                     Tackle: Move,
                     Bubble: Move,
                     FlashFire: Ability,
                 },
-                let Treecko: Monster = "Emerald" {
+                Treecko: Monster = "Emerald" {
                     Scratch: Move,
                     Ember: Move,
                     FlashFire: Ability,
                 },
             },
-            OpponentTeam {
-                let Drifloon: Monster {
+            Opponents: BattlerTeam {
+                Drifloon: Monster {
                     Scratch: Move,
                     Ember: Move,
                     FlashFire: Ability,

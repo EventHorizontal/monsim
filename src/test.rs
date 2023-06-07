@@ -2,11 +2,13 @@
 mod main {
     use battle_builder_macro::build_battle;
 
+    use crate::sim::*;
     use crate::sim::{
         ability_dex::FlashFire,
         context::Battle,
         monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
         move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
+        Monster, Ability, Move
     };
 
     #[test]
@@ -14,25 +16,25 @@ mod main {
         extern crate self as monsim;
         let test_bcontext = build_battle!(
             {
-                AllyTeam {
-                    let Torchic: Monster = "Ruby" {
+                Allies: BattlerTeam {
+                    Torchic: Monster = "Ruby" {
                         Scratch: Move,
                         Ember: Move,
                         FlashFire: Ability,
                     },
-                    let Mudkip: Monster = "Sapphire" {
+                    Mudkip: Monster = "Sapphire" {
                         Scratch: Move,
                         Ember: Move,
                         FlashFire: Ability,
                     },
-                    let Treecko: Monster = "Emerald" {
+                    Treecko: Monster = "Emerald" {
                         Bubble: Move,
                         Scratch: Move,
                         FlashFire: Ability,
                     },
                 },
-                OpponentTeam {
-                    let Drifblim: Monster = "Cheerio" {
+                Opponents: BattlerTeam {
+                    Drifblim: Monster = "Cheerio" {
                         Tackle: Move,
                         Growl: Move,
                         FlashFire: Ability,
@@ -45,7 +47,7 @@ mod main {
                 monsim::sim::AllyBattlerTeam(monsim::sim::BattlerTeam::new(vec![
                     (monsim::sim::Battler::new(
                         monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Ally,
+                            team_id: monsim::sim::TeamID::Allies,
                             battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
                         },
                         true,
@@ -61,7 +63,7 @@ mod main {
                     )),
                     (monsim::sim::Battler::new(
                         monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Ally,
+                            team_id: monsim::sim::TeamID::Allies,
                             battler_number: monsim::sim::monster::BattlerNumber::from(1usize),
                         },
                         false,
@@ -77,7 +79,7 @@ mod main {
                     )),
                     (monsim::sim::Battler::new(
                         monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Ally,
+                            team_id: monsim::sim::TeamID::Allies,
                             battler_number: monsim::sim::monster::BattlerNumber::from(2usize),
                         },
                         false,
@@ -95,7 +97,7 @@ mod main {
                 monsim::sim::OpponentBattlerTeam(monsim::sim::BattlerTeam::new(vec![
                     (monsim::sim::Battler::new(
                         monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Opponent,
+                            team_id: monsim::sim::TeamID::Opponents,
                             battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
                         },
                         true,
@@ -122,33 +124,33 @@ mod bcontext {
     #[test]
     fn test_display_battle_context() {
         extern crate self as monsim;
+        use crate::sim::*;
         use crate::sim::{
             ability_dex::FlashFire,
-            context::Battle,
             monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
             move_dex::{Bubble, Ember, Scratch, Tackle},
         };
         let test_bcontext = build_battle!(
             {
-                AllyTeam {
-                    let Torchic: Monster = "Ruby" {
+                Allies: BattlerTeam {
+                    Torchic: Monster = "Ruby" {
                         Ember: Move,
                         Scratch: Move,
                         FlashFire: Ability,
                     },
-                    let Mudkip: Monster {
+                    Mudkip: Monster {
                         Tackle: Move,
                         Bubble: Move,
                         FlashFire: Ability,
                     },
-                    let Treecko: Monster = "Emerald" {
+                    Treecko: Monster = "Emerald" {
                         Scratch: Move,
                         Ember: Move,
                         FlashFire: Ability,
                     },
                 },
-                OpponentTeam {
-                    let Drifloon: Monster = "Cheerio" {
+                Opponents: BattlerTeam {
+                    Drifloon: Monster = "Cheerio" {
                         Scratch: Move,
                         Ember: Move,
                         FlashFire: Ability,
@@ -157,7 +159,38 @@ mod bcontext {
             }
         );
         println!("{}", test_bcontext);
-        assert_eq!(format!["{}", test_bcontext], String::from("Ally Team\n\t├── Ruby the Torchic (Ally_1) [HP: 152/152]\n\t│\t│\n\t│\t├── type Fire/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Ember\n\t│\t└── mov Scratch\n\t│\t\n\t├── Mudkip (Ally_2) [HP: 157/157]\n\t│\t│\n\t│\t├── type Water/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Tackle\n\t│\t└── mov Bubble\n\t│\t\n\t└── Emerald the Treecko (Ally_3) [HP: 147/147]\n\t\t│\n\t\t├── type Grass/None \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\nOpponent Team\n\t└── Cheerio the Drifloon (Opponent_1) [HP: 197/197]\n\t\t│\n\t\t├── type Ghost/Flying \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\n"))
+        assert_eq!(format!["{}", test_bcontext], String::from(
+"Ally Team
+\t├── Ruby the Torchic (Allies_1) [HP: 152/152]
+\t│\t│
+\t│\t├── type Fire/None
+\t│\t├── abl Flash Fire
+\t│\t├── mov Ember
+\t│\t└── mov Scratch
+\t│\t
+\t├── Mudkip (Allies_2) [HP: 157/157]
+\t│\t│
+\t│\t├── type Water/None
+\t│\t├── abl Flash Fire
+\t│\t├── mov Tackle
+\t│\t└── mov Bubble
+\t│\t
+\t└── Emerald the Treecko (Allies_3) [HP: 147/147]
+\t\t│
+\t\t├── type Grass/None
+\t\t├── abl Flash Fire
+\t\t├── mov Scratch
+\t\t└── mov Ember
+\t\t
+Opponent Team
+\t└── Cheerio the Drifloon (Opponents_1) [HP: 197/197]
+\t\t│
+\t\t├── type Ghost/Flying
+\t\t├── abl Flash Fire
+\t\t├── mov Scratch
+\t\t└── mov Ember
+\t\t
+"))
     }
 }
 

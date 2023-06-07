@@ -92,28 +92,22 @@ pub struct EventHandlerInstance<R: Clone + Copy> {
 pub type EventHandlerInstanceList<R> = Vec<EventHandlerInstance<R>>;
 pub type EventReturn<R> = R;
 
-#[derive(Debug, Clone, Copy)]
-pub struct EventHandlerSet {
-    pub on_try_move: Option<EventHandler<bool>>,
-    pub on_damage_dealt: Option<EventHandler<void>>,
-    pub on_try_activate_ability: Option<EventHandler<bool>>,
-    pub on_ability_activated: Option<EventHandler<void>>,
-    pub on_modify_accuracy: Option<EventHandler<u16>>,
-    pub on_try_raise_stat: Option<EventHandler<bool>>,
-    pub on_try_lower_stat: Option<EventHandler<bool>>,
-    pub on_status_move_used: Option<EventHandler<void>>,
-}
-
-pub const DEFAULT_HANDLERS: EventHandlerSet = EventHandlerSet {
-    on_try_move: None,
-    on_damage_dealt: None,
-    on_try_activate_ability: None,
-    on_ability_activated: None,
-    on_modify_accuracy: None,
-    on_try_raise_stat: None,
-    on_try_lower_stat: None,
-    on_status_move_used: None,
-};
+use event_handler_set_builder_macro::build_event_handler_set;
+build_event_handler_set![
+    pub struct EventHandlerSet {
+        match event {
+            on_try_move => bool,
+            on_damage_dealt => void,
+            on_try_activate_ability => bool,
+            on_ability_activated => void,
+            on_modify_accuracy => u16,
+            on_try_raise_stat => bool,
+            on_try_lower_stat => bool,
+            on_status_move_used => void,
+        }
+    }
+    set DEFAULT_HANDLERS = None
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventResolver;

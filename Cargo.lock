@@ -148,6 +148,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "event_handler_set_builder_macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -218,7 +227,7 @@ dependencies = [
 
 [[package]]
 name = "monsim"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "battle_builder_macro",
  "bitflags",
@@ -226,6 +235,7 @@ dependencies = [
  "const_format",
  "crossterm 0.26.0",
  "event_derive_macro",
+ "event_handler_set_builder_macro",
  "tui",
 ]
 

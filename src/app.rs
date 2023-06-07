@@ -79,14 +79,14 @@ impl<'a> AppState<'a> {
             selected_list: ScrollableWidgets::MessageLog,
             message_log_scroll_idx: 0,
             is_battle_ongoing: true,
-            ally_active_battler_string: Battle::monster_status_string(
-                battle.ally_team.0.active_battler(),
+            ally_active_battler_string: BattlerTeam::battler_status_as_string(
+                battle.ally_team.active_battler(),
             ),
-            ally_team_string: battle.ally_team_string(),
-            opponent_active_battler_string: Battle::monster_status_string(
-                battle.opponent_team.0.active_battler(),
+            ally_team_string: battle.ally_team.to_string(),
+            opponent_active_battler_string: BattlerTeam::battler_status_as_string(
+                battle.opponent_team.active_battler(),
             ),
-            opponent_team_string: battle.opponent_team_string(),
+            opponent_team_string: battle.opponent_team.to_string(),
         };
         state.build_list_items(battle);
         state
@@ -140,14 +140,14 @@ impl<'a> AppState<'a> {
         *self = Self {
             message_buffer: battle.message_buffer.clone(),
             is_battle_ongoing: battle.sim_state != SimState::Finished,
-            ally_active_battler_string: Battle::monster_status_string(
-                battle.ally_team.0.active_battler(),
+            ally_active_battler_string: BattlerTeam::battler_status_as_string(
+                battle.ally_team.active_battler(),
             ),
-            ally_team_string: battle.ally_team_string(),
-            opponent_active_battler_string: Battle::monster_status_string(
-                battle.opponent_team.0.active_battler(),
+            ally_team_string: battle.ally_team.to_string(),
+            opponent_active_battler_string: BattlerTeam::battler_status_as_string(
+                battle.opponent_team.active_battler(),
             ),
-            opponent_team_string: battle.opponent_team_string(),
+            opponent_team_string: battle.opponent_team.to_string(),
             ..self.clone()
         }
     }
@@ -427,7 +427,7 @@ fn update_state_from_input(
                 Err(error) => battle.battle.message_buffer.push(format!["{:?}", error]),
             }
             if battle.battle.sim_state == SimState::Finished {
-                battle.battle.push_message(&"The battle ended.");
+                battle.battle.push_messages(&[&EMPTY_LINE, &"The battle ended."]);
             }
             battle.battle.push_messages(&[&"---", &EMPTY_LINE]);
             app_state.app_mode = AppMode::AwaitingUserInput {

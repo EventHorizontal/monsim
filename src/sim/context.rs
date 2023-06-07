@@ -193,8 +193,8 @@ impl Battle {
         self.battlers().filter(|it| it.on_field).collect::<Vec<_>>()
     }
 
-    /// Given an action choice, computes its activation order. This is handled by BattleContext because the order is
-    /// context dependent.
+    /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is
+    /// context sensitive.
     pub(crate) fn choice_activation_order(&self, choice: ActionChoice) -> ActivationOrder {
         match choice {
             ActionChoice::Move {
@@ -235,35 +235,6 @@ impl Battle {
             ally_team_choices,
             opponent_team_choices,
         }
-    }
-
-    pub fn ally_team_string(&self) -> String {
-        let mut out = String::new();
-        for battler in self.ally_team.battlers() {
-            out.push_str(&Self::monster_status_string(battler));
-        }
-        out
-    }
-
-    pub fn opponent_team_string(&self) -> String {
-        let mut out = String::new();
-        for battler in self.opponent_team.battlers() {
-            out.push_str(&Self::monster_status_string(battler));
-        }
-        out
-    }
-
-    pub fn monster_status_string(battler: &Battler) -> String {
-        let mut out = String::new();
-        out.push_str(&format![
-            "{} the {} ({}) [HP: {}/{}]\n",
-            battler.monster.nickname,
-            battler.monster.species.name,
-            battler.uid,
-            battler.monster.current_health,
-            battler.monster.max_health
-        ]);
-        out
     }
 
     pub fn get_current_action_as_move(&self) -> Option<&Move> {
@@ -315,94 +286,43 @@ fn push_pretty_tree_for_team(
     output_string.push_str(team_name);
     for (i, battler) in team.battlers().iter().enumerate() {
         let is_not_last_monster = i < number_of_monsters - 1;
-        if is_not_last_monster {
-            output_string.push_str("\t├── ");
-            if battler.monster.nickname == battler.monster.species.name {
-                output_string.push_str(
-                    format![
-                        "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                        battler.monster.species.name,
-                        battler.uid,
-                        battler.monster.current_health,
-                        battler.monster.max_health
-                    ]
-                    .as_str(),
-                );
-            } else {
-                output_string.push_str(
-                    format![
-                        "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                        battler.monster.nickname,
-                        battler.monster.species.name,
-                        battler.uid,
-                        battler.monster.current_health,
-                        battler.monster.max_health
-                    ]
-                    .as_str(),
-                );
-            }
-            let number_of_effects = battler.moveset.moves().count();
-            output_string.push_str("\t│\t├── ");
-
-            output_string.push_str(
-                format![
-                    "type {:?}/{:?}\n",
-                    battler.monster.species.primary_type, battler.monster.species.secondary_type
-                ]
-                .as_str(),
-            );
-            output_string.push_str("\t│\t├── ");
-            output_string.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
-
-            for (j, move_) in battler.moveset.moves().enumerate() {
-                let is_not_last_move = j < number_of_effects - 1;
-                if is_not_last_move {
-                    output_string.push_str("\t│\t├── ");
-                } else {
-                    output_string.push_str("\t│\t└── ");
-                }
-                output_string.push_str(format!["mov {}\n", move_.species.name].as_str());
-            }
-            output_string.push_str("\t│\t\n");
-        } else {
-            output_string.push_str("\t└── ");
-            output_string.push_str(
-                format![
-                    "{} the {} ({}) [HP: {}/{}]\n",
-                    battler.monster.nickname,
-                    battler.monster.species.name,
-                    battler.uid,
-                    battler.monster.current_health,
-                    battler.monster.max_health
-                ]
-                .as_str(),
-            );
-            output_string.push_str("\t\t│\n");
-            let number_of_effects = battler.moveset.moves().count();
-            output_string.push_str("\t\t├── ");
-
-            output_string.push_str(
-                format![
-                    "type {:?}/{:?}\n",
-                    battler.monster.species.primary_type, battler.monster.species.secondary_type
-                ]
-                .as_str(),
-            );
-            output_string.push_str("\t\t├── ");
-
-            output_string.push_str(format!["abl {}\n", battler.ability.species.name].as_str());
-
-            for (j, move_) in battler.moveset.moves().enumerate() {
-                let is_not_last_move = j < number_of_effects - 1;
-                if is_not_last_move {
-                    output_string.push_str("\t\t├── ");
-                } else {
-                    output_string.push_str("\t\t└── ");
-                }
-                output_string.push_str(format!["mov {}\n", move_.species.name].as_str());
-            }
-            output_string.push_str("\t\t\n");
+        let prefix_str;
+        let suffix_str;
+        if is_not_last_monster { 
+            prefix_str = "\t│\t";
+            suffix_str = "├── "
+        } else { 
+            prefix_str = "\t \t";
+            suffix_str = "└── "
         }
+        output_string.push_str(&("\t".to_owned() + suffix_str));
+        output_string.push_str(&BattlerTeam::battler_status_as_string(battler));
+        output_string.push_str(&(prefix_str.to_owned() + "│\n"));
+        output_string.push_str( &(prefix_str.to_owned() + "├── "));
+        
+        let primary_type = battler.monster.species.primary_type;
+        let secondary_type = battler.monster.species.secondary_type;
+        let type_string = if secondary_type == super::MonType::None {
+            format!["   type: {:?}\n", primary_type]
+        } else {
+            format!["   type: {:?}/{:?}\n", primary_type, secondary_type]
+        };
+        output_string.push_str(&type_string);
+        
+        output_string.push_str(&(prefix_str.to_owned() + "├── "));
+        output_string.push_str(format!["ability: {}\n", battler.ability.species.name].as_str());
+            
+        let number_of_moves = battler.moveset.moves().count();
+        for (j, move_) in battler.moveset.moves().enumerate() {
+            let is_not_last_move = j < number_of_moves - 1;
+            if is_not_last_move {
+                output_string.push_str(&(prefix_str.to_owned() + "├── "));
+            } else {
+                output_string.push_str(&(prefix_str.to_owned() + "└── "));
+            }
+            output_string.push_str(format!["   move: {}\n", move_.species.name].as_str());
+        }
+        output_string.push_str(&(prefix_str.to_owned() + "\n"));
     }
 }
 

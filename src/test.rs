@@ -163,33 +163,33 @@ mod bcontext {
 "Ally Team
 \t├── Ruby the Torchic (Allies_1) [HP: 152/152]
 \t│\t│
-\t│\t├── type Fire/None
-\t│\t├── abl Flash Fire
-\t│\t├── mov Ember
-\t│\t└── mov Scratch
+\t│\t├──    type: Fire
+\t│\t├── ability: Flash Fire
+\t│\t├──    move: Ember
+\t│\t└──    move: Scratch
 \t│\t
 \t├── Mudkip (Allies_2) [HP: 157/157]
 \t│\t│
-\t│\t├── type Water/None
-\t│\t├── abl Flash Fire
-\t│\t├── mov Tackle
-\t│\t└── mov Bubble
+\t│\t├──    type: Water
+\t│\t├── ability: Flash Fire
+\t│\t├──    move: Tackle
+\t│\t└──    move: Bubble
 \t│\t
 \t└── Emerald the Treecko (Allies_3) [HP: 147/147]
-\t\t│
-\t\t├── type Grass/None
-\t\t├── abl Flash Fire
-\t\t├── mov Scratch
-\t\t└── mov Ember
-\t\t
+\t \t│
+\t \t├──    type: Grass
+\t \t├── ability: Flash Fire
+\t \t├──    move: Scratch
+\t \t└──    move: Ember
+\t \t
 Opponent Team
 \t└── Cheerio the Drifloon (Opponents_1) [HP: 197/197]
-\t\t│
-\t\t├── type Ghost/Flying
-\t\t├── abl Flash Fire
-\t\t├── mov Scratch
-\t\t└── mov Ember
-\t\t
+\t \t│
+\t \t├──    type: Ghost/Flying
+\t \t├── ability: Flash Fire
+\t \t├──    move: Scratch
+\t \t└──    move: Ember
+\t \t
 "))
     }
 }

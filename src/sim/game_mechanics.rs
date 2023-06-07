@@ -86,6 +86,37 @@ impl BattlerTeam {
         &mut self.battlers
     }
 
+    pub fn to_string(&self) -> String {
+        let mut out = String::new();
+        for battler in self.battlers() {
+            out.push_str(&Self::battler_status_as_string(battler));
+        }
+        out
+    }
+
+    pub fn battler_status_as_string(battler: &Battler) -> String {
+        let mut out = String::new();
+        if battler.monster.nickname == battler.monster.species.name {
+            out.push_str(&format![
+                "{} ({}) [HP: {}/{}]\n",
+                battler.monster.species.name,
+                battler.uid,
+                battler.monster.current_health,
+                battler.monster.max_health
+            ]);
+        } else {
+            out.push_str(&format![
+                "{} the {} ({}) [HP: {}/{}]\n",
+                battler.monster.nickname,
+                battler.monster.species.name,
+                battler.uid,
+                battler.monster.current_health,
+                battler.monster.max_health
+            ]);
+        }
+        out
+    }
+
     pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
         let mut out = Vec::new();
         for battler in self.battlers.iter() {
@@ -115,6 +146,14 @@ impl AllyBattlerTeam {
 
     pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
         &mut self.0.battlers
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut out = String::new();
+        for battler in self.0.battlers() {
+            out.push_str(&BattlerTeam::battler_status_as_string(battler));
+        }
+        out
     }
 
     pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
@@ -150,6 +189,14 @@ impl OpponentBattlerTeam {
 
     pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
         &mut self.0.battlers
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut out = String::new();
+        for battler in self.0.battlers() {
+            out.push_str(&BattlerTeam::battler_status_as_string(battler));
+        }
+        out
     }
 
     pub fn event_handlers(&self) -> EventHandlerSetInstanceList {

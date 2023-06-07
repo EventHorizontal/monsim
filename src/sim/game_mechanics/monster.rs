@@ -8,7 +8,7 @@ pub struct MonsterSpecies {
     pub dex_number: u16,
     pub name: &'static str,
     pub primary_type: MonType,
-    pub secondary_type: MonType,
+    pub secondary_type: Option<MonType>,
     pub base_stats: StatSet,
     pub event_handlers: EventHandlerSet,
 }
@@ -210,7 +210,7 @@ impl Monster {
     }
 
     pub fn is_type(&self, type_: MonType) -> bool {
-        self.species.primary_type == type_ || self.species.secondary_type == type_
+        self.species.primary_type == type_ || self.species.secondary_type == Some(type_)
     }
 
     pub fn event_handlers(&self) -> EventHandlerSet {

@@ -377,8 +377,6 @@ impl OpponentBattler {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum MonType {
-    None, // For empty type-slots
-
     Bug,
     Dark,
     Dragon,

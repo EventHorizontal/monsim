@@ -12,27 +12,7 @@ pub const EMPTY_LINE: &str = "";
 
 pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
     match (move_type, target_type) {
-        (MonType::None, MonType::None) => EFFECTIVE,
-        (MonType::None, MonType::Bug) => EFFECTIVE,
-        (MonType::None, MonType::Dark) => EFFECTIVE,
-        (MonType::None, MonType::Dragon) => EFFECTIVE,
-        (MonType::None, MonType::Electric) => EFFECTIVE,
-        (MonType::None, MonType::Fairy) => EFFECTIVE,
-        (MonType::None, MonType::Fighting) => EFFECTIVE,
-        (MonType::None, MonType::Fire) => EFFECTIVE,
-        (MonType::None, MonType::Flying) => EFFECTIVE,
-        (MonType::None, MonType::Ghost) => EFFECTIVE,
-        (MonType::None, MonType::Grass) => EFFECTIVE,
-        (MonType::None, MonType::Ground) => EFFECTIVE,
-        (MonType::None, MonType::Ice) => EFFECTIVE,
-        (MonType::None, MonType::Poison) => EFFECTIVE,
-        (MonType::None, MonType::Psychic) => EFFECTIVE,
-        (MonType::None, MonType::Normal) => EFFECTIVE,
-        (MonType::None, MonType::Rock) => EFFECTIVE,
-        (MonType::None, MonType::Steel) => EFFECTIVE,
-        (MonType::None, MonType::Water) => EFFECTIVE,
 
-        (MonType::Bug, MonType::None) => EFFECTIVE,
         (MonType::Bug, MonType::Bug) => EFFECTIVE,
         (MonType::Bug, MonType::Dark) => SUPER_EFFECTIVE,
         (MonType::Bug, MonType::Dragon) => EFFECTIVE,
@@ -52,7 +32,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Bug, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Bug, MonType::Water) => EFFECTIVE,
 
-        (MonType::Dark, MonType::None) => EFFECTIVE,
         (MonType::Dark, MonType::Bug) => EFFECTIVE,
         (MonType::Dark, MonType::Dark) => NOT_VERY_EFFECTIVE,
         (MonType::Dark, MonType::Dragon) => EFFECTIVE,
@@ -72,7 +51,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Dark, MonType::Steel) => EFFECTIVE,
         (MonType::Dark, MonType::Water) => EFFECTIVE,
 
-        (MonType::Dragon, MonType::None) => EFFECTIVE,
         (MonType::Dragon, MonType::Bug) => EFFECTIVE,
         (MonType::Dragon, MonType::Dark) => EFFECTIVE,
         (MonType::Dragon, MonType::Dragon) => SUPER_EFFECTIVE,
@@ -92,7 +70,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Dragon, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Dragon, MonType::Water) => EFFECTIVE,
 
-        (MonType::Electric, MonType::None) => EFFECTIVE,
         (MonType::Electric, MonType::Bug) => EFFECTIVE,
         (MonType::Electric, MonType::Dark) => EFFECTIVE,
         (MonType::Electric, MonType::Dragon) => NOT_VERY_EFFECTIVE,
@@ -112,7 +89,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Electric, MonType::Steel) => EFFECTIVE,
         (MonType::Electric, MonType::Water) => SUPER_EFFECTIVE,
 
-        (MonType::Fairy, MonType::None) => EFFECTIVE,
         (MonType::Fairy, MonType::Bug) => EFFECTIVE,
         (MonType::Fairy, MonType::Dark) => SUPER_EFFECTIVE,
         (MonType::Fairy, MonType::Dragon) => SUPER_EFFECTIVE,
@@ -132,7 +108,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Fairy, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Fairy, MonType::Water) => EFFECTIVE,
 
-        (MonType::Fighting, MonType::None) => EFFECTIVE,
         (MonType::Fighting, MonType::Bug) => NOT_VERY_EFFECTIVE,
         (MonType::Fighting, MonType::Dark) => SUPER_EFFECTIVE,
         (MonType::Fighting, MonType::Dragon) => EFFECTIVE,
@@ -152,7 +127,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Fighting, MonType::Steel) => EFFECTIVE,
         (MonType::Fighting, MonType::Water) => EFFECTIVE,
 
-        (MonType::Fire, MonType::None) => EFFECTIVE,
         (MonType::Fire, MonType::Bug) => SUPER_EFFECTIVE,
         (MonType::Fire, MonType::Dark) => EFFECTIVE,
         (MonType::Fire, MonType::Dragon) => NOT_VERY_EFFECTIVE,
@@ -172,7 +146,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Fire, MonType::Steel) => SUPER_EFFECTIVE,
         (MonType::Fire, MonType::Water) => NOT_VERY_EFFECTIVE,
 
-        (MonType::Flying, MonType::None) => EFFECTIVE,
         (MonType::Flying, MonType::Bug) => SUPER_EFFECTIVE,
         (MonType::Flying, MonType::Dark) => EFFECTIVE,
         (MonType::Flying, MonType::Dragon) => EFFECTIVE,
@@ -192,7 +165,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Flying, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Flying, MonType::Water) => EFFECTIVE,
 
-        (MonType::Ghost, MonType::None) => EFFECTIVE,
         (MonType::Ghost, MonType::Bug) => EFFECTIVE,
         (MonType::Ghost, MonType::Dark) => NOT_VERY_EFFECTIVE,
         (MonType::Ghost, MonType::Dragon) => EFFECTIVE,
@@ -212,7 +184,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Ghost, MonType::Steel) => EFFECTIVE,
         (MonType::Ghost, MonType::Water) => EFFECTIVE,
 
-        (MonType::Grass, MonType::None) => EFFECTIVE,
         (MonType::Grass, MonType::Bug) => NOT_VERY_EFFECTIVE,
         (MonType::Grass, MonType::Dark) => EFFECTIVE,
         (MonType::Grass, MonType::Dragon) => EFFECTIVE,
@@ -232,7 +203,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Grass, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Grass, MonType::Water) => SUPER_EFFECTIVE,
 
-        (MonType::Ground, MonType::None) => EFFECTIVE,
         (MonType::Ground, MonType::Bug) => NOT_VERY_EFFECTIVE,
         (MonType::Ground, MonType::Dark) => EFFECTIVE,
         (MonType::Ground, MonType::Dragon) => EFFECTIVE,
@@ -252,7 +222,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Ground, MonType::Steel) => SUPER_EFFECTIVE,
         (MonType::Ground, MonType::Water) => EFFECTIVE,
 
-        (MonType::Ice, MonType::None) => EFFECTIVE,
         (MonType::Ice, MonType::Bug) => EFFECTIVE,
         (MonType::Ice, MonType::Dark) => EFFECTIVE,
         (MonType::Ice, MonType::Dragon) => SUPER_EFFECTIVE,
@@ -272,7 +241,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Ice, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Ice, MonType::Water) => NOT_VERY_EFFECTIVE,
 
-        (MonType::Poison, MonType::None) => EFFECTIVE,
         (MonType::Poison, MonType::Bug) => EFFECTIVE,
         (MonType::Poison, MonType::Dark) => EFFECTIVE,
         (MonType::Poison, MonType::Dragon) => EFFECTIVE,
@@ -292,7 +260,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Poison, MonType::Steel) => INEFFECTIVE,
         (MonType::Poison, MonType::Water) => EFFECTIVE,
 
-        (MonType::Psychic, MonType::None) => EFFECTIVE,
         (MonType::Psychic, MonType::Bug) => EFFECTIVE,
         (MonType::Psychic, MonType::Dark) => INEFFECTIVE,
         (MonType::Psychic, MonType::Dragon) => EFFECTIVE,
@@ -312,7 +279,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Psychic, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Psychic, MonType::Water) => EFFECTIVE,
 
-        (MonType::Normal, MonType::None) => EFFECTIVE,
         (MonType::Normal, MonType::Bug) => EFFECTIVE,
         (MonType::Normal, MonType::Dark) => EFFECTIVE,
         (MonType::Normal, MonType::Dragon) => EFFECTIVE,
@@ -332,7 +298,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Normal, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Normal, MonType::Water) => EFFECTIVE,
 
-        (MonType::Rock, MonType::None) => EFFECTIVE,
         (MonType::Rock, MonType::Bug) => SUPER_EFFECTIVE,
         (MonType::Rock, MonType::Dark) => EFFECTIVE,
         (MonType::Rock, MonType::Dragon) => EFFECTIVE,
@@ -352,7 +317,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Rock, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Rock, MonType::Water) => EFFECTIVE,
 
-        (MonType::Steel, MonType::None) => EFFECTIVE,
         (MonType::Steel, MonType::Bug) => EFFECTIVE,
         (MonType::Steel, MonType::Dark) => EFFECTIVE,
         (MonType::Steel, MonType::Dragon) => EFFECTIVE,
@@ -372,7 +336,6 @@ pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
         (MonType::Steel, MonType::Steel) => NOT_VERY_EFFECTIVE,
         (MonType::Steel, MonType::Water) => NOT_VERY_EFFECTIVE,
 
-        (MonType::Water, MonType::None) => EFFECTIVE,
         (MonType::Water, MonType::Bug) => EFFECTIVE,
         (MonType::Water, MonType::Dark) => EFFECTIVE,
         (MonType::Water, MonType::Dragon) => NOT_VERY_EFFECTIVE,

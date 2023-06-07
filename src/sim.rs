@@ -190,8 +190,13 @@ mod action {
             let target_primary_type = battle.monster(target_uid).species.primary_type;
             let target_secondary_type = battle.monster(target_uid).species.secondary_type;
 
-            let type_matchup_multiplier = type_matchup(move_type, target_primary_type)
-                * type_matchup(move_type, target_secondary_type);
+            let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
+                type_matchup(move_type, target_primary_type)
+                    * type_matchup(move_type, target_secondary_type)
+            } else {
+                type_matchup(move_type, target_primary_type)
+            };
+            
 
             // If the opponent is immune, damage calculation is skipped.
             if type_matchup_multiplier == INEFFECTIVE {

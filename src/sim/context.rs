@@ -302,10 +302,10 @@ fn push_pretty_tree_for_team(
         
         let primary_type = battler.monster.species.primary_type;
         let secondary_type = battler.monster.species.secondary_type;
-        let type_string = if secondary_type == super::MonType::None {
-            format!["   type: {:?}\n", primary_type]
-        } else {
+        let type_string = if let Some(secondary_type) = secondary_type {
             format!["   type: {:?}/{:?}\n", primary_type, secondary_type]
+        } else {
+            format!["   type: {:?}\n", primary_type]
         };
         output_string.push_str(&type_string);
         

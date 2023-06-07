@@ -12,9 +12,9 @@ mod main {
     };
 
     #[test]
-    fn test_bcontext_macro() {
+    fn test_build_battle_macro() {
         extern crate self as monsim;
-        let test_bcontext = build_battle!(
+        let test_battle = build_battle!(
             {
                 Allies: BattlerTeam {
                     Torchic: Monster = "Ruby" {
@@ -42,74 +42,74 @@ mod main {
                 }
             }
         );
-        assert_eq!(test_bcontext, {
+        assert_eq!(test_battle, {
             Battle::new(
-                monsim::sim::AllyBattlerTeam(monsim::sim::BattlerTeam::new(vec![
-                    (monsim::sim::Battler::new(
-                        monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Allies,
-                            battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
+                AllyBattlerTeam(BattlerTeam::new(vec![
+                    (Battler::new(
+                        BattlerUID {
+                            team_id: TeamID::Allies,
+                            battler_number: monster::BattlerNumber::from(0usize),
                         },
                         true,
-                        monsim::sim::monster::Monster::new(
-                            monsim::sim::monster_dex::Torchic,
+                        monster::Monster::new(
+                            monster_dex::Torchic,
                             "Ruby",
                         ),
-                        monsim::sim::move_::MoveSet::new(vec![
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Ember)),
+                        move_::MoveSet::new(vec![
+                            (move_::Move::new(move_dex::Scratch)),
+                            (move_::Move::new(move_dex::Ember)),
                         ]),
-                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                        ability::Ability::new(ability_dex::FlashFire),
                     )),
-                    (monsim::sim::Battler::new(
-                        monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Allies,
-                            battler_number: monsim::sim::monster::BattlerNumber::from(1usize),
+                    (Battler::new(
+                        BattlerUID {
+                            team_id: TeamID::Allies,
+                            battler_number: monster::BattlerNumber::from(1usize),
                         },
                         false,
-                        monsim::sim::monster::Monster::new(
-                            monsim::sim::monster_dex::Mudkip,
+                        monster::Monster::new(
+                            monster_dex::Mudkip,
                             "Sapphire",
                         ),
-                        monsim::sim::move_::MoveSet::new(vec![
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Ember)),
+                        move_::MoveSet::new(vec![
+                            (move_::Move::new(move_dex::Scratch)),
+                            (move_::Move::new(move_dex::Ember)),
                         ]),
-                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                        ability::Ability::new(ability_dex::FlashFire),
                     )),
-                    (monsim::sim::Battler::new(
-                        monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Allies,
-                            battler_number: monsim::sim::monster::BattlerNumber::from(2usize),
+                    (Battler::new(
+                        BattlerUID {
+                            team_id: TeamID::Allies,
+                            battler_number: monster::BattlerNumber::from(2usize),
                         },
                         false,
-                        monsim::sim::monster::Monster::new(
-                            monsim::sim::monster_dex::Treecko,
+                        monster::Monster::new(
+                            monster_dex::Treecko,
                             "Emerald",
                         ),
-                        monsim::sim::move_::MoveSet::new(vec![
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Bubble)),
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Scratch)),
+                        move_::MoveSet::new(vec![
+                            (move_::Move::new(move_dex::Bubble)),
+                            (move_::Move::new(move_dex::Scratch)),
                         ]),
-                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                        ability::Ability::new(ability_dex::FlashFire),
                     )),
                 ])),
-                monsim::sim::OpponentBattlerTeam(monsim::sim::BattlerTeam::new(vec![
-                    (monsim::sim::Battler::new(
-                        monsim::sim::BattlerUID {
-                            team_id: monsim::sim::TeamID::Opponents,
-                            battler_number: monsim::sim::monster::BattlerNumber::from(0usize),
+                OpponentBattlerTeam(BattlerTeam::new(vec![
+                    (Battler::new(
+                        BattlerUID {
+                            team_id: TeamID::Opponents,
+                            battler_number: monster::BattlerNumber::from(0usize),
                         },
                         true,
-                        monsim::sim::monster::Monster::new(
-                            monsim::sim::monster_dex::Drifblim,
+                        monster::Monster::new(
+                            monster_dex::Drifblim,
                             "Cheerio",
                         ),
-                        monsim::sim::move_::MoveSet::new(vec![
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Tackle)),
-                            (monsim::sim::move_::Move::new(monsim::sim::move_dex::Growl)),
+                        move_::MoveSet::new(vec![
+                            (move_::Move::new(move_dex::Tackle)),
+                            (move_::Move::new(move_dex::Growl)),
                         ]),
-                        monsim::sim::ability::Ability::new(monsim::sim::ability_dex::FlashFire),
+                        ability::Ability::new(ability_dex::FlashFire),
                     )),
                 ])),
             )

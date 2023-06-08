@@ -7,7 +7,7 @@ pub struct AbilitySpecies {
     pub name: &'static str,
     pub event_handlers: EventHandlerSet,
     pub on_activate: fn(&mut Battle, BattlerUID) -> (),
-    pub event_handler_filters: EventHandlerFilters,
+    pub filters: EventHandlerFilters,
     pub order: u16,
 }
 

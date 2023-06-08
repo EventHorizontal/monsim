@@ -1,7 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    ability::AbilitySpecies, EventHandler, EventHandlerFilters, EventHandlerSet, MonType,
+    define_ability,
+    AbilitySpecies, Ability, EventHandler, EventHandlerFilters, EventHandlerSet, MonType,
     SecondaryAction, DEFAULT_HANDLERS, FAILURE, SUCCESS,
 };
 
@@ -13,13 +14,13 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             #[cfg(feature = "debug")]
             dbg_location: monsim::debug_location!("FlashFire.OnTryMove"),
             callback: |battle, prng, owner_uid, _relay| {
-                let current_move = *battle.get_current_action_as_move().expect(
-                    "The current action should be a move within on_try_move handler context.",
-                );
-                if current_move.species.type_ == MonType::Fire
-                    && SecondaryAction::activate_ability(battle, prng, owner_uid)
+                let current_move = *battle.get_current_action_as_move()
+                .expect("The current action should be a move within on_try_move handler context.");
+                let is_current_move_fire_type = current_move.species.type_ == MonType::Fire;
+                if is_current_move_fire_type
                 {
-                    return FAILURE;
+                    let activation_succeeded = SecondaryAction::activate_ability(battle, prng, owner_uid);
+                    if activation_succeeded { return FAILURE; }
                 }
                 SUCCESS
             },
@@ -29,6 +30,27 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.push_message(&"Flash Fire activated!");
     },
-    event_handler_filters: EventHandlerFilters::default(),
+    filters: EventHandlerFilters::default(),
     order: 0,
 };
+
+define_ability!(
+    002 WaterAbsorb {
+        on_try_move: |battle, prng, owner_uid, _relay| {
+            let current_move = *battle.get_current_action_as_move()
+            .expect("The current action should be a move within on_try_move handler context.");
+            let is_current_move_fire_type = current_move.species.type_ == MonType::Water;
+            if is_current_move_fire_type
+            {
+                let activation_succeeded = SecondaryAction::activate_ability(battle, prng, owner_uid);
+                if activation_succeeded { return FAILURE; }
+            }
+            SUCCESS
+        },
+        on_activate: |battle, _owner_uid| {
+            battle.push_message(&"Flash Fire activated!");
+        },
+        filters: DEFAULT,
+        order: 0
+    }
+);

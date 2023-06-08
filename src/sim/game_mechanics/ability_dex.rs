@@ -30,6 +30,6 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.push_message(&"Flash Fire activated!");
     },
-    event_handler_filters: EventHandlerFilters::default(),
+    filters: EventHandlerFilters::default(),
     order: 0,
 };

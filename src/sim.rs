@@ -8,6 +8,7 @@ mod event;
 mod ordering;
 
 pub use battle_builder_macro::build_battle;
+pub use mechanic_constructor_macro::define_ability;
 pub use context::*;
 pub use choice::*;
 pub use event::{

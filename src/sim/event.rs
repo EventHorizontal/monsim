@@ -1,8 +1,10 @@
 use core::fmt::Debug;
 
-use crate::sim::prng::Prng;
+use crate::sim::{prng::Prng, game_mechanics::BattlerUID, Battle};
+use event_setup_macro::event_setup;
 
-use super::{game_mechanics::BattlerUID, Battle};
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EventResolver;
 
 #[allow(non_camel_case_types)]
 type void = ();
@@ -10,7 +12,7 @@ type void = ();
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
 pub struct EventHandler<R: Clone + Copy> {
-    pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> EventReturn<R>,
+    pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> R,
 }
 
 #[cfg(not(feature = "debug"))]
@@ -28,57 +30,12 @@ impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
 #[cfg(feature = "debug")]
 #[derive(Clone, Copy)]
 pub struct EventHandler<R: Clone + Copy> {
-    pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> EventReturn<R>,
+    pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> R,
     #[cfg(feature = "debug")]
     pub dbg_location: &'static str,
 }
 
-#[cfg(feature = "debug")]
-impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandler")
-            .field(
-                "callback",
-                &&(self.callback as EventHandlerWithLifeTime<'a, R>),
-            )
-            .field("location", &self.dbg_location)
-            .finish()
-    }
-}
-
-pub type EventHandlerWithLifeTime<'a, R> =
-    fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> EventReturn<R>;
-
-#[derive(Debug, Clone, Copy)]
-pub struct EventHandlerSetInstance {
-    pub event_handler_set: EventHandlerSet,
-    pub owner_uid: BattlerUID,
-    pub activation_order: ActivationOrder,
-    pub filters: EventHandlerFilters,
-}
-
-pub type EventHandlerSetInstanceList = Vec<EventHandlerSetInstance>;
-
-#[test]
-#[cfg(feature = "debug")]
-fn test_print_event_handler_instance() {
-    use crate::sim::ability_dex::FlashFire;
-    let event_handler_instance = EventHandlerInstance {
-        event_name: event_dex::OnTryMove.name(),
-        event_handler: FlashFire.event_handlers.on_try_move.unwrap(),
-        owner_uid: BattlerUID {
-            team_id: crate::sim::TeamID::Allies,
-            battler_number: crate::sim::BattlerNumber::_1,
-        },
-        activation_order: crate::sim::ActivationOrder {
-            priority: 1,
-            speed: 99,
-            order: 0,
-        },
-        filters: crate::sim::EventHandlerFilters::default(),
-    };
-    println!("{:#?}", event_handler_instance);
-}
+pub type EventHandlerWithLifeTime<'a, R> = fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventHandlerInstance<R: Clone + Copy> {
@@ -90,10 +47,23 @@ pub struct EventHandlerInstance<R: Clone + Copy> {
 }
 
 pub type EventHandlerInstanceList<R> = Vec<EventHandlerInstance<R>>;
-pub type EventReturn<R> = R;
 
-use event_handler_set_builder_macro::build_event_handler_set;
-build_event_handler_set![
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EventHandlerFilters {
+    pub whose_event: TargetFlags,
+    pub on_battlefield: bool,
+}
+
+bitflags::bitflags! {
+    pub struct TargetFlags: u8 {
+        const SELF = 0b0001;
+        const ALLIES = 0b0010;
+        const OPPONENTS = 0b0100;
+        const ENVIRONMENT = 0b1000;
+    }
+}
+
+event_setup![
     pub struct EventHandlerSet {
         match event {
             on_try_move => bool,
@@ -106,11 +76,26 @@ build_event_handler_set![
             on_status_move_used => void,
         }
     }
-    set DEFAULT_HANDLERS = None
+    pub const DEFAULT_HANDLERS = None;
+    pub trait InBattleEvent;
 ];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EventResolver;
+#[derive(Debug, Clone, Copy)]
+pub struct EventHandlerSetInstance {
+    pub event_handler_set: EventHandlerSet,
+    pub owner_uid: BattlerUID,
+    pub activation_order: ActivationOrder,
+    pub filters: EventHandlerFilters,
+}
+
+pub type EventHandlerSetInstanceList = Vec<EventHandlerSetInstance>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ActivationOrder {
+    pub priority: u16,
+    pub speed: u16,
+    pub order: u16,
+}
 
 impl EventResolver {
     pub fn broadcast_trial_event(
@@ -208,17 +193,17 @@ impl EventResolver {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ActivationOrder {
-    pub priority: u16,
-    pub speed: u16,
-    pub order: u16,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EventHandlerFilters {
-    pub whose_event: TargetFlags,
-    pub on_battlefield: bool,
+#[cfg(feature = "debug")]
+impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EventHandler")
+            .field(
+                "callback",
+                &&(self.callback as EventHandlerWithLifeTime<'a, R>),
+            )
+            .field("location", &self.dbg_location)
+            .finish()
+    }
 }
 
 impl EventHandlerFilters {
@@ -228,73 +213,6 @@ impl EventHandlerFilters {
             on_battlefield: true,
         }
     }
-}
-
-use bitflags::bitflags;
-bitflags! {
-    pub struct TargetFlags: u8 {
-        const SELF = 0b0001;
-        const ALLIES = 0b0010;
-        const OPPONENTS = 0b0100;
-        const ENVIRONMENT = 0b1000;
-    }
-}
-
-pub trait InBattleEvent {
-    type EventReturnType: Sized + Clone + Copy;
-
-    fn corresponding_handler(
-        &self,
-        event_handler_set: &EventHandlerSet,
-    ) -> Option<EventHandler<Self::EventReturnType>>;
-
-    fn name(&self) -> &'static str;
-}
-
-pub mod event_dex {
-    use event_derive_macro::InBattleEvent;
-
-    use super::*;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(bool)]
-    #[callback(on_try_move)]
-    pub struct OnTryMove;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(void)]
-    #[callback(on_ability_activated)]
-    pub struct OnAbilityActivated;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(void)]
-    #[callback(on_damage_dealt)]
-    pub struct OnDamageDealt;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(bool)]
-    #[callback(on_try_activate_ability)]
-    pub struct OnTryActivateAbility;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(u16)]
-    #[callback(on_modify_accuracy)]
-    pub struct OnModifyAccuracy;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(bool)]
-    #[callback(on_try_raise_stat)]
-    pub struct OnTryRaiseStat;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(bool)]
-    #[callback(on_try_lower_stat)]
-    pub struct OnTryLowerStat;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, InBattleEvent)]
-    #[return_type(void)]
-    #[callback(on_status_move_used)]
-    pub struct OnStatusMoveUsed;
 }
 
 #[cfg(all(test, feature = "debug"))]
@@ -569,4 +487,25 @@ mod tests {
         );
         assert!(passed_filter);
     } 
+
+    #[test]
+    #[cfg(feature = "debug")]
+    fn test_print_event_handler_instance() {
+        use crate::sim::ability_dex::FlashFire;
+        let event_handler_instance = EventHandlerInstance {
+            event_name: event_dex::OnTryMove.name(),
+            event_handler: FlashFire.event_handlers.on_try_move.unwrap(),
+            owner_uid: BattlerUID {
+                team_id: crate::sim::TeamID::Allies,
+                battler_number: crate::sim::BattlerNumber::_1,
+            },
+            activation_order: crate::sim::ActivationOrder {
+                priority: 1,
+                speed: 99,
+                order: 0,
+            },
+            filters: crate::sim::EventHandlerFilters::default(),
+        };
+        println!("{:#?}", event_handler_instance);
+    }
 }

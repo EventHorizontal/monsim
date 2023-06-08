@@ -139,16 +139,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "event_derive_macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "event_handler_set_builder_macro"
+name = "event_setup_macro"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -227,15 +218,14 @@ dependencies = [
 
 [[package]]
 name = "monsim"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "battle_builder_macro",
  "bitflags",
  "chrono",
  "const_format",
  "crossterm 0.26.0",
- "event_derive_macro",
- "event_handler_set_builder_macro",
+ "event_setup_macro",
  "tui",
 ]
 

@@ -35,22 +35,24 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
 };
 
 define_ability!(
-    002 WaterAbsorb {
-        on_try_move: |battle, prng, owner_uid, _relay| {
-            let current_move = *battle.get_current_action_as_move()
-            .expect("The current action should be a move within on_try_move handler context.");
-            let is_current_move_fire_type = current_move.species.type_ == MonType::Water;
-            if is_current_move_fire_type
-            {
-                let activation_succeeded = SecondaryAction::activate_ability(battle, prng, owner_uid);
-                if activation_succeeded { return FAILURE; }
-            }
-            SUCCESS
+    002 "Water Absorb" {
+        {
+            on_try_move: |battle, prng, owner_uid, _relay| {
+                let current_move = *battle.get_current_action_as_move()
+                .expect("The current action should be a move within on_try_move handler context.");
+                let is_current_move_fire_type = current_move.species.type_ == MonType::Water;
+                if is_current_move_fire_type
+                {
+                    let activation_succeeded = SecondaryAction::activate_ability(battle, prng, owner_uid);
+                    if activation_succeeded { return FAILURE; }
+                }
+                SUCCESS
+            },
         },
         on_activate: |battle, _owner_uid| {
             battle.push_message(&"Flash Fire activated!");
         },
         filters: DEFAULT,
-        order: 0
+        order: 0,
     }
 );

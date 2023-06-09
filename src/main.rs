@@ -6,7 +6,7 @@ mod ability_dex;
 mod monster_dex;
 mod move_dex;
 
-use ability_dex::FlashFire;
+use ability_dex::{FlashFire, WaterAbsorb};
 use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
 use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 
@@ -29,7 +29,7 @@ fn main() -> MonsimResult {
                 Treecko: Monster = "Emerald" {
                     Scratch: Move,
                     Ember: Move,
-                    FlashFire: Ability,
+                    WaterAbsorb: Ability,
                 },
             },
             Opponents: BattlerTeam {

@@ -8,6 +8,7 @@ pub fn define_ability(input: TokenStream) -> TokenStream {
     let expr_ability_def: ExprAbilityDefinition = parse_macro_input!(input);
 
     let dex_number_literal = expr_ability_def.dex_number_literal;
+    let ability_name_ident = expr_ability_def.ability_name_ident;
     let ability_name_literal = expr_ability_def.ability_name_literal;
     let expr_event_handler_list = expr_ability_def.expr_event_handler_list;
     let on_activate_callback = expr_ability_def.on_activate_callback.expr_closure;
@@ -17,29 +18,23 @@ pub fn define_ability(input: TokenStream) -> TokenStream {
     let mut event_handlers = quote!();
     for ExprCallback {
         name_ident: expr_event_handler,
-        colon_token: _,
         expr_closure: expr_event_handler_closure,
-        comma_token: _,
     } in expr_event_handler_list.into_iter() {
+        let debug_name = ability_name_ident.clone().to_string() + &"." + &expr_event_handler.to_string();
+        let debug_name_literal = LitStr::new(&debug_name, ability_name_ident.clone().span());
         event_handlers = quote!(
             #event_handlers
 
             #expr_event_handler: Some(EventHandler {
                 #[cfg(feature = "debug")]
-                dbg_location: monsim::debug_location!(#ability_name_literal),
+                dbg_location: monsim::debug_location!(#debug_name_literal),
                 callback: #expr_event_handler_closure,
             }),
         )
     }
 
-    let ability_name_in_pascal_case = to_pascal_case(ability_name_literal.value());
-    let ability_name_in_pascal_case = Ident::new(
-        &ability_name_in_pascal_case,
-        ability_name_literal.span(),
-    );
-
     let output_token_stream = quote!(
-        pub const #ability_name_in_pascal_case: AbilitySpecies = AbilitySpecies {
+        pub const #ability_name_ident: AbilitySpecies = AbilitySpecies {
             dex_number: #dex_number_literal,
             name: #ability_name_literal,
             event_handlers: EventHandlerSet {
@@ -56,6 +51,7 @@ pub fn define_ability(input: TokenStream) -> TokenStream {
 
 struct ExprAbilityDefinition {
     dex_number_literal: LitInt,
+    ability_name_ident: Ident,
     ability_name_literal: LitStr,
     expr_event_handler_list: Vec<ExprCallback>,
     on_activate_callback: ExprCallback,
@@ -67,6 +63,8 @@ struct ExprAbilityDefinition {
 impl Parse for ExprAbilityDefinition {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let dex_number_literal: LitInt = input.parse()?;
+        let ability_name_ident: Ident = input.parse()?;
+        let _: Token![=] = input.parse()?;
         let ability_name_literal: LitStr = input.parse()?;
         let outer_brace_content;
         _ = braced!(outer_brace_content in input);
@@ -100,6 +98,7 @@ impl Parse for ExprAbilityDefinition {
         Ok(
             Self {
                 dex_number_literal,
+                ability_name_ident,
                 ability_name_literal,
                 expr_event_handler_list,
                 on_activate_callback,
@@ -112,9 +111,7 @@ impl Parse for ExprAbilityDefinition {
 
 struct ExprCallback {
     name_ident: Ident,
-    colon_token: Token![:],
     expr_closure: ExprClosure,
-    comma_token: Token![,],
 }
 
 const VALID_EVENT_CALLBACKS: [&str; 2] = [
@@ -126,21 +123,14 @@ impl Parse for ExprCallback {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name_ident: Ident = input.parse()?;
         assert!(VALID_EVENT_CALLBACKS.contains(&name_ident.to_string().as_str()));
-        let colon_token: Token![:] = input.parse()?;
+        let _: Token![:] = input.parse()?;
         let expr_closure: ExprClosure = input.parse()?;
-        let comma_token: Token![,] = input.parse()?;
+        let _: Token![,] = input.parse()?;
         Ok(
             Self {
                 name_ident,
-                colon_token,
                 expr_closure,
-                comma_token,
             }
         )
     }
-}
-
-fn to_pascal_case(input_string: String) -> String {
-    let output_string = input_string.replace("\"", "");
-    output_string.replace(" ", "")
 }

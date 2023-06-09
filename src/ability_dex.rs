@@ -1,9 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    define_ability,
-    AbilitySpecies, Ability, EventHandler, EventHandlerFilters, EventHandlerSet, MonType,
-    SecondaryAction, DEFAULT_HANDLERS, FAILURE, SUCCESS,
+    define_ability, Ability, AbilitySpecies, EventHandler, EventHandlerFilters, EventHandlerSet,
+    MonType, SecondaryAction, DEFAULT_HANDLERS, FAILURE, SUCCESS,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -12,15 +11,18 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     event_handlers: EventHandlerSet {
         on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
-            dbg_location: monsim::debug_location!("FlashFire.OnTryMove"),
+            dbg_location: monsim::debug_location!(stringify![FlashFire.on_try_move]),
             callback: |battle, prng, owner_uid, _relay| {
-                let current_move = *battle.get_current_action_as_move()
-                .expect("The current action should be a move within on_try_move handler context.");
-                let is_current_move_fire_type = current_move.species.type_ == MonType::Fire;
-                if is_current_move_fire_type
-                {
-                    let activation_succeeded = SecondaryAction::activate_ability(battle, prng, owner_uid);
-                    if activation_succeeded { return FAILURE; }
+                let current_move = *battle.get_current_action_as_move().expect(
+                    "The current action should be a move within on_try_move handler context.",
+                );
+                let is_current_move_fire_type = (current_move.species.type_ == MonType::Fire);
+                if is_current_move_fire_type {
+                    let activation_succeeded =
+                        SecondaryAction::activate_ability(battle, prng, owner_uid);
+                    if activation_succeeded {
+                        return FAILURE;
+                    }
                 }
                 SUCCESS
             },
@@ -35,7 +37,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
 };
 
 define_ability!(
-    002 "Water Absorb" {
+    002 WaterAbsorb = "Water Absorb" {
         {
             on_try_move: |battle, prng, owner_uid, _relay| {
                 let current_move = *battle.get_current_action_as_move()

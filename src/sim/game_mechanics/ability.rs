@@ -1,6 +1,11 @@
 use crate::sim::{event::EventHandlerFilters, Battle, BattlerUID, EventHandlerSet};
 use core::fmt::Debug;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ability {
+    pub species: AbilitySpecies,
+}
+
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {
     pub dex_number: u16,
@@ -24,11 +29,6 @@ impl PartialEq for AbilitySpecies {
 }
 
 impl Eq for AbilitySpecies {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Ability {
-    pub species: AbilitySpecies,
-}
 
 impl Ability {
     pub fn new(species: AbilitySpecies) -> Self {

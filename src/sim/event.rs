@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use crate::sim::{prng::Prng, game_mechanics::BattlerUID, Battle};
+use crate::sim::{game_mechanics::BattlerUID, prng::Prng, Battle};
 use event_setup_macro::event_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,7 +35,8 @@ pub struct SpecificEventResponder<R: Clone + Copy> {
     pub dbg_location: &'static str,
 }
 
-pub type SpecificEventResponderWithLifeTime<'a, R> = fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> R;
+pub type SpecificEventResponderWithLifeTime<'a, R> =
+    fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
 pub struct SpecificEventResponderInstance<R: Clone + Copy> {
@@ -106,7 +107,7 @@ impl EventResolver {
     ) -> bool {
         Self::broadcast_event(battle, prng, caller_uid, event, true, Some(false))
     }
-    
+
     /// `default` tells the resolver what value it should return if there are no event responders, or the event responders fall through.
     ///
     /// `short_circuit` is an optional value that, if returned by a responder in the chain, the resolution short-circuits and returns early.
@@ -118,11 +119,15 @@ impl EventResolver {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let event_responder_instances: EventResponderInstanceList = battle.event_responder_instances();
-        let mut specific_event_responder_instances: SpecificEventResponderInstanceList<R> = extract_specific_event_responder_instances(event_responder_instances, event);
+        let event_responder_instances: EventResponderInstanceList =
+            battle.event_responder_instances();
+        let mut specific_event_responder_instances: SpecificEventResponderInstanceList<R> =
+            extract_specific_event_responder_instances(event_responder_instances, event);
 
-        if specific_event_responder_instances.is_empty() { return default; }
-        
+        if specific_event_responder_instances.is_empty() {
+            return default;
+        }
+
         crate::sim::ordering::sort_by_activation_order::<SpecificEventResponderInstance<R>>(
             prng,
             &mut specific_event_responder_instances,
@@ -177,7 +182,10 @@ impl EventResolver {
     }
 }
 
-fn extract_specific_event_responder_instances<R: Copy>(event_responder_instances: Vec<EventResponderInstance>, event: &(dyn InBattleEvent<EventReturnType = R>)) -> Vec<SpecificEventResponderInstance<R>> {
+fn extract_specific_event_responder_instances<R: Copy>(
+    event_responder_instances: Vec<EventResponderInstance>,
+    event: &(dyn InBattleEvent<EventReturnType = R>),
+) -> Vec<SpecificEventResponderInstance<R>> {
     event_responder_instances
         .iter()
         .filter_map(|event_responder_instance| {
@@ -260,9 +268,9 @@ mod tests {
                     }
                 }
             );
-    
+
             let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
-    
+
             let event_responder_instances = test_bcontext.event_responder_instances();
             use crate::sim::event_dex::OnTryMove;
             let mut specific_event_responder_instances = event_responder_instances
@@ -283,13 +291,13 @@ mod tests {
                     }
                 })
                 .collect::<Vec<_>>();
-    
+
             crate::sim::ordering::sort_by_activation_order::<SpecificEventResponderInstance<bool>>(
                 &mut prng,
                 &mut specific_event_responder_instances,
                 &mut |it| it.activation_order,
             );
-    
+
             result[i] = specific_event_responder_instances
                 .into_iter()
                 .map(|specific_event_responder_instance| {
@@ -299,14 +307,14 @@ mod tests {
                 })
                 .collect::<Vec<_>>();
         }
-    
+
         assert_eq!(result[0], result[1]);
         assert_eq!(result[0][0], "Drifblim");
         assert_eq!(result[0][1], "Emerald");
         assert_eq!(result[0][2], "Ruby");
         assert_eq!(result[0][3], "Sapphire");
     }
-    
+
     #[test]
     #[cfg(feature = "debug")]
     fn test_priority_sorting_with_speed_ties() {
@@ -389,7 +397,7 @@ mod tests {
                 }
             );
             let mut prng = Prng::new(i as u64);
-    
+
             let event_responder_instances = test_bcontext.event_responder_instances();
             use crate::sim::{event_dex::OnTryMove, InBattleEvent};
             let mut specific_event_responder_instances = event_responder_instances
@@ -410,13 +418,13 @@ mod tests {
                     }
                 })
                 .collect::<Vec<_>>();
-    
+
             crate::sim::ordering::sort_by_activation_order::<SpecificEventResponderInstance<bool>>(
                 &mut prng,
                 &mut specific_event_responder_instances,
                 &mut |it| it.activation_order,
             );
-    
+
             result[i] = specific_event_responder_instances
                 .into_iter()
                 .map(|specific_event_responder_instance| {
@@ -426,7 +434,7 @@ mod tests {
                 })
                 .collect::<Vec<_>>();
         }
-    
+
         // Check that the two runs are not equal, there is an infinitesimal chance they won't be, but the probability is negligible.
         assert_ne!(result[0], result[1]);
         // Check that Drifblim is indeed the in the front.
@@ -438,7 +446,7 @@ mod tests {
         //Check that the Mudkip is last.
         assert_eq!(result[0][11], "F");
     }
-    
+
     #[test]
     #[cfg(feature = "debug")]
     fn test_event_filtering_for_event_sources() {
@@ -448,7 +456,7 @@ mod tests {
             ability_dex::FlashFire,
             monster_dex::{Mudkip, Torchic, Treecko},
             move_dex::{Bubble, Ember, Scratch, Tackle},
-            TeamID, BattlerNumber
+            BattlerNumber, TeamID,
         };
         let test_battle_context = build_battle!(
             {
@@ -473,7 +481,7 @@ mod tests {
                 }
             }
         );
-    
+
         let passed_filter = EventResolver::filter_event_responders(
             &test_battle_context,
             BattlerUID {
@@ -487,7 +495,7 @@ mod tests {
             EventResponderFilters::default(),
         );
         assert!(passed_filter);
-    } 
+    }
 
     #[test]
     #[cfg(feature = "debug")]

@@ -36,5 +36,3 @@ pub struct AvailableActions {
     pub ally_team_choices: TeamAvailableActions,
     pub opponent_team_choices: TeamAvailableActions,
 }
-
-

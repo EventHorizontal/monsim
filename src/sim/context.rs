@@ -1,10 +1,13 @@
-
+use crate::sim::{
+    event::EventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam,
+    AvailableActions, Battler, BattlerNumber, BattlerTeam, BattlerUID, Monster, Move, MoveNumber,
+    MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions, TeamID,
+};
 use std::{
     fmt::Display,
     iter::Chain,
     slice::{Iter, IterMut},
 };
-use crate::sim::{Battler, ActionChoice, AllyBattlerTeam, OpponentBattlerTeam, BattlerTeam, MoveUID, BattlerUID, TeamID, BattlerNumber, MoveNumber, Monster, Move, Ability, ActivationOrder, TeamAvailableActions, AvailableActions, Stat, event::EventResponderInstanceList};
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
 type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
@@ -165,10 +168,7 @@ impl Battle {
     }
 
     pub fn is_on_opponent_team(&self, uid: BattlerUID) -> bool {
-        self.opponent_team
-            .battlers()
-            .iter()
-            .any(|it| it.uid == uid)
+        self.opponent_team.battlers().iter().any(|it| it.uid == uid)
     }
 
     pub fn are_opponents(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
@@ -288,18 +288,18 @@ fn push_pretty_tree_for_team(
         let is_not_last_monster = i < number_of_monsters - 1;
         let prefix_str;
         let suffix_str;
-        if is_not_last_monster { 
+        if is_not_last_monster {
             prefix_str = "\t│\t";
             suffix_str = "├── "
-        } else { 
+        } else {
             prefix_str = "\t \t";
             suffix_str = "└── "
         }
         output_string.push_str(&("\t".to_owned() + suffix_str));
         output_string.push_str(&BattlerTeam::battler_status_as_string(battler));
         output_string.push_str(&(prefix_str.to_owned() + "│\n"));
-        output_string.push_str( &(prefix_str.to_owned() + "├── "));
-        
+        output_string.push_str(&(prefix_str.to_owned() + "├── "));
+
         let primary_type = battler.monster.species.primary_type;
         let secondary_type = battler.monster.species.secondary_type;
         let type_string = if let Some(secondary_type) = secondary_type {
@@ -308,10 +308,10 @@ fn push_pretty_tree_for_team(
             format!["   type: {:?}\n", primary_type]
         };
         output_string.push_str(&type_string);
-        
+
         output_string.push_str(&(prefix_str.to_owned() + "├── "));
         output_string.push_str(format!["ability: {}\n", battler.ability.species.name].as_str());
-            
+
         let number_of_moves = battler.moveset.moves().count();
         for (j, move_) in battler.moveset.moves().enumerate() {
             let is_not_last_move = j < number_of_moves - 1;
@@ -325,4 +325,3 @@ fn push_pretty_tree_for_team(
         output_string.push_str(&(prefix_str.to_owned() + "\n"));
     }
 }
-

@@ -158,11 +158,10 @@ impl AllyBattlerTeam {
 
     pub fn event_responder_instances(&self) -> EventResponderInstanceList {
         let mut out = Vec::new();
-        self.0.battlers
+        self.0
+            .battlers
             .iter()
-            .for_each(|battler| {
-                out.append(&mut battler.event_responder_instances())
-            });
+            .for_each(|battler| out.append(&mut battler.event_responder_instances()));
         out
     }
 
@@ -322,10 +321,7 @@ impl Battler {
         }
     }
 
-    pub fn moveset_event_responder_instances(
-        &self,
-        uid: BattlerUID,
-    ) -> EventResponderInstanceList {
+    pub fn moveset_event_responder_instances(&self, uid: BattlerUID) -> EventResponderInstanceList {
         self.moveset
             .moves()
             .map(|it| EventResponderInstance {

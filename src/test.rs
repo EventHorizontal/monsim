@@ -8,7 +8,7 @@ mod main {
         context::Battle,
         monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
         move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
-        Monster, Ability, Move
+        Ability, Monster, Move,
     };
 
     #[test]
@@ -51,10 +51,7 @@ mod main {
                             battler_number: monster::BattlerNumber::from(0usize),
                         },
                         true,
-                        monster::Monster::new(
-                            monster_dex::Torchic,
-                            "Ruby",
-                        ),
+                        monster::Monster::new(monster_dex::Torchic, "Ruby"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Scratch)),
                             (move_::Move::new(move_dex::Ember)),
@@ -67,10 +64,7 @@ mod main {
                             battler_number: monster::BattlerNumber::from(1usize),
                         },
                         false,
-                        monster::Monster::new(
-                            monster_dex::Mudkip,
-                            "Sapphire",
-                        ),
+                        monster::Monster::new(monster_dex::Mudkip, "Sapphire"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Scratch)),
                             (move_::Move::new(move_dex::Ember)),
@@ -83,10 +77,7 @@ mod main {
                             battler_number: monster::BattlerNumber::from(2usize),
                         },
                         false,
-                        monster::Monster::new(
-                            monster_dex::Treecko,
-                            "Emerald",
-                        ),
+                        monster::Monster::new(monster_dex::Treecko, "Emerald"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Bubble)),
                             (move_::Move::new(move_dex::Scratch)),
@@ -101,10 +92,7 @@ mod main {
                             battler_number: monster::BattlerNumber::from(0usize),
                         },
                         true,
-                        monster::Monster::new(
-                            monster_dex::Drifblim,
-                            "Cheerio",
-                        ),
+                        monster::Monster::new(monster_dex::Drifblim, "Cheerio"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Tackle)),
                             (move_::Move::new(move_dex::Growl)),
@@ -120,7 +108,7 @@ mod main {
 #[cfg(all(test, feature = "debug"))]
 mod bcontext {
     use battle_builder_macro::build_battle;
-    
+
     #[test]
     fn test_display_battle_context() {
         extern crate self as monsim;
@@ -159,8 +147,10 @@ mod bcontext {
             }
         );
         println!("{}", test_bcontext);
-        assert_eq!(format!["{}", test_bcontext], String::from(
-"Ally Team
+        assert_eq!(
+            format!["{}", test_bcontext],
+            String::from(
+                "Ally Team
 \t├── Ruby the Torchic (Allies_1) [HP: 152/152]
 \t│\t│
 \t│\t├──    type: Fire
@@ -190,7 +180,9 @@ Opponent Team
 \t \t├──    move: Scratch
 \t \t└──    move: Ember
 \t \t
-"))
+"
+            )
+        )
     }
 }
 

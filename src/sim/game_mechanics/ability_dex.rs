@@ -2,8 +2,8 @@
 
 use super::{ability::AbilitySpecies, MonType};
 use crate::sim::{
-    EventResponderFilters, EventResponder, DEFAULT_RESPONSE,
-    SpecificEventResponder, SecondaryAction, FAILURE, SUCCESS,
+    EventResponder, EventResponderFilters, SecondaryAction, SpecificEventResponder,
+    DEFAULT_RESPONSE, FAILURE, SUCCESS,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {

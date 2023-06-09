@@ -1,5 +1,5 @@
 use crate::sim::{
-    event::{EventResponderFilters, EventResponder},
+    event::{EventResponder, EventResponderFilters},
     prng::Prng,
     Battle, BattlerUID, MonType,
 };

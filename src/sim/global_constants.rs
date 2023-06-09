@@ -12,7 +12,6 @@ pub const EMPTY_LINE: &str = "";
 
 pub const fn type_matchup(move_type: MonType, target_type: MonType) -> f64 {
     match (move_type, target_type) {
-
         (MonType::Bug, MonType::Bug) => EFFECTIVE,
         (MonType::Bug, MonType::Dark) => SUPER_EFFECTIVE,
         (MonType::Bug, MonType::Dragon) => EFFECTIVE,

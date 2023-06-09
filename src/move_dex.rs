@@ -1,10 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    MoveCategory, MoveSpecies,
-    prng::Prng,
-    Battle, BattlerUID, EventResponderFilters, MonType, SecondaryAction, Stat,
-    DEFAULT_RESPONSE,
+    prng::Prng, Battle, BattlerUID, EventResponderFilters, MonType, MoveCategory, MoveSpecies,
+    SecondaryAction, Stat, DEFAULT_RESPONSE,
 };
 
 // TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate

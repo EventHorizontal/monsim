@@ -1,8 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    define_ability, Ability, AbilitySpecies, SpecificEventResponder, EventResponderFilters, EventResponder,
-    MonType, SecondaryAction, DEFAULT_RESPONSE, FAILURE, SUCCESS,
+    define_ability, Ability, AbilitySpecies, EventResponder, EventResponderFilters, MonType,
+    SecondaryAction, SpecificEventResponder, DEFAULT_RESPONSE, FAILURE, SUCCESS,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {

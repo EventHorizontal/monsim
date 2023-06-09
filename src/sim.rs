@@ -1,5 +1,5 @@
-pub mod context;
 pub mod choice;
+pub mod context;
 pub mod game_mechanics;
 pub mod global_constants;
 pub mod prng;
@@ -7,18 +7,17 @@ pub mod prng;
 mod event;
 mod ordering;
 
+pub use action::SecondaryAction;
 pub use battle_builder_macro::build_battle;
-pub use mechanic_constructor_macro::define_ability;
-pub use context::*;
 pub use choice::*;
+pub use context::*;
 pub use event::{
-    event_dex, ActivationOrder, SpecificEventResponder, EventResponderFilters, EventResponder, InBattleEvent,
-    TargetFlags, DEFAULT_RESPONSE,
-    EventResolver
+    event_dex, ActivationOrder, EventResolver, EventResponder, EventResponderFilters,
+    InBattleEvent, SpecificEventResponder, TargetFlags, DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
 pub use global_constants::*;
-pub use action::SecondaryAction;
+pub use mechanic_constructor_macro::define_ability;
 
 use prng::Prng;
 
@@ -49,7 +48,7 @@ impl BattleSimulator {
     pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActions) -> TurnOutcome {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
-        
+
         self.increment_turn_number()?;
 
         self.battle
@@ -83,13 +82,10 @@ impl BattleSimulator {
             };
             let maybe_fainted_battler = self.battle.battlers().find(|it| it.fainted());
             if let Some(battler) = maybe_fainted_battler {
-                self.battle
-                    .push_messages(
-                        &[
-                            &format!["{} fainted!", battler.monster.nickname],
-                            &EMPTY_LINE,
-                        ]
-                    );
+                self.battle.push_messages(&[
+                    &format!["{} fainted!", battler.monster.nickname],
+                    &EMPTY_LINE,
+                ]);
                 self.battle.sim_state = SimState::Finished;
                 break;
             };
@@ -99,7 +95,7 @@ impl BattleSimulator {
         result
     }
 
-    /// Tries to increment turn number and fails if the turn number exceeds 255 after 
+    /// Tries to increment turn number and fails if the turn number exceeds 255 after
     /// addition, returning a `SimError::InvalidStateError`.
     fn increment_turn_number(&mut self) -> TurnOutcome {
         match self.turn_number.checked_add(1) {
@@ -144,11 +140,13 @@ mod action {
 
             battle.push_message(&format![
                 "{} used {}",
-                battle.monster(attacker_uid).nickname, 
+                battle.monster(attacker_uid).nickname,
                 battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, prng, attacker_uid, &OnTryMove) == FAILURE {
+            if EventResolver::broadcast_trial_event(battle, prng, attacker_uid, &OnTryMove)
+                == FAILURE
+            {
                 battle.push_message(&"The move failed!");
                 return Ok(());
             }
@@ -161,11 +159,13 @@ mod action {
 
             match battle.move_(move_uid).category() {
                 MoveCategory::Physical => {
-                    attackers_attacking_stat = battle.monster(attacker_uid).stats[Stat::PhysicalAttack];
+                    attackers_attacking_stat =
+                        battle.monster(attacker_uid).stats[Stat::PhysicalAttack];
                     targets_defense_stat = battle.monster(target_uid).stats[Stat::PhysicalDefense];
                 }
                 MoveCategory::Special => {
-                    attackers_attacking_stat = battle.monster(attacker_uid).stats[Stat::SpecialAttack];
+                    attackers_attacking_stat =
+                        battle.monster(attacker_uid).stats[Stat::SpecialAttack];
                     targets_defense_stat = battle.monster(target_uid).stats[Stat::SpecialDefense];
                 }
                 MoveCategory::Status => {
@@ -191,13 +191,13 @@ mod action {
             let target_primary_type = battle.monster(target_uid).species.primary_type;
             let target_secondary_type = battle.monster(target_uid).species.secondary_type;
 
-            let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
+            let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type
+            {
                 type_matchup(move_type, target_primary_type)
                     * type_matchup(move_type, target_secondary_type)
             } else {
                 type_matchup(move_type, target_primary_type)
             };
-            
 
             // If the opponent is immune, damage calculation is skipped.
             if type_matchup_multiplier == INEFFECTIVE {
@@ -265,7 +265,9 @@ mod action {
                 attacker.nickname, move_.species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, prng, attacker_uid, &OnTryMove) == FAILURE {
+            if EventResolver::broadcast_trial_event(battle, prng, attacker_uid, &OnTryMove)
+                == FAILURE
+            {
                 battle.push_message(&"The move failed!");
                 return Ok(());
             }
@@ -301,10 +303,18 @@ mod action {
             prng: &mut Prng,
             owner_uid: BattlerUID,
         ) -> bool {
-            if EventResolver::broadcast_trial_event(battle, prng, owner_uid, &OnTryActivateAbility) {
+            if EventResolver::broadcast_trial_event(battle, prng, owner_uid, &OnTryActivateAbility)
+            {
                 let ability = *battle.ability(owner_uid);
                 ability.on_activate(battle, owner_uid);
-                EventResolver::broadcast_event(battle, prng, owner_uid, &OnAbilityActivated, (), None);
+                EventResolver::broadcast_event(
+                    battle,
+                    prng,
+                    owner_uid,
+                    &OnAbilityActivated,
+                    (),
+                    None,
+                );
                 SUCCESS
             } else {
                 FAILURE
@@ -378,8 +388,3 @@ mod action {
         }
     }
 }
-
-
-
-
-

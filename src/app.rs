@@ -427,7 +427,9 @@ fn update_state_from_input(
                 Err(error) => battle.battle.message_buffer.push(format!["{:?}", error]),
             }
             if battle.battle.sim_state == SimState::Finished {
-                battle.battle.push_messages(&[&EMPTY_LINE, &"The battle ended."]);
+                battle
+                    .battle
+                    .push_messages(&[&EMPTY_LINE, &"The battle ended."]);
             }
             battle.battle.push_messages(&[&"---", &EMPTY_LINE]);
             app_state.app_mode = AppMode::AwaitingUserInput {

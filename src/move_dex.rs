@@ -3,8 +3,8 @@
 use monsim::sim::{
     MoveCategory, MoveSpecies,
     prng::Prng,
-    Battle, BattlerUID, EventHandlerFilters, MonType, SecondaryAction, Stat,
-    DEFAULT_HANDLERS,
+    Battle, BattlerUID, EventResponderFilters, MonType, SecondaryAction, Stat,
+    DEFAULT_RESPONSE,
 };
 
 // TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate
@@ -23,9 +23,9 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    event_handlers: DEFAULT_HANDLERS,
+    event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_filters: EventHandlerFilters::default(),
+    event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -36,9 +36,9 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    event_handlers: DEFAULT_HANDLERS,
+    event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_filters: EventHandlerFilters::default(),
+    event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -49,9 +49,9 @@ pub const Ember: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    event_handlers: DEFAULT_HANDLERS,
+    event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_filters: EventHandlerFilters::default(),
+    event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -62,9 +62,9 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    event_handlers: DEFAULT_HANDLERS,
+    event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_filters: EventHandlerFilters::default(),
+    event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -75,9 +75,9 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    event_handlers: DEFAULT_HANDLERS,
+    event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_filters: EventHandlerFilters::default(),
+    event_responder_filters: EventResponderFilters::default(),
     on_activate: |battle: &mut Battle,
                   prng: &mut Prng,
                   _attacker_uid: BattlerUID,

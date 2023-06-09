@@ -10,25 +10,25 @@ pub fn define_ability(input: TokenStream) -> TokenStream {
     let dex_number_literal = expr_ability_def.dex_number_literal;
     let ability_name_ident = expr_ability_def.ability_name_ident;
     let ability_name_literal = expr_ability_def.ability_name_literal;
-    let expr_event_handler_list = expr_ability_def.expr_event_handler_list;
+    let expr_event_responder_list = expr_ability_def.expr_event_responder_list;
     let on_activate_callback = expr_ability_def.on_activate_callback.expr_closure;
     let _filter_value_ident = expr_ability_def.filter_value_ident;
     let order_value_literal = expr_ability_def.order_value_literal;
 
-    let mut event_handlers = quote!();
+    let mut event_responders = quote!();
     for ExprCallback {
-        name_ident: expr_event_handler,
-        expr_closure: expr_event_handler_closure,
-    } in expr_event_handler_list.into_iter() {
-        let debug_name = ability_name_ident.clone().to_string() + &"." + &expr_event_handler.to_string();
+        name_ident: expr_event_responder,
+        expr_closure: expr_event_responder_closure,
+    } in expr_event_responder_list.into_iter() {
+        let debug_name = ability_name_ident.clone().to_string() + &"." + &expr_event_responder.to_string();
         let debug_name_literal = LitStr::new(&debug_name, ability_name_ident.clone().span());
-        event_handlers = quote!(
-            #event_handlers
+        event_responders = quote!(
+            #event_responders
 
-            #expr_event_handler: Some(EventHandler {
+            #expr_event_responder: Some(SpecificEventResponder {
                 #[cfg(feature = "debug")]
                 dbg_location: monsim::debug_location!(#debug_name_literal),
-                callback: #expr_event_handler_closure,
+                callback: #expr_event_responder_closure,
             }),
         )
     }
@@ -37,12 +37,12 @@ pub fn define_ability(input: TokenStream) -> TokenStream {
         pub const #ability_name_ident: AbilitySpecies = AbilitySpecies {
             dex_number: #dex_number_literal,
             name: #ability_name_literal,
-            event_handlers: EventHandlerSet {
-                #event_handlers
-                ..DEFAULT_HANDLERS
+            event_responder: EventResponder {
+                #event_responders
+                ..DEFAULT_RESPONSE
             },
             on_activate: #on_activate_callback,
-            filters: EventHandlerFilters::default(),
+            filters: EventResponderFilters::default(),
             order: #order_value_literal,
         };        
     );
@@ -53,7 +53,7 @@ struct ExprAbilityDefinition {
     dex_number_literal: LitInt,
     ability_name_ident: Ident,
     ability_name_literal: LitStr,
-    expr_event_handler_list: Vec<ExprCallback>,
+    expr_event_responder_list: Vec<ExprCallback>,
     on_activate_callback: ExprCallback,
     filter_value_ident: Ident,
     order_value_literal: LitInt,
@@ -68,15 +68,15 @@ impl Parse for ExprAbilityDefinition {
         let ability_name_literal: LitStr = input.parse()?;
         let outer_brace_content;
         _ = braced!(outer_brace_content in input);
-        let event_handler_list_brace_content;
-        _ = braced!(event_handler_list_brace_content in outer_brace_content);
-        let mut expr_event_handler_list = Vec::with_capacity(30);
+        let event_responder_list_brace_content;
+        _ = braced!(event_responder_list_brace_content in outer_brace_content);
+        let mut expr_event_responder_list = Vec::with_capacity(30);
         loop {
-            let expr_event_handler: ExprCallback = match event_handler_list_brace_content.parse() {
+            let expr_event_responder: ExprCallback = match event_responder_list_brace_content.parse() {
                 Ok(expr) => { expr },
                 Err(_) => { break; },
             };
-            expr_event_handler_list.push(expr_event_handler);
+            expr_event_responder_list.push(expr_event_responder);
         }
         let _: Token![,] = outer_brace_content.parse()?;
         let on_activate_callback: ExprCallback = outer_brace_content.parse()?;
@@ -100,7 +100,7 @@ impl Parse for ExprAbilityDefinition {
                 dex_number_literal,
                 ability_name_ident,
                 ability_name_literal,
-                expr_event_handler_list,
+                expr_event_responder_list,
                 on_activate_callback,
                 filter_value_ident,
                 order_value_literal,

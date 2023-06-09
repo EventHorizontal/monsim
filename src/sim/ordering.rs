@@ -47,7 +47,7 @@ pub(crate) fn sort_by_activation_order<T: Clone + Copy>(
     }
 }
 
-/// Shuffles the event handler order for consecutive speed-tied items in place using their associated activation orders.
+/// Shuffles the event responder order for consecutive speed-tied items in place using their associated activation orders.
 fn resolve_speed_tie<T: Clone + Copy>(
     prng: &mut Prng,
     vector: &mut [T],

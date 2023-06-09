@@ -1,7 +1,7 @@
 use core::{fmt::Debug, panic};
 use std::ops::{Index, IndexMut};
 
-use crate::sim::{EventHandlerSet, MonType};
+use crate::sim::{EventResponder, MonType};
 
 #[derive(Clone, Copy)]
 pub struct MonsterSpecies {
@@ -10,7 +10,7 @@ pub struct MonsterSpecies {
     pub primary_type: MonType,
     pub secondary_type: Option<MonType>,
     pub base_stats: StatSet,
-    pub event_handlers: EventHandlerSet,
+    pub event_responder: EventResponder,
 }
 
 impl Debug for MonsterSpecies {
@@ -213,8 +213,8 @@ impl Monster {
         self.species.primary_type == type_ || self.species.secondary_type == Some(type_)
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSet {
-        self.species.event_handlers
+    pub fn event_responder(&self) -> EventResponder {
+        self.species.event_responder
     }
 
     pub(crate) fn fainted(&self) -> bool {

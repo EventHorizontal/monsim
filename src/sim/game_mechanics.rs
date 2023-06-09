@@ -12,7 +12,7 @@ use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{
-    ActivationOrder, EventHandlerFilters, EventHandlerSetInstance, EventHandlerSetInstanceList,
+    ActivationOrder, EventResponderFilters, EventResponderInstance, EventResponderInstanceList,
 };
 pub use ability::*;
 pub use monster::*;
@@ -117,10 +117,10 @@ impl BattlerTeam {
         out
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
+    pub fn event_response_instances(&self) -> EventResponderInstanceList {
         let mut out = Vec::new();
         for battler in self.battlers.iter() {
-            out.append(&mut battler.event_handlers())
+            out.append(&mut battler.event_responder_instances())
         }
         out
     }
@@ -156,11 +156,13 @@ impl AllyBattlerTeam {
         out
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
+    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
         let mut out = Vec::new();
-        for battler in self.0.battlers.iter() {
-            out.append(&mut battler.event_handlers())
-        }
+        self.0.battlers
+            .iter()
+            .for_each(|battler| {
+                out.append(&mut battler.event_responder_instances())
+            });
         out
     }
 
@@ -199,10 +201,10 @@ impl OpponentBattlerTeam {
         out
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
+    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
         let mut out = Vec::new();
         for battler in self.0.battlers.iter() {
-            out.append(&mut battler.event_handlers())
+            out.append(&mut battler.event_responder_instances())
         }
         out
     }
@@ -292,49 +294,49 @@ impl Battler {
         self.monster.is_type(test_type)
     }
 
-    pub fn monster_event_handler_instance(&self) -> EventHandlerSetInstance {
+    pub fn monster_event_responder_instance(&self) -> EventResponderInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: 0,
         };
-        EventHandlerSetInstance {
-            event_handler_set: self.monster.event_handlers(),
+        EventResponderInstance {
+            event_responder: self.monster.event_responder(),
             owner_uid: self.uid,
             activation_order,
-            filters: EventHandlerFilters::default(),
+            filters: EventResponderFilters::default(),
         }
     }
 
-    pub fn ability_event_handler_instance(&self) -> EventHandlerSetInstance {
+    pub fn ability_event_responder_instance(&self) -> EventResponderInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: self.ability.species.order,
         };
-        EventHandlerSetInstance {
-            event_handler_set: self.ability.event_handlers(),
+        EventResponderInstance {
+            event_responder: self.ability.event_responder(),
             owner_uid: self.uid,
             activation_order,
-            filters: EventHandlerFilters::default(),
+            filters: EventResponderFilters::default(),
         }
     }
 
-    pub fn moveset_event_handler_instance_list(
+    pub fn moveset_event_responder_instances(
         &self,
         uid: BattlerUID,
-    ) -> EventHandlerSetInstanceList {
+    ) -> EventResponderInstanceList {
         self.moveset
             .moves()
-            .map(|it| EventHandlerSetInstance {
-                event_handler_set: it.species.event_handlers,
+            .map(|it| EventResponderInstance {
+                event_responder: it.species.event_responder,
                 owner_uid: uid,
                 activation_order: ActivationOrder {
                     priority: it.species.priority,
                     speed: self.monster.stats[Stat::Speed],
                     order: 0,
                 },
-                filters: EventHandlerFilters::default(),
+                filters: EventResponderFilters::default(),
             })
             .collect::<Vec<_>>()
     }
@@ -343,11 +345,11 @@ impl Battler {
         self.monster.fainted()
     }
 
-    pub fn event_handlers(&self) -> EventHandlerSetInstanceList {
+    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
         let mut out = Vec::new();
-        out.push(self.monster_event_handler_instance());
-        out.append(&mut self.moveset_event_handler_instance_list(self.uid));
-        out.push(self.ability_event_handler_instance());
+        out.push(self.monster_event_responder_instance());
+        out.append(&mut self.moveset_event_responder_instances(self.uid));
+        out.push(self.ability_event_responder_instance());
         out
     }
 

@@ -12,8 +12,8 @@ pub use mechanic_constructor_macro::define_ability;
 pub use context::*;
 pub use choice::*;
 pub use event::{
-    event_dex, ActivationOrder, EventHandler, EventHandlerFilters, EventHandlerSet, InBattleEvent,
-    TargetFlags, DEFAULT_HANDLERS,
+    event_dex, ActivationOrder, SpecificEventResponder, EventResponderFilters, EventResponder, InBattleEvent,
+    TargetFlags, DEFAULT_RESPONSE,
     EventResolver
 };
 pub use game_mechanics::*;

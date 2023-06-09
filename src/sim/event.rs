@@ -11,17 +11,17 @@ type void = ();
 
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
-pub struct EventHandler<R: Clone + Copy> {
+pub struct SpecificEventResponder<R: Clone + Copy> {
     pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> R,
 }
 
 #[cfg(not(feature = "debug"))]
-impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
+impl<'a, R: Clone + Copy> Debug for SpecificEventResponder<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandler")
+        f.debug_struct("EventResponder")
             .field(
                 "callback",
-                &&(self.callback as EventHandlerWithLifeTime<'a, R>),
+                &&(self.callback as SpecificEventResponderWithLifeTime<'a, R>),
             )
             .finish()
     }
@@ -29,27 +29,27 @@ impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
 
 #[cfg(feature = "debug")]
 #[derive(Clone, Copy)]
-pub struct EventHandler<R: Clone + Copy> {
+pub struct SpecificEventResponder<R: Clone + Copy> {
     pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> R,
     #[cfg(feature = "debug")]
     pub dbg_location: &'static str,
 }
 
-pub type EventHandlerWithLifeTime<'a, R> = fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> R;
+pub type SpecificEventResponderWithLifeTime<'a, R> = fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
-pub struct EventHandlerInstance<R: Clone + Copy> {
+pub struct SpecificEventResponderInstance<R: Clone + Copy> {
     pub event_name: &'static str,
-    pub event_handler: EventHandler<R>,
+    pub specific_event_responder: SpecificEventResponder<R>,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
-    pub filters: EventHandlerFilters,
+    pub filters: EventResponderFilters,
 }
 
-pub type EventHandlerInstanceList<R> = Vec<EventHandlerInstance<R>>;
+pub type SpecificEventResponderInstanceList<R> = Vec<SpecificEventResponderInstance<R>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EventHandlerFilters {
+pub struct EventResponderFilters {
     pub whose_event: TargetFlags,
     pub on_battlefield: bool,
 }
@@ -64,7 +64,7 @@ bitflags::bitflags! {
 }
 
 event_setup![
-    pub struct EventHandlerSet {
+    pub struct EventResponder {
         match event {
             on_try_move => bool,
             on_damage_dealt => void,
@@ -76,19 +76,19 @@ event_setup![
             on_status_move_used => void,
         }
     }
-    pub const DEFAULT_HANDLERS = None;
+    pub const DEFAULT_RESPONSE = None;
     pub trait InBattleEvent;
 ];
 
 #[derive(Debug, Clone, Copy)]
-pub struct EventHandlerSetInstance {
-    pub event_handler_set: EventHandlerSet,
+pub struct EventResponderInstance {
+    pub event_responder: EventResponder,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
-    pub filters: EventHandlerFilters,
+    pub filters: EventResponderFilters,
 }
 
-pub type EventHandlerSetInstanceList = Vec<EventHandlerSetInstance>;
+pub type EventResponderInstanceList = Vec<EventResponderInstance>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ActivationOrder {
@@ -107,9 +107,9 @@ impl EventResolver {
         Self::broadcast_event(battle, prng, caller_uid, event, true, Some(false))
     }
     
-    /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
+    /// `default` tells the resolver what value it should return if there are no event responders, or the event responders fall through.
     ///
-    /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
+    /// `short_circuit` is an optional value that, if returned by a responder in the chain, the resolution short-circuits and returns early.
     pub fn broadcast_event<R: PartialEq + Copy>(
         battle: &mut Battle,
         prng: &mut Prng,
@@ -118,43 +118,27 @@ impl EventResolver {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let event_handlers_set_instances = battle.event_handler_set_instances();
-        let mut event_handler_instances: EventHandlerInstanceList<R> = event_handlers_set_instances
-            .iter()
-            .filter_map(|event_handler_set_instance| {
-                event
-                    .corresponding_handler(&event_handler_set_instance.event_handler_set)
-                    .map(|event_handler| EventHandlerInstance {
-                        event_name: event.name(),
-                        event_handler,
-                        owner_uid: event_handler_set_instance.owner_uid,
-                        activation_order: event_handler_set_instance.activation_order,
-                        filters: EventHandlerFilters::default(),
-                    })
-            })
-            .collect::<Vec<_>>();
+        let event_responder_instances: EventResponderInstanceList = battle.event_responder_instances();
+        let mut specific_event_responder_instances: SpecificEventResponderInstanceList<R> = extract_specific_event_responder_instances(event_responder_instances, event);
 
-        crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<R>>(
+        if specific_event_responder_instances.is_empty() { return default; }
+        
+        crate::sim::ordering::sort_by_activation_order::<SpecificEventResponderInstance<R>>(
             prng,
-            &mut event_handler_instances,
+            &mut specific_event_responder_instances,
             &mut |it| it.activation_order,
         );
 
-        if event_handler_instances.is_empty() {
-            return default;
-        }
-
         let mut relay = default;
-        for EventHandlerInstance {
-            event_name: _,
-            event_handler,
+        for SpecificEventResponderInstance {
+            specific_event_responder,
             owner_uid,
-            activation_order: _,
             filters,
-        } in event_handler_instances.into_iter()
+            ..
+        } in specific_event_responder_instances.into_iter()
         {
-            if Self::filter_event_handlers(battle, caller_uid, owner_uid, filters) {
-                relay = (event_handler.callback)(battle, prng, owner_uid, relay);
+            if Self::filter_event_responders(battle, caller_uid, owner_uid, filters) {
+                relay = (specific_event_responder.callback)(battle, prng, owner_uid, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -166,11 +150,11 @@ impl EventResolver {
         relay
     }
 
-    fn filter_event_handlers(
+    fn filter_event_responders(
         battle: &Battle,
         event_caller_uid: BattlerUID,
         owner_uid: BattlerUID,
-        event_handler_filters: EventHandlerFilters,
+        event_responder_filters: EventResponderFilters,
     ) -> bool {
         let bitmask = {
             let mut bitmask = 0b0000;
@@ -186,29 +170,46 @@ impl EventResolver {
               // TODO: When the Environment is implemented, add the environment to the bitmask. (0x08)
             bitmask
         };
-        let event_source_filter_passed = event_handler_filters.whose_event.bits() == bitmask;
+        let event_source_filter_passed = event_responder_filters.whose_event.bits() == bitmask;
         let on_battlefield_passed = battle.is_battler_on_field(owner_uid);
 
         event_source_filter_passed && on_battlefield_passed
     }
 }
 
+fn extract_specific_event_responder_instances<R: Copy>(event_responder_instances: Vec<EventResponderInstance>, event: &(dyn InBattleEvent<EventReturnType = R>)) -> Vec<SpecificEventResponderInstance<R>> {
+    event_responder_instances
+        .iter()
+        .filter_map(|event_responder_instance| {
+            event
+                .corresponding_responder(&event_responder_instance.event_responder)
+                .map(|specific_event_responder| SpecificEventResponderInstance {
+                    event_name: event.name(),
+                    specific_event_responder,
+                    owner_uid: event_responder_instance.owner_uid,
+                    activation_order: event_responder_instance.activation_order,
+                    filters: EventResponderFilters::default(),
+                })
+        })
+        .collect::<Vec<_>>()
+}
+
 #[cfg(feature = "debug")]
-impl<'a, R: Clone + Copy> Debug for EventHandler<R> {
+impl<'a, R: Clone + Copy> Debug for SpecificEventResponder<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandler")
+        f.debug_struct("SpecificEventResponder")
             .field(
                 "callback",
-                &&(self.callback as EventHandlerWithLifeTime<'a, R>),
+                &&(self.callback as SpecificEventResponderWithLifeTime<'a, R>),
             )
             .field("location", &self.dbg_location)
             .finish()
     }
 }
 
-impl EventHandlerFilters {
-    pub const fn default() -> EventHandlerFilters {
-        EventHandlerFilters {
+impl EventResponderFilters {
+    pub const fn default() -> EventResponderFilters {
+        EventResponderFilters {
             whose_event: TargetFlags::OPPONENTS,
             on_battlefield: true,
         }
@@ -262,20 +263,20 @@ mod tests {
     
             let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
     
-            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
+            let event_responder_instances = test_bcontext.event_responder_instances();
             use crate::sim::event_dex::OnTryMove;
-            let mut event_handler_instances = event_handler_set_instances
+            let mut specific_event_responder_instances = event_responder_instances
                 .iter()
-                .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) =
-                        OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
+                .filter_map(|event_responder_instance| {
+                    if let Some(responder) =
+                        OnTryMove.corresponding_responder(&event_responder_instance.event_responder)
                     {
-                        Some(EventHandlerInstance {
+                        Some(SpecificEventResponderInstance {
                             event_name: OnTryMove.name(),
-                            event_handler: handler,
-                            owner_uid: event_handler_set_instance.owner_uid,
-                            activation_order: event_handler_set_instance.activation_order,
-                            filters: EventHandlerFilters::default(),
+                            specific_event_responder: responder,
+                            owner_uid: event_responder_instance.owner_uid,
+                            activation_order: event_responder_instance.activation_order,
+                            filters: EventResponderFilters::default(),
                         })
                     } else {
                         None
@@ -283,17 +284,17 @@ mod tests {
                 })
                 .collect::<Vec<_>>();
     
-            crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
+            crate::sim::ordering::sort_by_activation_order::<SpecificEventResponderInstance<bool>>(
                 &mut prng,
-                &mut event_handler_instances,
+                &mut specific_event_responder_instances,
                 &mut |it| it.activation_order,
             );
     
-            result[i] = event_handler_instances
+            result[i] = specific_event_responder_instances
                 .into_iter()
-                .map(|event_handler_instance| {
+                .map(|specific_event_responder_instance| {
                     test_bcontext
-                        .monster(event_handler_instance.owner_uid)
+                        .monster(specific_event_responder_instance.owner_uid)
                         .nickname
                 })
                 .collect::<Vec<_>>();
@@ -389,20 +390,20 @@ mod tests {
             );
             let mut prng = Prng::new(i as u64);
     
-            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
+            let event_responder_instances = test_bcontext.event_responder_instances();
             use crate::sim::{event_dex::OnTryMove, InBattleEvent};
-            let mut event_handler_instances = event_handler_set_instances
+            let mut specific_event_responder_instances = event_responder_instances
                 .iter()
-                .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) =
-                        OnTryMove.corresponding_handler(&event_handler_set_instance.event_handler_set)
+                .filter_map(|event_responder_instance| {
+                    if let Some(responder) =
+                        OnTryMove.corresponding_responder(&event_responder_instance.event_responder)
                     {
-                        Some(EventHandlerInstance {
+                        Some(SpecificEventResponderInstance {
                             event_name: OnTryMove.name(),
-                            event_handler: handler,
-                            owner_uid: event_handler_set_instance.owner_uid,
-                            activation_order: event_handler_set_instance.activation_order,
-                            filters: EventHandlerFilters::default(),
+                            specific_event_responder: responder,
+                            owner_uid: event_responder_instance.owner_uid,
+                            activation_order: event_responder_instance.activation_order,
+                            filters: EventResponderFilters::default(),
                         })
                     } else {
                         None
@@ -410,17 +411,17 @@ mod tests {
                 })
                 .collect::<Vec<_>>();
     
-            crate::sim::ordering::sort_by_activation_order::<EventHandlerInstance<bool>>(
+            crate::sim::ordering::sort_by_activation_order::<SpecificEventResponderInstance<bool>>(
                 &mut prng,
-                &mut event_handler_instances,
+                &mut specific_event_responder_instances,
                 &mut |it| it.activation_order,
             );
     
-            result[i] = event_handler_instances
+            result[i] = specific_event_responder_instances
                 .into_iter()
-                .map(|event_handler_instance| {
+                .map(|specific_event_responder_instance| {
                     test_bcontext
-                        .monster(event_handler_instance.owner_uid)
+                        .monster(specific_event_responder_instance.owner_uid)
                         .nickname
                 })
                 .collect::<Vec<_>>();
@@ -473,7 +474,7 @@ mod tests {
             }
         );
     
-        let passed_filter = EventResolver::filter_event_handlers(
+        let passed_filter = EventResolver::filter_event_responders(
             &test_battle_context,
             BattlerUID {
                 team_id: TeamID::Allies,
@@ -483,18 +484,18 @@ mod tests {
                 team_id: TeamID::Opponents,
                 battler_number: BattlerNumber::_1,
             },
-            EventHandlerFilters::default(),
+            EventResponderFilters::default(),
         );
         assert!(passed_filter);
     } 
 
     #[test]
     #[cfg(feature = "debug")]
-    fn test_print_event_handler_instance() {
+    fn test_print_specific_event_responder_instance() {
         use crate::sim::ability_dex::FlashFire;
-        let event_handler_instance = EventHandlerInstance {
+        let specific_event_responder_instance = SpecificEventResponderInstance {
             event_name: event_dex::OnTryMove.name(),
-            event_handler: FlashFire.event_handlers.on_try_move.unwrap(),
+            specific_event_responder: FlashFire.event_responder.on_try_move.unwrap(),
             owner_uid: BattlerUID {
                 team_id: crate::sim::TeamID::Allies,
                 battler_number: crate::sim::BattlerNumber::_1,
@@ -504,8 +505,8 @@ mod tests {
                 speed: 99,
                 order: 0,
             },
-            filters: crate::sim::EventHandlerFilters::default(),
+            filters: crate::sim::EventResponderFilters::default(),
         };
-        println!("{:#?}", event_handler_instance);
+        println!("{:#?}", specific_event_responder_instance);
     }
 }

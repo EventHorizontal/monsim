@@ -4,7 +4,7 @@ use std::{
     iter::Chain,
     slice::{Iter, IterMut},
 };
-use crate::sim::{Battler, ActionChoice, AllyBattlerTeam, OpponentBattlerTeam, BattlerTeam, MoveUID, BattlerUID, TeamID, BattlerNumber, MoveNumber, Monster, Move, Ability, ActivationOrder, TeamAvailableActions, AvailableActions, Stat, event::EventHandlerSetInstanceList};
+use crate::sim::{Battler, ActionChoice, AllyBattlerTeam, OpponentBattlerTeam, BattlerTeam, MoveUID, BattlerUID, TeamID, BattlerNumber, MoveNumber, Monster, Move, Ability, ActivationOrder, TeamAvailableActions, AvailableActions, Stat, event::EventResponderInstanceList};
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
 type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
@@ -153,10 +153,10 @@ impl Battle {
             .move_mut(move_uid.move_number)
     }
 
-    pub fn event_handler_set_instances(&self) -> EventHandlerSetInstanceList {
+    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team.event_handlers());
-        out.append(&mut self.opponent_team.event_handlers());
+        out.append(&mut self.ally_team.event_responder_instances());
+        out.append(&mut &mut self.opponent_team.event_responder_instances());
         out
     }
 

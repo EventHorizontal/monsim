@@ -205,15 +205,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mechanic_constructor_macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "mio"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -235,7 +226,6 @@ dependencies = [
  "const_format",
  "crossterm 0.26.0",
  "event_setup_macro",
- "mechanic_constructor_macro",
  "tui",
 ]
 

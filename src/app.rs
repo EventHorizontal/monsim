@@ -139,7 +139,7 @@ impl<'a> AppState<'a> {
     fn update_battle_related_state(&mut self, battle: &mut Battle) {
         *self = Self {
             message_buffer: battle.message_buffer.clone(),
-            is_battle_ongoing: battle.sim_state != SimState::Finished,
+            is_battle_ongoing: battle.sim_state != SimState::BattleFinished,
             ally_active_battler_string: BattlerTeam::battler_status_as_string(
                 battle.ally_team.active_battler(),
             ),
@@ -426,7 +426,7 @@ fn update_state_from_input(
                 }
                 Err(error) => battle.battle.message_buffer.push(format!["{:?}", error]),
             }
-            if battle.battle.sim_state == SimState::Finished {
+            if battle.battle.sim_state == SimState::BattleFinished {
                 battle
                     .battle
                     .push_messages(&[&EMPTY_LINE, &"The battle ended."]);

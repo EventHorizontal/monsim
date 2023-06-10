@@ -30,7 +30,7 @@ pub enum SimState {
         move_uid: MoveUID,
         target_uid: BattlerUID,
     },
-    Finished,
+    BattleFinished,
 }
 
 impl Battle {

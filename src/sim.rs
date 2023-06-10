@@ -17,7 +17,6 @@ pub use event::{
 };
 pub use game_mechanics::*;
 pub use global_constants::*;
-pub use mechanic_constructor_macro::define_ability;
 
 use prng::Prng;
 
@@ -80,13 +79,13 @@ impl BattleSimulator {
                     ),
                 },
             };
-            let maybe_fainted_battler = self.battle.battlers().find(|it| it.fainted());
+            let maybe_fainted_battler = self.battle.battlers().find(|battler| battler.fainted());
             if let Some(battler) = maybe_fainted_battler {
                 self.battle.push_messages(&[
                     &format!["{} fainted!", battler.monster.nickname],
                     &EMPTY_LINE,
                 ]);
-                self.battle.sim_state = SimState::Finished;
+                self.battle.sim_state = SimState::BattleFinished;
                 break;
             };
             self.battle.push_message(&EMPTY_LINE);

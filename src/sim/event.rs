@@ -15,18 +15,6 @@ pub struct EventResponder<R: Clone + Copy> {
     pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> R,
 }
 
-#[cfg(not(feature = "debug"))]
-impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventResponder")
-            .field(
-                "callback",
-                &&(self.callback as SpecificEventResponderWithLifeTime<'a, R>),
-            )
-            .finish()
-    }
-}
-
 #[cfg(feature = "debug")]
 #[derive(Clone, Copy)]
 pub struct EventResponder<R: Clone + Copy> {
@@ -122,7 +110,7 @@ impl EventResolver {
         let composite_event_responder_instances: CompositeEventResponderInstanceList =
             battle.composite_event_responder_instances();
         let mut event_responder_instances: EventResponderInstanceList<R> =
-            extract_event_responder_instances(composite_event_responder_instances, event);
+            EventResolver::get_responders_to_event(composite_event_responder_instances, event);
 
         if event_responder_instances.is_empty() {
             return default;
@@ -180,26 +168,28 @@ impl EventResolver {
 
         event_source_filter_passed && on_battlefield_passed
     }
+
+    fn get_responders_to_event<R: Copy>(
+        composite_event_responder_instances: Vec<CompositeEventResponderInstance>,
+        event: &(dyn InBattleEvent<EventReturnType = R>),
+    ) -> Vec<EventResponderInstance<R>> {
+        composite_event_responder_instances
+            .iter()
+            .filter_map(|it| it.get_responder_to_event(event))
+            .collect::<Vec<_>>()
+    }
 }
 
-fn extract_event_responder_instances<R: Copy>(
-    composite_event_responder_instances: Vec<CompositeEventResponderInstance>,
-    event: &(dyn InBattleEvent<EventReturnType = R>),
-) -> Vec<EventResponderInstance<R>> {
-    composite_event_responder_instances
-        .iter()
-        .filter_map(|composite_event_responder_instance| {
-            event
-                .corresponding_responder(&composite_event_responder_instance.composite_event_responder)
-                .map(|event_responder| EventResponderInstance {
-                    event_name: event.name(),
-                    event_responder,
-                    owner_uid: composite_event_responder_instance.owner_uid,
-                    activation_order: composite_event_responder_instance.activation_order,
-                    filters: EventResponderFilters::default(),
-                })
-        })
-        .collect::<Vec<_>>()
+#[cfg(not(feature = "debug"))]
+impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EventResponder")
+            .field(
+                "callback",
+                &&(self.callback as SpecificEventResponderWithLifeTime<'a, R>),
+            )
+            .finish()
+    }
 }
 
 #[cfg(feature = "debug")]
@@ -212,6 +202,21 @@ impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
             )
             .field("location", &self.dbg_location)
             .finish()
+    }
+}
+
+impl CompositeEventResponderInstance {
+    fn get_responder_to_event<R: Copy>(&self, event: &dyn InBattleEvent<EventReturnType = R>) -> Option<EventResponderInstance<R>> {
+        let event_responder = event.corresponding_responder(&self.composite_event_responder);
+        event_responder.map(
+            |event_responder| EventResponderInstance { 
+                event_name: event.name(), 
+                event_responder, 
+                owner_uid: self.owner_uid, 
+                activation_order: self.activation_order, 
+                filters: self.filters 
+            }
+        )
     }
 }
 
@@ -240,7 +245,7 @@ mod tests {
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_bcontext = build_battle!(
+            let test_battle = build_battle!(
                 {
                     Allies: BattlerTeam {
                         Torchic: Monster = "Ruby" {
@@ -271,9 +276,9 @@ mod tests {
 
             let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
 
-            let composite_event_responder_instances = test_bcontext.composite_event_responder_instances();
+            let composite_event_responder_instances = test_battle.composite_event_responder_instances();
             use crate::sim::event_dex::OnTryMove;
-            let mut event_responder_instances = extract_event_responder_instances(composite_event_responder_instances, &OnTryMove);
+            let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
             crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<bool>>(
                 &mut prng,
@@ -284,7 +289,7 @@ mod tests {
             result[i] = event_responder_instances
                 .into_iter()
                 .map(|event_responder_instance| {
-                    test_bcontext
+                    test_battle
                         .monster(event_responder_instance.owner_uid)
                         .nickname
                 })
@@ -311,7 +316,7 @@ mod tests {
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_bcontext = build_battle!(
+            let test_battle = build_battle!(
                 {
                     Allies: BattlerTeam {
                         Torchic: Monster = "A" {
@@ -381,9 +386,10 @@ mod tests {
             );
             let mut prng = Prng::new(i as u64);
 
-            let composite_event_responder_instances = test_bcontext.composite_event_responder_instances();
+            let composite_event_responder_instances = test_battle.composite_event_responder_instances();
             use crate::sim::event_dex::OnTryMove;
-            let mut event_responder_instances = extract_event_responder_instances(composite_event_responder_instances, &OnTryMove);
+
+            let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
             crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<bool>>(
                 &mut prng,
@@ -394,7 +400,7 @@ mod tests {
             result[i] = event_responder_instances
                 .into_iter()
                 .map(|event_responder_instance| {
-                    test_bcontext
+                    test_battle
                         .monster(event_responder_instance.owner_uid)
                         .nickname
                 })

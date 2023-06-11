@@ -31,7 +31,6 @@ pub enum SimError {
 #[derive(Debug)]
 pub struct BattleSimulator {
     pub battle: Battle,
-    pub prng: Prng,
     pub turn_number: u8,
 }
 
@@ -39,7 +38,6 @@ impl BattleSimulator {
     pub fn new(battle: Battle) -> Self {
         BattleSimulator {
             battle,
-            prng: Prng::new(prng::seed_from_time_now()),
             turn_number: 0,
         }
     }
@@ -53,9 +51,7 @@ impl BattleSimulator {
         self.battle
             .push_messages(&[&format!["Turn {}", self.turn_number], &EMPTY_LINE]);
 
-        ordering::sort_by_activation_order(&mut self.prng, &mut chosen_actions, &mut |choice| {
-            self.battle.choice_activation_order(choice)
-        });
+        ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
 
         let mut result = Ok(());
         for chosen_action in chosen_actions.into_iter() {
@@ -67,13 +63,11 @@ impl BattleSimulator {
                 } => match self.battle.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(
                         &mut self.battle,
-                        &mut self.prng,
                         move_uid,
                         target_uid,
                     ),
                     MoveCategory::Status => PrimaryAction::status_move(
                         &mut self.battle,
-                        &mut self.prng,
                         move_uid,
                         target_uid,
                     ),
@@ -131,7 +125,6 @@ mod action {
         /// corresponding to `move_uid` being used on `target_uid`
         pub fn damaging_move(
             battle: &mut Battle,
-            prng: &mut Prng,
             move_uid: MoveUID,
             target_uid: BattlerUID,
         ) -> TurnOutcome {
@@ -143,7 +136,7 @@ mod action {
                 battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, prng, attacker_uid, &OnTryMove)
+            if EventResolver::broadcast_trial_event(battle, attacker_uid, &OnTryMove)
                 == FAILURE
             {
                 battle.push_message(&"The move failed!");
@@ -174,7 +167,7 @@ mod action {
                 }
             }
 
-            let random_multiplier = prng.generate_u16_in_range(85..=100);
+            let random_multiplier = battle.prng.generate_u16_in_range(85..=100);
             let random_multiplier = random_multiplier as f64 / 100.0;
 
             let stab_multiplier = {
@@ -218,7 +211,7 @@ mod action {
 
             // Do the calculated damage to the target
             SecondaryAction::damage(battle, target_uid, damage);
-            EventResolver::broadcast_event(battle, prng, attacker_uid, &OnDamageDealt, (), None);
+            EventResolver::broadcast_event(battle, attacker_uid, &OnDamageDealt, (), None);
 
             let type_matchup_multiplier_times_hundred =
                 f64::floor(type_matchup_multiplier * 100.0) as u16;
@@ -251,7 +244,6 @@ mod action {
 
         pub fn status_move(
             battle: &mut Battle,
-            prng: &mut Prng,
             move_uid: MoveUID,
             target_uid: BattlerUID,
         ) -> TurnOutcome {
@@ -264,15 +256,15 @@ mod action {
                 attacker.nickname, move_.species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, prng, attacker_uid, &OnTryMove)
+            if EventResolver::broadcast_trial_event(battle, attacker_uid, &OnTryMove)
                 == FAILURE
             {
                 battle.push_message(&"The move failed!");
                 return Ok(());
             }
 
-            move_.on_activate(battle, prng, attacker_uid, target_uid);
-            EventResolver::broadcast_event(battle, prng, attacker_uid, &OnStatusMoveUsed, (), None);
+            move_.on_activate(battle, attacker_uid, target_uid);
+            EventResolver::broadcast_event(battle, attacker_uid, &OnStatusMoveUsed, (), None);
 
             Ok(())
         }
@@ -299,16 +291,14 @@ mod action {
         /// Returns a `bool` indicating whether the ability succeeded.
         pub fn activate_ability(
             battle: &mut Battle,
-            prng: &mut Prng,
             owner_uid: BattlerUID,
         ) -> bool {
-            if EventResolver::broadcast_trial_event(battle, prng, owner_uid, &OnTryActivateAbility)
+            if EventResolver::broadcast_trial_event(battle, owner_uid, &OnTryActivateAbility)
             {
                 let ability = *battle.ability(owner_uid);
                 ability.on_activate(battle, owner_uid);
                 EventResolver::broadcast_event(
                     battle,
-                    prng,
                     owner_uid,
                     &OnAbilityActivated,
                     (),
@@ -327,12 +317,11 @@ mod action {
         /// Returns a `bool` indicating whether the stat raising succeeded.
         pub fn raise_stat(
             battle: &mut Battle,
-            prng: &mut Prng,
             battler_uid: BattlerUID,
             stat: Stat,
             number_of_stages: u8,
         ) -> bool {
-            if EventResolver::broadcast_trial_event(battle, prng, battler_uid, &OnTryRaiseStat) {
+            if EventResolver::broadcast_trial_event(battle,battler_uid, &OnTryRaiseStat) {
                 let effective_stages = battle
                     .monster_mut(battler_uid)
                     .stat_modifiers
@@ -360,12 +349,11 @@ mod action {
         /// Returns a `bool` indicating whether the stat lowering succeeded.
         pub fn lower_stat(
             battle: &mut Battle,
-            prng: &mut Prng,
             battler_uid: BattlerUID,
             stat: Stat,
             number_of_stages: u8,
         ) -> bool {
-            if EventResolver::broadcast_trial_event(battle, prng, battler_uid, &OnTryLowerStat) {
+            if EventResolver::broadcast_trial_event(battle, battler_uid, &OnTryLowerStat) {
                 let effective_stages = battle
                     .monster_mut(battler_uid)
                     .stat_modifiers

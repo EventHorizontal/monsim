@@ -7,18 +7,8 @@ use super::{
 use crate::sim::{
     action::SecondaryAction,
     event::{EventResponderFilters, DEFAULT_RESPONSE},
-    prng::Prng,
-    Battle, BattlerUID, Stat,
+    Battle, BattlerUID, Stat, MOVE_DEFAULTS,
 };
-
-// TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate
-fn no_on_activate(
-    _context: &mut Battle,
-    _prng: &mut Prng,
-    _attacker_uid: BattlerUID,
-    _target_uid: BattlerUID,
-) {
-}
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -27,10 +17,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
-    priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    ..MOVE_DEFAULTS
 };
 
 pub const Scratch: MoveSpecies = MoveSpecies {
@@ -40,10 +27,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
-    priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    ..MOVE_DEFAULTS
 };
 
 pub const Ember: MoveSpecies = MoveSpecies {
@@ -53,10 +37,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
-    priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    ..MOVE_DEFAULTS
 };
 
 pub const Bubble: MoveSpecies = MoveSpecies {
@@ -66,10 +47,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
-    priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    ..MOVE_DEFAULTS
 };
 
 pub const Growl: MoveSpecies = MoveSpecies {
@@ -79,10 +57,8 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
-    priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: |battle: &mut Battle, prng, _attacker_uid: BattlerUID, target_uid: BattlerUID| {
-        let _ = SecondaryAction::lower_stat(battle, prng, target_uid, Stat::PhysicalAttack, 1);
-    },
+    on_activate: Some(|battle: &mut Battle, _attacker_uid: BattlerUID, target_uid: BattlerUID| {
+        _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
+    }),
+    ..MOVE_DEFAULTS
 };

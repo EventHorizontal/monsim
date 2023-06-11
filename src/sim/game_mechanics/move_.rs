@@ -1,7 +1,6 @@
 use crate::sim::{
     event::{CompositeEventResponder, EventResponderFilters},
-    prng::Prng,
-    Battle, BattlerUID, MonType,
+    Battle, BattlerUID, MonType, DEFAULT_RESPONSE,
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
@@ -17,8 +16,22 @@ pub struct MoveSpecies {
     pub priority: u16,
     pub composite_event_responder: CompositeEventResponder,
     pub composite_event_responder_filters: EventResponderFilters,
-    pub on_activate: fn(&mut Battle, &mut Prng, BattlerUID, BattlerUID) -> (),
+    pub on_activate: Option<fn(&mut Battle, BattlerUID, BattlerUID) -> ()>,
 }
+
+pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies { 
+    dex_number: 000, 
+    name: "Unnamed", 
+    type_: MonType::Normal, 
+    category: MoveCategory::Physical, 
+    base_power: 50, 
+    base_accuracy: 100, 
+    priority: 0, 
+    composite_event_responder: DEFAULT_RESPONSE, 
+    composite_event_responder_filters: EventResponderFilters::default(), 
+    on_activate: None 
+};
+
 
 impl Debug for MoveSpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -63,11 +76,13 @@ impl Move {
     pub(crate) fn on_activate(
         &self,
         battle: &mut Battle,
-        prng: &mut Prng,
         owner_uid: BattlerUID,
         target_uid: BattlerUID,
     ) {
-        (self.species.on_activate)(battle, prng, owner_uid, target_uid);
+        let on_activate_logic = self.species.on_activate;
+        if let Some(on_activate_logic) = on_activate_logic {
+            on_activate_logic(battle, owner_uid, target_uid);
+        } 
     }
 }
 

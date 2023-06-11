@@ -1,18 +1,9 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    prng::Prng, Battle, BattlerUID, EventResponderFilters, MonType, MoveCategory, MoveSpecies,
+    Battle, BattlerUID, EventResponderFilters, MonType, MoveCategory, MoveSpecies,
     SecondaryAction, Stat, DEFAULT_RESPONSE,
 };
-
-// TEMP: Probably will be replaced due to a possible rework to how damaging and status moves ar calculated, potentially making all moves have an on_activate
-fn no_on_activate(
-    _context: &mut Battle,
-    _prng: &mut Prng,
-    _attacker_uid: BattlerUID,
-    _target_uid: BattlerUID,
-) {
-}
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -24,7 +15,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
     composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    on_activate: None,
 };
 
 pub const Scratch: MoveSpecies = MoveSpecies {
@@ -37,7 +28,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
     composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    on_activate: None,
 };
 
 pub const Ember: MoveSpecies = MoveSpecies {
@@ -50,7 +41,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
     composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    on_activate: None,
 };
 
 pub const Bubble: MoveSpecies = MoveSpecies {
@@ -63,7 +54,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
     composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: no_on_activate,
+    on_activate: None,
 };
 
 pub const Growl: MoveSpecies = MoveSpecies {
@@ -76,10 +67,9 @@ pub const Growl: MoveSpecies = MoveSpecies {
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
     composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: |battle: &mut Battle,
-                  prng: &mut Prng,
+    on_activate: Some(|battle: &mut Battle,
                   _attacker_uid: BattlerUID,
                   target_uid: BattlerUID| {
-        _ = SecondaryAction::lower_stat(battle, prng, target_uid, Stat::PhysicalAttack, 1);
-    },
+        _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
+    }),
 };

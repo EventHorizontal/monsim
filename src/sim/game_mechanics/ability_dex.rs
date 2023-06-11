@@ -13,12 +13,12 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: crate::debug_location!("FlashFire.OnTryMove"),
-            callback: |battle, prng, owner_uid, _relay| {
+            callback: |battle, owner_uid, _relay| {
                 let current_move = *battle.get_current_action_as_move().expect(
                     "The current action should be a move within on_try_move responder context.",
                 );
                 if current_move.species.type_ == MonType::Fire
-                    && SecondaryAction::activate_ability(battle, prng, owner_uid)
+                    && SecondaryAction::activate_ability(battle, owner_uid)
                 {
                     return FAILURE;
                 }

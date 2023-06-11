@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::BattlerUID, prng::Prng, Battle};
+use crate::sim::{game_mechanics::BattlerUID, Battle};
 use event_setup_macro::event_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,19 +12,19 @@ type void = ();
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
 pub struct EventResponder<R: Clone + Copy> {
-    pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> R,
+    pub callback: fn(&mut Battle, BattlerUID, R) -> R,
 }
 
 #[cfg(feature = "debug")]
 #[derive(Clone, Copy)]
 pub struct EventResponder<R: Clone + Copy> {
-    pub callback: fn(&mut Battle, &mut Prng, BattlerUID, R) -> R,
+    pub callback: fn(&mut Battle, BattlerUID, R) -> R,
     #[cfg(feature = "debug")]
     pub dbg_location: &'static str,
 }
 
 pub type EventResponderWithLifeTime<'a, R> =
-    fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> R;
+    fn(&'a mut Battle, BattlerUID, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventResponderInstance<R: Clone + Copy> {
@@ -89,11 +89,10 @@ pub struct ActivationOrder {
 impl EventResolver {
     pub fn broadcast_trial_event(
         battle: &mut Battle,
-        prng: &mut Prng,
         caller_uid: BattlerUID,
         event: &dyn InBattleEvent<EventReturnType = bool>,
     ) -> bool {
-        Self::broadcast_event(battle, prng, caller_uid, event, true, Some(false))
+        Self::broadcast_event(battle, caller_uid, event, true, Some(false))
     }
 
     /// `default` tells the resolver what value it should return if there are no event responders, or the event responders fall through.
@@ -101,7 +100,6 @@ impl EventResolver {
     /// `short_circuit` is an optional value that, if returned by a responder in the chain, the resolution short-circuits and returns early.
     pub fn broadcast_event<R: PartialEq + Copy>(
         battle: &mut Battle,
-        prng: &mut Prng,
         caller_uid: BattlerUID,
         event: &dyn InBattleEvent<EventReturnType = R>,
         default: R,
@@ -117,7 +115,7 @@ impl EventResolver {
         }
 
         crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<R>>(
-            prng,
+            &mut battle.prng,
             &mut event_responder_instances,
             &mut |it| it.activation_order,
         );
@@ -131,7 +129,7 @@ impl EventResolver {
         } in event_responder_instances.into_iter()
         {
             if Self::filter_composite_event_responders(battle, caller_uid, owner_uid, filters) {
-                relay = (event_responder.callback)(battle, prng, owner_uid, relay);
+                relay = (event_responder.callback)(battle, owner_uid, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {

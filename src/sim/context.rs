@@ -9,6 +9,8 @@ use std::{
     slice::{Iter, IterMut},
 };
 
+use super::prng::{Prng, self};
+
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
 type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
 
@@ -18,6 +20,7 @@ pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
     pub current_action: Option<ActionChoice>,
+    pub prng: Prng,
     pub sim_state: SimState,
     pub ally_team: AllyBattlerTeam,
     pub opponent_team: OpponentBattlerTeam,
@@ -37,6 +40,7 @@ impl Battle {
     pub fn new(ally_team: AllyBattlerTeam, opponent_team: OpponentBattlerTeam) -> Self {
         Self {
             current_action: None,
+            prng: Prng::new(prng::seed_from_time_now()),
             sim_state: SimState::UsingMove {
                 move_uid: MoveUID {
                     battler_uid: BattlerUID {

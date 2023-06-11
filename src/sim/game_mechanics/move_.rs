@@ -1,5 +1,5 @@
 use crate::sim::{
-    event::{EventResponder, EventResponderFilters},
+    event::{CompositeEventResponder, EventResponderFilters},
     prng::Prng,
     Battle, BattlerUID, MonType,
 };
@@ -15,8 +15,8 @@ pub struct MoveSpecies {
     pub base_power: u16,
     pub base_accuracy: u16,
     pub priority: u16,
-    pub event_responder: EventResponder,
-    pub event_responder_filters: EventResponderFilters,
+    pub composite_event_responder: CompositeEventResponder,
+    pub composite_event_responder_filters: EventResponderFilters,
     pub on_activate: fn(&mut Battle, &mut Prng, BattlerUID, BattlerUID) -> (),
 }
 

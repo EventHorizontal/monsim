@@ -2,15 +2,15 @@
 
 use super::{ability::AbilitySpecies, MonType};
 use crate::sim::{
-    EventResponder, EventResponderFilters, SecondaryAction, SpecificEventResponder,
+    CompositeEventResponder, EventResponderFilters, SecondaryAction, EventResponder,
     DEFAULT_RESPONSE, FAILURE, SUCCESS,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
-    event_responder: EventResponder {
-        on_try_move: Some(SpecificEventResponder {
+    composite_event_responder: CompositeEventResponder {
+        on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: crate::debug_location!("FlashFire.OnTryMove"),
             callback: |battle, prng, owner_uid, _relay| {

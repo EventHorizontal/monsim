@@ -12,8 +12,8 @@ pub use battle_builder_macro::build_battle;
 pub use choice::*;
 pub use context::*;
 pub use event::{
-    event_dex, ActivationOrder, EventResolver, EventResponder, EventResponderFilters,
-    InBattleEvent, SpecificEventResponder, TargetFlags, DEFAULT_RESPONSE,
+    event_dex, ActivationOrder, EventResolver, CompositeEventResponder, EventResponderFilters,
+    InBattleEvent, EventResponder, TargetFlags, DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
 pub use global_constants::*;

@@ -51,7 +51,7 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
         );
             fields = quote!( 
                 #fields
-                pub #responder_identifier: Option<SpecificEventResponder<#responder_return_type>>,
+                pub #responder_identifier: Option<EventResponder<#responder_return_type>>,
             );
             fields_for_constant = quote!(
                 #fields_for_constant
@@ -65,8 +65,8 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
 
                 impl #trait_name for #trait_name_ident_in_pascal_case {
                     type EventReturnType = #responder_return_type;
-                    fn corresponding_responder(&self, event_responder_set: &#struct_name) -> Option<SpecificEventResponder<Self::EventReturnType>> {
-                        event_responder_set.#responder_identifier
+                    fn corresponding_responder(&self, composite_event_responder: &#struct_name) -> Option<EventResponder<Self::EventReturnType>> {
+                        composite_event_responder.#responder_identifier
                     }
         
                     fn name(&self) -> &'static str {
@@ -91,8 +91,8 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
 
             fn corresponding_responder(
                 &self,
-                event_responder_set: &#struct_name,
-            ) -> Option<SpecificEventResponder<Self::EventReturnType>>;
+                composite_event_responder: &#struct_name,
+            ) -> Option<EventResponder<Self::EventReturnType>>;
 
             fn name(&self) -> &'static str;
         }

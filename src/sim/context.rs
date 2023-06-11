@@ -1,5 +1,5 @@
 use crate::sim::{
-    event::EventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam,
+    event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam,
     AvailableActions, Battler, BattlerNumber, BattlerTeam, BattlerUID, Monster, Move, MoveNumber,
     MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions, TeamID,
 };
@@ -156,10 +156,10 @@ impl Battle {
             .move_mut(move_uid.move_number)
     }
 
-    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
+    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team.event_responder_instances());
-        out.append(&mut &mut self.opponent_team.event_responder_instances());
+        out.append(&mut self.ally_team.composite_event_responder_instances());
+        out.append(&mut &mut self.opponent_team.composite_event_responder_instances());
         out
     }
 

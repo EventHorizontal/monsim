@@ -21,9 +21,9 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    event_responder: DEFAULT_RESPONSE,
+    composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -34,9 +34,9 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    event_responder: DEFAULT_RESPONSE,
+    composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -47,9 +47,9 @@ pub const Ember: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    event_responder: DEFAULT_RESPONSE,
+    composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -60,9 +60,9 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    event_responder: DEFAULT_RESPONSE,
+    composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventResponderFilters::default(),
     on_activate: no_on_activate,
 };
 
@@ -73,9 +73,9 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    event_responder: DEFAULT_RESPONSE,
+    composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventResponderFilters::default(),
     on_activate: |battle: &mut Battle,
                   prng: &mut Prng,
                   _attacker_uid: BattlerUID,

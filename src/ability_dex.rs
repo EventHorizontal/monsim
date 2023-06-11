@@ -1,15 +1,15 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    Ability, AbilitySpecies, EventResponder, EventResponderFilters, MonType,
-    SecondaryAction, SpecificEventResponder, DEFAULT_RESPONSE, FAILURE, SUCCESS,
+    Ability, AbilitySpecies, CompositeEventResponder, EventResponderFilters, MonType,
+    SecondaryAction, EventResponder, DEFAULT_RESPONSE, FAILURE, SUCCESS,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
-    event_responder: EventResponder {
-        on_try_move: Some(SpecificEventResponder {
+    composite_event_responder: CompositeEventResponder {
+        on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: monsim::debug_location!("FlashFire.on_try_move"),
             callback: |battle, prng, owner_uid, _relay| {
@@ -36,8 +36,8 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
 pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     dex_number: 002,
     name: "Water Absorb",
-    event_responder: EventResponder {
-        on_try_move: Some(SpecificEventResponder {
+    composite_event_responder: CompositeEventResponder {
+        on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: monsim::debug_location!("WaterAbsorb.on_try_move"),
             callback: |battle, prng, owner_uid, _relay| {

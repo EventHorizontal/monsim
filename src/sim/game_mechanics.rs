@@ -12,7 +12,7 @@ use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{
-    ActivationOrder, EventResponderFilters, EventResponderInstance, EventResponderInstanceList,
+    ActivationOrder, EventResponderFilters, CompositeEventResponderInstance, CompositeEventResponderInstanceList,
 };
 pub use ability::*;
 pub use monster::*;
@@ -117,10 +117,10 @@ impl BattlerTeam {
         out
     }
 
-    pub fn event_response_instances(&self) -> EventResponderInstanceList {
+    pub fn event_response_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         for battler in self.battlers.iter() {
-            out.append(&mut battler.event_responder_instances())
+            out.append(&mut battler.composite_event_responder_instances())
         }
         out
     }
@@ -156,12 +156,12 @@ impl AllyBattlerTeam {
         out
     }
 
-    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
+    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         self.0
             .battlers
             .iter()
-            .for_each(|battler| out.append(&mut battler.event_responder_instances()));
+            .for_each(|battler| out.append(&mut battler.composite_event_responder_instances()));
         out
     }
 
@@ -200,10 +200,10 @@ impl OpponentBattlerTeam {
         out
     }
 
-    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
+    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         for battler in self.0.battlers.iter() {
-            out.append(&mut battler.event_responder_instances())
+            out.append(&mut battler.composite_event_responder_instances())
         }
         out
     }
@@ -293,39 +293,39 @@ impl Battler {
         self.monster.is_type(test_type)
     }
 
-    pub fn monster_event_responder_instance(&self) -> EventResponderInstance {
+    pub fn monster_composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: 0,
         };
-        EventResponderInstance {
-            event_responder: self.monster.event_responder(),
+        CompositeEventResponderInstance {
+            composite_event_responder: self.monster.composite_event_responder(),
             owner_uid: self.uid,
             activation_order,
             filters: EventResponderFilters::default(),
         }
     }
 
-    pub fn ability_event_responder_instance(&self) -> EventResponderInstance {
+    pub fn ability_composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.monster.stats[Stat::Speed],
             order: self.ability.species.order,
         };
-        EventResponderInstance {
-            event_responder: self.ability.event_responder(),
+        CompositeEventResponderInstance {
+            composite_event_responder: self.ability.composite_event_responder(),
             owner_uid: self.uid,
             activation_order,
             filters: EventResponderFilters::default(),
         }
     }
 
-    pub fn moveset_event_responder_instances(&self, uid: BattlerUID) -> EventResponderInstanceList {
+    pub fn moveset_composite_event_responder_instances(&self, uid: BattlerUID) -> CompositeEventResponderInstanceList {
         self.moveset
             .moves()
-            .map(|it| EventResponderInstance {
-                event_responder: it.species.event_responder,
+            .map(|it| CompositeEventResponderInstance {
+                composite_event_responder: it.species.composite_event_responder,
                 owner_uid: uid,
                 activation_order: ActivationOrder {
                     priority: it.species.priority,
@@ -341,11 +341,11 @@ impl Battler {
         self.monster.fainted()
     }
 
-    pub fn event_responder_instances(&self) -> EventResponderInstanceList {
+    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
-        out.push(self.monster_event_responder_instance());
-        out.append(&mut self.moveset_event_responder_instances(self.uid));
-        out.push(self.ability_event_responder_instance());
+        out.push(self.monster_composite_event_responder_instance());
+        out.append(&mut self.moveset_composite_event_responder_instances(self.uid));
+        out.push(self.ability_composite_event_responder_instance());
         out
     }
 

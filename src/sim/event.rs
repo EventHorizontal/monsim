@@ -23,7 +23,7 @@ pub struct EventResponder<R: Clone + Copy> {
     pub dbg_location: &'static str,
 }
 
-pub type SpecificEventResponderWithLifeTime<'a, R> =
+pub type EventResponderWithLifeTime<'a, R> =
     fn(&'a mut Battle, &'a mut Prng, BattlerUID, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
@@ -186,7 +186,7 @@ impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
         f.debug_struct("EventResponder")
             .field(
                 "callback",
-                &&(self.callback as SpecificEventResponderWithLifeTime<'a, R>),
+                &&(self.callback as EventResponderWithLifeTime<'a, R>),
             )
             .finish()
     }
@@ -198,7 +198,7 @@ impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
         f.debug_struct("SpecificEventResponder")
             .field(
                 "callback",
-                &&(self.callback as SpecificEventResponderWithLifeTime<'a, R>),
+                &&(self.callback as EventResponderWithLifeTime<'a, R>),
             )
             .field("location", &self.dbg_location)
             .finish()

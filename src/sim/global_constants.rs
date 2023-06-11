@@ -1,6 +1,40 @@
 pub const SUCCESS: bool = true;
 pub const FAILURE: bool = false;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Outcome {
+    Success,
+    Failure
+}
+
+impl From<bool> for Outcome {
+    fn from(value: bool) -> Self {
+        match value {
+            true => Self::Success,
+            false => Self::Failure,
+        }
+    }
+}
+
+impl Into<bool> for Outcome {
+    fn into(self) -> bool {
+        match self {
+            Outcome::Success => true,
+            Outcome::Failure => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Percent(u16);
+
+impl Percent {
+    pub fn new(value: u16) -> Self {
+        assert!(0 <= value && value <= 100, "Percentage must be between 0 and 100");
+        Self(value)
+    }
+}
+
 use super::MonType;
 
 pub const INEFFECTIVE: f64 = 0.0;

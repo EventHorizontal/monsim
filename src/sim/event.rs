@@ -1,7 +1,9 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::BattlerUID, Battle};
+use crate::sim::{game_mechanics::BattlerUID, Battle, Percent};
 use event_setup_macro::event_setup;
+
+use super::Outcome;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventResolver;
@@ -55,13 +57,13 @@ bitflags::bitflags! {
 event_setup![
     pub struct CompositeEventResponder {
         match event {
-            on_try_move => bool,
+            on_try_move => Outcome,
             on_damage_dealt => void,
-            on_try_activate_ability => bool,
+            on_try_activate_ability => Outcome,
             on_ability_activated => void,
-            on_modify_accuracy => u16,
-            on_try_raise_stat => bool,
-            on_try_lower_stat => bool,
+            on_modify_accuracy => Percent,
+            on_try_raise_stat => Outcome,
+            on_try_lower_stat => Outcome,
             on_status_move_used => void,
         }
     }
@@ -90,9 +92,9 @@ impl EventResolver {
     pub fn broadcast_trial_event(
         battle: &mut Battle,
         caller_uid: BattlerUID,
-        event: &dyn InBattleEvent<EventReturnType = bool>,
-    ) -> bool {
-        Self::broadcast_event(battle, caller_uid, event, true, Some(false))
+        event: &dyn InBattleEvent<EventReturnType = Outcome>,
+    ) -> Outcome {
+        Self::broadcast_event(battle, caller_uid, event, Outcome::Success, Some(Outcome::Failure))
     }
 
     /// `default` tells the resolver what value it should return if there are no event responders, or the event responders fall through.
@@ -278,7 +280,7 @@ mod tests {
             use crate::sim::event_dex::OnTryMove;
             let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
-            crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<bool>>(
+            crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<Outcome>>(
                 &mut prng,
                 &mut event_responder_instances,
                 &mut |it| it.activation_order,
@@ -389,7 +391,7 @@ mod tests {
 
             let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
-            crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<bool>>(
+            crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<Outcome>>(
                 &mut prng,
                 &mut event_responder_instances,
                 &mut |it| it.activation_order,

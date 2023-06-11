@@ -23,7 +23,6 @@ use tui::{
 };
 
 const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: u64 = 20;
-type MonsimIoResult = Result<bool, Box<dyn std::error::Error>>;
 
 #[derive(Debug, Clone)]
 enum AppMode {
@@ -167,12 +166,14 @@ enum TuiEvent<I> {
 }
 
 pub type MonsimResult = Result<(), Box<dyn std::error::Error>>;
+pub type MonsimIoResult = Result<bool, Box<dyn std::error::Error>>;
 
-pub fn run(mut battle: BattleSimulator) -> MonsimResult {
+
+pub fn run(mut battle_sim: BattleSimulator) -> MonsimResult {
     extern crate self as monsim;
 
     // Initialise the Program
-    let mut app_state = AppState::new(&mut battle.battle);
+    let mut app_state = AppState::new(&mut battle_sim.battle);
 
     // Raw mode allows to not require enter presses to get input
     enable_raw_mode().expect("Raw mode should always enableable.");
@@ -213,7 +214,7 @@ pub fn run(mut battle: BattleSimulator) -> MonsimResult {
 
     'app: loop {
         let should_exit =
-            update_state_from_input(&mut terminal, &mut app_state, &mut battle, &receiver)?;
+            update_state_from_input(&mut terminal, &mut app_state, &mut battle_sim, &receiver)?;
         if should_exit {
             break 'app;
         }

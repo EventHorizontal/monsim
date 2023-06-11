@@ -1,5 +1,5 @@
 use monsim::{
-    app::{self, MonsimResult},
+    app::*,
     sim::*,
 };
 mod ability_dex;
@@ -11,7 +11,7 @@ use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
 use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 
 fn main() -> MonsimResult {
-    let battle = BattleSimulator::new(build_battle!(
+    let battle_sim = BattleSimulator::new(build_battle!(
         {
             Allies: BattlerTeam {
                 Torchic: Monster = "Ruby" {
@@ -41,5 +41,5 @@ fn main() -> MonsimResult {
             }
         }
     ));
-    app::run(battle)
+    app::run(battle_sim)
 }

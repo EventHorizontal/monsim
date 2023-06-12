@@ -2,7 +2,7 @@
 
 use monsim::{sim::{
     Ability, AbilitySpecies, CompositeEventResponder, EventResponderFilters, ElementalType,
-    SecondaryAction, EventResponder, DEFAULT_RESPONSE, FAILURE, SUCCESS, Outcome,
+    SecondaryAction, EventResponder, DEFAULT_RESPONSE, Outcome,
 }, not};
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {

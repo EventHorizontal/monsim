@@ -1,13 +1,14 @@
 pub mod choice;
 pub mod context;
 pub mod game_mechanics;
-pub mod global_constants;
+pub mod battle_constants;
 pub mod prng;
+pub mod helpers;
 
 mod event;
 mod ordering;
 
-pub use global_constants::Percent;
+pub use helpers::*;
 pub use action::SecondaryAction;
 pub use battle_builder_macro::build_battle;
 pub use choice::*;
@@ -17,7 +18,7 @@ pub use event::{
     InBattleEvent, EventResponder, TargetFlags, DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
-pub use global_constants::*;
+pub use battle_constants::*;
 
 use prng::Prng;
 

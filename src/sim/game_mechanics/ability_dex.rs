@@ -3,7 +3,7 @@
 use super::{ability::AbilitySpecies, ElementalType};
 use crate::sim::{
     CompositeEventResponder, EventResponderFilters, SecondaryAction, EventResponder,
-    DEFAULT_RESPONSE, FAILURE, SUCCESS, Outcome,
+    DEFAULT_RESPONSE, Outcome,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {

@@ -169,14 +169,14 @@ mod action {
             }
 
             let random_multiplier = battle.prng.generate_u16_in_range(85..=100);
-            let random_multiplier = random_multiplier as f64 / 100.0;
+            let random_multiplier = ClampedPercent::from(random_multiplier);
 
             let stab_multiplier = {
                 let move_type = battle.move_(move_uid).species.elemental_type;
                 if battle.monster(attacker_uid).is_type(move_type) {
-                    1.25f64
+                    Percent(125)
                 } else {
-                    1.00f64
+                    Percent(100)
                 }
             };
 
@@ -214,17 +214,14 @@ mod action {
             SecondaryAction::damage(battle, target_uid, damage);
             EventResolver::broadcast_event(battle, attacker_uid, &OnDamageDealt, (), None);
 
-            let type_matchup_multiplier_times_hundred =
-                f64::floor(type_matchup_multiplier * 100.0) as u16;
-            // INFO: We cannot match against floats so we match against 100 x the multiplier rounded to an int.
-            let type_effectiveness = match type_matchup_multiplier_times_hundred {
-                25 | 50 => "not very effective",
-                100 => "effective",
-                200 | 400 => "super effective",
+            let type_effectiveness = match type_matchup_multiplier {
+                Percent(25) | Percent(50) => "not very effective",
+                Percent(100) => "effective",
+                Percent(200) | Percent(400) => "super effective",
                 value => {
+                    let type_multiplier_as_float = value.0 as f64 / 100.0f64;
                     return Err(SimError::InvalidStateError(format![
-                        "Type Effectiveness Multiplier is unexpectedly {}",
-                        value
+                        "Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}",
                     ]))
                 }
             };

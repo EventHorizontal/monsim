@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::{sim::{
-    Ability, AbilitySpecies, CompositeEventResponder, EventResponderFilters, MonsterType,
+    Ability, AbilitySpecies, CompositeEventResponder, EventResponderFilters, ElementalType,
     SecondaryAction, EventResponder, DEFAULT_RESPONSE, FAILURE, SUCCESS, Outcome,
 }, not};
 
@@ -15,7 +15,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             callback: |battle, owner_uid, _relay| {
                 let current_move = *battle.get_current_action_as_move()
                     .expect("The current action should be a move within on_try_move responder context.");
-                let is_current_move_fire_type = (current_move.species.monster_type == MonsterType::Fire);
+                let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
                 if is_current_move_fire_type {
                     let activation_succeeded =
                         SecondaryAction::activate_ability(battle, owner_uid);
@@ -43,7 +43,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
             callback: |battle, owner_uid, _relay| {
                 let current_move = *battle.get_current_action_as_move()
                     .expect("The current action should be a move within on_try_move responder context.");
-                let is_current_move_water_type = (current_move.species.monster_type == MonsterType::Water);
+                let is_current_move_water_type = (current_move.species.elemental_type == ElementalType::Water);
                 if is_current_move_water_type {
                     let activation_succeeded =
                         SecondaryAction::activate_ability(battle, owner_uid);

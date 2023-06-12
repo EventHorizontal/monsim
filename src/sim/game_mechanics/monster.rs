@@ -1,14 +1,14 @@
 use core::{fmt::Debug, panic};
 use std::ops::{Index, IndexMut};
 
-use crate::sim::{CompositeEventResponder, MonsterType};
+use crate::sim::{CompositeEventResponder, ElementalType};
 
 #[derive(Clone, Copy)]
 pub struct MonsterSpecies {
     pub dex_number: u16,
     pub name: &'static str,
-    pub primary_type: MonsterType,
-    pub secondary_type: Option<MonsterType>,
+    pub primary_type: ElementalType,
+    pub secondary_type: Option<ElementalType>,
     pub base_stats: StatSet,
     pub composite_event_responder: CompositeEventResponder,
 }
@@ -209,8 +209,8 @@ impl Monster {
         }
     }
 
-    pub fn is_type(&self, test_monster_type: MonsterType) -> bool {
-        self.species.primary_type == test_monster_type || self.species.secondary_type == Some(test_monster_type)
+    pub fn is_type(&self, test_elemental_type: ElementalType) -> bool {
+        self.species.primary_type == test_elemental_type || self.species.secondary_type == Some(test_elemental_type)
     }
 
     pub fn composite_event_responder(&self) -> CompositeEventResponder {

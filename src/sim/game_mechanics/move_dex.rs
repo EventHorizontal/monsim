@@ -2,7 +2,7 @@
 
 use super::{
     move_::{MoveCategory, MoveSpecies},
-    MonsterType,
+    ElementalType,
 };
 use crate::sim::{
     action::SecondaryAction,
@@ -13,7 +13,7 @@ use crate::sim::{
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
     name: "Tackle",
-    monster_type: MonsterType::Normal,
+    elemental_type: ElementalType::Normal,
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
@@ -23,7 +23,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
 pub const Scratch: MoveSpecies = MoveSpecies {
     dex_number: 002,
     name: "Scratch",
-    monster_type: MonsterType::Normal,
+    elemental_type: ElementalType::Normal,
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
@@ -33,7 +33,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
 pub const Ember: MoveSpecies = MoveSpecies {
     dex_number: 003,
     name: "Ember",
-    monster_type: MonsterType::Fire,
+    elemental_type: ElementalType::Fire,
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
@@ -43,7 +43,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
 pub const Bubble: MoveSpecies = MoveSpecies {
     dex_number: 004,
     name: "Bubble",
-    monster_type: MonsterType::Water,
+    elemental_type: ElementalType::Water,
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
@@ -53,7 +53,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
 pub const Growl: MoveSpecies = MoveSpecies {
     dex_number: 005,
     name: "Growl",
-    monster_type: MonsterType::Normal,
+    elemental_type: ElementalType::Normal,
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,

@@ -430,7 +430,7 @@ mod tests {
             move_dex::{Bubble, Ember, Scratch, Tackle},
             BattlerNumber, TeamID,
         };
-        let test_battle_context = build_battle!(
+        let test_battle = build_battle!(
             {
                 Allies: BattlerTeam {
                     Torchic: Monster = "Ruby" {
@@ -455,7 +455,7 @@ mod tests {
         );
 
         let passed_filter = EventResolver::filter_composite_event_responders(
-            &test_battle_context,
+            &test_battle,
             BattlerUID {
                 team_id: TeamID::Allies,
                 battler_number: BattlerNumber::_1,

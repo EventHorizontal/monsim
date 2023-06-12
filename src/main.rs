@@ -41,5 +41,5 @@ fn main() -> MonsimResult {
             }
         }
     ));
-    app::run(battle_sim)
+    App::run(battle_sim)
 }

@@ -1,9 +1,9 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use super::{ability::AbilitySpecies, MonType};
+use super::{ability::AbilitySpecies, MonsterType};
 use crate::sim::{
     CompositeEventResponder, EventResponderFilters, SecondaryAction, EventResponder,
-    DEFAULT_RESPONSE, FAILURE, SUCCESS,
+    DEFAULT_RESPONSE, FAILURE, SUCCESS, Outcome,
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -17,12 +17,12 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
                 let current_move = *battle.get_current_action_as_move().expect(
                     "The current action should be a move within on_try_move responder context.",
                 );
-                if current_move.species.type_ == MonType::Fire
-                    && SecondaryAction::activate_ability(battle, owner_uid)
+                if current_move.species.monster_type == MonsterType::Fire
+                    && SecondaryAction::activate_ability(battle, owner_uid) == Outcome::Success
                 {
-                    return FAILURE;
+                    return Outcome::Failure;
                 }
-                SUCCESS
+                Outcome::Success
             },
         }),
         ..DEFAULT_RESPONSE

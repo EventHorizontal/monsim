@@ -1,9 +1,9 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{
-    Ability, AbilitySpecies, CompositeEventResponder, EventResponderFilters, MonType,
-    SecondaryAction, EventResponder, DEFAULT_RESPONSE, FAILURE, SUCCESS,
-};
+use monsim::{sim::{
+    Ability, AbilitySpecies, CompositeEventResponder, EventResponderFilters, MonsterType,
+    SecondaryAction, EventResponder, DEFAULT_RESPONSE, FAILURE, SUCCESS, Outcome,
+}, not};
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
@@ -15,13 +15,13 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             callback: |battle, owner_uid, _relay| {
                 let current_move = *battle.get_current_action_as_move()
                     .expect("The current action should be a move within on_try_move responder context.");
-                let is_current_move_fire_type = (current_move.species.type_ == MonType::Fire);
+                let is_current_move_fire_type = (current_move.species.monster_type == MonsterType::Fire);
                 if is_current_move_fire_type {
                     let activation_succeeded =
                         SecondaryAction::activate_ability(battle, owner_uid);
-                    if activation_succeeded { return FAILURE; }
+                    return not!(activation_succeeded);
                 }
-                SUCCESS
+                Outcome::Success
             },
         }),
         ..DEFAULT_RESPONSE
@@ -43,13 +43,14 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
             callback: |battle, owner_uid, _relay| {
                 let current_move = *battle.get_current_action_as_move()
                     .expect("The current action should be a move within on_try_move responder context.");
-                let is_current_move_water_type = (current_move.species.type_ == MonType::Water);
+                let is_current_move_water_type = (current_move.species.monster_type == MonsterType::Water);
                 if is_current_move_water_type {
                     let activation_succeeded =
                         SecondaryAction::activate_ability(battle, owner_uid);
-                    if activation_succeeded { return FAILURE; }
+                    return not!(activation_succeeded);
+
                 }
-                SUCCESS
+                Outcome::Success
             },
         }),
         ..DEFAULT_RESPONSE

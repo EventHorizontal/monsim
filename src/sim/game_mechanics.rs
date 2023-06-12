@@ -289,7 +289,7 @@ impl Battler {
         }
     }
 
-    pub fn is_type(&self, test_type: MonType) -> bool {
+    pub fn is_type(&self, test_type: MonsterType) -> bool {
         self.monster.is_type(test_type)
     }
 
@@ -374,7 +374,7 @@ impl OpponentBattler {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum MonType {
+pub enum MonsterType {
     Bug,
     Dark,
     Dragon,

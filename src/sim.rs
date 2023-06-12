@@ -172,7 +172,7 @@ mod action {
             let random_multiplier = random_multiplier as f64 / 100.0;
 
             let stab_multiplier = {
-                let move_type = battle.move_(move_uid).species.type_;
+                let move_type = battle.move_(move_uid).species.monster_type;
                 if battle.monster(attacker_uid).is_type(move_type) {
                     1.25f64
                 } else {
@@ -180,7 +180,7 @@ mod action {
                 }
             };
 
-            let move_type = battle.move_(move_uid).species.type_;
+            let move_type = battle.move_(move_uid).species.monster_type;
             let target_primary_type = battle.monster(target_uid).species.primary_type;
             let target_secondary_type = battle.monster(target_uid).species.secondary_type;
 

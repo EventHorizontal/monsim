@@ -1,6 +1,6 @@
 use crate::sim::{
     event::{CompositeEventResponder, EventResponderFilters},
-    Battle, BattlerUID, MonType, DEFAULT_RESPONSE,
+    Battle, BattlerUID, MonsterType, DEFAULT_RESPONSE,
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
@@ -9,7 +9,7 @@ use std::ops::Index;
 pub struct MoveSpecies {
     pub dex_number: u16,
     pub name: &'static str,
-    pub type_: MonType,
+    pub monster_type: MonsterType,
     pub category: MoveCategory,
     pub base_power: u16,
     pub base_accuracy: u16,
@@ -22,7 +22,7 @@ pub struct MoveSpecies {
 pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies { 
     dex_number: 000, 
     name: "Unnamed", 
-    type_: MonType::Normal, 
+    monster_type: MonsterType::Normal, 
     category: MoveCategory::Physical, 
     base_power: 50, 
     base_accuracy: 100, 
@@ -38,7 +38,7 @@ impl Debug for MoveSpecies {
         write!(
             f,
             "#{:03} {},\n\t type: {:?},\n\t base accuracy: {}",
-            self.dex_number, self.name, self.type_, self.base_accuracy
+            self.dex_number, self.name, self.monster_type, self.base_accuracy
         )
     }
 }

@@ -11,14 +11,13 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     composite_event_responder: CompositeEventResponder {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
-            dbg_location: monsim::debug_location!("FlashFire.on_try_move"),
-            callback: |battle, owner_uid, _relay| {
-                let current_move = *battle.get_current_action_as_move()
-                    .expect("The current action should be a move within on_try_move responder context.");
+            dbg_location: monsim::debug_location!("FlashFire->on_try_move"),
+            callback: |battle, move_context, _relay| {
+                let current_move = battle.move_(move_context.move_uid);
                 let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
                 if is_current_move_fire_type {
                     let activation_succeeded =
-                        SecondaryAction::activate_ability(battle, owner_uid);
+                        SecondaryAction::activate_ability(battle, move_context.target_uid);
                     return not!(activation_succeeded);
                 }
                 Outcome::Success
@@ -39,14 +38,13 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     composite_event_responder: CompositeEventResponder {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
-            dbg_location: monsim::debug_location!("WaterAbsorb.on_try_move"),
-            callback: |battle, owner_uid, _relay| {
-                let current_move = *battle.get_current_action_as_move()
-                    .expect("The current action should be a move within on_try_move responder context.");
+            dbg_location: monsim::debug_location!("WaterAbsorb->on_try_move"),
+            callback: |battle, move_context, _relay| {
+                let current_move = battle.move_(move_context.move_uid);
                 let is_current_move_water_type = (current_move.species.elemental_type == ElementalType::Water);
                 if is_current_move_water_type {
                     let activation_succeeded =
-                        SecondaryAction::activate_ability(battle, owner_uid);
+                        SecondaryAction::activate_ability(battle, move_context.target_uid);
                     return not!(activation_succeeded);
 
                 }

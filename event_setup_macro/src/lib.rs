@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::quote;
-use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, braced, Pat, Attribute};
+use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, braced, Pat};
 
 /// Generates the struct `EventResponder`, the default constant and the `InBattleEvent` trait plus implementations for each event, when given a list of event identifiers.
 /// The syntax for this is as follows
@@ -37,13 +37,29 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
     let mut events = quote!();
     for expression in match_expr.arms {
         let mut comments = quote!();
+        let mut maybe_context_type = None;
         for attr in expression.attrs {
-            assert!(&attr.path.get_ident().expect("There should be an ident").to_string() == "doc", "Attributes other than doc-comments are not allowed here."); 
-            comments = quote!(
-                #comments
-                #attr
-            );
+            let attribute_name = attr.path.get_ident().expect("There should be an ident").to_string();
+            if attribute_name == "doc" {
+                comments = quote!(
+                    #comments
+                    #attr
+                );
+            } else if attribute_name == "context" {
+                let type_token = attr.parse_args::<Ident>().expect("The context should be a valid type identifier");
+                if type_token.to_string() == "None" {
+                    maybe_context_type = Some(quote!(()));
+                } else {
+                    maybe_context_type = Some(quote!(#type_token));
+                }
+            } else {
+                panic!("Only doc comment and `context` attributes are allowed in this macro.")
+            }
         }
+        let context_type = match maybe_context_type {
+            Some(tokens) => tokens,
+            None => panic!("A context must be specified for each field."),
+        };
         let responder_identifier = expression.pat;
         let responder_return_type = *expression.body;
         
@@ -60,7 +76,7 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
             fields = quote!( 
                 #fields
                 #comments
-                pub #responder_identifier: Option<EventResponder<#responder_return_type>>,
+                pub #responder_identifier: Option<EventResponder<#responder_return_type, #context_type>>,
             );
             fields_for_constant = quote!(
                 #fields_for_constant
@@ -74,7 +90,8 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
 
                 impl #trait_name for #trait_name_ident_in_pascal_case {
                     type EventReturnType = #responder_return_type;
-                    fn corresponding_responder(&self, composite_event_responder: &#struct_name) -> Option<EventResponder<Self::EventReturnType>> {
+                    type ContextType = #context_type;
+                    fn corresponding_responder(&self, composite_event_responder: &#struct_name) -> Option<EventResponder<Self::EventReturnType, Self::ContextType>> {
                         composite_event_responder.#responder_identifier
                     }
         
@@ -97,11 +114,12 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
 
         #third_pub_keyword #trait_keyword #trait_name {
             type EventReturnType: Sized + Clone + Copy;
+            type ContextType: Sized + Clone + Copy;
 
             fn corresponding_responder(
                 &self,
                 composite_event_responder: &#struct_name,
-            ) -> Option<EventResponder<Self::EventReturnType>>;
+            ) -> Option<EventResponder<Self::EventReturnType, Self::ContextType>>;
 
             fn name(&self) -> &'static str;
         }

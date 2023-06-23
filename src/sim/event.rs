@@ -1,9 +1,8 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::BattlerUID, Battle, Percent};
+use crate::sim::{game_mechanics::BattlerUID, Outcome, Battle, Percent};
+use broadcast_contexts::*;
 use event_setup_macro::event_setup;
-
-use super::Outcome;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventResolver;
@@ -11,31 +10,33 @@ pub struct EventResolver;
 
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
-pub struct EventResponder<R: Clone + Copy> {
-    pub callback: fn(&mut Battle, BattlerUID, R) -> R,
+pub struct EventResponder<R: Copy, T: Copy> {
+    pub callback: fn(&mut Battle, C, R) -> R,
 }
 
+/// `R`: indicates return type 
+/// 
+/// `C`: indicates context specifier type
 #[cfg(feature = "debug")]
 #[derive(Clone, Copy)]
-pub struct EventResponder<R: Clone + Copy> {
-    pub callback: fn(&mut Battle, BattlerUID, R) -> R,
-    #[cfg(feature = "debug")]
+pub struct EventResponder<R: Copy, C: Copy> {
+    pub callback: fn(&mut Battle, C, R) -> R,
     pub dbg_location: &'static str,
 }
 
-pub type EventResponderWithLifeTime<'a, R> =
-fn(&'a mut Battle, BattlerUID, R) -> R;
+pub type EventResponderWithLifeTime<'a, R, C> =
+fn(&'a mut Battle, C, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
-pub struct EventResponderInstance<R: Clone + Copy> {
+pub struct EventResponderInstance<R: Copy, C: Copy> {
     pub event_name: &'static str,
-    pub event_responder: EventResponder<R>,
+    pub event_responder: EventResponder<R, C>,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
     pub filters: EventResponderFilters,
 }
 
-pub type EventResponderInstanceList<R> = Vec<EventResponderInstance<R>>;
+pub type EventResponderInstanceList<R, C> = Vec<EventResponderInstance<R, C>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventResponderFilters {
@@ -54,22 +55,72 @@ bitflags::bitflags! {
 
 type Nothing = ();
 
+pub mod broadcast_contexts {
+    use crate::sim::{BattlerUID, MoveUID};
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct MoveContext {
+        pub attacker_uid: BattlerUID,
+        pub move_uid: MoveUID,
+        pub target_uid: BattlerUID,
+    }
+    
+    #[derive(Debug, Clone, Copy)]
+    pub struct AbilityContext {
+        pub ability_holder_uid: BattlerUID,
+    }
+
+    impl MoveContext {
+        pub fn new(move_uid: MoveUID, target_uid: BattlerUID) -> Self {
+            Self {
+                attacker_uid: move_uid.battler_uid,
+                move_uid,
+                target_uid,
+            }
+        }
+    }
+    
+    impl AbilityContext {
+        pub fn new(ability_user_uid: BattlerUID) -> Self {
+            Self {
+                ability_holder_uid: ability_user_uid,
+            }
+        }
+    }
+}
+
+
 event_setup![
     pub struct CompositeEventResponder {
         match event {
             /// Return value: `Outcome::Success` means the move succeeded.
+            #[context(MoveContext)]
             on_try_move => Outcome,
+            
+            #[context(MoveContext)]
             on_damage_dealt => Nothing,
+            
             /// Return value: `Outcome::Success` means ability activation succeeded.
+            #[context(AbilityContext)]
             on_try_activate_ability => Outcome,
+            
+            #[context(AbilityContext)]
             on_ability_activated => Nothing,
+            
             /// Return value: `Percent` value indicates percentage multiplier for
             /// accuracy modification.
+            #[context(MoveContext)]
             on_modify_accuracy => Percent,
+            
             /// Return value: `Outcome::Success` means stat was successfully raised.
+            #[context(None)]
             on_try_raise_stat => Outcome,
+            
             /// Return value: `Outcome::Success` means stat was successfully lowered.
+            #[context(None)]
             on_try_lower_stat => Outcome,
+            
+            #[context(MoveContext)]
             on_status_move_used => Nothing,
         }
     }
@@ -95,34 +146,36 @@ pub struct ActivationOrder {
 }
 
 impl EventResolver {
-    pub fn broadcast_trial_event(
+    pub fn broadcast_trial_event<C: Copy>(
         battle: &mut Battle,
-        caller_uid: BattlerUID,
-        event: &dyn InBattleEvent<EventReturnType = Outcome>,
+        broadcaster_uid: BattlerUID,
+        calling_context: C,
+        event: &dyn InBattleEvent<EventReturnType = Outcome, ContextType = C>,
     ) -> Outcome {
-        Self::broadcast_event(battle, caller_uid, event, Outcome::Success, Some(Outcome::Failure))
+        Self::broadcast_event(battle, broadcaster_uid, calling_context, event, Outcome::Success, Some(Outcome::Failure))
     }
 
     /// `default` tells the resolver what value it should return if there are no event responders, or the event responders fall through.
     ///
     /// `short_circuit` is an optional value that, if returned by a responder in the chain, the resolution short-circuits and returns early.
-    pub fn broadcast_event<R: PartialEq + Copy>(
+    pub fn broadcast_event<R: PartialEq + Copy, C: Copy>(
         battle: &mut Battle,
-        caller_uid: BattlerUID,
-        event: &dyn InBattleEvent<EventReturnType = R>,
+        broadcaster_uid: BattlerUID,
+        calling_context: C,
+        event: &dyn InBattleEvent<EventReturnType = R, ContextType = C>,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
         let composite_event_responder_instances: CompositeEventResponderInstanceList =
             battle.composite_event_responder_instances();
-        let mut event_responder_instances: EventResponderInstanceList<R> =
+        let mut event_responder_instances: EventResponderInstanceList<R, C> =
             EventResolver::get_responders_to_event(composite_event_responder_instances, event);
 
         if event_responder_instances.is_empty() {
             return default;
         }
 
-        crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<R>>(
+        crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<R, C>>(
             &mut battle.prng,
             &mut event_responder_instances,
             &mut |it| it.activation_order,
@@ -136,8 +189,8 @@ impl EventResolver {
             ..
         } in event_responder_instances.into_iter()
         {
-            if Self::filter_composite_event_responders(battle, caller_uid, owner_uid, filters) {
-                relay = (event_responder.callback)(battle, owner_uid, relay);
+            if Self::filter_composite_event_responders(battle, broadcaster_uid, owner_uid, filters) {
+                relay = (event_responder.callback)(battle, calling_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -175,10 +228,10 @@ impl EventResolver {
         event_source_filter_passed && on_battlefield_passed
     }
 
-    fn get_responders_to_event<R: Copy>(
+    fn get_responders_to_event<R: Copy, C: Copy>(
         composite_event_responder_instances: Vec<CompositeEventResponderInstance>,
-        event: &(dyn InBattleEvent<EventReturnType = R>),
-    ) -> Vec<EventResponderInstance<R>> {
+        event: &(dyn InBattleEvent<EventReturnType = R, ContextType = C>),
+    ) -> Vec<EventResponderInstance<R, C>> {
         composite_event_responder_instances
             .iter()
             .filter_map(|it| it.get_responder_to_event(event))
@@ -199,12 +252,12 @@ impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
 }
 
 #[cfg(feature = "debug")]
-impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
+impl<'a, R: Copy, C: Copy> Debug for EventResponder<R, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SpecificEventResponder")
             .field(
                 "callback",
-                &&(self.callback as EventResponderWithLifeTime<'a, R>),
+                &&(self.callback as EventResponderWithLifeTime<'a, R, C>),
             )
             .field("location", &self.dbg_location)
             .finish()
@@ -212,7 +265,7 @@ impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
 }
 
 impl CompositeEventResponderInstance {
-    fn get_responder_to_event<R: Copy>(&self, event: &dyn InBattleEvent<EventReturnType = R>) -> Option<EventResponderInstance<R>> {
+    fn get_responder_to_event<R: Copy, C: Copy>(&self, event: &dyn InBattleEvent<EventReturnType = R, ContextType = C>) -> Option<EventResponderInstance<R, C>> {
         let event_responder = event.corresponding_responder(&self.composite_event_responder);
         event_responder.map(
             |event_responder| EventResponderInstance { 
@@ -286,7 +339,7 @@ mod tests {
             use crate::sim::event_dex::OnTryMove;
             let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
-            crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<Outcome>>(
+            crate::sim::ordering::sort_by_activation_order(
                 &mut prng,
                 &mut event_responder_instances,
                 &mut |it| it.activation_order,
@@ -397,7 +450,7 @@ mod tests {
 
             let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
-            crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<Outcome>>(
+            crate::sim::ordering::sort_by_activation_order(
                 &mut prng,
                 &mut event_responder_instances,
                 &mut |it| it.activation_order,

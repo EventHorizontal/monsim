@@ -106,6 +106,7 @@ impl BattleSimulator {
 }
 
 mod action {
+    use super::event::broadcast_contexts::*;
     use super::event_dex::*;
     use super::*;
 
@@ -131,6 +132,7 @@ mod action {
             target_uid: BattlerUID,
         ) -> TurnResult {
             let attacker_uid = move_uid.battler_uid;
+            let calling_context = MoveContext::new(move_uid, target_uid);
 
             battle.push_message(&format![
                 "{} used {}",
@@ -138,9 +140,12 @@ mod action {
                 battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, attacker_uid, &OnTryMove)
-                == Outcome::Failure
-            {
+            if EventResolver::broadcast_trial_event(
+                    battle, 
+                    attacker_uid, 
+                    calling_context, 
+                    &OnTryMove, 
+            ) == Outcome::Failure {
                 battle.push_message(&"The move failed!");
                 return Ok(());
             }
@@ -213,7 +218,14 @@ mod action {
 
             // Do the calculated damage to the target
             SecondaryAction::damage(battle, target_uid, damage);
-            EventResolver::broadcast_event(battle, attacker_uid, &OnDamageDealt, (), None);
+            EventResolver::broadcast_event(
+                battle, 
+                attacker_uid, 
+                MoveContext::new(move_uid, target_uid), 
+                &OnDamageDealt, 
+                (), 
+                None
+            );
 
             let type_effectiveness = match type_matchup_multiplier {
                 Percent(25) | Percent(50) => "not very effective",
@@ -249,21 +261,32 @@ mod action {
             let attacker_uid = move_uid.battler_uid;
             let attacker = battle.monster(attacker_uid);
             let move_ = *battle.move_(move_uid);
+            let calling_context = MoveContext::new(move_uid, target_uid);
 
             battle.push_message(&format![
                 "{} used {}",
                 attacker.nickname, move_.species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, attacker_uid, &OnTryMove)
-                == Outcome::Failure
-            {
+            if EventResolver::broadcast_trial_event(
+                    battle, 
+                    attacker_uid, 
+                    MoveContext::new(move_uid, target_uid), 
+                    &OnTryMove, 
+            ) == Outcome::Failure {
                 battle.push_message(&"The move failed!");
                 return Ok(());
             }
 
             move_.on_activate(battle, attacker_uid, target_uid);
-            EventResolver::broadcast_event(battle, attacker_uid, &OnStatusMoveUsed, (), None);
+            EventResolver::broadcast_event(
+                battle, 
+                attacker_uid, 
+                calling_context, 
+                &OnStatusMoveUsed, 
+                (), 
+                None
+            );
 
             Ok(())
         }
@@ -290,18 +313,24 @@ mod action {
         /// Returns a `bool` indicating whether the ability succeeded.
         pub fn activate_ability(
             battle: &mut Battle,
-            owner_uid: BattlerUID,
+            ability_holder_uid: BattlerUID,
         ) -> Outcome {
-            if EventResolver::broadcast_trial_event(battle, owner_uid, &OnTryActivateAbility) == Outcome::Success
-            {
-                let ability = *battle.ability(owner_uid);
-                ability.on_activate(battle, owner_uid);
+            let calling_context = AbilityContext::new(ability_holder_uid);
+            if EventResolver::broadcast_trial_event(
+                battle, 
+                ability_holder_uid, 
+                calling_context, 
+                &OnTryActivateAbility, 
+            ) == Outcome::Success {
+                let ability = *battle.ability(ability_holder_uid);
+                ability.on_activate(battle, ability_holder_uid);
                 EventResolver::broadcast_event(
-                    battle,
-                    owner_uid,
-                    &OnAbilityActivated,
-                    (),
-                    None,
+                    battle, 
+                    ability_holder_uid, 
+                    calling_context, 
+                    &OnAbilityActivated, 
+                    (), 
+                    None
                 );
                 Outcome::Success
             } else {
@@ -320,8 +349,12 @@ mod action {
             stat: Stat,
             number_of_stages: u8,
         ) -> Outcome {
-            if EventResolver::broadcast_trial_event(battle,battler_uid, &OnTryRaiseStat) 
-                == Outcome::Success {
+            if EventResolver::broadcast_trial_event(
+                battle, 
+                battler_uid, 
+                (), 
+                &OnTryRaiseStat, 
+            ) == Outcome::Success {
                 let effective_stages = battle
                     .monster_mut(battler_uid)
                     .stat_modifiers
@@ -353,8 +386,12 @@ mod action {
             stat: Stat,
             number_of_stages: u8,
         ) -> Outcome {
-            if EventResolver::broadcast_trial_event(battle, battler_uid, &OnTryLowerStat)
-                == Outcome::Success {
+            if EventResolver::broadcast_trial_event(
+                battle, 
+                battler_uid, 
+                (), 
+                &OnTryLowerStat, 
+            ) == Outcome::Success {
                 let effective_stages = battle
                     .monster_mut(battler_uid)
                     .stat_modifiers

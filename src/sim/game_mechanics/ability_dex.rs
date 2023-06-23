@@ -12,15 +12,14 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     composite_event_responder: CompositeEventResponder {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
-            dbg_location: crate::debug_location!("FlashFire.OnTryMove"),
-            callback: |battle, owner_uid, _relay| {
-                let current_move = *battle.get_current_action_as_move().expect(
-                    "The current action should be a move within on_try_move responder context.",
-                );
-                if current_move.species.elemental_type == ElementalType::Fire
-                    && SecondaryAction::activate_ability(battle, owner_uid) == Outcome::Success
-                {
-                    return Outcome::Failure;
+            dbg_location: crate::debug_location!("FlashFire.on_try_move"),
+            callback: |battle, move_context, _relay| {
+                let current_move = battle.move_(move_context.move_uid);
+                let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
+                if is_current_move_fire_type {
+                    let activation_succeeded =
+                        SecondaryAction::activate_ability(battle, move_context.target_uid);
+                    return !activation_succeeded;
                 }
                 Outcome::Success
             },
@@ -29,6 +28,34 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     },
     on_activate: |battle, _owner_uid| {
         battle.push_message(&"Flash Fire activated!");
+    },
+    filters: EventResponderFilters::default(),
+    order: 0,
+};
+
+pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
+    dex_number: 002,
+    name: "Water Absorb",
+    composite_event_responder: CompositeEventResponder {
+        on_try_move: Some(EventResponder {
+            #[cfg(feature = "debug")]
+            dbg_location: crate::debug_location!("WaterAbsorb.on_try_move"),
+            callback: |battle, move_context, _relay| {
+                let current_move = battle.move_(move_context.move_uid);
+                let is_current_move_water_type = (current_move.species.elemental_type == ElementalType::Water);
+                if is_current_move_water_type {
+                    let activation_succeeded =
+                        SecondaryAction::activate_ability(battle, move_context.target_uid);
+                    return !activation_succeeded;
+
+                }
+                Outcome::Success
+            },
+        }),
+        ..DEFAULT_RESPONSE
+    },
+    on_activate: |battle, _owner_uid| {
+        battle.push_message(&"Water Absorb activated!");
     },
     filters: EventResponderFilters::default(),
     order: 0,

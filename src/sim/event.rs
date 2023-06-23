@@ -10,7 +10,7 @@ pub struct EventResolver;
 
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
-pub struct EventResponder<R: Copy, T: Copy> {
+pub struct EventResponder<R: Copy, C: Copy> {
     pub callback: fn(&mut Battle, C, R) -> R,
 }
 
@@ -240,12 +240,12 @@ impl EventResolver {
 }
 
 #[cfg(not(feature = "debug"))]
-impl<'a, R: Clone + Copy> Debug for EventResponder<R> {
+impl<'a, R: Copy, C: Copy> Debug for EventResponder<R, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventResponder")
             .field(
                 "callback",
-                &&(self.callback as EventResponderWithLifeTime<'a, R>),
+                &&(self.callback as EventResponderWithLifeTime<'a, R, C>),
             )
             .finish()
     }

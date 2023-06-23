@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::quote;
-use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, braced, Pat};
+use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, braced, Pat, Attribute};
 
 /// Generates the struct `EventResponder`, the default constant and the `InBattleEvent` trait plus implementations for each event, when given a list of event identifiers.
 /// The syntax for this is as follows
@@ -18,24 +18,32 @@ use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, brac
 /// ```
 #[proc_macro]
 pub fn event_setup(input: TokenStream) -> TokenStream {
-    let expr_ehs: ExprEventResponder = parse_macro_input!(input);
+    let expr_cer: ExprCompositeEventResponder = parse_macro_input!(input);
     
-    let first_pub_keyword = expr_ehs.first_pub_keyword;
-    let struct_keyword = expr_ehs.struct_keyword;
-    let struct_name = expr_ehs.struct_name;
-    let match_expr = expr_ehs.match_expr;
-    let second_pub_keyword = expr_ehs.second_pub_keyword;
-    let const_keyword = expr_ehs.const_keyword;
-    let default_responder_constant_name = expr_ehs.default_responder_constant_name;
-    let default_responder_value = expr_ehs.default_responder_value;
-    let third_pub_keyword = expr_ehs.third_pub_keyword;
-    let trait_keyword = expr_ehs.trait_keyword;
-    let trait_name = expr_ehs.trait_name;
+    let first_pub_keyword = expr_cer.first_pub_keyword;
+    let struct_keyword = expr_cer.struct_keyword;
+    let struct_name = expr_cer.struct_name;
+    let match_expr = expr_cer.match_expr;
+    let second_pub_keyword = expr_cer.second_pub_keyword;
+    let const_keyword = expr_cer.const_keyword;
+    let default_responder_constant_name = expr_cer.default_responder_constant_name;
+    let default_responder_value = expr_cer.default_responder_value;
+    let third_pub_keyword = expr_cer.third_pub_keyword;
+    let trait_keyword = expr_cer.trait_keyword;
+    let trait_name = expr_cer.trait_name;
 
     let mut fields = quote!();
     let mut fields_for_constant = quote!();
     let mut events = quote!();
     for expression in match_expr.arms {
+        let mut comments = quote!();
+        for attr in expression.attrs {
+            assert!(&attr.path.get_ident().expect("There should be an ident").to_string() == "doc", "Attributes other than doc-comments are not allowed here."); 
+            comments = quote!(
+                #comments
+                #attr
+            );
+        }
         let responder_identifier = expression.pat;
         let responder_return_type = *expression.body;
         
@@ -51,6 +59,7 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
         );
             fields = quote!( 
                 #fields
+                #comments
                 pub #responder_identifier: Option<EventResponder<#responder_return_type>>,
             );
             fields_for_constant = quote!(
@@ -124,7 +133,7 @@ fn to_pascal_case(input_string: String) -> String {
     output_string.replace("_", "")
 }
 
-struct ExprEventResponder {
+struct ExprCompositeEventResponder {
     first_pub_keyword: Token![pub],
     struct_keyword: Token![struct],
     struct_name: Ident,
@@ -138,7 +147,7 @@ struct ExprEventResponder {
     trait_name: Ident,
 }
 
-impl Parse for ExprEventResponder {
+impl Parse for ExprCompositeEventResponder {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let first_pub_keyword: Token![pub] = input.parse()?;
         let struct_keyword: Token![struct] = input.parse()?;

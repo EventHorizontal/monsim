@@ -57,12 +57,18 @@ bitflags::bitflags! {
 event_setup![
     pub struct CompositeEventResponder {
         match event {
+            /// Return value: `Outcome::Success` means the move succeeded.
             on_try_move => Outcome,
             on_damage_dealt => void,
+            /// Return value: `Outcome::Success` means ability activation succeeded.
             on_try_activate_ability => Outcome,
             on_ability_activated => void,
+            /// Return value: `Percent` value indicates percentage multiplier for
+            /// accuracy modification.
             on_modify_accuracy => Percent,
+            /// Return value: `Outcome::Success` means stat was successfully raised.
             on_try_raise_stat => Outcome,
+            /// Return value: `Outcome::Success` means stat was successfully lowered.
             on_try_lower_stat => Outcome,
             on_status_move_used => void,
         }

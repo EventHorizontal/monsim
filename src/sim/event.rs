@@ -8,8 +8,6 @@ use super::Outcome;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventResolver;
 
-#[allow(non_camel_case_types)]
-type void = ();
 
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
@@ -26,7 +24,7 @@ pub struct EventResponder<R: Clone + Copy> {
 }
 
 pub type EventResponderWithLifeTime<'a, R> =
-    fn(&'a mut Battle, BattlerUID, R) -> R;
+fn(&'a mut Battle, BattlerUID, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventResponderInstance<R: Clone + Copy> {
@@ -54,15 +52,17 @@ bitflags::bitflags! {
     }
 }
 
+type Nothing = ();
+
 event_setup![
     pub struct CompositeEventResponder {
         match event {
             /// Return value: `Outcome::Success` means the move succeeded.
             on_try_move => Outcome,
-            on_damage_dealt => void,
+            on_damage_dealt => Nothing,
             /// Return value: `Outcome::Success` means ability activation succeeded.
             on_try_activate_ability => Outcome,
-            on_ability_activated => void,
+            on_ability_activated => Nothing,
             /// Return value: `Percent` value indicates percentage multiplier for
             /// accuracy modification.
             on_modify_accuracy => Percent,
@@ -70,7 +70,7 @@ event_setup![
             on_try_raise_stat => Outcome,
             /// Return value: `Outcome::Success` means stat was successfully lowered.
             on_try_lower_stat => Outcome,
-            on_status_move_used => void,
+            on_status_move_used => Nothing,
         }
     }
     pub const DEFAULT_RESPONSE = None;

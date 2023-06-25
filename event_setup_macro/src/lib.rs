@@ -8,8 +8,12 @@ use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, brac
 /// ```
 /// pub struct EventResponder {
 /// match event {
+///         /// Possible documentation for event_1
+///         #[context(<ContextType>)]
 ///         event_name_1 => <EventReturnType>,
 ///         ...
+///         /// Possible documentation for event_n
+///         #[context(<ContextType>)]
 ///         event_name_n => <EventReturnType>,
 ///     }
 /// }

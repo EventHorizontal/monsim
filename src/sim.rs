@@ -55,7 +55,7 @@ impl BattleSimulator {
 
         ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
 
-        let mut result = Ok(());
+        let mut result = Ok(NOTHING);
         for chosen_action in chosen_actions.into_iter() {
             self.battle.current_action = Some(chosen_action);
             result = match chosen_action {
@@ -101,7 +101,7 @@ impl BattleSimulator {
                 )))
             }
         };
-        Ok(())
+        Ok(NOTHING)
     }
 }
 
@@ -145,9 +145,10 @@ mod action {
                     attacker_uid, 
                     calling_context, 
                     &OnTryMove, 
-            ) == Outcome::Failure {
+            ) == Outcome::Failure 
+            {
                 battle.push_message(&"The move failed!");
-                return Ok(());
+                return Ok(NOTHING);
             }
 
             let level = battle.monster(attacker_uid).level;
@@ -201,7 +202,7 @@ mod action {
             // If the opponent is immune, damage calculation is skipped.
             if type_matchup_multiplier == INEFFECTIVE {
                 battle.push_message(&"It was ineffective...");
-                return Ok(());
+                return Ok(NOTHING);
             }
 
             // The (WIP) bona-fide damage formula.
@@ -250,7 +251,7 @@ mod action {
                 battle.monster(target_uid).current_health
             ]);
 
-            Ok(())
+            Ok(NOTHING)
         }
 
         pub fn status_move(
@@ -259,13 +260,11 @@ mod action {
             target_uid: BattlerUID,
         ) -> TurnResult {
             let attacker_uid = move_uid.battler_uid;
-            let attacker = battle.monster(attacker_uid);
-            let move_ = *battle.move_(move_uid);
             let calling_context = MoveContext::new(move_uid, target_uid);
 
             battle.push_message(&format![
                 "{} used {}",
-                attacker.nickname, move_.species.name
+                battle.monster(attacker_uid).nickname, battle.move_(move_uid).species.name
             ]);
 
             if EventResolver::broadcast_trial_event(
@@ -275,10 +274,14 @@ mod action {
                     &OnTryMove, 
             ) == Outcome::Failure {
                 battle.push_message(&"The move failed!");
-                return Ok(());
+                return Ok(NOTHING);
             }
-
-            move_.on_activate(battle, attacker_uid, target_uid);
+        
+            {
+                let move_ = *battle.move_(move_uid);
+                move_.on_activate(battle, attacker_uid, target_uid);
+            }
+            
             EventResolver::broadcast_event(
                 battle, 
                 attacker_uid, 
@@ -288,7 +291,7 @@ mod action {
                 None
             );
 
-            Ok(())
+            Ok(NOTHING)
         }
     }
 

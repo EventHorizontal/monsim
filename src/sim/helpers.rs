@@ -1,5 +1,8 @@
 use std::ops::{Not, Add, Sub, Mul};
 
+/// I prefer this for readability
+pub type Nothing = ();
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Outcome {
     Success,

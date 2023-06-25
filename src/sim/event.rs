@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::BattlerUID, Outcome, Battle, Percent};
+use crate::sim::{game_mechanics::BattlerUID, Outcome, Battle, Percent, Nothing};
 use broadcast_contexts::*;
 use event_setup_macro::event_setup;
 
@@ -33,14 +33,14 @@ pub struct EventResponderInstance<R: Copy, C: Copy> {
     pub event_responder: EventResponder<R, C>,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
-    pub filters: EventResponderFilters,
+    pub filters: EventFilterOptions,
 }
 
 pub type EventResponderInstanceList<R, C> = Vec<EventResponderInstance<R, C>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EventResponderFilters {
-    pub whose_event: TargetFlags,
+pub struct EventFilterOptions {
+    pub event_source: TargetFlags,
     pub on_battlefield: bool,
 }
 
@@ -52,8 +52,6 @@ bitflags::bitflags! {
         const ENVIRONMENT = 0b1000;
     }
 }
-
-type Nothing = ();
 
 pub mod broadcast_contexts {
     use crate::sim::{BattlerUID, MoveUID};
@@ -133,7 +131,7 @@ pub struct CompositeEventResponderInstance {
     pub composite_event_responder: CompositeEventResponder,
     pub owner_uid: BattlerUID,
     pub activation_order: ActivationOrder,
-    pub filters: EventResponderFilters,
+    pub filters: EventFilterOptions,
 }
 
 pub type CompositeEventResponderInstanceList = Vec<CompositeEventResponderInstance>;
@@ -206,7 +204,7 @@ impl EventResolver {
         battle: &Battle,
         event_caller_uid: BattlerUID,
         owner_uid: BattlerUID,
-        composite_event_responder_filters: EventResponderFilters,
+        composite_event_responder_filters: EventFilterOptions,
     ) -> bool {
         let bitmask = {
             let mut bitmask = 0b0000;
@@ -222,7 +220,7 @@ impl EventResolver {
               // TODO: When the Environment is implemented, add the environment to the bitmask. (0x08)
             bitmask
         };
-        let event_source_filter_passed = composite_event_responder_filters.whose_event.bits() == bitmask;
+        let event_source_filter_passed = composite_event_responder_filters.event_source.bits() == bitmask;
         let on_battlefield_passed = battle.is_battler_on_field(owner_uid);
 
         event_source_filter_passed && on_battlefield_passed
@@ -279,10 +277,10 @@ impl CompositeEventResponderInstance {
     }
 }
 
-impl EventResponderFilters {
-    pub const fn default() -> EventResponderFilters {
-        EventResponderFilters {
-            whose_event: TargetFlags::OPPONENTS,
+impl EventFilterOptions {
+    pub const fn default() -> EventFilterOptions {
+        EventFilterOptions {
+            event_source: TargetFlags::OPPONENTS,
             on_battlefield: true,
         }
     }
@@ -523,7 +521,7 @@ mod tests {
                 team_id: TeamID::Opponents,
                 battler_number: BattlerNumber::_1,
             },
-            EventResponderFilters::default(),
+            EventFilterOptions::default(),
         );
         assert!(passed_filter);
     }
@@ -544,7 +542,7 @@ mod tests {
                 speed: 99,
                 order: 0,
             },
-            filters: crate::sim::EventResponderFilters::default(),
+            filters: crate::sim::EventFilterOptions::default(),
         };
         println!("{:#?}", event_responder_instance);
     }

@@ -2,7 +2,7 @@
 
 use super::{ability::AbilitySpecies, ElementalType};
 use crate::{sim::{
-    CompositeEventResponder, EventResponderFilters, SecondaryAction, EventResponder,
+    CompositeEventResponder, EventFilterOptions, SecondaryAction, EventResponder,
     DEFAULT_RESPONSE, Outcome,
 }, debug_location};
 
@@ -29,7 +29,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.push_message(&"Flash Fire activated!");
     },
-    filters: EventResponderFilters::default(),
+    filters: EventFilterOptions::default(),
     order: 0,
 };
 
@@ -57,6 +57,6 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.push_message(&"Water Absorb activated!");
     },
-    filters: EventResponderFilters::default(),
+    filters: EventFilterOptions::default(),
     order: 0,
 };

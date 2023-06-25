@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-    Battle, BattlerUID, EventResponderFilters, ElementalType, MoveCategory, MoveSpecies,
+    Battle, BattlerUID, EventFilterOptions, ElementalType, MoveCategory, MoveSpecies,
     SecondaryAction, Stat, DEFAULT_RESPONSE,
 };
 
@@ -14,7 +14,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -27,7 +27,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -40,7 +40,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -53,7 +53,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -66,7 +66,7 @@ pub const Growl: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventResponderFilters::default(),
+    composite_event_responder_filters: EventFilterOptions::default(),
     on_activate: Some(
         |battle: &mut Battle, _attacker_uid: BattlerUID, target_uid: BattlerUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);

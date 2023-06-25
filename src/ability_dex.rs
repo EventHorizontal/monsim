@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::{sim::{
-    Ability, AbilitySpecies, CompositeEventResponder, EventResponderFilters, ElementalType,
+    Ability, AbilitySpecies, CompositeEventResponder, EventFilterOptions, ElementalType,
     SecondaryAction, EventResponder, DEFAULT_RESPONSE, Outcome,
 }, not};
 
@@ -31,7 +31,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.push_message(&"Flash Fire activated!");
     },
-    filters: EventResponderFilters::default(),
+    filters: EventFilterOptions::default(),
     order: 0,
 };
 
@@ -59,6 +59,6 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.push_message(&"Water Absorb activated!");
     },
-    filters: EventResponderFilters::default(),
+    filters: EventFilterOptions::default(),
     order: 0,
 };

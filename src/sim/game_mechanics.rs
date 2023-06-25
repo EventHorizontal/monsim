@@ -12,7 +12,7 @@ use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
 use super::event::{
-    ActivationOrder, EventResponderFilters, CompositeEventResponderInstance, CompositeEventResponderInstanceList,
+    ActivationOrder, EventFilterOptions, CompositeEventResponderInstance, CompositeEventResponderInstanceList,
 };
 pub use ability::*;
 pub use monster::*;
@@ -303,7 +303,7 @@ impl Battler {
             composite_event_responder: self.monster.composite_event_responder(),
             owner_uid: self.uid,
             activation_order,
-            filters: EventResponderFilters::default(),
+            filters: EventFilterOptions::default(),
         }
     }
 
@@ -317,7 +317,7 @@ impl Battler {
             composite_event_responder: self.ability.composite_event_responder(),
             owner_uid: self.uid,
             activation_order,
-            filters: EventResponderFilters::default(),
+            filters: EventFilterOptions::default(),
         }
     }
 
@@ -332,7 +332,7 @@ impl Battler {
                     speed: self.monster.stats[Stat::Speed],
                     order: 0,
                 },
-                filters: EventResponderFilters::default(),
+                filters: EventFilterOptions::default(),
             })
             .collect::<Vec<_>>()
     }

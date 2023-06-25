@@ -67,9 +67,8 @@ pub const Growl: MoveSpecies = MoveSpecies {
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
     composite_event_responder_filters: EventResponderFilters::default(),
-    on_activate: Some(|battle: &mut Battle,
-                  _attacker_uid: BattlerUID,
-                  target_uid: BattlerUID| {
+    on_activate: Some(
+        |battle: &mut Battle, _attacker_uid: BattlerUID, target_uid: BattlerUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),
 };

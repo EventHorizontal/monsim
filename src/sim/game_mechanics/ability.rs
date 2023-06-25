@@ -11,7 +11,8 @@ pub struct AbilitySpecies {
     pub dex_number: u16,
     pub name: &'static str,
     pub composite_event_responder: CompositeEventResponder,
-    pub on_activate: fn(&mut Battle, BattlerUID) -> (),
+    /// `fn(battle: &mut Battle, ability_holder: BattlerUID)`
+    pub on_activate: fn(&mut Battle, BattlerUID),
     pub filters: EventResponderFilters,
     pub order: u16,
 }

@@ -5,13 +5,16 @@ use monsim::{sim::{
     SecondaryAction, EventResponder, DEFAULT_RESPONSE, Outcome,
 }, not};
 
+#[cfg(feature = "debug")]
+use monsim::debug_location;
+
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
     composite_event_responder: CompositeEventResponder {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
-            dbg_location: monsim::debug_location!("FlashFire->on_try_move"),
+            dbg_location: debug_location!("FlashFire->on_try_move"),
             callback: |battle, move_context, _relay| {
                 let current_move = battle.move_(move_context.move_uid);
                 let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
@@ -38,7 +41,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     composite_event_responder: CompositeEventResponder {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
-            dbg_location: monsim::debug_location!("WaterAbsorb->on_try_move"),
+            dbg_location: debug_location!("WaterAbsorb->on_try_move"),
             callback: |battle, move_context, _relay| {
                 let current_move = battle.move_(move_context.move_uid);
                 let is_current_move_water_type = (current_move.species.elemental_type == ElementalType::Water);

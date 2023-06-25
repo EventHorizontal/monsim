@@ -16,7 +16,8 @@ pub struct MoveSpecies {
     pub priority: u16,
     pub composite_event_responder: CompositeEventResponder,
     pub composite_event_responder_filters: EventResponderFilters,
-    pub on_activate: Option<fn(&mut Battle, BattlerUID, BattlerUID) -> ()>,
+    /// `fn(battle: &mut Battle, attacker: BattlerUID, target: BattlerUID)`
+    pub on_activate: Option<fn(&mut Battle, BattlerUID, BattlerUID)>,
 }
 
 pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies { 

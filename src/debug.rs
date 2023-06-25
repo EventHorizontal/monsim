@@ -29,7 +29,7 @@ pub fn write_debug_to_file(message: String) -> std::io::Result<()> {
 macro_rules! debug_to_file {
 	($x: expr) => {
         #[cfg( feature = "debug" )]
-		let debug_file_output_error = crate::debug::write_debug_to_file(format!["[{}:{}:{}]: {} = {:#?}", std::file!(), std::line!(), std::column!(), stringify!($x), $x.clone()]);
+		let debug_file_output_error = crate::debug::write_debug_to_file(format!["[{file}:{line}:{column}]: {name} = {value:#?}", file=std::file!(), line=std::line!(), column=std::column!(), name=stringify!($x), value=$x.clone()]);
 	};
 }
 
@@ -37,6 +37,6 @@ macro_rules! debug_to_file {
 #[cfg(feature = "debug")]
 macro_rules! debug_location {
 	($x: expr) => {
-		const_format::formatcp!["[{}:{}:{}] {}", std::file!(), std::line!(), std::column!(), $x]
+		const_format::formatcp!["[{file}:{line}:{col}] {message}", file=std::file!(), line=std::line!(), col=std::column!(), message=$x]
 	};
 }

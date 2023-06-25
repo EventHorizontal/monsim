@@ -1,10 +1,10 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use super::{ability::AbilitySpecies, ElementalType};
-use crate::sim::{
+use crate::{sim::{
     CompositeEventResponder, EventResponderFilters, SecondaryAction, EventResponder,
     DEFAULT_RESPONSE, Outcome,
-};
+}, debug_location};
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
@@ -12,7 +12,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     composite_event_responder: CompositeEventResponder {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
-            dbg_location: crate::debug_location!("FlashFire->on_try_move"),
+            dbg_location: debug_location!("FlashFire->on_try_move"),
             callback: |battle, move_context, _relay| {
                 let current_move = battle.move_(move_context.move_uid);
                 let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
@@ -39,7 +39,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     composite_event_responder: CompositeEventResponder {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
-            dbg_location: crate::debug_location!("WaterAbsorb->on_try_move"),
+            dbg_location: debug_location!("WaterAbsorb->on_try_move"),
             callback: |battle, move_context, _relay| {
                 let current_move = battle.move_(move_context.move_uid);
                 let is_current_move_water_type = (current_move.species.elemental_type == ElementalType::Water);

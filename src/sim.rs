@@ -15,7 +15,7 @@ pub use choice::*;
 pub use battle::*;
 pub use event::{
     event_dex, ActivationOrder, EventResolver, CompositeEventResponder, EventFilterOptions,
-    InBattleEvent, EventResponder, TargetFlags, DEFAULT_RESPONSE,
+    InBattleEvent, EventResponder, TargetFlags, DEFAULT_RESPONSE, broadcast_contexts::*
 };
 pub use game_mechanics::*;
 pub use battle_constants::*;
@@ -134,7 +134,6 @@ impl BattleSimulator {
 }
 
 mod action {
-    use super::event::broadcast_contexts::*;
     use super::event_dex::*;
     use super::*;
 

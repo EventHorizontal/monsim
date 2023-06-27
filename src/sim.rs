@@ -74,7 +74,12 @@ impl BattleSimulator {
         self.increment_turn_number()?;
 
         self.battle
-            .push_messages(&[&format!["Turn {turn_number}", turn_number = self.turn_number], &EMPTY_LINE]);
+            .push_messages(
+                &[
+                    &format!["Turn {turn_number}", turn_number = self.turn_number], 
+                    &EMPTY_LINE
+                ]
+            );
 
         ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
 
@@ -285,8 +290,9 @@ mod action {
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
             battle.push_message(&format![
-                "{} used {}",
-                battle.monster(attacker_uid).nickname, battle.move_(move_uid).species.name
+                "{attacker} used {move_}",
+                attacker = battle.monster(attacker_uid).nickname, 
+                move_ = battle.move_(move_uid).species.name
             ]);
 
             if EventResolver::broadcast_trial_event(

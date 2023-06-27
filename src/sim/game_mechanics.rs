@@ -110,14 +110,6 @@ impl BattlerTeam {
         &mut self.battlers
     }
 
-    pub fn to_string(&self) -> String {
-        let mut out = String::new();
-        for battler in self.battlers() {
-            out.push_str(&Self::battler_status_as_string(battler));
-        }
-        out
-    }
-
     pub fn battler_status_as_string(battler: &Battler) -> String {
         let mut out = String::new();
         if battler.monster.nickname == battler.monster.species.name {
@@ -154,6 +146,16 @@ impl BattlerTeam {
     }
 }
 
+impl Display for BattlerTeam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::new();
+        for battler in self.battlers() {
+            out.push_str(&Self::battler_status_as_string(battler));
+        }
+        write!(f, "{out}")
+    }
+}
+
 impl AllyBattlerTeam {
     pub fn new(battlers: Vec<Battler>) -> Self {
         assert!(
@@ -171,15 +173,7 @@ impl AllyBattlerTeam {
     pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
         &mut self.0.battlers
     }
-
-    pub fn to_string(&self) -> String {
-        let mut out = String::new();
-        for battler in self.0.battlers() {
-            out.push_str(&BattlerTeam::battler_status_as_string(battler));
-        }
-        out
-    }
-
+    
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         self.0
@@ -195,6 +189,12 @@ impl AllyBattlerTeam {
 
     pub fn unwrap(&self) -> BattlerTeam {
         self.0.clone()
+    }
+}
+
+impl Display for AllyBattlerTeam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }
 
@@ -216,14 +216,6 @@ impl OpponentBattlerTeam {
         &mut self.0.battlers
     }
 
-    pub fn to_string(&self) -> String {
-        let mut out = String::new();
-        for battler in self.0.battlers() {
-            out.push_str(&BattlerTeam::battler_status_as_string(battler));
-        }
-        out
-    }
-
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         for battler in self.0.battlers.iter() {
@@ -238,6 +230,12 @@ impl OpponentBattlerTeam {
 
     pub fn unwrap(&self) -> BattlerTeam {
         self.0.clone()
+    }
+}
+
+impl Display for OpponentBattlerTeam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }
 

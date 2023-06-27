@@ -20,15 +20,6 @@ impl From<bool> for Outcome {
     }
 }
 
-impl Into<bool> for Outcome {
-    fn into(self) -> bool {
-        match self {
-            Outcome::Success => true,
-            Outcome::Failure => false,
-        }
-    }
-}
-
 impl Not for Outcome {
     type Output = Outcome;
 

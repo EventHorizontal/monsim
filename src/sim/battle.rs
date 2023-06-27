@@ -140,7 +140,7 @@ impl Battle {
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         out.append(&mut self.ally_team.composite_event_responder_instances());
-        out.append(&mut &mut self.opponent_team.composite_event_responder_instances());
+        out.append(&mut self.opponent_team.composite_event_responder_instances());
         out
     }
 
@@ -267,15 +267,11 @@ fn push_pretty_tree_for_team(
     output_string.push_str(team_name);
     for (i, battler) in team.battlers().iter().enumerate() {
         let is_not_last_monster = i < number_of_monsters - 1;
-        let prefix_str;
-        let suffix_str;
-        if is_not_last_monster {
-            prefix_str = "\t│\t";
-            suffix_str = "├── "
+        let (prefix_str,suffix_str) = if is_not_last_monster {
+            ("\t│\t", "├── ")
         } else {
-            prefix_str = "\t \t";
-            suffix_str = "└── "
-        }
+            ("\t \t", "└── ")
+        };
         output_string.push_str(&("\t".to_owned() + suffix_str));
         output_string.push_str(&BattlerTeam::battler_status_as_string(battler));
         output_string.push_str(&(prefix_str.to_owned() + "│\n"));

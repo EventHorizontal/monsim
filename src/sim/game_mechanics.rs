@@ -39,7 +39,6 @@ pub enum TeamID {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battler {
     pub uid: BattlerUID,
-    pub on_field: bool,
     pub monster: Monster,
     pub moveset: MoveSet,
     pub ability: Ability,
@@ -79,6 +78,20 @@ pub struct BattlerUID {
     pub team_id: TeamID,
     pub battler_number: BattlerNumber,
 }
+
+pub const ALLY_1: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_1};
+pub const ALLY_2: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_2};
+pub const ALLY_3: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_3};
+pub const ALLY_4: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_4};
+pub const ALLY_5: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_5};
+pub const ALLY_6: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_6};
+
+pub const OPPONENT_1: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_1};
+pub const OPPONENT_2: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_2};
+pub const OPPONENT_3: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_3};
+pub const OPPONENT_4: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_4};
+pub const OPPONENT_5: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_5};
+pub const OPPONENT_6: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_6};
 
 impl Display for BattlerUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -297,14 +310,12 @@ impl Display for Battler {
 impl Battler {
     pub fn new(
         uid: BattlerUID,
-        on_field: bool,
         monster: Monster,
         moveset: MoveSet,
         ability: Ability,
     ) -> Self {
         Battler {
             uid,
-            on_field,
             monster,
             moveset,
             ability,

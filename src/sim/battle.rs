@@ -1,15 +1,15 @@
-use crate::sim::{
+use crate::{sim::{
     event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam,
     AvailableActions, Battler, BattlerTeam, BattlerUID, Monster, Move,
-    MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions,
-};
+    MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions, BattlerNumber, 
+}, collection};
 use std::{
     fmt::Display,
     iter::Chain,
-    slice::{Iter, IterMut},
+    slice::{Iter, IterMut}, collections::HashMap, ops::Index,
 };
 
-use super::prng::{Prng, self};
+use super::{prng::{Prng, self}, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
 type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
@@ -24,6 +24,33 @@ pub struct Battle {
     pub ally_team: AllyBattlerTeam,
     pub opponent_team: OpponentBattlerTeam,
     pub message_buffer: MessageBuffer,
+    pub battlers_on_field: BattlerMap<bool>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BattlerMap<T> {
+    map: HashMap<BattlerUID, T>
+}
+
+impl<T> BattlerMap<T> {
+    pub fn new(map: HashMap<BattlerUID, T>) -> Self {
+        for team_id in [TeamID::Allies, TeamID::Opponents].into_iter() {
+            for number in  0..=5 {
+                let battler_number = BattlerNumber::from(number);
+                let battler_uid = BattlerUID { team_id, battler_number };
+                assert!(map.contains_key(&battler_uid), "Could not find {battler_uid} in hash_map for BattlerMap construction")
+            }
+        }
+        Self { map }
+    }
+}
+
+impl<T> Index<BattlerUID> for BattlerMap<T> {
+    type Output = T;
+
+    fn index(&self, index: BattlerUID) -> &Self::Output {
+        self.map.get(&index).expect("All BattlerUIDs should have a bool value")
+    }
 }
 
 impl Battle {
@@ -34,6 +61,20 @@ impl Battle {
             ally_team,
             opponent_team,
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+            battlers_on_field: BattlerMap::new(collection!(
+                ALLY_1 => true,
+                ALLY_2 => false,
+                ALLY_3 => false,
+                ALLY_4 => false,
+                ALLY_5 => false,
+                ALLY_6 => false,
+                OPPONENT_1 => true,
+                OPPONENT_2 => false,
+                OPPONENT_3 => false,
+                OPPONENT_4 => false,
+                OPPONENT_5 => false,
+                OPPONENT_6 => false,
+            )),
         }
     }
 
@@ -58,7 +99,7 @@ impl Battle {
     }
 
     pub fn is_battler_on_field(&self, battler_uid: BattlerUID) -> bool {
-        self.find_battler(battler_uid).on_field
+        self.battlers_on_field[battler_uid]
     }
 
     pub fn current_action_user(&self) -> Option<&Battler> {
@@ -171,7 +212,7 @@ impl Battle {
     }
 
     pub fn battlers_on_field(&self) -> Vec<&Battler> {
-        self.battlers().filter(|it| it.on_field).collect::<Vec<_>>()
+        self.battlers().filter(|it| self.battlers_on_field[it.uid]).collect::<Vec<_>>()
     }
 
     /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is

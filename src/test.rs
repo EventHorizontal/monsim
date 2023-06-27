@@ -50,7 +50,6 @@ mod main {
                             team_id: TeamID::Allies,
                             battler_number: BattlerNumber::from(0usize),
                         },
-                        true,
                         monster::Monster::new(monster_dex::Torchic, "Ruby"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Scratch)),
@@ -63,7 +62,6 @@ mod main {
                             team_id: TeamID::Allies,
                             battler_number: BattlerNumber::from(1usize),
                         },
-                        false,
                         monster::Monster::new(monster_dex::Mudkip, "Sapphire"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Scratch)),
@@ -76,7 +74,6 @@ mod main {
                             team_id: TeamID::Allies,
                             battler_number: BattlerNumber::from(2usize),
                         },
-                        false,
                         monster::Monster::new(monster_dex::Treecko, "Emerald"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Bubble)),
@@ -91,7 +88,6 @@ mod main {
                             team_id: TeamID::Opponents,
                             battler_number: BattlerNumber::from(0usize),
                         },
-                        true,
                         monster::Monster::new(monster_dex::Drifblim, "Cheerio"),
                         move_::MoveSet::new(vec![
                             (move_::Move::new(move_dex::Tackle)),

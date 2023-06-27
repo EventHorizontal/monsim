@@ -8,12 +8,12 @@ use syn::{
 };
 
 #[derive(Clone, Debug)]
-pub struct ExprBattleContext {
+pub struct ExprBattle {
     pub ally_expr_battler_team: ExprBattlerTeam,
     pub opponent_expr_battler_team: ExprBattlerTeam,
 }
 
-impl Parse for ExprBattleContext {
+impl Parse for ExprBattle {
     fn parse(input: ParseStream) -> Result<Self> {
         let battle_contents = parse_braced_comma_separated_list::<ExprBattlerTeam>(input)?;
         let mut battle_contents = battle_contents.iter();
@@ -43,7 +43,7 @@ impl Parse for ExprBattleContext {
         let ally_expr_battler_team = check_team_id("Allies")?;
         let opponent_expr_battler_team = check_team_id("Opponents")?;
 
-        Ok(ExprBattleContext {
+        Ok(ExprBattle {
             ally_expr_battler_team,
             opponent_expr_battler_team,
         })

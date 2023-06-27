@@ -1,6 +1,6 @@
 mod dsl_syntax;
 
-use dsl_syntax::{ExprBattleContext, ExprBattlerTeam, GameMechanicType, path_to_ident};
+use dsl_syntax::{ExprBattle, ExprBattlerTeam, GameMechanicType, path_to_ident};
 use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use syn::parse_macro_input;
@@ -32,16 +32,17 @@ use syn::parse_macro_input;
 #[proc_macro]
 pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the expression ________________________________________________________________
-    let context_expr = parse_macro_input!(input as ExprBattleContext);
+    let context_expr = parse_macro_input!(input as ExprBattle);
 
     // Construct the streams of Tokens_______________________________________________________
     
-    let ExprBattleContext { 
+    let ExprBattle { 
         ally_expr_battler_team, 
         opponent_expr_battler_team 
     } = context_expr;
 
-    let team_type = ally_expr_battler_team.team_type.clone();
+    let ally_team_type = ally_expr_battler_team.team_type.clone();
+    let opponent_team_type = opponent_expr_battler_team.team_type.clone();
     
     let ally_battlers_vec = battler_team_to_tokens(
         ally_expr_battler_team
@@ -53,8 +54,8 @@ pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let output = quote!(
         { 
             monsim::sim::Battle::new(
-                monsim::sim::AllyBattlerTeam(#team_type::new(#ally_battlers_vec)),
-                monsim::sim::OpponentBattlerTeam(#team_type::new(#opponent_battlers_vec)),
+                monsim::sim::AllyBattlerTeam(#ally_team_type::new(#ally_battlers_vec)),
+                monsim::sim::OpponentBattlerTeam(#opponent_team_type::new(#opponent_battlers_vec)),
             )
         }
     );
@@ -103,7 +104,6 @@ fn battler_team_to_tokens<'a>(
 
         moves_vec_delimited = quote!(vec![#moves_vec_delimited]);
         let monster_number = quote!(BattlerNumber::from(#index));
-        let is_first_monster = index == 0;
         let monster_type_path = monster.monster_type_path;
         let ability_type_path = ability_type_path.expect("Every monster must have an ability.");
         
@@ -111,7 +111,6 @@ fn battler_team_to_tokens<'a>(
             #comma_separated_battlers 
             #sim_ident::Battler::new(
                 #sim_ident::BattlerUID { team_id: #sim_ident::TeamID::#team_name_ident, battler_number: #sim_ident::#monster_number },
-                #is_first_monster,
                 #monster_type_path::new(#monster_species, #monster_nickname),
                 #move_mod::MoveSet::new(#moves_vec_delimited),
                 #ability_type_path::new(#ability_species),

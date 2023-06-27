@@ -1,3 +1,5 @@
+// TODO: tidy up this module, hard to read
+
 use std::{
     io::Stdout,
     sync::mpsc::{self, Receiver},
@@ -135,10 +137,10 @@ impl<'a> AppState<'a> {
         };
     }
 
-    fn update_battle_related_state(&mut self, battle: &mut Battle) {
+    fn update_battle_related_state(&mut self, BattleSimulator { battle, sim_state, ..}: &mut BattleSimulator) {
         *self = Self {
             message_buffer: battle.message_buffer.clone(),
-            is_battle_ongoing: battle.sim_state != SimState::BattleFinished,
+            is_battle_ongoing: *sim_state != SimState::BattleFinished,
             ally_active_battler_string: BattlerTeam::battler_status_as_string(
                 battle.ally_team.active_battler(),
             ),
@@ -231,7 +233,7 @@ impl App {
     fn update_state_from_input(
         terminal: &mut Terminal<CrosstermBackend<Stdout>>,
         app_state: &mut AppState,
-        battle: &mut BattleSimulator,
+        battle_sim: &mut BattleSimulator,
         receiver: &Receiver<TuiEvent<KeyEvent>>,
     ) -> MonsimIoResult {
         let mut result: MonsimIoResult = Ok(false);
@@ -327,7 +329,7 @@ impl App {
                                         ScrollableWidgets::MessageLog => {
                                             app_state.message_log_scroll_idx =
                                                 (app_state.message_log_scroll_idx + 1)
-                                                    .min(battle.battle.message_buffer.len());
+                                                    .min(battle_sim.battle.message_buffer.len());
                                         }
                                         ScrollableWidgets::AllyTeamStatus => todo!(),
                                         ScrollableWidgets::OpponentTeamStatus => todo!(),
@@ -411,7 +413,7 @@ impl App {
                                 (KeyCode::Down, KeyEventKind::Release) => {
                                     app_state.message_log_scroll_idx =
                                         (app_state.message_log_scroll_idx + 1)
-                                            .min(battle.battle.message_buffer.len());
+                                            .min(battle_sim.battle.message_buffer.len());
                                 }
                                 _ => (),
                             }
@@ -421,25 +423,25 @@ impl App {
                 };
             }
             AppMode::Simulating { ref chosen_actions } => {
-                let result = battle.simulate_turn(chosen_actions.clone()); // <- This is the main use of the monsim library
+                let result = battle_sim.simulate_turn(chosen_actions.clone()); // <- This is the main use of the monsim library
                 match result {
                     Ok(_) => {
-                        battle
+                        battle_sim
                             .battle
                             .push_message(&"(The turn was calculated successfully.)");
                     }
-                    Err(error) => battle.battle.message_buffer.push(format!["{:?}", error]),
+                    Err(error) => battle_sim.battle.message_buffer.push(format!["{:?}", error]),
                 }
-                if battle.battle.sim_state == SimState::BattleFinished {
-                    battle
+                if battle_sim.sim_state == SimState::BattleFinished {
+                    battle_sim
                         .battle
                         .push_messages(&[&EMPTY_LINE, &"The battle ended."]);
                 }
-                battle.battle.push_messages(&[&"---", &EMPTY_LINE]);
+                battle_sim.battle.push_messages(&[&"---", &EMPTY_LINE]);
                 app_state.app_mode = AppMode::AwaitingUserInput {
-                    available_actions: battle.battle.generate_available_actions(),
+                    available_actions: battle_sim.battle.generate_available_actions(),
                 };
-                app_state.update_battle_related_state(&mut battle.battle);
+                app_state.update_battle_related_state(battle_sim);
             }
         }
         result

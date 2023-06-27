@@ -1,7 +1,7 @@
 use crate::sim::{
     event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam,
-    AvailableActions, Battler, BattlerNumber, BattlerTeam, BattlerUID, Monster, Move, MoveNumber,
-    MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions, TeamID,
+    AvailableActions, Battler, BattlerTeam, BattlerUID, Monster, Move,
+    MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions,
 };
 use std::{
     fmt::Display,
@@ -21,19 +21,9 @@ pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 pub struct Battle {
     pub current_action: Option<ActionChoice>,
     pub prng: Prng,
-    pub sim_state: SimState,
     pub ally_team: AllyBattlerTeam,
     pub opponent_team: OpponentBattlerTeam,
     pub message_buffer: MessageBuffer,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SimState {
-    UsingMove {
-        move_uid: MoveUID,
-        target_uid: BattlerUID,
-    },
-    BattleFinished,
 }
 
 impl Battle {
@@ -41,19 +31,6 @@ impl Battle {
         Self {
             current_action: None,
             prng: Prng::new(prng::seed_from_time_now()),
-            sim_state: SimState::UsingMove {
-                move_uid: MoveUID {
-                    battler_uid: BattlerUID {
-                        team_id: TeamID::Allies,
-                        battler_number: BattlerNumber::_1,
-                    },
-                    move_number: MoveNumber::_1,
-                },
-                target_uid: BattlerUID {
-                    team_id: TeamID::Opponents,
-                    battler_number: BattlerNumber::_1,
-                },
-            },
             ally_team,
             opponent_team,
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),

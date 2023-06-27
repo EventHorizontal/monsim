@@ -5,7 +5,7 @@ mod main {
     use crate::sim::*;
     use crate::sim::{
         ability_dex::FlashFire,
-        context::Battle,
+        battle::Battle,
         monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
         move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
         Ability, Monster, Move,

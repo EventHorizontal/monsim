@@ -1,5 +1,5 @@
 pub mod choice;
-pub mod context;
+pub mod battle;
 pub mod game_mechanics;
 pub mod battle_constants;
 pub mod prng;
@@ -12,7 +12,7 @@ pub use helpers::*;
 pub use action::SecondaryAction;
 pub use battle_builder_macro::build_battle;
 pub use choice::*;
-pub use context::*;
+pub use battle::*;
 pub use event::{
     event_dex, ActivationOrder, EventResolver, CompositeEventResponder, EventFilterOptions,
     InBattleEvent, EventResponder, TargetFlags, DEFAULT_RESPONSE,
@@ -30,9 +30,19 @@ pub enum SimError {
     InputError(String),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SimState {
+    UsingMove {
+        move_uid: MoveUID,
+        target_uid: BattlerUID,
+    },
+    BattleFinished,
+}
+
 #[derive(Debug)]
 pub struct BattleSimulator {
     pub battle: Battle,
+    pub sim_state: SimState,
     pub turn_number: u8,
 }
 
@@ -40,6 +50,19 @@ impl BattleSimulator {
     pub fn new(battle: Battle) -> Self {
         BattleSimulator {
             battle,
+            sim_state: SimState::UsingMove {
+                move_uid: MoveUID {
+                    battler_uid: BattlerUID {
+                        team_id: TeamID::Allies,
+                        battler_number: BattlerNumber::_1,
+                    },
+                    move_number: MoveNumber::_1,
+                },
+                target_uid: BattlerUID {
+                    team_id: TeamID::Opponents,
+                    battler_number: BattlerNumber::_1,
+                },
+            },
             turn_number: 0,
         }
     }
@@ -81,7 +104,7 @@ impl BattleSimulator {
                     &format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname],
                     &EMPTY_LINE,
                 ]);
-                self.battle.sim_state = SimState::BattleFinished;
+                self.sim_state = SimState::BattleFinished;
                 break;
             };
             self.battle.push_message(&EMPTY_LINE);

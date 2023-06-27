@@ -68,7 +68,6 @@ fn battler_team_to_tokens<'a>(
 ) -> TokenStream {
     let team_name_ident = expr_battler_team.team_path;
     let sim_ident = quote!(monsim::sim);
-    let monster_mod = quote!(#sim_ident::monster);
     let move_mod = quote!(#sim_ident::move_);
     let mut comma_separated_battlers = quote!();
     
@@ -111,7 +110,7 @@ fn battler_team_to_tokens<'a>(
         comma_separated_battlers = quote!(
             #comma_separated_battlers 
             #sim_ident::Battler::new(
-                #sim_ident::BattlerUID { team_id: #sim_ident::TeamID::#team_name_ident, battler_number: #monster_mod::#monster_number },
+                #sim_ident::BattlerUID { team_id: #sim_ident::TeamID::#team_name_ident, battler_number: #sim_ident::#monster_number },
                 #is_first_monster,
                 #monster_type_path::new(#monster_species, #monster_nickname),
                 #move_mod::MoveSet::new(#moves_vec_delimited),

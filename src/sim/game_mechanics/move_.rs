@@ -138,7 +138,7 @@ impl MoveSet {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MoveNumber {
     _1,
     _2,

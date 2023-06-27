@@ -7,7 +7,9 @@ use event_setup_macro::event_setup;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventResolver;
 
-
+/// `R`: indicates return type 
+/// 
+/// `C`: indicates context specifier type
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
 pub struct EventResponder<R: Copy, C: Copy> {
@@ -57,18 +59,18 @@ pub mod broadcast_contexts {
     use crate::sim::{BattlerUID, MoveUID};
 
     #[derive(Debug, Clone, Copy)]
-    pub struct MoveContext {
+    pub struct MoveUsed {
         pub attacker_uid: BattlerUID,
         pub move_uid: MoveUID,
         pub target_uid: BattlerUID,
     }
     
     #[derive(Debug, Clone, Copy)]
-    pub struct AbilityContext {
+    pub struct AbilityUsed {
         pub ability_holder_uid: BattlerUID,
     }
 
-    impl MoveContext {
+    impl MoveUsed {
         pub fn new(move_uid: MoveUID, target_uid: BattlerUID) -> Self {
             Self {
                 attacker_uid: move_uid.battler_uid,
@@ -78,7 +80,7 @@ pub mod broadcast_contexts {
         }
     }
     
-    impl AbilityContext {
+    impl AbilityUsed {
         pub fn new(ability_user_uid: BattlerUID) -> Self {
             Self {
                 ability_holder_uid: ability_user_uid,
@@ -92,22 +94,22 @@ event_setup![
     pub struct CompositeEventResponder {
         match event {
             /// Return value: `Outcome::Success` means the move succeeded.
-            #[context(MoveContext)]
+            #[context(MoveUsed)]
             on_try_move => Outcome,
             
-            #[context(MoveContext)]
+            #[context(MoveUsed)]
             on_damage_dealt => Nothing,
             
             /// Return value: `Outcome::Success` means ability activation succeeded.
-            #[context(AbilityContext)]
+            #[context(AbilityUsed)]
             on_try_activate_ability => Outcome,
             
-            #[context(AbilityContext)]
+            #[context(AbilityUsed)]
             on_ability_activated => Nothing,
             
             /// Return value: `Percent` value indicates percentage multiplier for
             /// accuracy modification.
-            #[context(MoveContext)]
+            #[context(MoveUsed)]
             on_modify_accuracy => Percent,
             
             /// Return value: `Outcome::Success` means stat was successfully raised.
@@ -118,7 +120,7 @@ event_setup![
             #[context(None)]
             on_try_lower_stat => Outcome,
             
-            #[context(MoveContext)]
+            #[context(MoveUsed)]
             on_status_move_used => Nothing,
         }
     }

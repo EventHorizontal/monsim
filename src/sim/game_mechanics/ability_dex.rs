@@ -3,7 +3,7 @@
 use super::{ability::AbilitySpecies, ElementalType};
 use crate::{sim::{
     CompositeEventResponder, EventFilterOptions, SecondaryAction, EventResponder,
-    DEFAULT_RESPONSE, Outcome,
+    DEFAULT_RESPONSE, Outcome, event::broadcast_contexts::MoveUsed,
 }, debug_location};
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -13,12 +13,12 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: debug_location!("FlashFire->on_try_move"),
-            callback: |battle, move_context, _relay| {
-                let current_move = battle.move_(move_context.move_uid);
+            callback: |battle, MoveUsed {attacker_uid, move_uid, target_uid }, _relay| {
+                let current_move = battle.move_(move_uid);
                 let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
                 if is_current_move_fire_type {
                     let activation_succeeded =
-                        SecondaryAction::activate_ability(battle, move_context.target_uid);
+                        SecondaryAction::activate_ability(battle, target_uid);
                     return !activation_succeeded;
                 }
                 Outcome::Success
@@ -40,12 +40,12 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: debug_location!("WaterAbsorb->on_try_move"),
-            callback: |battle, move_context, _relay| {
-                let current_move = battle.move_(move_context.move_uid);
+            callback: |battle, MoveUsed {attacker_uid, move_uid, target_uid }, _relay| {
+                let current_move = battle.move_(move_uid);
                 let is_current_move_water_type = (current_move.species.elemental_type == ElementalType::Water);
                 if is_current_move_water_type {
                     let activation_succeeded =
-                        SecondaryAction::activate_ability(battle, move_context.target_uid);
+                        SecondaryAction::activate_ability(battle, target_uid);
                     return !activation_succeeded;
 
                 }

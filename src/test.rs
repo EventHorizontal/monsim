@@ -48,7 +48,7 @@ mod main {
                     (Battler::new(
                         BattlerUID {
                             team_id: TeamID::Allies,
-                            battler_number: monster::BattlerNumber::from(0usize),
+                            battler_number: BattlerNumber::from(0usize),
                         },
                         true,
                         monster::Monster::new(monster_dex::Torchic, "Ruby"),
@@ -61,7 +61,7 @@ mod main {
                     (Battler::new(
                         BattlerUID {
                             team_id: TeamID::Allies,
-                            battler_number: monster::BattlerNumber::from(1usize),
+                            battler_number: BattlerNumber::from(1usize),
                         },
                         false,
                         monster::Monster::new(monster_dex::Mudkip, "Sapphire"),
@@ -74,7 +74,7 @@ mod main {
                     (Battler::new(
                         BattlerUID {
                             team_id: TeamID::Allies,
-                            battler_number: monster::BattlerNumber::from(2usize),
+                            battler_number: BattlerNumber::from(2usize),
                         },
                         false,
                         monster::Monster::new(monster_dex::Treecko, "Emerald"),
@@ -89,7 +89,7 @@ mod main {
                     (Battler::new(
                         BattlerUID {
                             team_id: TeamID::Opponents,
-                            battler_number: monster::BattlerNumber::from(0usize),
+                            battler_number: BattlerNumber::from(0usize),
                         },
                         true,
                         monster::Monster::new(monster_dex::Drifblim, "Cheerio"),

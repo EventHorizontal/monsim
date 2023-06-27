@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::quote;
-use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, braced, Pat};
+use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, braced, Pat, ExprTuple};
 
 /// Generates the struct `EventResponder`, the default constant and the `InBattleEvent` trait plus implementations for each event, when given a list of event identifiers.
 /// The syntax for this is as follows
@@ -50,11 +50,17 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
                     #attr
                 );
             } else if attribute_name == "context" {
-                let type_token = attr.parse_args::<Ident>().expect("The context should be a valid type identifier");
-                if type_token.to_string() == "None" {
-                    maybe_context_type = Some(quote!(()));
-                } else {
-                    maybe_context_type = Some(quote!(#type_token));
+                let type_token = attr.parse_args::<ExprTuple>();
+                match type_token {
+                    Ok(type_token) => maybe_context_type = Some(quote!(#type_token)),
+                    Err(_) => {
+                        let type_token = attr.parse_args::<Ident>().expect("Context must be a type or `None`");
+                        if type_token.to_string() == "None" {
+                            maybe_context_type = Some(quote!(()));
+                        } else {
+                            maybe_context_type = Some(quote!(#type_token));
+                        }
+                    },
                 }
             } else {
                 panic!("Only doc comment and `context` attributes are allowed in this macro.")

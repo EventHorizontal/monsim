@@ -30,7 +30,7 @@ pub struct AllyBattlerTeam(pub BattlerTeam);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpponentBattlerTeam(pub BattlerTeam);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TeamID {
     Allies,
     Opponents,
@@ -45,12 +45,36 @@ pub struct Battler {
     pub ability: Ability,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum BattlerNumber {
+    _1,
+    _2,
+    _3,
+    _4,
+    _5,
+    _6,
+}
+
+impl From<usize> for BattlerNumber {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => BattlerNumber::_1,
+            1 => BattlerNumber::_2,
+            2 => BattlerNumber::_3,
+            3 => BattlerNumber::_4,
+            4 => BattlerNumber::_5,
+            5 => BattlerNumber::_6,
+            _ => panic!("BattlerNumber can only be formed from usize 0 to 5."),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AllyBattler(Battler);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpponentBattler(Battler);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BattlerUID {
     pub team_id: TeamID,
     pub battler_number: BattlerNumber,
@@ -62,7 +86,7 @@ impl Display for BattlerUID {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MoveUID {
     pub battler_uid: BattlerUID,
     pub move_number: MoveNumber,

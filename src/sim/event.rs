@@ -254,7 +254,7 @@ impl<'a, R: Copy, C: Copy> Debug for EventResponder<R, C> {
 #[cfg(feature = "debug")]
 impl<'a, R: Copy, C: Copy> Debug for EventResponder<R, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SpecificEventResponder")
+        f.debug_struct("EventResponder")
             .field(
                 "callback",
                 &&(self.callback as EventResponderWithLifeTime<'a, R, C>),

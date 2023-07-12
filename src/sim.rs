@@ -195,11 +195,7 @@ mod action {
                         battle.monster(attacker_uid).stats[Stat::SpecialAttack];
                     targets_defense_stat = battle.monster(target_uid).stats[Stat::SpecialDefense];
                 }
-                MoveCategory::Status => {
-                    return Err(SimError::InvalidStateError(String::from(
-                        "The damaging_move function is not expected to receive status moves.",
-                    )))
-                }
+                MoveCategory::Status => unreachable!("The damaging_move function is not expected to receive status moves."),
             }
 
             let random_multiplier = battle.prng.generate_u16_in_range(85..=100);

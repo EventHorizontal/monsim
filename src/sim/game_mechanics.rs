@@ -11,9 +11,7 @@ pub(crate) mod move_dex;
 use core::marker::Copy;
 use std::fmt::{Debug, Display, Formatter};
 
-use super::event::{
-    ActivationOrder, EventFilterOptions, CompositeEventResponderInstance, CompositeEventResponderInstanceList,
-};
+use super::event::{ActivationOrder, CompositeEventResponderInstance, CompositeEventResponderInstanceList, EventFilterOptions};
 pub use ability::*;
 pub use monster::*;
 pub use move_::*;
@@ -79,19 +77,55 @@ pub struct BattlerUID {
     pub battler_number: BattlerNumber,
 }
 
-pub const ALLY_1: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_1};
-pub const ALLY_2: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_2};
-pub const ALLY_3: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_3};
-pub const ALLY_4: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_4};
-pub const ALLY_5: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_5};
-pub const ALLY_6: BattlerUID = BattlerUID { team_id: TeamID::Allies, battler_number: BattlerNumber::_6};
+pub const ALLY_1: BattlerUID = BattlerUID {
+    team_id: TeamID::Allies,
+    battler_number: BattlerNumber::_1,
+};
+pub const ALLY_2: BattlerUID = BattlerUID {
+    team_id: TeamID::Allies,
+    battler_number: BattlerNumber::_2,
+};
+pub const ALLY_3: BattlerUID = BattlerUID {
+    team_id: TeamID::Allies,
+    battler_number: BattlerNumber::_3,
+};
+pub const ALLY_4: BattlerUID = BattlerUID {
+    team_id: TeamID::Allies,
+    battler_number: BattlerNumber::_4,
+};
+pub const ALLY_5: BattlerUID = BattlerUID {
+    team_id: TeamID::Allies,
+    battler_number: BattlerNumber::_5,
+};
+pub const ALLY_6: BattlerUID = BattlerUID {
+    team_id: TeamID::Allies,
+    battler_number: BattlerNumber::_6,
+};
 
-pub const OPPONENT_1: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_1};
-pub const OPPONENT_2: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_2};
-pub const OPPONENT_3: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_3};
-pub const OPPONENT_4: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_4};
-pub const OPPONENT_5: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_5};
-pub const OPPONENT_6: BattlerUID = BattlerUID { team_id: TeamID::Opponents, battler_number: BattlerNumber::_6};
+pub const OPPONENT_1: BattlerUID = BattlerUID {
+    team_id: TeamID::Opponents,
+    battler_number: BattlerNumber::_1,
+};
+pub const OPPONENT_2: BattlerUID = BattlerUID {
+    team_id: TeamID::Opponents,
+    battler_number: BattlerNumber::_2,
+};
+pub const OPPONENT_3: BattlerUID = BattlerUID {
+    team_id: TeamID::Opponents,
+    battler_number: BattlerNumber::_3,
+};
+pub const OPPONENT_4: BattlerUID = BattlerUID {
+    team_id: TeamID::Opponents,
+    battler_number: BattlerNumber::_4,
+};
+pub const OPPONENT_5: BattlerUID = BattlerUID {
+    team_id: TeamID::Opponents,
+    battler_number: BattlerNumber::_5,
+};
+pub const OPPONENT_6: BattlerUID = BattlerUID {
+    team_id: TeamID::Opponents,
+    battler_number: BattlerNumber::_6,
+};
 
 impl Display for BattlerUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -107,10 +141,7 @@ pub struct MoveUID {
 
 impl BattlerTeam {
     pub fn new(battlers: Vec<Battler>) -> Self {
-        assert!(
-            battlers.first().is_some(),
-            "There is not a single monster in the team."
-        );
+        assert!(battlers.first().is_some(), "There is not a single monster in the team.");
         assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
         BattlerTeam { battlers }
     }
@@ -128,19 +159,12 @@ impl BattlerTeam {
         if battler.monster.nickname == battler.monster.species.name {
             out.push_str(&format![
                 "{} ({}) [HP: {}/{}]\n",
-                battler.monster.species.name,
-                battler.uid,
-                battler.monster.current_health,
-                battler.monster.max_health
+                battler.monster.species.name, battler.uid, battler.monster.current_health, battler.monster.max_health
             ]);
         } else {
             out.push_str(&format![
                 "{} the {} ({}) [HP: {}/{}]\n",
-                battler.monster.nickname,
-                battler.monster.species.name,
-                battler.uid,
-                battler.monster.current_health,
-                battler.monster.max_health
+                battler.monster.nickname, battler.monster.species.name, battler.uid, battler.monster.current_health, battler.monster.max_health
             ]);
         }
         out
@@ -171,10 +195,7 @@ impl Display for BattlerTeam {
 
 impl AllyBattlerTeam {
     pub fn new(battlers: Vec<Battler>) -> Self {
-        assert!(
-            battlers.first().is_some(),
-            "There is not a single monster in the team."
-        );
+        assert!(battlers.first().is_some(), "There is not a single monster in the team.");
         assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
         Self(BattlerTeam { battlers })
     }
@@ -186,7 +207,7 @@ impl AllyBattlerTeam {
     pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
         &mut self.0.battlers
     }
-    
+
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         self.0
@@ -213,10 +234,7 @@ impl Display for AllyBattlerTeam {
 
 impl OpponentBattlerTeam {
     pub fn new(battlers: Vec<Battler>) -> Self {
-        assert!(
-            battlers.first().is_some(),
-            "There is not a single monster in the team."
-        );
+        assert!(battlers.first().is_some(), "There is not a single monster in the team.");
         assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
         Self(BattlerTeam { battlers })
     }
@@ -259,10 +277,7 @@ impl Display for Battler {
             out.push_str(
                 format![
                     "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.monster.species.name,
-                    self.uid,
-                    self.monster.current_health,
-                    self.monster.max_health
+                    self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
                 ]
                 .as_str(),
             );
@@ -270,11 +285,7 @@ impl Display for Battler {
             out.push_str(
                 format![
                     "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.monster.nickname,
-                    self.monster.species.name,
-                    self.uid,
-                    self.monster.current_health,
-                    self.monster.max_health
+                    self.monster.nickname, self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
                 ]
                 .as_str(),
             );
@@ -283,13 +294,7 @@ impl Display for Battler {
         let number_of_effects = self.moveset.moves().count();
 
         out.push_str("\t│\t├── ");
-        out.push_str(
-            format![
-                "type {:?}/{:?} \n",
-                self.monster.species.primary_type, self.monster.species.secondary_type
-            ]
-            .as_str(),
-        );
+        out.push_str(format!["type {:?}/{:?} \n", self.monster.species.primary_type, self.monster.species.secondary_type].as_str());
 
         out.push_str("\t│\t├── ");
         out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
@@ -308,12 +313,7 @@ impl Display for Battler {
 }
 
 impl Battler {
-    pub fn new(
-        uid: BattlerUID,
-        monster: Monster,
-        moveset: MoveSet,
-        ability: Ability,
-    ) -> Self {
+    pub fn new(uid: BattlerUID, monster: Monster, moveset: MoveSet, ability: Ability) -> Self {
         Battler {
             uid,
             monster,

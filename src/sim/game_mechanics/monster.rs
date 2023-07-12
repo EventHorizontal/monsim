@@ -1,5 +1,8 @@
 use core::{fmt::Debug, panic};
-use std::{ops::{Index, IndexMut}, fmt::Display};
+use std::{
+    fmt::Display,
+    ops::{Index, IndexMut},
+};
 
 use crate::sim::{CompositeEventResponder, ElementalType};
 
@@ -57,38 +60,38 @@ pub struct StatModifierSet {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonsterNature {
     /// Neutral (+-Attack)
-    Hardy, 
+    Hardy,
     /// +Attack, -Defense
     Lonely,
     /// +Attack, -Speed
-    Brave,  
+    Brave,
     /// +Attack, -Special Attack
-    Adamant, 
+    Adamant,
     /// +Attack, -Special Defense
-    Naughty, 
-    
+    Naughty,
+
     /// Neutral (+-Defense)
     Docile,
     /// +Defense, -Attack
-    Bold, 
+    Bold,
     /// +Defense, -Speed
-    Relaxed, 
+    Relaxed,
     /// +Defense, -Special Attack
     Impish, // - Special Attack
     /// +Defense, -Special Defense
     Lax, // - Special Defense
-    
+
     /// Neutral (+-Speed)
     Serious,
     /// +Speed, -Attack
-    Timid, 
+    Timid,
     /// +Speed, -Defense
-    Hasty, 
+    Hasty,
     /// +Speed, -Special Attack
-    Jolly,  
+    Jolly,
     /// +Speed, -Special Defense
     Naive,
-    
+
     /// Neutral (+-Special Attack)
     Bashful,
     /// +Special Attack, -Attack
@@ -99,7 +102,7 @@ pub enum MonsterNature {
     Quiet,
     /// +Special Attack, -Special Defense
     Rash,
-    
+
     /// Neutral (+-Special Defense)
     Quirky,
     /// +Special Defense, -Attack
@@ -107,10 +110,9 @@ pub enum MonsterNature {
     /// +Special Defense, -Defense
     Gentle,
     /// +SpecialDefense, -Speed
-    Sassy, 
+    Sassy,
     /// +SpecialDefense, -Special Attack
     Careful,
-    
 }
 
 impl Monster {
@@ -120,10 +122,7 @@ impl Monster {
         let iv_in_stat = 31;
         let ev_in_stat = 252;
         // In-game hp-stat determination formula
-        let health_stat =
-            ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100
-                + level
-                + 10;
+        let health_stat = ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
         let nature = MonsterNature::Serious;
 
         // In-game non-hp-stat determination formula
@@ -131,8 +130,7 @@ impl Monster {
             // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
             let iv_in_stat = 31;
             let ev_in_stat = 252;
-            let mut out =
-                ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
+            let mut out = ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
             out = f64::floor(out as f64 * nature[stat]) as u16;
             out
         };
@@ -179,7 +177,6 @@ impl Monster {
     }
 }
 
-
 impl Debug for MonsterSpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -198,7 +195,6 @@ impl PartialEq for MonsterSpecies {
 
 impl Eq for MonsterSpecies {}
 
-
 impl Index<Stat> for StatSet {
     type Output = u16;
 
@@ -216,17 +212,9 @@ impl Index<Stat> for StatSet {
 
 impl StatSet {
     pub const fn new(hp: u16, att: u16, def: u16, spa: u16, spd: u16, spe: u16) -> Self {
-        Self {
-            hp,
-            att,
-            def,
-            spa,
-            spd,
-            spe,
-        }
+        Self { hp, att, def, spa, spd, spe }
     }
 }
-
 
 impl Index<Stat> for StatModifierSet {
     type Output = i8;
@@ -258,13 +246,7 @@ impl IndexMut<Stat> for StatModifierSet {
 
 impl StatModifierSet {
     pub const fn new(att: i8, def: i8, spa: i8, spd: i8, spe: i8) -> Self {
-        Self {
-            att,
-            def,
-            spa,
-            spd,
-            spe,
-        }
+        Self { att, def, spa, spd, spe }
     }
 
     pub fn raise_stat(&mut self, stat: Stat, by_stages: u8) -> u8 {
@@ -288,7 +270,6 @@ impl StatModifierSet {
     }
 }
 
-
 impl Display for Stat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -302,7 +283,6 @@ impl Display for Stat {
     }
 }
 
-
 impl Index<Stat> for MonsterNature {
     type Output = f64;
 
@@ -310,7 +290,7 @@ impl Index<Stat> for MonsterNature {
         const LOWERED: f64 = 0.9;
         const NEUTRAL: f64 = 1.0;
         const RAISED: f64 = 1.1;
-        
+
         match self {
             MonsterNature::Hardy => &NEUTRAL,
 

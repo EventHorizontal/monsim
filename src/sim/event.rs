@@ -1,14 +1,14 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::BattlerUID, Outcome, Battle, Percent, Nothing};
+use crate::sim::{game_mechanics::BattlerUID, Battle, Nothing, Outcome, Percent};
 use broadcast_contexts::*;
 use event_setup_macro::event_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventResolver;
 
-/// `R`: indicates return type 
-/// 
+/// `R`: indicates return type
+///
 /// `C`: indicates context specifier type
 #[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
@@ -16,8 +16,8 @@ pub struct EventResponder<R: Copy, C: Copy> {
     pub callback: fn(&mut Battle, C, R) -> R,
 }
 
-/// `R`: indicates return type 
-/// 
+/// `R`: indicates return type
+///
 /// `C`: indicates context specifier type
 #[cfg(feature = "debug")]
 #[derive(Clone, Copy)]
@@ -26,8 +26,7 @@ pub struct EventResponder<R: Copy, C: Copy> {
     pub dbg_location: &'static str,
 }
 
-pub type EventResponderWithLifeTime<'a, R, C> =
-fn(&'a mut Battle, C, R) -> R;
+pub type EventResponderWithLifeTime<'a, R, C> = fn(&'a mut Battle, C, R) -> R;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventResponderInstance<R: Copy, C: Copy> {
@@ -64,7 +63,7 @@ pub mod broadcast_contexts {
         pub move_uid: MoveUID,
         pub target_uid: BattlerUID,
     }
-    
+
     #[derive(Debug, Clone, Copy)]
     pub struct AbilityUsed {
         pub ability_holder_uid: BattlerUID,
@@ -79,7 +78,7 @@ pub mod broadcast_contexts {
             }
         }
     }
-    
+
     impl AbilityUsed {
         pub fn new(ability_user_uid: BattlerUID) -> Self {
             Self {
@@ -89,37 +88,36 @@ pub mod broadcast_contexts {
     }
 }
 
-
 event_setup![
     pub struct CompositeEventResponder {
         match event {
             /// Return value: `Outcome::Success` means the move succeeded.
             #[context(MoveUsed)]
             on_try_move => Outcome,
-            
+
             #[context(MoveUsed)]
             on_damage_dealt => Nothing,
-            
+
             /// Return value: `Outcome::Success` means ability activation succeeded.
             #[context(AbilityUsed)]
             on_try_activate_ability => Outcome,
-            
+
             #[context(AbilityUsed)]
             on_ability_activated => Nothing,
-            
+
             /// Return value: `Percent` value indicates percentage multiplier for
             /// accuracy modification.
             #[context(MoveUsed)]
             on_modify_accuracy => Percent,
-            
+
             /// Return value: `Outcome::Success` means stat was successfully raised.
             #[context(None)]
             on_try_raise_stat => Outcome,
-            
+
             /// Return value: `Outcome::Success` means stat was successfully lowered.
             #[context(None)]
             on_try_lower_stat => Outcome,
-            
+
             #[context(MoveUsed)]
             on_status_move_used => Nothing,
         }
@@ -166,8 +164,7 @@ impl EventResolver {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let composite_event_responder_instances: CompositeEventResponderInstanceList =
-            battle.composite_event_responder_instances();
+        let composite_event_responder_instances: CompositeEventResponderInstanceList = battle.composite_event_responder_instances();
         let mut event_responder_instances: EventResponderInstanceList<R, C> =
             EventResolver::get_responders_to_event(composite_event_responder_instances, event);
 
@@ -175,11 +172,9 @@ impl EventResolver {
             return default;
         }
 
-        crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<R, C>>(
-            &mut battle.prng,
-            &mut event_responder_instances,
-            &mut |it| it.activation_order,
-        );
+        crate::sim::ordering::sort_by_activation_order::<EventResponderInstance<R, C>>(&mut battle.prng, &mut event_responder_instances, &mut |it| {
+            it.activation_order
+        });
 
         let mut relay = default;
         for EventResponderInstance {
@@ -243,10 +238,7 @@ impl EventResolver {
 impl<'a, R: Copy, C: Copy> Debug for EventResponder<R, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventResponder")
-            .field(
-                "callback",
-                &&(self.callback as EventResponderWithLifeTime<'a, R, C>),
-            )
+            .field("callback", &&(self.callback as EventResponderWithLifeTime<'a, R, C>))
             .finish()
     }
 }
@@ -255,27 +247,25 @@ impl<'a, R: Copy, C: Copy> Debug for EventResponder<R, C> {
 impl<'a, R: Copy, C: Copy> Debug for EventResponder<R, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EventResponder")
-            .field(
-                "callback",
-                &&(self.callback as EventResponderWithLifeTime<'a, R, C>),
-            )
+            .field("callback", &&(self.callback as EventResponderWithLifeTime<'a, R, C>))
             .field("location", &self.dbg_location)
             .finish()
     }
 }
 
 impl CompositeEventResponderInstance {
-    fn get_responder_to_event<R: Copy, C: Copy>(&self, event: &dyn InBattleEvent<EventReturnType = R, ContextType = C>) -> Option<EventResponderInstance<R, C>> {
+    fn get_responder_to_event<R: Copy, C: Copy>(
+        &self,
+        event: &dyn InBattleEvent<EventReturnType = R, ContextType = C>,
+    ) -> Option<EventResponderInstance<R, C>> {
         let event_responder = event.corresponding_responder(&self.composite_event_responder);
-        event_responder.map(
-            |event_responder| EventResponderInstance { 
-                event_name: event.name(), 
-                event_responder, 
-                owner_uid: self.owner_uid, 
-                activation_order: self.activation_order, 
-                filters: self.filters 
-            }
-        )
+        event_responder.map(|event_responder| EventResponderInstance {
+            event_name: event.name(),
+            event_responder,
+            owner_uid: self.owner_uid,
+            activation_order: self.activation_order,
+            filters: self.filters,
+        })
     }
 }
 
@@ -339,19 +329,11 @@ mod tests {
             use crate::sim::event_dex::OnTryMove;
             let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
-            crate::sim::ordering::sort_by_activation_order(
-                &mut prng,
-                &mut event_responder_instances,
-                &mut |it| it.activation_order,
-            );
+            crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_responder_instances, &mut |it| it.activation_order);
 
             result[i] = event_responder_instances
                 .into_iter()
-                .map(|event_responder_instance| {
-                    test_battle
-                        .monster(event_responder_instance.owner_uid)
-                        .nickname
-                })
+                .map(|event_responder_instance| test_battle.monster(event_responder_instance.owner_uid).nickname)
                 .collect::<Vec<_>>();
         }
 
@@ -450,19 +432,11 @@ mod tests {
 
             let mut event_responder_instances = EventResolver::get_responders_to_event(composite_event_responder_instances, &OnTryMove);
 
-            crate::sim::ordering::sort_by_activation_order(
-                &mut prng,
-                &mut event_responder_instances,
-                &mut |it| it.activation_order,
-            );
+            crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_responder_instances, &mut |it| it.activation_order);
 
             result[i] = event_responder_instances
                 .into_iter()
-                .map(|event_responder_instance| {
-                    test_battle
-                        .monster(event_responder_instance.owner_uid)
-                        .nickname
-                })
+                .map(|event_responder_instance| test_battle.monster(event_responder_instance.owner_uid).nickname)
                 .collect::<Vec<_>>();
         }
 

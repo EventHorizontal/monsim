@@ -10,10 +10,7 @@ pub struct Prng {
 }
 
 pub fn seed_from_time_now() -> u64 {
-    time::SystemTime::now()
-        .duration_since(time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
+    time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs()
 }
 
 const A: u64 = 0x5D588B656C078965;
@@ -36,9 +33,7 @@ impl Prng {
 
     /// Returns each u16 in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
     pub(crate) fn generate_u16_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
-        let start = range
-            .next()
-            .expect("The range given to generate_number_in_range must have a first element.");
+        let start = range.next().expect("The range given to generate_number_in_range must have a first element.");
         let end = range
             .next_back()
             .expect("The range given to generate_number_in_range must have a last element.");

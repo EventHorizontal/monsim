@@ -1,13 +1,9 @@
 use crate::sim::{ActivationOrder, Prng};
 
-use super::{Battle, ActionChoice};
+use super::{ActionChoice, Battle};
 
 /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
-pub(crate) fn sort_by_activation_order<T: Clone + Copy>(
-    prng: &mut Prng,
-    vector: &mut Vec<T>,
-    activation_order: &mut dyn FnMut(T) -> ActivationOrder,
-) {
+pub(crate) fn sort_by_activation_order<T: Clone + Copy>(prng: &mut Prng, vector: &mut Vec<T>, activation_order: &mut dyn FnMut(T) -> ActivationOrder) {
     // Sort without resolving speed ties, this sorting is stable, so it doesn't affect the order of condition-wise equal elements.
     vector.sort_by_key(|a| activation_order(*a));
     // Sorting is ascending, but we want descending sorting, so reverse the vector.
@@ -49,10 +45,7 @@ pub(crate) fn sort_by_activation_order<T: Clone + Copy>(
     }
 }
 
-pub(crate) fn context_sensitive_sort_by_activation_order(
-    battle: &mut Battle,
-    vector: &mut Vec<ActionChoice>,
-) {
+pub(crate) fn context_sensitive_sort_by_activation_order(battle: &mut Battle, vector: &mut Vec<ActionChoice>) {
     // Sort without resolving speed ties, this sorting is stable, so it doesn't affect the order of condition-wise equal elements.
     vector.sort_by_key(|choice| battle.choice_activation_order(*choice));
     // Sorting is ascending, but we want descending sorting, so reverse the vector.
@@ -96,11 +89,7 @@ pub(crate) fn context_sensitive_sort_by_activation_order(
 
 use crate::not;
 /// Shuffles the event responder order for consecutive speed-tied items in place using their associated activation orders.
-fn resolve_speed_tie<T: Clone + Copy>(
-    prng: &mut Prng,
-    vector: &mut [T],
-    tied_monster_indices: &mut Vec<usize>,
-) {
+fn resolve_speed_tie<T: Clone + Copy>(prng: &mut Prng, vector: &mut [T], tied_monster_indices: &mut Vec<usize>) {
     if tied_monster_indices.len() < 2 {
         return;
     }

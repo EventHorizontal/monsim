@@ -1,14 +1,14 @@
-use std::ops::{Not, Add, Sub, Mul};
+use std::ops::{Add, Mul, Not, Sub};
 
 /// I prefer this for readability
 pub type Nothing = ();
 /// I prefer this for readability
-pub const NOTHING: () = (); 
+pub const NOTHING: () = ();
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Outcome {
     Success,
-    Failure
+    Failure,
 }
 
 impl From<bool> for Outcome {
@@ -81,7 +81,10 @@ pub struct ClampedPercent(u16);
 
 impl ClampedPercent {
     pub fn from(value: u16) -> Self {
-        assert!(value <= 100, "ClampedPercent only takes values between 0 and 100. If you want unbound percentages, use Percent instead.");
+        assert!(
+            value <= 100,
+            "ClampedPercent only takes values between 0 and 100. If you want unbound percentages, use Percent instead."
+        );
         Self(value)
     }
 }

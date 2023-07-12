@@ -1,15 +1,22 @@
-use crate::{sim::{
-    event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam,
-    AvailableActions, Battler, BattlerTeam, BattlerUID, Monster, Move,
-    MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions, BattlerNumber, 
-}, collection};
+use crate::{
+    collection,
+    sim::{
+        event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
+        BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions,
+    },
+};
 use std::{
+    collections::HashMap,
     fmt::Display,
     iter::Chain,
-    slice::{Iter, IterMut}, collections::HashMap, ops::Index,
+    ops::Index,
+    slice::{Iter, IterMut},
 };
 
-use super::{prng::{Prng, self}, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use super::{
+    prng::{self, Prng},
+    TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
+};
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
 type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
@@ -24,21 +31,24 @@ pub struct Battle {
     pub ally_team: AllyBattlerTeam,
     pub opponent_team: OpponentBattlerTeam,
     pub message_buffer: MessageBuffer,
-    pub battlers_on_field: BattlerMap<bool>
+    pub battlers_on_field: BattlerMap<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattlerMap<T> {
-    map: HashMap<BattlerUID, T>
+    map: HashMap<BattlerUID, T>,
 }
 
 impl<T> BattlerMap<T> {
     pub fn new(map: HashMap<BattlerUID, T>) -> Self {
         for team_id in [TeamID::Allies, TeamID::Opponents].into_iter() {
-            for number in  0..=5 {
+            for number in 0..=5 {
                 let battler_number = BattlerNumber::from(number);
                 let battler_uid = BattlerUID { team_id, battler_number };
-                assert!(map.contains_key(&battler_uid), "Could not find {battler_uid} in hash_map for BattlerMap construction")
+                assert!(
+                    map.contains_key(&battler_uid),
+                    "Could not find {battler_uid} in hash_map for BattlerMap construction"
+                )
             }
         }
         Self { map }
@@ -93,9 +103,9 @@ impl Battle {
     }
 
     pub fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
-        self.battlers().find(|it| it.uid == battler_uid).expect(
-            "Error: Requested look up for a monster with ID that does not exist in this battle.",
-        )
+        self.battlers()
+            .find(|it| it.uid == battler_uid)
+            .expect("Error: Requested look up for a monster with ID that does not exist in this battle.")
     }
 
     pub fn is_battler_on_field(&self, battler_uid: BattlerUID) -> bool {
@@ -111,8 +121,7 @@ impl Battle {
     }
 
     pub fn is_current_action_user(&self, test_monster_uid: BattlerUID) -> Option<bool> {
-        self.current_action
-            .map(|current_action| test_monster_uid == current_action.chooser())
+        self.current_action.map(|current_action| test_monster_uid == current_action.chooser())
     }
 
     pub fn current_action_target(&self) -> Option<&Battler> {
@@ -124,8 +133,7 @@ impl Battle {
     }
 
     pub fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> Option<bool> {
-        self.current_action
-            .map(|current_action| test_monster_uid == current_action.target())
+        self.current_action.map(|current_action| test_monster_uid == current_action.target())
     }
 
     pub fn monster(&self, uid: BattlerUID) -> &Monster {
@@ -219,10 +227,7 @@ impl Battle {
     /// context sensitive.
     pub(crate) fn choice_activation_order(&self, choice: ActionChoice) -> ActivationOrder {
         match choice {
-            ActionChoice::Move {
-                move_uid,
-                target_uid: _,
-            } => ActivationOrder {
+            ActionChoice::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
                 speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
                 order: 0,
@@ -261,10 +266,7 @@ impl Battle {
 
     pub fn get_current_action_as_move(&self) -> Option<&Move> {
         match self.current_action.unwrap() {
-            ActionChoice::Move {
-                move_uid,
-                target_uid: _,
-            } => Some(self.move_(move_uid)),
+            ActionChoice::Move { move_uid, target_uid: _ } => Some(self.move_(move_uid)),
         }
     }
 
@@ -283,12 +285,7 @@ impl Display for Battle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 
-        push_pretty_tree_for_team(
-            &mut out,
-            "Ally Team\n",
-            &self.ally_team.unwrap(),
-            self.ally_team.battlers().iter().count(),
-        );
+        push_pretty_tree_for_team(&mut out, "Ally Team\n", &self.ally_team.unwrap(), self.ally_team.battlers().iter().count());
         push_pretty_tree_for_team(
             &mut out,
             "Opponent Team\n",
@@ -299,16 +296,11 @@ impl Display for Battle {
     }
 }
 
-fn push_pretty_tree_for_team(
-    output_string: &mut String,
-    team_name: &str,
-    team: &BattlerTeam,
-    number_of_monsters: usize,
-) {
+fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: &BattlerTeam, number_of_monsters: usize) {
     output_string.push_str(team_name);
     for (i, battler) in team.battlers().iter().enumerate() {
         let is_not_last_monster = i < number_of_monsters - 1;
-        let (prefix_str,suffix_str) = if is_not_last_monster {
+        let (prefix_str, suffix_str) = if is_not_last_monster {
             ("\t│\t", "├── ")
         } else {
             ("\t \t", "└── ")

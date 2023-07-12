@@ -1,7 +1,4 @@
-use monsim::{
-    app::*,
-    sim::*,
-};
+use monsim::{app::*, sim::*};
 mod ability_dex;
 mod monster_dex;
 mod move_dex;

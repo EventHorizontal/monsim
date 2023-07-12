@@ -1,9 +1,12 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{sim::{
-    Ability, AbilitySpecies, CompositeEventResponder, EventFilterOptions, ElementalType,
-    SecondaryAction, EventResponder, DEFAULT_RESPONSE, Outcome, MoveUsed
-}, not};
+use monsim::{
+    not,
+    sim::{
+        Ability, AbilitySpecies, CompositeEventResponder, ElementalType, EventFilterOptions, EventResponder, MoveUsed, Outcome, SecondaryAction,
+        DEFAULT_RESPONSE,
+    },
+};
 
 #[cfg(feature = "debug")]
 use monsim::debug_location;
@@ -15,12 +18,17 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: debug_location!("FlashFire->on_try_move"),
-            callback: |battle, MoveUsed {attacker_uid, move_uid, target_uid }, _relay| {
+            callback: |battle,
+                       MoveUsed {
+                           attacker_uid,
+                           move_uid,
+                           target_uid,
+                       },
+                       _relay| {
                 let current_move = battle.move_(move_uid);
                 let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
                 if is_current_move_fire_type {
-                    let activation_succeeded =
-                        SecondaryAction::activate_ability(battle, target_uid);
+                    let activation_succeeded = SecondaryAction::activate_ability(battle, target_uid);
                     return not!(activation_succeeded);
                 }
                 Outcome::Success
@@ -42,14 +50,18 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventResponder {
             #[cfg(feature = "debug")]
             dbg_location: debug_location!("WaterAbsorb->on_try_move"),
-            callback: |battle, MoveUsed {attacker_uid, move_uid, target_uid }, _relay| {
+            callback: |battle,
+                       MoveUsed {
+                           attacker_uid,
+                           move_uid,
+                           target_uid,
+                       },
+                       _relay| {
                 let current_move = battle.move_(move_uid);
                 let is_current_move_water_type = (current_move.species.elemental_type == ElementalType::Water);
                 if is_current_move_water_type {
-                    let activation_succeeded =
-                        SecondaryAction::activate_ability(battle, target_uid);
+                    let activation_succeeded = SecondaryAction::activate_ability(battle, target_uid);
                     return not!(activation_succeeded);
-
                 }
                 Outcome::Success
             },

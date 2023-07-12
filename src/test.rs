@@ -51,10 +51,7 @@ mod main {
                             battler_number: BattlerNumber::from(0usize),
                         },
                         monster::Monster::new(monster_dex::Torchic, "Ruby"),
-                        move_::MoveSet::new(vec![
-                            (move_::Move::new(move_dex::Scratch)),
-                            (move_::Move::new(move_dex::Ember)),
-                        ]),
+                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
                         ability::Ability::new(ability_dex::FlashFire),
                     )),
                     (Battler::new(
@@ -63,10 +60,7 @@ mod main {
                             battler_number: BattlerNumber::from(1usize),
                         },
                         monster::Monster::new(monster_dex::Mudkip, "Sapphire"),
-                        move_::MoveSet::new(vec![
-                            (move_::Move::new(move_dex::Scratch)),
-                            (move_::Move::new(move_dex::Ember)),
-                        ]),
+                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
                         ability::Ability::new(ability_dex::FlashFire),
                     )),
                     (Battler::new(
@@ -75,10 +69,7 @@ mod main {
                             battler_number: BattlerNumber::from(2usize),
                         },
                         monster::Monster::new(monster_dex::Treecko, "Emerald"),
-                        move_::MoveSet::new(vec![
-                            (move_::Move::new(move_dex::Bubble)),
-                            (move_::Move::new(move_dex::Scratch)),
-                        ]),
+                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Bubble)), (move_::Move::new(move_dex::Scratch))]),
                         ability::Ability::new(ability_dex::FlashFire),
                     )),
                 ])),
@@ -89,10 +80,7 @@ mod main {
                             battler_number: BattlerNumber::from(0usize),
                         },
                         monster::Monster::new(monster_dex::Drifblim, "Cheerio"),
-                        move_::MoveSet::new(vec![
-                            (move_::Move::new(move_dex::Tackle)),
-                            (move_::Move::new(move_dex::Growl)),
-                        ]),
+                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Tackle)), (move_::Move::new(move_dex::Growl))]),
                         ability::Ability::new(ability_dex::FlashFire),
                     )),
                 ])),
@@ -222,10 +210,7 @@ mod prng {
             .expect("We should always get some average value.")
             / 100.0;
         let avg_deviation = f32::floor(avg_deviation * 100_000.0) / 100_000.0;
-        println!(
-            "LCRNG has {:?}% average deviation (threshold is at 0.005%)",
-            avg_deviation
-        );
+        println!("LCRNG has {:?}% average deviation (threshold is at 0.005%)", avg_deviation);
         assert!(avg_deviation < 5.0e-3);
     }
 
@@ -243,12 +228,7 @@ mod prng {
 
     #[test]
     fn test_prng_chance() {
-        let mut lcrng = Prng::new(
-            time::SystemTime::now()
-                .duration_since(time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-        );
+        let mut lcrng = Prng::new(time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs());
 
         let mut success = 0.0;
         for _ in 0..=10_000_000 {
@@ -257,12 +237,8 @@ mod prng {
             }
         }
         let avg_probability_deviation = (((success / 10_000_000.0) - 0.3333333333) as f64).abs();
-        let avg_probability_deviation =
-            f64::floor(avg_probability_deviation * 100_000.0) / 100_000.0;
-        println!(
-            "Average probability of LCRNG is off by {}% (threshold is at 0.005%)",
-            avg_probability_deviation
-        );
+        let avg_probability_deviation = f64::floor(avg_probability_deviation * 100_000.0) / 100_000.0;
+        println!("Average probability of LCRNG is off by {}% (threshold is at 0.005%)", avg_probability_deviation);
         assert!(avg_probability_deviation < 5.0e-3);
     }
 }

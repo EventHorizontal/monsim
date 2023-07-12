@@ -20,19 +20,18 @@ pub struct MoveSpecies {
     pub on_activate: Option<fn(&mut Battle, BattlerUID, BattlerUID)>,
 }
 
-pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies { 
-    dex_number: 000, 
-    name: "Unnamed", 
-    elemental_type: ElementalType::Normal, 
-    category: MoveCategory::Physical, 
-    base_power: 50, 
-    base_accuracy: 100, 
-    priority: 0, 
-    composite_event_responder: DEFAULT_RESPONSE, 
-    composite_event_responder_filters: EventFilterOptions::default(), 
-    on_activate: None 
+pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
+    dex_number: 000,
+    name: "Unnamed",
+    elemental_type: ElementalType::Normal,
+    category: MoveCategory::Physical,
+    base_power: 50,
+    base_accuracy: 100,
+    priority: 0,
+    composite_event_responder: DEFAULT_RESPONSE,
+    composite_event_responder_filters: EventFilterOptions::default(),
+    on_activate: None,
 };
-
 
 impl Debug for MoveSpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -74,16 +73,11 @@ impl Move {
         self.species.base_accuracy
     }
 
-    pub(crate) fn on_activate(
-        &self,
-        battle: &mut Battle,
-        owner_uid: BattlerUID,
-        target_uid: BattlerUID,
-    ) {
+    pub(crate) fn on_activate(&self, battle: &mut Battle, owner_uid: BattlerUID, target_uid: BattlerUID) {
         let on_activate_logic = self.species.on_activate;
         if let Some(on_activate_logic) = on_activate_logic {
             on_activate_logic(battle, owner_uid, target_uid);
-        } 
+        }
     }
 }
 

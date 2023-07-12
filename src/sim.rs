@@ -1,24 +1,24 @@
-pub mod choice;
 pub mod battle;
-pub mod game_mechanics;
 pub mod battle_constants;
-pub mod prng;
+pub mod choice;
+pub mod game_mechanics;
 pub mod helpers;
+pub mod prng;
 
 mod event;
 mod ordering;
 
-pub use helpers::*;
 pub use action::SecondaryAction;
-pub use battle_builder_macro::build_battle;
-pub use choice::*;
 pub use battle::*;
+pub use battle_builder_macro::build_battle;
+pub use battle_constants::*;
+pub use choice::*;
 pub use event::{
-    event_dex, ActivationOrder, EventResolver, CompositeEventResponder, EventFilterOptions,
-    InBattleEvent, EventResponder, TargetFlags, DEFAULT_RESPONSE, broadcast_contexts::*
+    broadcast_contexts::*, event_dex, ActivationOrder, CompositeEventResponder, EventFilterOptions, EventResolver, EventResponder, InBattleEvent, TargetFlags,
+    DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
-pub use battle_constants::*;
+pub use helpers::*;
 
 use prng::Prng;
 
@@ -31,10 +31,7 @@ pub enum SimError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimState {
-    UsingMove {
-        move_uid: MoveUID,
-        target_uid: BattlerUID,
-    },
+    UsingMove { move_uid: MoveUID, target_uid: BattlerUID },
     BattleFinished,
 }
 
@@ -73,12 +70,7 @@ impl BattleSimulator {
         self.increment_turn_number()?;
 
         self.battle
-            .push_messages(
-                &[
-                    &format!["Turn {turn_number}", turn_number = self.turn_number], 
-                    &EMPTY_LINE
-                ]
-            );
+            .push_messages(&[&format!["Turn {turn_number}", turn_number = self.turn_number], &EMPTY_LINE]);
 
         ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
 
@@ -86,28 +78,15 @@ impl BattleSimulator {
         for chosen_action in chosen_actions.into_iter() {
             self.battle.current_action = Some(chosen_action);
             result = match chosen_action {
-                ActionChoice::Move {
-                    move_uid,
-                    target_uid,
-                } => match self.battle.move_(move_uid).category() {
-                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(
-                        &mut self.battle,
-                        move_uid,
-                        target_uid,
-                    ),
-                    MoveCategory::Status => PrimaryAction::status_move(
-                        &mut self.battle,
-                        move_uid,
-                        target_uid,
-                    ),
+                ActionChoice::Move { move_uid, target_uid } => match self.battle.move_(move_uid).category() {
+                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut self.battle, move_uid, target_uid),
+                    MoveCategory::Status => PrimaryAction::status_move(&mut self.battle, move_uid, target_uid),
                 },
             };
             let maybe_fainted_battler = self.battle.battlers().find(|battler| battler.fainted());
             if let Some(battler) = maybe_fainted_battler {
-                self.battle.push_messages(&[
-                    &format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname],
-                    &EMPTY_LINE,
-                ]);
+                self.battle
+                    .push_messages(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], &EMPTY_LINE]);
                 self.sim_state = SimState::BattleFinished;
                 break;
             };
@@ -122,11 +101,7 @@ impl BattleSimulator {
     fn increment_turn_number(&mut self) -> TurnResult {
         match self.turn_number.checked_add(1) {
             Some(turn_number) => self.turn_number = turn_number,
-            None => {
-                return Err(SimError::InvalidStateReached(String::from(
-                    "Turn limit exceeded (Limit = 255 turns)",
-                )))
-            }
+            None => return Err(SimError::InvalidStateReached(String::from("Turn limit exceeded (Limit = 255 turns)"))),
         };
         Ok(NOTHING)
     }
@@ -154,11 +129,7 @@ mod action {
         ///
         /// Calculates and applies the effects of a damaging move
         /// corresponding to `move_uid` being used on `target_uid`
-        pub fn damaging_move(
-            battle: &mut Battle,
-            move_uid: MoveUID,
-            target_uid: BattlerUID,
-        ) -> TurnResult {
+        pub fn damaging_move(battle: &mut Battle, move_uid: MoveUID, target_uid: BattlerUID) -> TurnResult {
             let attacker_uid = move_uid.battler_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
@@ -168,7 +139,7 @@ mod action {
                 _move = battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event( battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
+            if EventResolver::broadcast_trial_event(battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
                 battle.push_message(&"The move failed!");
                 return Ok(NOTHING);
             }
@@ -196,7 +167,11 @@ mod action {
 
             let stab_multiplier = {
                 let move_type = battle.move_(move_uid).species.elemental_type;
-                if battle.monster(attacker_uid).is_type(move_type) { Percent(125) } else { Percent(100) }
+                if battle.monster(attacker_uid).is_type(move_type) {
+                    Percent(125)
+                } else {
+                    Percent(100)
+                }
             };
 
             let move_type = battle.move_(move_uid).species.elemental_type;
@@ -229,7 +204,7 @@ mod action {
 
             // Do the calculated damage to the target
             SecondaryAction::damage(battle, target_uid, damage);
-            EventResolver::broadcast_event( battle, attacker_uid, calling_context, &OnDamageDealt, NOTHING, None);
+            EventResolver::broadcast_event(battle, attacker_uid, calling_context, &OnDamageDealt, NOTHING, None);
 
             let type_effectiveness = match type_matchup_multiplier {
                 Percent(25) | Percent(50) => "not very effective",
@@ -241,10 +216,7 @@ mod action {
                 }
             };
             battle.push_message(&format!["It was {}!", type_effectiveness]);
-            battle.push_message(&format![
-                "{target} took {damage} damage!",
-                target = battle.monster(target_uid).nickname,
-            ]);
+            battle.push_message(&format!["{target} took {damage} damage!", target = battle.monster(target_uid).nickname,]);
             battle.push_message(&format![
                 "{target} has {num_hp} health left.",
                 target = battle.monster(target_uid).nickname,
@@ -254,43 +226,27 @@ mod action {
             Ok(NOTHING)
         }
 
-        pub fn status_move(
-            battle: &mut Battle,
-            move_uid: MoveUID,
-            target_uid: BattlerUID,
-        ) -> TurnResult {
+        pub fn status_move(battle: &mut Battle, move_uid: MoveUID, target_uid: BattlerUID) -> TurnResult {
             let attacker_uid = move_uid.battler_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
             battle.push_message(&format![
                 "{attacker} used {move_}",
-                attacker = battle.monster(attacker_uid).nickname, 
+                attacker = battle.monster(attacker_uid).nickname,
                 move_ = battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(
-                    battle, 
-                    attacker_uid, 
-                    MoveUsed::new(move_uid, target_uid), 
-                    &OnTryMove, 
-            ) == Outcome::Failure {
+            if EventResolver::broadcast_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), &OnTryMove) == Outcome::Failure {
                 battle.push_message(&"The move failed!");
                 return Ok(NOTHING);
             }
-        
+
             {
                 let move_ = *battle.move_(move_uid);
                 move_.on_activate(battle, attacker_uid, target_uid);
             }
-            
-            EventResolver::broadcast_event(
-                battle, 
-                attacker_uid, 
-                calling_context, 
-                &OnStatusMoveUsed, 
-                (), 
-                None
-            );
+
+            EventResolver::broadcast_event(battle, attacker_uid, calling_context, &OnStatusMoveUsed, (), None);
 
             Ok(NOTHING)
         }
@@ -304,10 +260,7 @@ mod action {
         /// This function should be used when an amount of damage has already been calculated,
         /// and the only thing left to do is to deduct it from the HP of the target.
         pub fn damage(battle: &mut Battle, target_uid: BattlerUID, damage: u16) {
-            battle.monster_mut(target_uid).current_health = battle
-                .monster(target_uid)
-                .current_health
-                .saturating_sub(damage);
+            battle.monster_mut(target_uid).current_health = battle.monster(target_uid).current_health.saturating_sub(damage);
         }
 
         /// **Secondary Action** This action can only be triggered by other Actions.
@@ -315,28 +268,13 @@ mod action {
         /// Resolves activation of any ability.
         ///
         /// Returns a `bool` indicating whether the ability succeeded.
-        pub fn activate_ability(
-            battle: &mut Battle,
-            ability_holder_uid: BattlerUID,
-        ) -> Outcome {
+        pub fn activate_ability(battle: &mut Battle, ability_holder_uid: BattlerUID) -> Outcome {
             let calling_context = AbilityUsed::new(ability_holder_uid);
-            
-            if EventResolver::broadcast_trial_event(
-                battle, 
-                ability_holder_uid, 
-                calling_context, 
-                &OnTryActivateAbility, 
-            ) == Outcome::Success {
+
+            if EventResolver::broadcast_trial_event(battle, ability_holder_uid, calling_context, &OnTryActivateAbility) == Outcome::Success {
                 let ability = *battle.ability(ability_holder_uid);
                 ability.on_activate(battle, ability_holder_uid);
-                EventResolver::broadcast_event(
-                    battle, 
-                    ability_holder_uid, 
-                    calling_context, 
-                    &OnAbilityActivated, 
-                    (), 
-                    None
-                );
+                EventResolver::broadcast_event(battle, ability_holder_uid, calling_context, &OnAbilityActivated, (), None);
                 Outcome::Success
             } else {
                 Outcome::Failure
@@ -348,32 +286,21 @@ mod action {
         /// Resolves raising the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
         ///
         /// Returns a `bool` indicating whether the stat raising succeeded.
-        pub fn raise_stat(
-            battle: &mut Battle,
-            battler_uid: BattlerUID,
-            stat: Stat,
-            number_of_stages: u8,
-        ) -> Outcome {
-            if EventResolver::broadcast_trial_event( battle, battler_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
-                let effective_stages = battle
-                    .monster_mut(battler_uid)
-                    .stat_modifiers
-                    .raise_stat(stat, number_of_stages);
-                
+        pub fn raise_stat(battle: &mut Battle, battler_uid: BattlerUID, stat: Stat, number_of_stages: u8) -> Outcome {
+            if EventResolver::broadcast_trial_event(battle, battler_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
+                let effective_stages = battle.monster_mut(battler_uid).stat_modifiers.raise_stat(stat, number_of_stages);
+
                 battle.push_message(&format![
                     "{monster}\'s {stat} was raised by {stages} stage(s)!",
                     monster = battle.monster(battler_uid).name(),
                     stat = stat,
                     stages = effective_stages
                 ]);
-                
+
                 Outcome::Success
             } else {
-                battle.push_message(&format![
-                    "{monster}'s stats were not raised.",
-                    monster = battle.monster(battler_uid).name()
-                ]);
-                
+                battle.push_message(&format!["{monster}'s stats were not raised.", monster = battle.monster(battler_uid).name()]);
+
                 Outcome::Failure
             }
         }
@@ -383,32 +310,21 @@ mod action {
         /// Resolves lowering the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
         ///
         /// Returns a `bool` indicating whether the stat lowering succeeded.
-        pub fn lower_stat(
-            battle: &mut Battle,
-            battler_uid: BattlerUID,
-            stat: Stat,
-            number_of_stages: u8,
-        ) -> Outcome {
-            if EventResolver::broadcast_trial_event( battle, battler_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
-                let effective_stages = battle
-                    .monster_mut(battler_uid)
-                    .stat_modifiers
-                    .lower_stat(stat, number_of_stages);
-                
+        pub fn lower_stat(battle: &mut Battle, battler_uid: BattlerUID, stat: Stat, number_of_stages: u8) -> Outcome {
+            if EventResolver::broadcast_trial_event(battle, battler_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
+                let effective_stages = battle.monster_mut(battler_uid).stat_modifiers.lower_stat(stat, number_of_stages);
+
                 battle.push_message(&format![
                     "{monster}\'s {stat} was lowered by {stages} stage(s)!",
                     monster = battle.monster(battler_uid).name(),
                     stat = stat,
                     stages = effective_stages
                 ]);
-                
+
                 Outcome::Success
             } else {
-                battle.push_message(&format![
-                    "{monster}'s stats were not lowered.",
-                    monster = battle.monster(battler_uid).name()
-                ]);
-                
+                battle.push_message(&format!["{monster}'s stats were not lowered.", monster = battle.monster(battler_uid).name()]);
+
                 Outcome::Failure
             }
         }

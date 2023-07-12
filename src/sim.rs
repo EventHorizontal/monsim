@@ -26,8 +26,7 @@ type TurnResult = Result<(), SimError>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
-    InvalidStateError(String),
-    InputError(String),
+    InvalidStateReached(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -124,7 +123,7 @@ impl BattleSimulator {
         match self.turn_number.checked_add(1) {
             Some(turn_number) => self.turn_number = turn_number,
             None => {
-                return Err(SimError::InvalidStateError(String::from(
+                return Err(SimError::InvalidStateReached(String::from(
                     "Turn limit exceeded (Limit = 255 turns)",
                 )))
             }
@@ -134,6 +133,8 @@ impl BattleSimulator {
 }
 
 mod action {
+    use crate::matchup;
+
     use super::event_dex::*;
     use super::*;
 
@@ -167,13 +168,7 @@ mod action {
                 _move = battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(
-                    battle, 
-                    attacker_uid, 
-                    calling_context, 
-                    &OnTryMove, 
-            ) == Outcome::Failure 
-            {
+            if EventResolver::broadcast_trial_event( battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
                 battle.push_message(&"The move failed!");
                 return Ok(NOTHING);
             }
@@ -186,13 +181,11 @@ mod action {
 
             match battle.move_(move_uid).category() {
                 MoveCategory::Physical => {
-                    attackers_attacking_stat =
-                        battle.monster(attacker_uid).stats[Stat::PhysicalAttack];
+                    attackers_attacking_stat = battle.monster(attacker_uid).stats[Stat::PhysicalAttack];
                     targets_defense_stat = battle.monster(target_uid).stats[Stat::PhysicalDefense];
                 }
                 MoveCategory::Special => {
-                    attackers_attacking_stat =
-                        battle.monster(attacker_uid).stats[Stat::SpecialAttack];
+                    attackers_attacking_stat = battle.monster(attacker_uid).stats[Stat::SpecialAttack];
                     targets_defense_stat = battle.monster(target_uid).stats[Stat::SpecialDefense];
                 }
                 MoveCategory::Status => unreachable!("The damaging_move function is not expected to receive status moves."),
@@ -203,23 +196,17 @@ mod action {
 
             let stab_multiplier = {
                 let move_type = battle.move_(move_uid).species.elemental_type;
-                if battle.monster(attacker_uid).is_type(move_type) {
-                    Percent(125)
-                } else {
-                    Percent(100)
-                }
+                if battle.monster(attacker_uid).is_type(move_type) { Percent(125) } else { Percent(100) }
             };
 
             let move_type = battle.move_(move_uid).species.elemental_type;
             let target_primary_type = battle.monster(target_uid).species.primary_type;
             let target_secondary_type = battle.monster(target_uid).species.secondary_type;
 
-            let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type
-            {
-                type_matchup(move_type, target_primary_type)
-                    * type_matchup(move_type, target_secondary_type)
+            let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
+                matchup!(move_type against target_primary_type / target_secondary_type)
             } else {
-                type_matchup(move_type, target_primary_type)
+                matchup!(move_type against target_primary_type)
             };
 
             // If the opponent is immune, damage calculation is skipped.
@@ -242,14 +229,7 @@ mod action {
 
             // Do the calculated damage to the target
             SecondaryAction::damage(battle, target_uid, damage);
-            EventResolver::broadcast_event(
-                battle, 
-                attacker_uid, 
-                MoveUsed::new(move_uid, target_uid), 
-                &OnDamageDealt, 
-                (), 
-                None
-            );
+            EventResolver::broadcast_event( battle, attacker_uid, calling_context, &OnDamageDealt, NOTHING, None);
 
             let type_effectiveness = match type_matchup_multiplier {
                 Percent(25) | Percent(50) => "not very effective",
@@ -257,9 +237,7 @@ mod action {
                 Percent(200) | Percent(400) => "super effective",
                 value => {
                     let type_multiplier_as_float = value.0 as f64 / 100.0f64;
-                    return Err(SimError::InvalidStateError(format![
-                        "Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}",
-                    ]))
+                    unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
                 }
             };
             battle.push_message(&format!["It was {}!", type_effectiveness]);

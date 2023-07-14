@@ -221,7 +221,7 @@ impl AllyBattlerTeam {
         &self.0.battlers[0]
     }
 
-    pub fn unwrap(&self) -> BattlerTeam {
+    pub fn inner(&self) -> BattlerTeam {
         self.0.clone()
     }
 }
@@ -259,7 +259,7 @@ impl OpponentBattlerTeam {
         &self.0.battlers[0]
     }
 
-    pub fn unwrap(&self) -> BattlerTeam {
+    pub fn inner(&self) -> BattlerTeam {
         self.0.clone()
     }
 }
@@ -395,13 +395,13 @@ impl Battler {
 }
 
 impl AllyBattler {
-    pub fn unwrap(&self) -> Battler {
+    pub fn inner(&self) -> Battler {
         self.0.clone()
     }
 }
 
 impl OpponentBattler {
-    pub fn unwrap(&self) -> Battler {
+    pub fn inner(&self) -> Battler {
         self.0.clone()
     }
 }

@@ -1,4 +1,4 @@
-use monsim::{app::*, sim::*};
+use monsim::{app::{self, AppResult}, sim::*};
 mod ability_dex;
 mod monster_dex;
 mod move_dex;
@@ -7,7 +7,7 @@ use ability_dex::{FlashFire, WaterAbsorb};
 use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
 use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 
-fn main() -> MonsimResult {
+fn main() -> AppResult<Nothing> {
     let battle_sim = BattleSimulator::new(build_battle!(
         {
             Allies: BattlerTeam {
@@ -38,5 +38,5 @@ fn main() -> MonsimResult {
             }
         }
     ));
-    App::run(battle_sim)
+    app::run(battle_sim)
 }

@@ -9,7 +9,7 @@ use std::{
     collections::HashMap,
     fmt::Display,
     iter::Chain,
-    ops::Index,
+    ops::{Index, IndexMut},
     slice::{Iter, IterMut},
 };
 
@@ -60,6 +60,13 @@ impl<T> Index<BattlerUID> for BattlerMap<T> {
 
     fn index(&self, index: BattlerUID) -> &Self::Output {
         self.map.get(&index).expect("All BattlerUIDs should have a bool value")
+    }
+}
+
+
+impl<T> IndexMut<BattlerUID> for BattlerMap<T> {
+    fn index_mut(&mut self, index: BattlerUID) -> &mut Self::Output {
+        self.map.get_mut(&index).expect("All BattlerUIDs should have a bool value")
     }
 }
 
@@ -232,6 +239,11 @@ impl Battle {
                 speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
                 order: 0,
             },
+            ActionChoice::SwitchOut { active_battler_uid, benched_battler_uid: _ } => ActivationOrder { 
+                priority: 8, 
+                speed: self.monster(active_battler_uid).stats[Stat::Speed], 
+                order: 0
+            }
         }
     }
 
@@ -242,7 +254,7 @@ impl Battle {
         let ally_moves = ally_active_battler.move_uids();
         let opponent_moves = opponent_active_battler.move_uids();
 
-        let mut ally_team_choices: TeamAvailableActions = Vec::with_capacity(4);
+        let mut ally_team_choices: TeamAvailableActions = Vec::with_capacity(5);
         for move_uid in ally_moves {
             ally_team_choices.push(ActionChoice::Move {
                 move_uid,
@@ -250,7 +262,12 @@ impl Battle {
             });
         }
 
-        let mut opponent_team_choices: TeamAvailableActions = Vec::with_capacity(4);
+        let any_benched_ally_battlers = self.ally_team.battlers().len() > 1;
+        if any_benched_ally_battlers {
+            ally_team_choices.push( ActionChoice::SwitchOut { active_battler_uid: ally_active_battler.uid, benched_battler_uid: ALLY_2 })
+        }
+
+        let mut opponent_team_choices: TeamAvailableActions = Vec::with_capacity(5);
         for move_uid in opponent_moves {
             opponent_team_choices.push(ActionChoice::Move {
                 move_uid,
@@ -258,15 +275,14 @@ impl Battle {
             });
         }
 
+        let any_benched_opponent_battler = self.ally_team.battlers().len() > 1;
+        if any_benched_opponent_battler {
+            opponent_team_choices.push( ActionChoice::SwitchOut { active_battler_uid: opponent_active_battler.uid, benched_battler_uid: OPPONENT_2 })
+        }
+
         AvailableActions {
             ally_team_choices,
             opponent_team_choices,
-        }
-    }
-
-    pub fn get_current_action_as_move(&self) -> Option<&Move> {
-        match self.current_action.unwrap() {
-            ActionChoice::Move { move_uid, target_uid: _ } => Some(self.move_(move_uid)),
         }
     }
 
@@ -285,11 +301,16 @@ impl Display for Battle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 
-        push_pretty_tree_for_team(&mut out, "Ally Team\n", &self.ally_team.unwrap(), self.ally_team.battlers().iter().count());
+        push_pretty_tree_for_team(
+            &mut out,
+            "Ally Team\n", 
+            &self.ally_team.inner(), 
+            self.ally_team.battlers().iter().count(),
+        );
         push_pretty_tree_for_team(
             &mut out,
             "Opponent Team\n",
-            &self.opponent_team.unwrap(),
+            &self.opponent_team.inner(),
             self.opponent_team.battlers().iter().count(),
         );
         write!(f, "{}", out)

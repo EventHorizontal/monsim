@@ -8,9 +8,10 @@ pub const SUPER_EFFECTIVE: Percent = Percent(200);
 pub const EMPTY_LINE: &str = "";
 
 /// Usage:
-/// ```
-/// matchup!(Type1 against Type2)
-/// matchup!(Type1 against Type2 / Type3)
+/// 
+/// ```ignore
+/// matchup!(Type1 against Type2);
+/// matchup!(Type1 against Type2 / Type3);
 /// ```
 /// which returns the `Percent` modifier for using a `Type1` type attack on a pure `Type2` type monster or a `Type2/Type3` dual-type monster.
 #[macro_export]

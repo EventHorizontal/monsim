@@ -34,6 +34,23 @@ impl Not for Outcome {
 /// A percentage that is unbound above
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Percent(pub u16);
+impl Percent {
+    pub fn is_matchup_ineffective(&self) -> bool {
+        *self == Percent(0)
+    }
+
+    pub fn is_matchup_effective(&self) -> bool {
+        *self == Percent(100)
+    }
+
+    pub fn is_matchup_not_very_effective(&self) -> bool {
+        *self == Percent(25) || *self == Percent(50)
+    }
+
+    pub fn is_matchup_super_effective(&self) -> bool {
+        *self == Percent(200) || *self == Percent(400)
+    }
+}
 
 impl Add for Percent {
     type Output = Percent;

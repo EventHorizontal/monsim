@@ -63,7 +63,7 @@ impl BattleSimulator {
         }
     }
 
-    pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActions) -> TurnResult {
+    pub fn simulate_turn(&mut self, chosen_actions: ChosenActions) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
 
@@ -72,7 +72,7 @@ impl BattleSimulator {
         self.battle
             .push_messages(&[&format!["Turn {turn_number}", turn_number = self.turn_number], &EMPTY_LINE]);
 
-        ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
+        ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions.into_iter().collect::<Vec<_>>());
 
         let mut result = Ok(NOTHING);
         for chosen_action in chosen_actions.into_iter() {
@@ -82,6 +82,10 @@ impl BattleSimulator {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut self.battle, move_uid, target_uid),
                     MoveCategory::Status => PrimaryAction::status_move(&mut self.battle, move_uid, target_uid),
                 },
+                ActionChoice::SwitchOut { active_battler_uid: _, benched_battler_uid: _ } => {
+                    todo!("fix the implementation");
+                    // PrimaryAction::switch_out(&mut self.battle, active_battler_uid, benched_battler_uid)
+                }
             };
             let maybe_fainted_battler = self.battle.battlers().find(|battler| battler.fainted());
             if let Some(battler) = maybe_fainted_battler {
@@ -104,6 +108,10 @@ impl BattleSimulator {
             None => return Err(SimError::InvalidStateReached(String::from("Turn limit exceeded (Limit = 255 turns)"))),
         };
         Ok(NOTHING)
+    }
+
+    pub(crate) fn available_actions(&self) -> AvailableActions {
+        self.battle.generate_available_actions()
     }
 }
 
@@ -185,7 +193,7 @@ mod action {
             };
 
             // If the opponent is immune, damage calculation is skipped.
-            if type_matchup_multiplier == INEFFECTIVE {
+            if type_matchup_multiplier.is_matchup_ineffective() {
                 battle.push_message(&"It was ineffective...");
                 return Ok(NOTHING);
             }
@@ -215,7 +223,7 @@ mod action {
                     unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
                 }
             };
-            battle.push_message(&format!["It was {}!", type_effectiveness]);
+            battle.push_message(&format!["It was {type_effectiveness}!"]);
             battle.push_message(&format!["{target} took {damage} damage!", target = battle.monster(target_uid).nickname,]);
             battle.push_message(&format![
                 "{target} has {num_hp} health left.",
@@ -246,8 +254,14 @@ mod action {
                 move_.on_activate(battle, attacker_uid, target_uid);
             }
 
-            EventResolver::broadcast_event(battle, attacker_uid, calling_context, &OnStatusMoveUsed, (), None);
+            EventResolver::broadcast_event(battle, attacker_uid, calling_context, &OnStatusMoveUsed, NOTHING, None);
 
+            Ok(NOTHING)
+        }
+
+        pub fn switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
+            battle.battlers_on_field[active_battler_uid] = false;
+            battle.battlers_on_field[benched_battler_uid] = true;
             Ok(NOTHING)
         }
     }
@@ -274,7 +288,7 @@ mod action {
             if EventResolver::broadcast_trial_event(battle, ability_holder_uid, calling_context, &OnTryActivateAbility) == Outcome::Success {
                 let ability = *battle.ability(ability_holder_uid);
                 ability.on_activate(battle, ability_holder_uid);
-                EventResolver::broadcast_event(battle, ability_holder_uid, calling_context, &OnAbilityActivated, (), None);
+                EventResolver::broadcast_event(battle, ability_holder_uid, calling_context, &OnAbilityActivated, NOTHING, None);
                 Outcome::Success
             } else {
                 Outcome::Failure

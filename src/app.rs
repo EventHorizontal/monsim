@@ -303,10 +303,10 @@ fn process_input<'a>(
 						}
 					},
 					(KeyCode::Left, Release) => {
-						app.selected_list_idx -= 1; // Moves list cursor to the left.
-					},
+						app.selected_list_idx = (app.selected_list_idx + 2) % 3; // Moves list cursor to the left.
+					}
 					(KeyCode::Right, Release) => {
-						app.selected_list_idx += 1; // Moves list cursor tot the right.
+						app.selected_list_idx = (app.selected_list_idx + 1) % 3; // Moves list cursor tot the right.
 					},
 					(KeyCode::Tab, Release) => { 
 						if let (Some(selected_ally_choice_index), Some(selected_opponent_choice_index)) =
@@ -460,7 +460,7 @@ fn create_stats_panel_widget<'a>(team_ui_state: &'a TeamUiState) -> Paragraph<'a
 fn divide_panel_into_chunks(chunk: Rect) -> Vec<Rect> {
     Layout::default()
 		.direction(Direction::Vertical)
-		.constraints([Constraint::Percentage(33), Constraint::Length(6), Constraint::Length(6)].as_ref())
+		.constraints([Constraint::Percentage(33), Constraint::Length(8), Constraint::Length(6)].as_ref())
 		.split(chunk)
 }
 

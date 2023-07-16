@@ -158,3 +158,13 @@ macro_rules! collection {
         core::convert::From::from([$($v,)*])
     }};
 }
+
+pub fn vector_to_array_of_options<T: Copy, const N: usize>(vec: Vec<T>) -> [Option<T>; N] {
+    let mut arr = [None; N];
+    let mut idx = 0;
+    for element in vec {
+        arr[idx] = Some(element);
+        idx += 1;
+    }
+    arr
+}

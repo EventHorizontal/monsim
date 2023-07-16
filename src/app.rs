@@ -82,29 +82,30 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 	'app: loop {
 		match app.state {
 			AppState::Initialising => unreachable!("The app never transitions back to the initialising state."),
-			AppState::Processing(ref processing_state) => match processing_state {
-				// TODO: figure out if we can avoid cloning the app every frame. (Separate out the app_state somehow?)
-				ProcessingState::AwaitingUserInput(available_actions) => {
-					app = update_app_state_using_input(&mut terminal, app.clone(), &mut battle_sim, &receiver, available_actions.clone())?;
-				},
-				ProcessingState::Simulating(chosen_actions) => {
-					let result = battle_sim.simulate_turn(chosen_actions.clone());
-					match result {
-						Ok(_) => {
-							battle_sim.battle.push_message(&"Simulator: The turn was calculated successfully.");
+			AppState::Processing(ref processing_state) => {
+				match processing_state.clone() {
+					ProcessingState::AwaitingUserInput(available_actions) => {
+						app = update_app_state_using_input(&mut terminal, app, &mut battle_sim, &receiver, available_actions)?;
+					},
+					ProcessingState::Simulating(chosen_actions) => {
+						let result = battle_sim.simulate_turn(chosen_actions.clone());
+						match result {
+							Ok(_) => {
+								battle_sim.battle.push_message(&"Simulator: The turn was calculated successfully.");
+							}
+							Err(error) => battle_sim.battle.push_message(&format!["Simulator: {:?}", error]),
 						}
-						Err(error) => battle_sim.battle.push_message(&format!["Simulator: {:?}", error]),
-					}
-					
-					if battle_sim.sim_state == SimState::BattleFinished {
-						battle_sim.battle.push_messages(&[&EMPTY_LINE, &"The battle ended."]);
-					}
-					battle_sim.battle.push_messages(&[&"---", &EMPTY_LINE]);
-					
-					let available_actions = battle_sim.available_actions();
-					app.state = AppState::Processing(AwaitingUserInput(available_actions));
-					app.regenerate_ui_data(&mut battle_sim.battle);
-				},
+						
+						if battle_sim.sim_state == SimState::BattleFinished {
+							battle_sim.battle.push_messages(&[&EMPTY_LINE, &"The battle ended."]);
+						}
+						battle_sim.battle.push_messages(&[&"---", &EMPTY_LINE]);
+						
+						let available_actions = battle_sim.available_actions();
+						app.state = AppState::Processing(AwaitingUserInput(available_actions));
+						app.regenerate_ui_data(&mut battle_sim.battle);
+					},
+				}
 			}
 			AppState::Exiting => { break 'app; } 
 		}

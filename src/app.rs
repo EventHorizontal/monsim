@@ -3,15 +3,13 @@ use std::{sync::mpsc, time::{Duration, Instant}, thread, error::Error, io::Stdou
 use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode}, event::{self, Event, KeyCode, KeyEventKind, KeyEvent}, execute};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::{sim::{BattleSimulator, NOTHING, Battle, Nothing, ChosenActions, EMPTY_LINE, SimState, AvailableActions, ActionChoice, BattlerTeam, MessageBuffer, TeamID}, not, debug_to_file};
+use crate::{sim::{BattleSimulator, NOTHING, Battle, Nothing, ChosenActions, EMPTY_LINE, SimState, AvailableActions, ActionChoice, BattlerTeam, MessageBuffer, TeamID}, not};
 
 #[derive(Debug, Clone)]
 pub struct App<'a> {
 	state: AppState,
 	selected_widget_idx: usize,
-	message_log_scroll_idx: usize,
-	message_log_last_scrollable_line_idx: usize,
-	last_message_buffer_length: usize,
+	message_log_ui_state: MessageLogUiState,
 	ally_ui_state: TeamUiState<'a>,
 	opponent_ui_state: TeamUiState<'a>,
 }
@@ -27,6 +25,13 @@ pub enum AppState {
 pub enum ProcessingState {
 	AwaitingUserInput(AvailableActions),
 	Simulating(ChosenActions),
+}
+
+#[derive(Debug, Clone)]
+pub struct MessageLogUiState {
+	message_log_scroll_idx: usize,
+	message_log_last_scrollable_line_idx: usize,
+	last_message_buffer_length: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -85,7 +90,7 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 			AppState::Processing(ref processing_state) => {
 				match processing_state.clone() {
 					ProcessingState::AwaitingUserInput(available_actions) => {
-						app = update_app_state_using_input(&mut terminal, app, &mut battle_sim, &receiver, available_actions)?;
+						update_app_state_using_input(&mut terminal, &mut app, &mut battle_sim, &receiver, available_actions)?;
 					},
 					ProcessingState::Simulating(chosen_actions) => {
 						let result = battle_sim.simulate_turn(chosen_actions.clone());
@@ -100,7 +105,6 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 							battle_sim.battle.push_messages(&[&EMPTY_LINE, &"The battle ended."]);
 						}
 						battle_sim.battle.push_messages(&[&"---", &EMPTY_LINE]);
-						debug_to_file!(&battle_sim.battle.message_buffer);
 						
 						let available_actions = battle_sim.available_actions();
 						app.state = AppState::Processing(AwaitingUserInput(available_actions));
@@ -141,11 +145,11 @@ fn create_io_thread(sender: mpsc::Sender<TuiEvent<KeyEvent>>) {
 #[must_use]
 fn update_app_state_using_input<'a>(
 	terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-	mut app: App<'a>,
+	mut app: &mut App<'a>,
 	battle_sim: &mut BattleSimulator,
 	receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>,
 	available_actions: AvailableActions,
-) -> AppResult<App<'a>> {
+) -> AppResult<Nothing> {
 	match receiver.recv()? {
 		TuiEvent::Input(event) => {
 			use KeyEventKind::Release;
@@ -154,7 +158,7 @@ fn update_app_state_using_input<'a>(
 			let was_escape_key_released = (KeyCode::Esc, Release) == (event.code, event.kind);
 			if was_escape_key_released { 
 				terminate(terminal, &mut app)?; 
-				return Ok(app) 
+				return Ok(NOTHING); 
 			}
 			
 			let is_battle_finished = battle_sim.sim_state == SimState::BattleFinished;
@@ -213,7 +217,7 @@ fn update_app_state_using_input<'a>(
 		},
 		TuiEvent::Tick => NOTHING,
 	}
-	Ok(app)
+	Ok(NOTHING)
 }
 
 fn terminate(terminal: &mut Terminal<CrosstermBackend<Stdout>>, app: &mut App) -> AppResult<Nothing> {
@@ -255,7 +259,7 @@ fn render_interface<'a>(
 		let ally_choice_menu_widget = create_choice_menu_widget(&app.ally_ui_state, app.selected_widget_idx);
 		let ally_team_roster_widget = create_roster_widget(&app.ally_ui_state, app.selected_widget_idx);
 
-		let message_log_widget = create_message_log_widget(message_buffer, app.message_log_scroll_idx, app.selected_widget_idx);
+		let message_log_widget = create_message_log_widget(message_buffer, app.message_log_ui_state.message_log_scroll_idx, app.selected_widget_idx);
 		
 		let opponent_panel_chunks = divide_panel_into_chunks(chunks[2]);
 		let opponent_stats_widget = create_stats_panel_widget(&app.opponent_ui_state); 
@@ -381,11 +385,9 @@ impl<'a> App<'a> {
 		App {
 			state: AppState::Initialising,
 			selected_widget_idx: 1,
+			message_log_ui_state: MessageLogUiState::new(),
 			ally_ui_state: TeamUiState::new(&mut battle.ally_team.inner(), TeamID::Allies, ally_team_choices),
 			opponent_ui_state: TeamUiState::new(&mut battle.opponent_team.inner(), TeamID::Opponents, opponent_team_choices),
-			message_log_scroll_idx: 0,
-			message_log_last_scrollable_line_idx: 0,
-			last_message_buffer_length: 0,
 		}
 	}
 
@@ -394,14 +396,14 @@ impl<'a> App<'a> {
     } 
 
 	fn scroll_message_log_up(&mut self) {
-		self.message_log_scroll_idx = self.message_log_scroll_idx.saturating_sub(1);
-		self.message_log_scroll_idx = self.message_log_scroll_idx.min(self.message_log_last_scrollable_line_idx);
+		self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.message_log_scroll_idx.saturating_sub(1);
+		self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.message_log_scroll_idx.min(self.message_log_ui_state.message_log_last_scrollable_line_idx);
 	}
 
 	fn scroll_message_log_down(&mut self, message_log_length: usize) {
-		self.message_log_scroll_idx = (self.message_log_scroll_idx + 1)
+		self.message_log_ui_state.message_log_scroll_idx = (self.message_log_ui_state.message_log_scroll_idx + 1)
 			.min(message_log_length);
-		self.message_log_scroll_idx = self.message_log_scroll_idx.min(self.message_log_last_scrollable_line_idx);
+		self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.message_log_scroll_idx.min(self.message_log_ui_state.message_log_last_scrollable_line_idx);
 	}
 
 	fn scroll_selected_list_left(&mut self) {
@@ -420,9 +422,9 @@ impl<'a> App<'a> {
 		} = battle.generate_available_actions();
 
 		// We want to scroll to the end of the last turn, which is also the beginning of the next turn
-		self.message_log_scroll_idx = self.last_message_buffer_length;
-		self.message_log_last_scrollable_line_idx = self.message_log_scroll_idx;
-		self.last_message_buffer_length = battle.message_buffer.len();
+		self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.last_message_buffer_length;
+		self.message_log_ui_state.message_log_last_scrollable_line_idx = self.message_log_ui_state.message_log_scroll_idx;
+		self.message_log_ui_state.last_message_buffer_length = battle.message_buffer.len();
 
 		self.ally_ui_state = TeamUiState {
 			active_battler_status: BattlerTeam::battler_status_as_string(battle.ally_team.active_battler()),
@@ -440,6 +442,16 @@ impl<'a> App<'a> {
 
 		TeamUiState::regenerate_list(&battle.opponent_team.inner(), &mut self.opponent_ui_state.list_items, opponent_team_choices);
 	}
+}
+
+impl MessageLogUiState {
+    fn new() -> Self {
+        Self {
+            message_log_scroll_idx: 0,
+            message_log_last_scrollable_line_idx: 0,
+            last_message_buffer_length: 0,
+        }
+    }
 }
 
 impl<'a> TeamUiState<'a> {

@@ -127,6 +127,12 @@ pub const OPPONENT_6: BattlerUID = BattlerUID {
     battler_number: BattlerNumber::_6,
 };
 
+impl Display for TeamID {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl Display for BattlerUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}{:?}", self.team_id, self.battler_number)

@@ -1,8 +1,8 @@
 use std::ops::{Add, Mul, Not, Sub};
 
-/// I prefer this for readability
+/// Type alias for readability of parentheses
 pub type Nothing = ();
-/// I prefer this for readability
+/// Type alias for readability of parentheses
 pub const NOTHING: () = ();
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

@@ -108,7 +108,6 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 			}
 			AppState::Exiting => { break 'app; } 
 		}
-		if app.state == AppState::Exiting { break 'app };
 		render_interface(&mut terminal, &mut app)?;
 	}
 

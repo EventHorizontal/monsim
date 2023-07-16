@@ -83,7 +83,7 @@ impl BattleSimulator {
                     MoveCategory::Status => PrimaryAction::status_move(&mut self.battle, move_uid, target_uid),
                 },
                 ActionChoice::SwitchOut { active_battler_uid: _, benched_battler_uid: _ } => {
-                    todo!("fix the implementation");
+                    todo!("Switching out is broken at the moment. Need to fix that.");
                     // PrimaryAction::switch_out(&mut self.battle, active_battler_uid, benched_battler_uid)
                 }
             };

@@ -295,7 +295,7 @@ fn process_input<'a>(
 					(KeyCode::Down, Release) => {
 						match ScrollableList::from(app.selected_list_idx) {
 							ScrollableList::MessageLog => { 
-								let message_log_length = battle_sim.battle.message_buffer.len(); 
+								let message_log_length = app.message_buffer.len(); 
 								app.scroll_message_log_down(message_log_length);
 							},
 							ScrollableList::AllyChoices => { app.ally_ui_state.scroll_selection_down() },

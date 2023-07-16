@@ -1,3 +1,5 @@
+use std::ops::{IndexMut, Index};
+
 use super::game_mechanics::{BattlerUID, MoveUID};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,11 +24,78 @@ impl ActionChoice {
     }
 }
 
-pub type TeamAvailableActions = Vec<ActionChoice>;
 pub type ChosenActions = [ActionChoice; 2];
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableActions {
-    pub ally_team_choices: TeamAvailableActions,
-    pub opponent_team_choices: TeamAvailableActions,
+    pub ally_team_available_actions: TeamAvailableActions,
+    pub opponent_team_available_actions: TeamAvailableActions,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TeamAvailableActions {
+    moves: [Option<ActionChoice>; 4],
+    switch_out: Option<ActionChoice>,
+    iter_cursor: usize,
+    // TODO: more actions will be added when they are added to the engine.
+}
+
+impl TeamAvailableActions {
+    pub fn new(moves_vec: Vec<ActionChoice>, switch_out: Option<ActionChoice>) -> Self {
+        let moves = crate::sim::helpers::vector_to_array_of_options(moves_vec);
+        Self {
+            moves,
+            switch_out,
+            iter_cursor: 0,
+        }
+    }
+}
+
+impl Index<usize> for TeamAvailableActions {
+    type Output = Option<ActionChoice>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
+        if index < move_count {
+            &self.moves[index]
+        } else if index == move_count && self.switch_out.is_some() {
+            &self.switch_out
+        } else {
+            unreachable!()
+        }
+    }
+}
+
+impl IndexMut<usize> for TeamAvailableActions {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
+        if index < move_count {
+            &mut self.moves[index]
+        } else if index == move_count && self.switch_out.is_some() {
+            &mut self.switch_out
+        } else {
+            unreachable!()
+        }
+    }
+}
+
+impl Iterator for TeamAvailableActions {
+    type Item = ActionChoice;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = self.iter_cursor;
+        let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
+        if index < move_count {
+            self.iter_cursor += 1;
+            Some(self.moves[index].expect("validated index"))
+        } else if index == move_count && self.switch_out.is_some() {
+            self.iter_cursor += 1;
+            Some(self.switch_out.expect("validated index"))
+        } else {
+            self.iter_cursor = 0;
+            None
+        }
+    }
+}
+ 
+

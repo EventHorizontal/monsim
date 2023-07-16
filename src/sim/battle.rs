@@ -247,43 +247,42 @@ impl Battle {
         }
     }
 
-    pub fn generate_available_actions(&self) -> AvailableActions {
+    pub fn available_actions(&self) -> AvailableActions {
         let ally_active_battler = self.ally_team.active_battler();
         let opponent_active_battler = self.opponent_team.active_battler();
+        
+        let ally_team_available_actions = self.team_available_actions(ally_active_battler, opponent_active_battler, &self.ally_team.inner());
 
-        let ally_moves = ally_active_battler.move_uids();
-        let opponent_moves = opponent_active_battler.move_uids();
-
-        let mut ally_team_choices: TeamAvailableActions = Vec::with_capacity(5);
-        for move_uid in ally_moves {
-            ally_team_choices.push(ActionChoice::Move {
-                move_uid,
-                target_uid: opponent_active_battler.uid,
-            });
-        }
-
-        let any_benched_ally_battlers = self.ally_team.battlers().len() > 1;
-        if any_benched_ally_battlers {
-            ally_team_choices.push( ActionChoice::SwitchOut { active_battler_uid: ally_active_battler.uid, benched_battler_uid: ALLY_2 })
-        }
-
-        let mut opponent_team_choices: TeamAvailableActions = Vec::with_capacity(5);
-        for move_uid in opponent_moves {
-            opponent_team_choices.push(ActionChoice::Move {
-                move_uid,
-                target_uid: ally_active_battler.uid,
-            });
-        }
-
-        let any_benched_opponent_battler = self.ally_team.battlers().len() > 1;
-        if any_benched_opponent_battler {
-            opponent_team_choices.push( ActionChoice::SwitchOut { active_battler_uid: opponent_active_battler.uid, benched_battler_uid: OPPONENT_2 })
-        }
+       let opponent_team_available_actions = self.team_available_actions(opponent_active_battler, ally_active_battler, &self.opponent_team.inner());
 
         AvailableActions {
-            ally_team_choices,
-            opponent_team_choices,
+            ally_team_available_actions,
+            opponent_team_available_actions,
         }
+    }
+
+    fn team_available_actions(&self, team_active_battler: &Battler, opposing_team_active_battler: &Battler, team: &BattlerTeam) -> TeamAvailableActions {
+        let moves = team_active_battler.move_uids();
+        let mut move_actions = Vec::with_capacity(4);
+        for move_uid in moves {
+            move_actions.push(ActionChoice::Move {
+                move_uid,
+                target_uid: opposing_team_active_battler.uid,
+            });
+        }
+
+        let any_benched_ally_battlers = team.battlers().len() > 1;
+        let switch_action = if any_benched_ally_battlers {
+            Some(ActionChoice::SwitchOut { active_battler_uid: team_active_battler.uid, benched_battler_uid: ALLY_2 })
+        } else {
+            None
+        };
+
+        let ally_team_available_actions = TeamAvailableActions::new(
+            move_actions, 
+            switch_action,
+        );
+        ally_team_available_actions
     }
 
     pub fn push_message(&mut self, message: &dyn Display) {

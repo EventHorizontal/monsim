@@ -109,10 +109,6 @@ impl BattleSimulator {
         };
         Ok(NOTHING)
     }
-
-    pub(crate) fn available_actions(&self) -> AvailableActions {
-        self.battle.generate_available_actions()
-    }
 }
 
 mod action {

@@ -3,7 +3,7 @@ use std::{sync::mpsc, time::{Duration, Instant}, thread, error::Error, io::Stdou
 use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode}, event::{self, Event, KeyCode, KeyEventKind, KeyEvent}, execute};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::{sim::{BattleSimulator, NOTHING, Battle, Nothing, ChosenActions, EMPTY_LINE, SimState, AvailableActions, ActionChoice, BattlerTeam, MessageBuffer, TeamID}, not};
+use crate::{sim::{BattleSimulator, NOTHING, Battle, Nothing, ChosenActions, EMPTY_LINE, SimState, AvailableActions, ActionChoice, BattlerTeam, MessageBuffer, TeamID, TeamAvailableActions}, not};
 
 #[derive(Debug, Clone)]
 pub struct App<'a> {
@@ -81,7 +81,7 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 	terminal.clear()?;
 	execute!(std::io::stdout(), EnterAlternateScreen)?;
 
-	app.transition_to(AppState::Processing(AwaitingUserInput(battle_sim.available_actions())));
+	app.transition_to(AppState::Processing(AwaitingUserInput(battle_sim.battle.available_actions())));
 	render_interface(&mut terminal, &mut app, &battle_sim.battle.message_buffer)?;
 
 	'app: loop {
@@ -106,9 +106,10 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 						}
 						battle_sim.battle.push_messages(&[&"---", &EMPTY_LINE]);
 						
-						let available_actions = battle_sim.available_actions();
+						let available_actions = battle_sim.battle.available_actions();
 						app.state = AppState::Processing(AwaitingUserInput(available_actions));
-						app.regenerate_ui_data(&mut battle_sim.battle);
+						app.regenerate_ui_data(&mut battle_sim.battle, available_actions);
+						crate::debug_to_file!(available_actions);
 					},
 				}
 			}
@@ -193,9 +194,10 @@ fn update_app_state_using_input<'a>(
 						if let (Some(selected_ally_choice_index), Some(selected_opponent_choice_index)) =
 							(app.ally_ui_state.list_state.selected(), app.opponent_ui_state.list_state.selected())
 						{
+							// TODO: Think about how to move the expects to the implementation of TeamAvailableActions
 							let chosen_actions = [
-								available_actions.ally_team_choices[selected_ally_choice_index],
-								available_actions.opponent_team_choices[selected_opponent_choice_index],
+								available_actions.ally_team_available_actions[selected_ally_choice_index].expect("actions should be valid at this point"),
+								available_actions.opponent_team_available_actions[selected_opponent_choice_index].expect("actions should be valid at this point"),
 							];
 							app.transition_to(AppState::Processing(Simulating(chosen_actions))); 
 						} else {
@@ -381,13 +383,13 @@ fn create_message_log_widget<'a>(message_buffer: &'a MessageBuffer, message_log_
 
 impl<'a> App<'a> {
     pub fn new(battle: &mut Battle) -> App<'a> {
-		let AvailableActions { ally_team_choices, opponent_team_choices } = battle.generate_available_actions();
+		let AvailableActions { ally_team_available_actions, opponent_team_available_actions } = battle.available_actions();
 		App {
 			state: AppState::Initialising,
 			selected_widget_idx: 1,
 			message_log_ui_state: MessageLogUiState::new(),
-			ally_ui_state: TeamUiState::new(&mut battle.ally_team.inner(), TeamID::Allies, ally_team_choices),
-			opponent_ui_state: TeamUiState::new(&mut battle.opponent_team.inner(), TeamID::Opponents, opponent_team_choices),
+			ally_ui_state: TeamUiState::new(&mut battle.ally_team.inner(), TeamID::Allies, ally_team_available_actions),
+			opponent_ui_state: TeamUiState::new(&mut battle.opponent_team.inner(), TeamID::Opponents, opponent_team_available_actions),
 		}
 	}
 
@@ -414,12 +416,12 @@ impl<'a> App<'a> {
 		self.selected_widget_idx = (self.selected_widget_idx + 1) % SCROLLABLE_WIDGET_COUNT
 	}
 
-	fn regenerate_ui_data(&mut self, battle: &mut Battle) {
+	fn regenerate_ui_data(&mut self, battle: &mut Battle, available_actions: AvailableActions) {
 		
 		let AvailableActions {
-			ally_team_choices,
-			opponent_team_choices,
-		} = battle.generate_available_actions();
+			ally_team_available_actions,
+			opponent_team_available_actions,
+		} = available_actions;
 
 		// We want to scroll to the end of the last turn, which is also the beginning of the next turn
 		self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.last_message_buffer_length;
@@ -432,7 +434,7 @@ impl<'a> App<'a> {
 			..self.ally_ui_state.clone()
 		};
 
-		TeamUiState::regenerate_list(&battle.ally_team.inner(), &mut self.ally_ui_state.list_items, ally_team_choices);
+		TeamUiState::regenerate_list(&battle.ally_team.inner(), &mut self.ally_ui_state.list_items, ally_team_available_actions);
 
 		self.opponent_ui_state = TeamUiState {
 			active_battler_status: BattlerTeam::battler_status_as_string(battle.opponent_team.active_battler()),
@@ -440,7 +442,7 @@ impl<'a> App<'a> {
 			..self.opponent_ui_state.clone()
 		};
 
-		TeamUiState::regenerate_list(&battle.opponent_team.inner(), &mut self.opponent_ui_state.list_items, opponent_team_choices);
+		TeamUiState::regenerate_list(&battle.opponent_team.inner(), &mut self.opponent_ui_state.list_items, opponent_team_available_actions);
 	}
 }
 
@@ -455,9 +457,9 @@ impl MessageLogUiState {
 }
 
 impl<'a> TeamUiState<'a> {
-    fn new(team: &mut BattlerTeam, name: TeamID, action_choices: Vec<ActionChoice>) -> TeamUiState<'a> {
+    fn new(team: &mut BattlerTeam, name: TeamID, available_actions: TeamAvailableActions) -> TeamUiState<'a> {
         let mut list_items = Vec::with_capacity(5);
-		Self::regenerate_list(&team, &mut list_items, action_choices);
+		Self::regenerate_list(&team, &mut list_items, available_actions);
 		TeamUiState {
 			name,
             active_battler_status: BattlerTeam::battler_status_as_string(team.active_battler()),
@@ -488,9 +490,9 @@ impl<'a> TeamUiState<'a> {
 		self.list_items.len()
 	}
 
-	fn regenerate_list(team: &BattlerTeam, list_items: &mut Vec<ListItem>, action_choices: Vec<ActionChoice>) {
+	fn regenerate_list(team: &BattlerTeam, list_items: &mut Vec<ListItem>, available_actions: TeamAvailableActions) {
 		list_items.clear();
-		for choice in action_choices.iter() {
+		for choice in available_actions.into_iter() {
 			match choice {
 				ActionChoice::Move { move_uid, target_uid: _ } => {
 					for battler in team.battlers() {

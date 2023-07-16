@@ -160,6 +160,7 @@ macro_rules! collection {
 }
 
 pub fn vector_to_array_of_options<T: Copy, const N: usize>(vec: Vec<T>) -> [Option<T>; N] {
+    assert!(vec.len() <= N, "Vector must have a length less than or equal to the required array size.");
     let mut arr = [None; N];
     let mut idx = 0;
     for element in vec {

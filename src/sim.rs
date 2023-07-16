@@ -259,7 +259,7 @@ mod action {
             Ok(NOTHING)
         }
 
-        pub fn switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
+        pub fn _switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
             battle.battlers_on_field[active_battler_uid] = false;
             battle.battlers_on_field[benched_battler_uid] = true;
             Ok(NOTHING)

@@ -1,4 +1,4 @@
-use std::{sync::mpsc, time::{Duration, Instant}, thread, error::Error, io::Stdout};
+use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 
 use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode}, event::{self, Event, KeyCode, KeyEventKind, KeyEvent}, execute};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
@@ -231,7 +231,7 @@ fn terminate(terminal: &mut Terminal<CrosstermBackend<Stdout>>, app: &mut App) -
 }
 
 #[cfg(feature="debug")]
-fn remove_debug_log_file() -> Result<Nothing, Box<dyn Error>> {
+fn remove_debug_log_file() -> Result<Nothing, BoxedError> {
     #[cfg(feature = "debug")]
 	if let Err(e) = std::fs::remove_file("debug_output.txt") {
 		if std::io::ErrorKind::NotFound != e.kind() {

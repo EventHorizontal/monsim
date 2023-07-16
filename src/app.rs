@@ -359,7 +359,11 @@ fn create_message_log_widget<'a>(message_buffer: &'a MessageBuffer, message_log_
 		.enumerate()
 		.filter_map(|(idx, element)| {
 			if idx >= message_log_scroll_idx { 
-				Some(Spans::from(Span::raw(element)))
+				if element.contains("Turn") {
+					Some(Spans::from(Span::styled(element, Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))))
+				} else {
+					Some(Spans::from(Span::raw(element)))
+				}
 			} else {
 				None
 			}

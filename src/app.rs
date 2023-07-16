@@ -109,7 +109,6 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 						let available_actions = battle_sim.battle.available_actions();
 						app.state = AppState::Processing(AwaitingUserInput(available_actions));
 						app.regenerate_ui_data(&mut battle_sim.battle, available_actions);
-						crate::debug_to_file!(available_actions);
 					},
 				}
 			}

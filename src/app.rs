@@ -142,7 +142,6 @@ fn create_io_thread(sender: mpsc::Sender<TuiEvent<KeyEvent>>) {
 	});
 }
 
-#[must_use]
 fn update_app_state_using_input<'a>(
 	terminal: &mut Terminal<CrosstermBackend<Stdout>>,
 	mut app: &mut App<'a>,

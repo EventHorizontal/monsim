@@ -12,12 +12,14 @@ pub struct App<'a> {
 	message_log_ui_state: MessageLogUiState,
 	ally_ui_state: TeamUiState<'a>,
 	opponent_ui_state: TeamUiState<'a>,
+	switch_out_state: Option<SwitchOutState<'a>>, 
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppState {
 	Initialising,
 	Processing(ProcessingState),
+	PromptSwitchOut(TeamID),
 	Exiting,
 }
 
@@ -51,6 +53,13 @@ enum SelectableWidget {
 	OpponentChoices,
 	AllyRoster,
 	OpponentRoster,
+}
+
+#[derive(Debug, Clone)]
+pub struct SwitchOutState<'a> {
+	team_id: TeamID,
+	list_of_choices: List<'a>,
+	list_state: ListState,
 }
 
 const TUI_INPUT_POLL_TIMEOUT_MILLISECONDS: Duration = Duration::from_millis(20);
@@ -112,13 +121,74 @@ pub fn run(mut battle_sim: BattleSimulator) -> AppResult<Nothing> {
 					},
 				}
 			}
-			AppState::Exiting => { break 'app; } 
+			AppState::PromptSwitchOut(team_id) => { process_switch_out(team_id, &mut terminal, &mut app, &battle_sim.battle, &receiver)? }, 
+			AppState::Exiting => { break 'app; }
 		}
 		render_interface(&mut terminal, &mut app, &battle_sim.battle.message_buffer)?;
 	}
 
 	println!("monsim_tui exited successfully");
 	Ok(NOTHING)
+}
+
+fn process_switch_out(
+	team_id: TeamID, 
+	terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+	app: &mut App,
+	battle: &Battle,
+	receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>,
+) -> AppResult<Nothing> {
+	let team = match team_id {
+		TeamID::Allies => { battle.ally_team.inner() },
+		TeamID::Opponents => { battle.opponent_team.inner() },
+	};
+
+	use KeyEventKind::Release;
+	match receiver.recv()? {
+		TuiEvent::Input(event) => {
+			match (event.code, event.kind) {
+				(KeyCode::Up, Release) => {
+					// Nothing yet...
+				},
+				(KeyCode::Down, Release) => {
+					// Nothing yet...
+				},
+				(KeyCode::Esc, Release) =>  {
+					terminate(terminal, app)?; 
+					return Ok(NOTHING);
+				}
+				_ => {}
+			}
+		},
+		TuiEvent::Tick => {},
+	}
+
+	let list_of_choices = team.battlers()
+		.iter()
+		.filter_map(|battler| {
+			if not!(battle.is_battler_on_field(battler.uid)) {
+				Some(ListItem::new(battler.monster.nickname))
+			} else {
+				None
+			}
+		})
+		.collect::<Vec<_>>();
+
+	let list_of_choices = List::new(list_of_choices);
+
+	app.switch_out_state = Some(SwitchOutState { 
+		team_id, 
+		list_of_choices, 
+		list_state: new_list_state(),
+	});
+
+	Ok(NOTHING)
+}
+
+fn new_list_state() -> ListState {
+	let mut list_state = ListState::default();
+	list_state.select(Some(0));
+	list_state
 }
 
 fn create_io_thread(sender: mpsc::Sender<TuiEvent<KeyEvent>>) {
@@ -188,6 +258,13 @@ fn update_app_state_using_input<'a>(
 					},
 					(KeyCode::Left, Release) => { app.scroll_selected_list_left(); }
 					(KeyCode::Right, Release) => { app.scroll_selected_list_right(); },
+					(KeyCode::Enter, Release) => {
+						if SelectableWidget::from(app.selected_widget_idx) == SelectableWidget::AllyChoices {
+							app.state = AppState::PromptSwitchOut(TeamID::Allies);
+						} else if SelectableWidget::from(app.selected_widget_idx) == SelectableWidget::OpponentChoices {
+							app.state = AppState::PromptSwitchOut(TeamID::Opponents);
+						}
+					}
 					(KeyCode::Tab, Release) => { 
 						if let (Some(selected_ally_choice_index), Some(selected_opponent_choice_index)) =
 							(app.ally_ui_state.list_state.selected(), app.opponent_ui_state.list_state.selected())
@@ -266,12 +343,40 @@ fn render_interface<'a>(
 		let opponent_choice_menu_widget = create_choice_menu_widget(&app.opponent_ui_state, app.selected_widget_idx);
 		let opponent_team_roster_widget = create_roster_widget(&app.opponent_ui_state, app.selected_widget_idx);
 
+		if let Some(ref mut switch_out_state) = &mut app.switch_out_state {
+			
+			let message_chunks = Layout::default()
+			.direction(Direction::Vertical)
+			.constraints(
+				[
+					Constraint::Percentage(80),
+					Constraint::Max(5),
+				]
+				.as_ref(),
+			)
+			.split(chunks[1]);
+
+			let switch_out_widget = switch_out_state.list_of_choices
+				.clone()
+				.block(
+					Block::default()
+						.title(Span::styled(format![" Switch out with? "], Style::default().fg(Color::Yellow)))
+						.borders(Borders::ALL),
+				)
+				.highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+				.highlight_symbol(">>");
+
+			frame.render_widget(message_log_widget, message_chunks[0]);
+			frame.render_stateful_widget(switch_out_widget, message_chunks[1], &mut switch_out_state.list_state);
+		} else {
+			frame.render_widget(message_log_widget, chunks[1]);
+		}
+
 		frame.render_widget(ally_stats_widget, ally_panel_chunks[0]);
 		let mut ally_list_state = app.ally_ui_state.list_state.clone();
 		frame.render_stateful_widget(ally_choice_menu_widget, ally_panel_chunks[1], &mut ally_list_state); 
 		frame.render_widget(ally_team_roster_widget, ally_panel_chunks[2]);
 		
-		frame.render_widget(message_log_widget, chunks[1]);
 		
 		frame.render_widget(opponent_stats_widget, opponent_panel_chunks[0]);
 		let mut opponent_list_state = app.opponent_ui_state.list_state.clone();
@@ -392,6 +497,7 @@ impl<'a> App<'a> {
 			message_log_ui_state: MessageLogUiState::new(),
 			ally_ui_state: TeamUiState::new(&mut battle.ally_team.inner(), TeamID::Allies, ally_team_available_actions),
 			opponent_ui_state: TeamUiState::new(&mut battle.opponent_team.inner(), TeamID::Opponents, opponent_team_available_actions),
+			switch_out_state: None,
 		}
 	}
 
@@ -467,11 +573,7 @@ impl<'a> TeamUiState<'a> {
             active_battler_status: BattlerTeam::battler_status_as_string(team.active_battler()),
             team_roster_status: team.to_string(),
             list_items,
-            list_state: {
-                let mut list = ListState::default();
-                list.select(Some(0));
-                list
-            },
+            list_state: new_list_state(),
         }
     }
 

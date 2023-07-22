@@ -262,17 +262,25 @@ impl Battle {
 
     fn team_available_actions(&self, team_active_battler: &Battler, opposing_team_active_battler: &Battler, team: &BattlerTeam) -> TeamAvailableActions {
         let moves = team_active_battler.move_uids();
+        let mut count = 0;
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
-            move_actions.push(ActionChoice::Move {
+            move_actions.push((count, ActionChoice::Move {
                 move_uid,
                 target_uid: opposing_team_active_battler.uid,
-            });
+            }));
+            count += 1;
         }
 
         let any_benched_ally_battlers = team.battlers().len() > 1;
         let switch_action = if any_benched_ally_battlers {
-            Some(ActionChoice::SwitchOut { active_battler_uid: team_active_battler.uid, benched_battler_uid: ALLY_2 })
+            Some((
+                count, 
+                ActionChoice::SwitchOut { 
+                    active_battler_uid: team_active_battler.uid, 
+                    benched_battler_uid: None,
+                }
+            ))
         } else {
             None
         };

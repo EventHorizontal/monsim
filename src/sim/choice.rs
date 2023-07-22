@@ -7,7 +7,7 @@ use super::game_mechanics::{BattlerUID, MoveUID};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionChoice {
     Move { move_uid: MoveUID, target_uid: BattlerUID },
-    SwitchOut { active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID },
+    SwitchOut { active_battler_uid: BattlerUID, benched_battler_uid: Option<BattlerUID> },
 }
 
 impl ActionChoice {
@@ -18,15 +18,19 @@ impl ActionChoice {
         }
     }
     
+    /// Panics if the `ActionChoice` is a `SwitchOut` with no chosen benched partner
     pub(crate) fn target(&self) -> BattlerUID {
         match self {
             ActionChoice::Move { move_uid: _, target_uid } => *target_uid,
-            ActionChoice::SwitchOut { active_battler_uid: _, benched_battler_uid } => *benched_battler_uid,
+            ActionChoice::SwitchOut { active_battler_uid: _, benched_battler_uid } => {
+                let benched_battler_uid = benched_battler_uid.expect("No benched battler for SwitchOut");
+                benched_battler_uid
+            },
         }
     }
 }
 
-pub type ChosenActions = [ActionChoice; 2];
+pub type ChosenActions = [EnumeratedActionChoice; 2];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableActions {
@@ -34,16 +38,17 @@ pub struct AvailableActions {
     pub opponent_team_available_actions: TeamAvailableActions,
 }
 
+pub type EnumeratedActionChoice = (usize, ActionChoice);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TeamAvailableActions {
-    moves: [Option<ActionChoice>; 4],
-    switch_out: Option<ActionChoice>,
+    moves: [Option<EnumeratedActionChoice>; 4],
+    switch_out: Option<EnumeratedActionChoice>,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
 }
 
 impl TeamAvailableActions {
-    pub fn new(moves_vec: Vec<ActionChoice>, switch_out: Option<ActionChoice>) -> Self {
+    pub fn new(moves_vec: Vec<EnumeratedActionChoice>, switch_out: Option<EnumeratedActionChoice>) -> Self {
         let moves = vector_to_array_of_options(moves_vec);
         Self {
             moves,
@@ -54,7 +59,7 @@ impl TeamAvailableActions {
 }
 
 impl Index<usize> for TeamAvailableActions {
-    type Output = Option<ActionChoice>;
+    type Output = Option<EnumeratedActionChoice>;
 
     fn index(&self, index: usize) -> &Self::Output {
         let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
@@ -82,7 +87,7 @@ impl IndexMut<usize> for TeamAvailableActions {
 }
 
 impl Iterator for TeamAvailableActions {
-    type Item = ActionChoice;
+    type Item = EnumeratedActionChoice;
 
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.iter_cursor;

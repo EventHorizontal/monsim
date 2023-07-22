@@ -63,7 +63,7 @@ impl BattleSimulator {
         }
     }
 
-    pub fn simulate_turn(&mut self, chosen_actions: ChosenActions) -> TurnResult {
+    pub fn simulate_turn(&mut self, enumerated_chosen_actions: ChosenActions) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
 
@@ -72,7 +72,9 @@ impl BattleSimulator {
         self.battle
             .push_messages(&[&format!["Turn {turn_number}", turn_number = self.turn_number], &EMPTY_LINE]);
 
-        ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions.into_iter().collect::<Vec<_>>());
+        let mut chosen_actions = enumerated_chosen_actions.iter().map(|(_, chosen_action)| { *chosen_action }).collect::<Vec<_>>();
+
+        ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
 
         let mut result = Ok(NOTHING);
         for chosen_action in chosen_actions.into_iter() {

@@ -84,12 +84,13 @@ impl BattleSimulator {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut self.battle, move_uid, target_uid),
                     MoveCategory::Status => PrimaryAction::status_move(&mut self.battle, move_uid, target_uid),
                 },
-                ActionChoice::SwitchOut { active_battler_uid: _, benched_battler_uid: _ } => {
-                    todo!("Switching out is broken at the moment. Need to fix that.");
-                    // PrimaryAction::switch_out(&mut self.battle, active_battler_uid, benched_battler_uid)
+                ActionChoice::SwitchOut { active_battler_uid, benched_battler_uid } => {
+                    // TODO: How can we remove this `expect()` call? Separate out 
+                    // available actions from chosen actions?
+                    PrimaryAction::switch_out(&mut self.battle, active_battler_uid, benched_battler_uid.expect("Switch partner should be chosen by now."))
                 }
             };
-            let maybe_fainted_battler = self.battle.battlers().find(|battler| battler.fainted());
+            let maybe_fainted_battler = self.battle.battlers().find(|battler| self.battle.is_battler_fainted(battler.uid));
             if let Some(battler) = maybe_fainted_battler {
                 self.battle
                     .push_messages(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], &EMPTY_LINE]);
@@ -257,9 +258,14 @@ mod action {
             Ok(NOTHING)
         }
 
-        pub fn _switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
-            battle.battlers_on_field[active_battler_uid] = false;
-            battle.battlers_on_field[benched_battler_uid] = true;
+        pub fn switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
+            battle.active_battlers[active_battler_uid] = false;
+            battle.active_battlers[benched_battler_uid] = true;
+            battle.push_message(&format![
+                "{active_battler} switched out! Go {benched_battler}!", 
+                active_battler = battle.monster(active_battler_uid).nickname,
+                benched_battler = battle.monster(benched_battler_uid).nickname
+            ]);
             Ok(NOTHING)
         }
     }

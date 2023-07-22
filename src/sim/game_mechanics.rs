@@ -176,16 +176,12 @@ impl BattlerTeam {
         out
     }
 
-    pub fn event_response_instances(&self) -> CompositeEventResponderInstanceList {
+    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         for battler in self.battlers.iter() {
             out.append(&mut battler.composite_event_responder_instances())
         }
         out
-    }
-
-    pub fn active_battler(&self) -> &Battler {
-        &self.battlers[0]
     }
 }
 
@@ -196,83 +192,6 @@ impl Display for BattlerTeam {
             out.push_str(&Self::battler_status_as_string(battler));
         }
         write!(f, "{out}")
-    }
-}
-
-impl AllyBattlerTeam {
-    pub fn new(battlers: Vec<Battler>) -> Self {
-        assert!(battlers.first().is_some(), "There is not a single monster in the team.");
-        assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
-        Self(BattlerTeam { battlers })
-    }
-
-    pub fn battlers(&self) -> &Vec<Battler> {
-        &self.0.battlers
-    }
-
-    pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
-        &mut self.0.battlers
-    }
-
-    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
-        let mut out = Vec::new();
-        self.0
-            .battlers
-            .iter()
-            .for_each(|battler| out.append(&mut battler.composite_event_responder_instances()));
-        out
-    }
-
-    pub fn active_battler(&self) -> &Battler {
-        &self.0.battlers[0]
-    }
-
-    pub fn inner(&self) -> BattlerTeam {
-        self.0.clone()
-    }
-}
-
-impl Display for AllyBattlerTeam {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
-impl OpponentBattlerTeam {
-    pub fn new(battlers: Vec<Battler>) -> Self {
-        assert!(battlers.first().is_some(), "There is not a single monster in the team.");
-        assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
-        Self(BattlerTeam { battlers })
-    }
-
-    pub fn battlers(&self) -> &Vec<Battler> {
-        &self.0.battlers
-    }
-
-    pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
-        &mut self.0.battlers
-    }
-
-    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
-        let mut out = Vec::new();
-        for battler in self.0.battlers.iter() {
-            out.append(&mut battler.composite_event_responder_instances())
-        }
-        out
-    }
-
-    pub fn active_battler(&self) -> &Battler {
-        &self.0.battlers[0]
-    }
-
-    pub fn inner(&self) -> BattlerTeam {
-        self.0.clone()
-    }
-}
-
-impl Display for OpponentBattlerTeam {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
     }
 }
 
@@ -374,10 +293,6 @@ impl Battler {
                 filters: EventFilterOptions::default(),
             })
             .collect::<Vec<_>>()
-    }
-
-    pub fn fainted(&self) -> bool {
-        self.monster.fainted()
     }
 
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {

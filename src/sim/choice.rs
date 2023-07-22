@@ -1,4 +1,4 @@
-use std::ops::{IndexMut, Index};
+use std::ops::{IndexMut, Index, Range};
 
 use crate::sim::utils::vector_to_array_of_options;
 
@@ -23,8 +23,7 @@ impl ActionChoice {
         match self {
             ActionChoice::Move { move_uid: _, target_uid } => *target_uid,
             ActionChoice::SwitchOut { active_battler_uid: _, benched_battler_uid } => {
-                let benched_battler_uid = benched_battler_uid.expect("No benched battler for SwitchOut");
-                benched_battler_uid
+                benched_battler_uid.expect("No benched battler for SwitchOut")
             },
         }
     }
@@ -55,6 +54,15 @@ impl TeamAvailableActions {
             switch_out,
             iter_cursor: 0,
         }
+    }
+
+    pub fn move_action_indices(&self) -> Range<usize> {
+        let move_count = self.moves.iter().flatten().count();
+        0..move_count
+    }
+
+    pub fn switch_out_action_index(&self) -> Option<usize> {
+        self.switch_out.map(|it| { it.0 })
     }
 }
 

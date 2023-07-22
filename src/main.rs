@@ -36,6 +36,11 @@ fn main() -> AppResult<Nothing> {
                     Ember: Move,
                     FlashFire: Ability,
                 },
+                Mudkip: Monster = "Aquamarine" {
+                    Scratch: Move,
+                    Bubble: Move,
+                    WaterAbsorb: Ability
+                }
             }
         }
     ));

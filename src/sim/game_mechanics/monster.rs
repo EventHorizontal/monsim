@@ -168,10 +168,6 @@ impl Monster {
         self.species.composite_event_responder
     }
 
-    pub(crate) fn fainted(&self) -> bool {
-        self.current_health == 0
-    }
-
     pub fn name(&self) -> String {
         self.nickname.to_owned()
     }

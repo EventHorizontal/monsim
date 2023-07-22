@@ -2,7 +2,7 @@ pub mod battle;
 pub mod battle_constants;
 pub mod choice;
 pub mod game_mechanics;
-pub mod helpers;
+pub mod utils;
 pub mod prng;
 
 mod event;
@@ -18,7 +18,7 @@ pub use event::{
     DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
-pub use helpers::*;
+pub use utils::*;
 
 use prng::Prng;
 

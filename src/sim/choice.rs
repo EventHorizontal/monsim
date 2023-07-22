@@ -1,5 +1,7 @@
 use std::ops::{IndexMut, Index};
 
+use crate::sim::utils;
+
 use super::game_mechanics::{BattlerUID, MoveUID};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,7 +44,7 @@ pub struct TeamAvailableActions {
 
 impl TeamAvailableActions {
     pub fn new(moves_vec: Vec<ActionChoice>, switch_out: Option<ActionChoice>) -> Self {
-        let moves = crate::sim::helpers::vector_to_array_of_options(moves_vec);
+        let moves = utils::vector_to_array_of_options(moves_vec);
         Self {
             moves,
             switch_out,

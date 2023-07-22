@@ -169,3 +169,11 @@ pub fn vector_to_array_of_options<T: Copy, const N: usize>(vec: Vec<T>) -> [Opti
     }
     arr
 }
+
+/// Makes `!` more readable
+#[macro_export]
+macro_rules! not {
+    ($x: expr) => {
+        !$x
+    };
+}

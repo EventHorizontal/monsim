@@ -3,7 +3,7 @@ use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode}, event::{self, Event, KeyCode, KeyEventKind, KeyEvent}, execute};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::{sim::{BattleSimulator, NOTHING, Battle, Nothing, ChosenActions, EMPTY_LINE, SimState, AvailableActions, ActionChoice, BattlerTeam, MessageBuffer, TeamID, TeamAvailableActions}, not};
+use crate::sim::{BattleSimulator, Battle, ChosenActions, EMPTY_LINE, SimState, AvailableActions, ActionChoice, BattlerTeam, MessageBuffer, TeamID, TeamAvailableActions, utils::{NOTHING, Nothing, not}};
 
 #[derive(Debug, Clone)]
 pub struct App<'a> {

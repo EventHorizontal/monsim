@@ -87,7 +87,7 @@ pub(crate) fn context_sensitive_sort_by_activation_order(battle: &mut Battle, ve
     }
 }
 
-use crate::not;
+use crate::sim::not;
 /// Shuffles the event responder order for consecutive speed-tied items in place using their associated activation orders.
 fn resolve_speed_tie<T: Clone + Copy>(prng: &mut Prng, vector: &mut [T], tied_monster_indices: &mut Vec<usize>) {
     if tied_monster_indices.len() < 2 {

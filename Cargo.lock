@@ -226,8 +226,13 @@ dependencies = [
  "const_format",
  "crossterm 0.26.0",
  "event_setup_macro",
+ "monsim_utils",
  "tui",
 ]
+
+[[package]]
+name = "monsim_utils"
+version = "0.1.0"
 
 [[package]]
 name = "num-integer"

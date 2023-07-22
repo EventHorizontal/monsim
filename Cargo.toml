@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 battle_builder_macro = { path = "battle_builder_macro" }
 event_setup_macro = { path = "event_setup_macro"}
+monsim_utils = { path = "monsim_utils"}
 bitflags = "1.3.2"
 tui = "0.19.0"
 crossterm = "0.26.0"

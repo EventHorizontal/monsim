@@ -1,6 +1,6 @@
 use std::ops::{IndexMut, Index};
 
-use crate::sim::utils;
+use crate::sim::utils::vector_to_array_of_options;
 
 use super::game_mechanics::{BattlerUID, MoveUID};
 
@@ -44,7 +44,7 @@ pub struct TeamAvailableActions {
 
 impl TeamAvailableActions {
     pub fn new(moves_vec: Vec<ActionChoice>, switch_out: Option<ActionChoice>) -> Self {
-        let moves = utils::vector_to_array_of_options(moves_vec);
+        let moves = vector_to_array_of_options(moves_vec);
         Self {
             moves,
             switch_out,

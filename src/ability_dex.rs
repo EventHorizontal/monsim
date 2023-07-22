@@ -1,11 +1,9 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{
-    not,
-    sim::{
-        Ability, AbilitySpecies, CompositeEventResponder, ElementalType, EventFilterOptions, EventResponder, MoveUsed, Outcome, SecondaryAction,
+use monsim::sim::{
+        Ability, AbilitySpecies, CompositeEventResponder, ElementalType, EventFilterOptions, EventResponder, MoveUsed, SecondaryAction,
         DEFAULT_RESPONSE,
-    },
+        utils::{Outcome, not},
 };
 
 #[cfg(feature = "debug")]

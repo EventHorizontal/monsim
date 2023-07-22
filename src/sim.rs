@@ -2,7 +2,6 @@ pub mod battle;
 pub mod battle_constants;
 pub mod choice;
 pub mod game_mechanics;
-pub mod utils;
 pub mod prng;
 
 mod event;
@@ -18,7 +17,8 @@ pub use event::{
     DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
-pub use utils::*;
+pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent};
+pub(crate) use utils::{not, NOTHING, Nothing}; // For internal use
 
 use prng::Prng;
 

@@ -6,6 +6,7 @@ mod move_dex;
 use ability_dex::{FlashFire, WaterAbsorb};
 use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
 use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
+use utils::Nothing;
 
 fn main() -> AppResult<Nothing> {
     let battle_sim = BattleSimulator::new(build_battle!(

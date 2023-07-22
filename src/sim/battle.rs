@@ -1,10 +1,9 @@
-use crate::{
-    collection,
-    sim::{
+use crate::sim::{
         event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
         BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions,
-    },
+        utils,
 };
+
 use std::{
     collections::HashMap,
     fmt::Display,
@@ -78,7 +77,7 @@ impl Battle {
             ally_team,
             opponent_team,
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
-            battlers_on_field: BattlerMap::new(collection!(
+            battlers_on_field: BattlerMap::new(utils::collection!(
                 ALLY_1 => true,
                 ALLY_2 => false,
                 ALLY_3 => false,

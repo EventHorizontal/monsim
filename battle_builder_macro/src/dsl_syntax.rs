@@ -161,7 +161,16 @@ impl Parse for ExprMonster {
             .filter(|it| { it.game_mechanic_type == GameMechanicType::Ability })
             .count();
         
-        if ability_count != 1 {
+        if ability_count == 0 {
+            let incorrect_ability_count_error = Err(Error::new_spanned(
+                monster_instance_path.clone(),
+                format!(
+                    "Error: You must put at leaset one ability on a monster.{:?} has no ability.", 
+                    nickname_or_default
+                ),
+            ));
+            return incorrect_ability_count_error;
+        } else if ability_count > 1 {
             let incorrect_ability_count_error = Err(Error::new_spanned(
                 monster_instance_path.clone(),
                 format!(

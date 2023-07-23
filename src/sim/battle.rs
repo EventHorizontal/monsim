@@ -252,14 +252,14 @@ impl Battle {
     /// Returns `(FirstBattler, Option<SecondBattler>)` depending on 
     /// if a second battler is on the field.
     pub fn active_battlers_on_team(&self, team_id: TeamID) -> (&Battler, Option<&Battler>) {
-        let mut battlers_on_field = self
+        let mut active_battlers = self
             .battlers()
             .filter(|it| self.active_battlers[it.uid] && it.uid.team_id == team_id);
-        let first_battler = battlers_on_field
+        let first_battler = active_battlers
             .next()
             .expect("`Battle` should ensure that there is always at least one battler on field.");
-        let maybe_second_battler = battlers_on_field.next();
-        assert_eq!(battlers_on_field.next(), None, "There should never be more than 2 battlers on field.");
+        let maybe_second_battler = active_battlers.next();
+        assert_eq!(active_battlers.next(), None, "There should never be more than 2 battlers on field.");
         (first_battler, maybe_second_battler)
     }
 

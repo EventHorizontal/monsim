@@ -9,7 +9,7 @@ use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 use utils::Nothing;
 
 fn main() -> AppResult<Nothing> {
-    let battle_sim = BattleSimulator::new(build_battle!(
+    let battle = build_battle!(
         {
             Allies: BattlerTeam {
                 Torchic: Monster = "Ruby" {
@@ -43,6 +43,6 @@ fn main() -> AppResult<Nothing> {
                 }
             }
         }
-    ));
-    app::run(battle_sim)
+    );
+    app::run(battle)
 }

@@ -77,7 +77,7 @@ impl BattleSimulator {
         ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
 
         let mut result = Ok(NOTHING);
-        for chosen_action in chosen_actions.into_iter() {
+        'turn: for chosen_action in chosen_actions.into_iter() {
             self.battle.current_action = Some(chosen_action);
             result = match chosen_action {
                 ActionChoice::Move { move_uid, target_uid } => match self.battle.move_(move_uid).category() {
@@ -95,7 +95,7 @@ impl BattleSimulator {
                 self.battle
                     .push_messages(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], &EMPTY_LINE]);
                 self.sim_state = SimState::BattleFinished;
-                break;
+                break 'turn;
             };
             self.battle.push_message(&EMPTY_LINE);
         }
@@ -279,6 +279,7 @@ mod action {
         /// and the only thing left to do is to deduct it from the HP of the target.
         pub fn damage(battle: &mut Battle, target_uid: BattlerUID, damage: u16) {
             battle.monster_mut(target_uid).current_health = battle.monster(target_uid).current_health.saturating_sub(damage);
+            if battle.monster(target_uid).current_health == 0 { battle.fainted_battlers[target_uid] = true; };
         }
 
         /// **Secondary Action** This action can only be triggered by other Actions.

@@ -34,7 +34,7 @@ pub struct Battle {
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_buffer: MessageBuffer,
     pub active_battlers: BattlerMap<bool>,
-    fainted_battlers: BattlerMap<bool>,
+    pub fainted_battlers: BattlerMap<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

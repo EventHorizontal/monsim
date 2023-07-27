@@ -22,7 +22,7 @@ fn main() -> AppResult<Nothing> {
                 Mudkip: Monster = "Sapphire" {
                     Tackle: Move,
                     Bubble: Move,
-                    FlashFire: Ability,
+                    WaterAbsorb: Ability,
                 },
                 Treecko: Monster = "Emerald" {
                     Scratch: Move,

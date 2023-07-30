@@ -1,7 +1,7 @@
 use utils::not;
 
 use crate::sim::{
-        event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
+        event::CompositeEventResponderInstanceList, Ability, ChosenAction, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
         BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions,
         utils,
 };
@@ -16,7 +16,7 @@ use std::{
 
 use super::{
     prng::{self, Prng},
-    TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
+    TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6, ChoosableAction,
 };
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
@@ -27,7 +27,7 @@ pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
-    pub current_action: Option<ActionChoice>,
+    pub current_action: Option<ChosenAction>,
     pub prng: Prng,
     pub ally_team: BattlerTeam,
     pub opponent_team: BattlerTeam,
@@ -136,29 +136,6 @@ impl Battle {
         self.active_battlers[battler_uid]
     }
 
-    pub fn current_action_user(&self) -> Option<&Battler> {
-        if let Some(current_action) = self.current_action {
-            Some(self.find_battler(current_action.chooser()))
-        } else {
-            None
-        }
-    }
-
-    pub fn is_current_action_user(&self, test_monster_uid: BattlerUID) -> Option<bool> {
-        self.current_action.map(|current_action| test_monster_uid == current_action.chooser())
-    }
-
-    pub fn current_action_target(&self) -> Option<&Battler> {
-        if let Some(current_action) = self.current_action {
-            Some(self.find_battler(current_action.target()))
-        } else {
-            None
-        }
-    }
-
-    pub fn is_current_action_target(&self, test_monster_uid: BattlerUID) -> Option<bool> {
-        self.current_action.map(|current_action| test_monster_uid == current_action.target())
-    }
 
     pub fn monster(&self, uid: BattlerUID) -> &Monster {
         &self
@@ -265,14 +242,14 @@ impl Battle {
 
     /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is
     /// context sensitive.
-    pub(crate) fn choice_activation_order(&self, choice: ActionChoice) -> ActivationOrder {
+    pub(crate) fn choice_activation_order(&self, choice: ChosenAction) -> ActivationOrder {
         match choice {
-            ActionChoice::Move { move_uid, target_uid: _ } => ActivationOrder {
+            ChosenAction::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
                 speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
                 order: 0,
             },
-            ActionChoice::SwitchOut { active_battler_uid, benched_battler_uid: _ } => ActivationOrder { 
+            ChosenAction::SwitchOut { switcher_uid: active_battler_uid, switchee_uid: _ } => ActivationOrder { 
                 priority: 8, 
                 speed: self.monster(active_battler_uid).stats[Stat::Speed], 
                 order: 0
@@ -284,9 +261,8 @@ impl Battle {
         let ally_active_battler = self.active_battlers_on_team(TeamID::Allies).0;
         let opponent_active_battler = self.active_battlers_on_team(TeamID::Opponents).0;
         
-        let ally_team_available_actions = self.team_available_actions(ally_active_battler, opponent_active_battler, &self.ally_team);
-
-       let opponent_team_available_actions = self.team_available_actions(opponent_active_battler, ally_active_battler, &self.opponent_team);
+        let ally_team_available_actions = self.team_available_actions(ally_active_battler, &self.ally_team);
+        let opponent_team_available_actions = self.team_available_actions(opponent_active_battler, &self.opponent_team);
 
         AvailableActions {
             ally_team_available_actions,
@@ -294,27 +270,19 @@ impl Battle {
         }
     }
 
-    fn team_available_actions(&self, team_active_battler: &Battler, opposing_team_active_battler: &Battler, team: &BattlerTeam) -> TeamAvailableActions {
+    fn team_available_actions(&self, team_active_battler: &Battler, team: &BattlerTeam) -> TeamAvailableActions {
         let moves = team_active_battler.move_uids();
-        let mut count = 0;
+        let mut count = 0usize;
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
-            move_actions.push((count, ActionChoice::Move {
-                move_uid,
-                target_uid: opposing_team_active_battler.uid,
-            }));
+            let choosable_action = ChoosableAction::Move(move_uid);
+            move_actions.push((count, choosable_action));
             count += 1;
         }
 
         let any_benched_ally_battlers = team.battlers().len() > 1;
         let switch_action = if any_benched_ally_battlers {
-            Some((
-                count, 
-                ActionChoice::SwitchOut { 
-                    active_battler_uid: team_active_battler.uid, 
-                    benched_battler_uid: None,
-                }
-            ))
+            Some((count, ChoosableAction::SwitchOut { switcher_uid: team_active_battler.uid }))
         } else {
             None
         };

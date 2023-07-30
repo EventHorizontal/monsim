@@ -31,7 +31,7 @@ pub enum SimError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimState {
-    UsingMove { move_uid: MoveUID, target_uid: BattlerUID },
+    BattleOngoing,
     BattleFinished,
 }
 
@@ -46,24 +46,16 @@ impl BattleSimulator {
     pub fn new(battle: Battle) -> Self {
         BattleSimulator {
             battle,
-            sim_state: SimState::UsingMove {
-                move_uid: MoveUID {
-                    battler_uid: BattlerUID {
-                        team_id: TeamID::Allies,
-                        battler_number: BattlerNumber::_1,
-                    },
-                    move_number: MoveNumber::_1,
-                },
-                target_uid: BattlerUID {
-                    team_id: TeamID::Opponents,
-                    battler_number: BattlerNumber::_1,
-                },
-            },
+            sim_state: SimState::BattleOngoing,
             turn_number: 0,
         }
     }
 
-    pub fn simulate_turn(&mut self, enumerated_chosen_actions: ChosenActions) -> TurnResult {
+    pub fn generate_available_actions(&self) -> AvailableActions {
+        self.battle.available_actions()
+    }
+
+    pub fn simulate_turn(&mut self, chosen_actions: ChosenActionsForTurn) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
 
@@ -72,24 +64,23 @@ impl BattleSimulator {
         self.battle
             .push_messages(&[&format!["Turn {turn_number}", turn_number = self.turn_number], &EMPTY_LINE]);
 
-        let mut chosen_actions = enumerated_chosen_actions.iter().map(|(_, chosen_action)| { *chosen_action }).collect::<Vec<_>>();
+        let mut chosen_actions = chosen_actions.iter().map(|(_, chosen_action)| { *chosen_action }).collect::<Vec<_>>();
 
         ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
 
-        let mut result = Ok(NOTHING);
         'turn: for chosen_action in chosen_actions.into_iter() {
             self.battle.current_action = Some(chosen_action);
-            result = match chosen_action {
-                ActionChoice::Move { move_uid, target_uid } => match self.battle.move_(move_uid).category() {
+            
+            match chosen_action {
+                ChosenAction::Move { move_uid, target_uid } => match self.battle.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut self.battle, move_uid, target_uid),
                     MoveCategory::Status => PrimaryAction::status_move(&mut self.battle, move_uid, target_uid),
                 },
-                ActionChoice::SwitchOut { active_battler_uid, benched_battler_uid } => {
-                    // TODO: How can we remove this `expect()` call? Separate out 
-                    // available actions from chosen actions?
-                    PrimaryAction::switch_out(&mut self.battle, active_battler_uid, benched_battler_uid.expect("Switch partner should be chosen by now."))
+                ChosenAction::SwitchOut { switcher_uid, switchee_uid } => {
+                    PrimaryAction::switch_out(&mut self.battle, switcher_uid, switchee_uid)
                 }
-            };
+            }?;
+
             let maybe_fainted_battler = self.battle.battlers().find(|battler| self.battle.is_battler_fainted(battler.uid));
             if let Some(battler) = maybe_fainted_battler {
                 self.battle
@@ -97,10 +88,16 @@ impl BattleSimulator {
                 self.sim_state = SimState::BattleFinished;
                 break 'turn;
             };
+            
             self.battle.push_message(&EMPTY_LINE);
         }
 
-        result
+        if self.sim_state == SimState::BattleFinished {
+            self.battle.push_messages(&[&EMPTY_LINE, &"The battle ended."]);
+        }
+        self.battle.push_messages(&[&"---", &EMPTY_LINE]);
+
+        Ok(NOTHING)
     }
 
     /// Tries to increment turn number and fails if the turn number exceeds 255 after
@@ -174,11 +171,7 @@ mod action {
 
             let stab_multiplier = {
                 let move_type = battle.move_(move_uid).species.elemental_type;
-                if battle.monster(attacker_uid).is_type(move_type) {
-                    Percent(125)
-                } else {
-                    Percent(100)
-                }
+                if battle.monster(attacker_uid).is_type(move_type) { Percent(125) } else { Percent(100) }
             };
 
             let move_type = battle.move_(move_uid).species.elemental_type;

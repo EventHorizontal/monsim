@@ -1,7 +1,8 @@
 use super::*;
 
 pub(super) fn render_interface<'a>(
-    app: &mut AppInstance,
+    ui: &mut Ui,
+    app_state: &mut AppState,
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, 
     message_buffer: &MessageBuffer,
 ) -> std::io::Result<CompletedFrame<'a>> {
@@ -10,18 +11,18 @@ pub(super) fn render_interface<'a>(
         let chunks = divide_screen_into_chunks(frame);
         
         let ally_panel_chunks = divide_panel_into_chunks(chunks[0]);
-        let ally_stats_widget = construct_stats_panel_widget(&app.ally_panel_ui_state); 
-        let ally_choice_menu_widget = construct_choice_menu_widget(&app.ally_panel_ui_state, app.currently_selected_widget);
-        let ally_team_roster_widget = construct_roster_widget(&app.ally_panel_ui_state, app.currently_selected_widget);
+        let ally_stats_widget = construct_stats_panel_widget(&ui.ally_panel_ui_state); 
+        let ally_choice_menu_widget = construct_choice_menu_widget(&ui.ally_panel_ui_state, ui.currently_selected_widget);
+        let ally_team_roster_widget = construct_roster_widget(&ui.ally_panel_ui_state, ui.currently_selected_widget);
 
-        let message_log_widget = construct_message_log_widget(message_buffer, &mut app.message_log_ui_state, app.currently_selected_widget);
+        let message_log_widget = construct_message_log_widget(message_buffer, &mut ui.message_log_ui_state, ui.currently_selected_widget);
         
         let opponent_panel_chunks = divide_panel_into_chunks(chunks[2]);
-        let opponent_stats_widget = construct_stats_panel_widget(&app.opponent_panel_ui_state); 
-        let opponent_choice_menu_widget = construct_choice_menu_widget(&app.opponent_panel_ui_state, app.currently_selected_widget);
-        let opponent_team_roster_widget = construct_roster_widget(&app.opponent_panel_ui_state, app.currently_selected_widget);
+        let opponent_stats_widget = construct_stats_panel_widget(&ui.opponent_panel_ui_state); 
+        let opponent_choice_menu_widget = construct_choice_menu_widget(&ui.opponent_panel_ui_state, ui.currently_selected_widget);
+        let opponent_team_roster_widget = construct_roster_widget(&ui.opponent_panel_ui_state, ui.currently_selected_widget);
 
-        if let AppState::PromptSwitchOut(ref mut switch_out_state) = &mut app.state {
+        if let AppState::PromptSwitchOut(ref mut switch_out_state) = app_state {
             
             let message_chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -56,13 +57,13 @@ pub(super) fn render_interface<'a>(
         }
 
         frame.render_widget(ally_stats_widget, ally_panel_chunks[0]);
-        let mut ally_list_state = app.ally_panel_ui_state.list_state.clone();
+        let mut ally_list_state = ui.ally_panel_ui_state.list_state.clone();
         frame.render_stateful_widget(ally_choice_menu_widget, ally_panel_chunks[1], &mut ally_list_state); 
         frame.render_widget(ally_team_roster_widget, ally_panel_chunks[2]);
         
         
         frame.render_widget(opponent_stats_widget, opponent_panel_chunks[0]);
-        let mut opponent_list_state = app.opponent_panel_ui_state.list_state.clone();
+        let mut opponent_list_state = ui.opponent_panel_ui_state.list_state.clone();
         frame.render_stateful_widget(opponent_choice_menu_widget, opponent_panel_chunks[1], &mut opponent_list_state);
         frame.render_widget(opponent_team_roster_widget, opponent_panel_chunks[2]);
     })

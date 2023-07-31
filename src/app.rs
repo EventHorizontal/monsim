@@ -21,6 +21,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     create_io_thread(sender);
     
     let available_actions = simulator.generate_available_actions();
+    ui.regenerate(&mut simulator.battle, available_actions);
     let mut app_state = AppState::Processing(ProcessingState::FreeInput(available_actions));
     
     // Render interface once before the update loop starts.
@@ -42,8 +43,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                             Err(error) => simulator.battle.push_message(&format!["Simulator: {:?}", error]),
                         };
                         let available_actions = simulator.generate_available_actions();
-                        ui.refresh(&mut simulator.battle, available_actions);
-    
+                        ui.regenerate(&mut simulator.battle, available_actions);
                         app_state = AppState::Processing(ProcessingState::FreeInput(available_actions))
                     },
                     ProcessingState::BattleFinished => {
@@ -212,19 +212,16 @@ fn remove_debug_log_file() -> Result<Nothing, BoxedError> {
 
 impl<'a> Ui<'a> {
     pub fn new(battle: &mut Battle) -> Ui<'a> {
-        let AvailableActions { ally_team_available_actions, opponent_team_available_actions } = battle.available_actions();
         Ui {
             currently_selected_widget: SelectableWidget::MessageLog,
             message_log_ui_state: MessageLogUiState::new(),
             ally_panel_ui_state: TeamUiState::new(
                 battle,
                 TeamID::Allies,
-                ally_team_available_actions
             ),
             opponent_panel_ui_state: TeamUiState::new(
                 battle,
                 TeamID::Opponents,
-                opponent_team_available_actions
             ),
         }
     } 
@@ -240,7 +237,7 @@ impl<'a> Ui<'a> {
         self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.message_log_scroll_idx.min(self.message_log_ui_state.message_log_last_scrollable_line_idx);
     }
 
-    fn refresh(&mut self, battle: &mut Battle, available_actions: AvailableActions) {
+    fn regenerate(&mut self, battle: &mut Battle, available_actions: AvailableActions) {
         
         let AvailableActions {
             ally_team_available_actions,
@@ -509,7 +506,7 @@ impl MessageLogUiState {
 }
 
 impl<'a> TeamUiState<'a> {
-    fn new(battle: &mut Battle, team_id: TeamID, available_actions: TeamAvailableActions) -> TeamUiState<'a> {
+    fn new(battle: &mut Battle, team_id: TeamID) -> TeamUiState<'a> {
         let (team, team_active_battler) = match team_id {
             TeamID::Allies => {
                 (&battle.ally_team, battle.active_battlers_on_team(TeamID::Allies).0)
@@ -519,13 +516,11 @@ impl<'a> TeamUiState<'a> {
             },
         };
         
-        let mut list_items = Vec::with_capacity(5);
-        Self::regenerate_list(team, &mut list_items, available_actions);
         TeamUiState {
             team_id,
             active_battler_status: BattlerTeam::battler_status_as_string(team_active_battler),
             team_roster_status: team.to_string(),
-            list_items,
+            list_items: Vec::with_capacity(5),
             list_state: new_list_state(),
             selected_action: None,
         }

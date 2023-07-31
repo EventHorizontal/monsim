@@ -258,11 +258,8 @@ impl Battle {
     }
 
     pub fn available_actions(&self) -> AvailableActions {
-        let ally_active_battler = self.active_battlers_on_team(TeamID::Allies).0;
-        let opponent_active_battler = self.active_battlers_on_team(TeamID::Opponents).0;
-        
-        let ally_team_available_actions = self.team_available_actions(ally_active_battler, &self.ally_team);
-        let opponent_team_available_actions = self.team_available_actions(opponent_active_battler, &self.opponent_team);
+        let ally_team_available_actions = self.team_available_actions(TeamID::Allies);
+        let opponent_team_available_actions = self.team_available_actions(TeamID::Opponents);
 
         AvailableActions {
             ally_team_available_actions,
@@ -270,7 +267,11 @@ impl Battle {
         }
     }
 
-    fn team_available_actions(&self, team_active_battler: &Battler, team: &BattlerTeam) -> TeamAvailableActions {
+    fn team_available_actions(&self, team_id: TeamID) -> TeamAvailableActions {
+        
+        let team_active_battler = self.active_battlers_on_team(team_id).0;
+        let team = self.team(team_id);
+        
         let moves = team_active_battler.move_uids();
         let mut count = 0usize;
         let mut move_actions = Vec::with_capacity(4);
@@ -323,6 +324,20 @@ impl Battle {
 
     pub fn is_battler_fainted(&self, battler_uid: BattlerUID) -> bool {
         self.fainted_battlers[battler_uid]
+    }
+
+    fn team(&self, team_id: TeamID) -> &BattlerTeam {
+        match team_id {
+            TeamID::Allies => &self.ally_team,
+            TeamID::Opponents => &self.opponent_team,
+        }
+    }
+
+    fn team_mut(&mut self, team_id: TeamID) -> &mut BattlerTeam {
+        match team_id {
+            TeamID::Allies => &mut self.ally_team,
+            TeamID::Opponents => &mut self.opponent_team,
+        }
     }
 }
 

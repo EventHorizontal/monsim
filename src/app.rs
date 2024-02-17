@@ -1,6 +1,6 @@
 use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 
-use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
+use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
 use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerTeam, BattlerUID, ChoosableAction, ChosenAction, ChosenActionsForTurn, EnumeratedChosenAction, MessageBuffer, TeamAvailableActions, TeamID, EMPTY_LINE};
@@ -162,6 +162,7 @@ fn create_configured_terminal() -> AppResult<TuiTerminal> {
     let mut terminal = Terminal::new(backend)?;
     terminal.clear()?;
     execute!(std::io::stdout(), EnterAlternateScreen)?;
+
     Ok(terminal)
 }
 

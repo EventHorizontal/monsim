@@ -11,7 +11,7 @@ use render::render_interface;
 pub type AppResult<T> = Result<T, BoxedError>;
 type BoxedError = Box<dyn std::error::Error>;
 
-/// `main` function for app.rs
+/// `main` function for our application
 pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     
     let mut ui = Ui::new(&mut battle);
@@ -22,7 +22,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     
     let available_actions = simulator.generate_available_actions();
     ui.regenerate(&mut simulator.battle, available_actions);
-    let mut app_state = AppState::Processing(ProcessingState::FreeInput(available_actions));
+    let mut app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions));
     
     // Render interface once before the update loop starts.
     render_interface(&mut ui, &mut app_state, &mut terminal, &simulator.battle.message_buffer)?;
@@ -30,25 +30,25 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
         match app_state {
             AppState::Processing(ref processing_state) => {
                 match processing_state.clone() {
-                    ProcessingState::FreeInput(available_actions) => {
+                    ProcessingState::ProcessingMidBattleInput(available_actions) => {
                         if let Some(key) = get_key_released(&receiver)? {
-                            let new_app_state = ui.update_from_free_input(&mut simulator.battle, &available_actions, key);
-                            app_state = new_app_state.unwrap_or(app_state);
+                            let maybe_new_app_state = ui.mid_battle_update(&mut simulator.battle, &available_actions, key);
+                            app_state.update(maybe_new_app_state);
                         };
                     },
-                    ProcessingState::Simulation(chosen_actions) => {
+                    ProcessingState::Simulating(chosen_actions) => {
                         match simulator.simulate_turn(chosen_actions) {
                             Ok(_) => simulator.battle.push_message(&"Simulator: The turn was calculated successfully."),
                             Err(error) => simulator.battle.push_message(&format!["Simulator: {:?}", error]),
                         };
                         let available_actions = simulator.generate_available_actions();
                         ui.regenerate(&mut simulator.battle, available_actions);
-                        app_state = AppState::Processing(ProcessingState::FreeInput(available_actions))
+                        app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions))
                     },
-                    ProcessingState::BattleFinished => {
+                    ProcessingState::ProcessingPostBattleInput => {
                         if let Some(key) = get_key_released(&receiver)? {
-                            let new_app_state = ui.update_from_post_battle_input(&mut simulator.battle, key);
-                            app_state = new_app_state.unwrap_or(app_state);
+                            let maybe_new_app_state = ui.post_battle_update(&mut simulator.battle, key);
+                            app_state.update(maybe_new_app_state);
                         }
                     }
                 }
@@ -56,8 +56,8 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
             AppState::PromptSwitchOut(ref mut switch_out_state) => { 
                 if let Some(key) = get_key_released(&receiver)? {
                     let team_id = switch_out_state.team_id;
-                    let new_app_state = ui.update_switch_out_state(switch_out_state, &mut simulator.battle, team_id, key)?;
-                    app_state = new_app_state.unwrap_or(app_state);
+                    let maybe_new_app_state = ui.update_switch_out_state(switch_out_state, &mut simulator.battle, team_id, key)?;
+                    app_state.update(maybe_new_app_state);
                 }
             }, 
             AppState::Terminating => { 
@@ -71,6 +71,8 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     println!("monsim_tui exited successfully");
     Ok(NOTHING)
 }
+
+
 
 fn get_key_released(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<Option<KeyCode>> {
     Ok(match receiver.recv()? {
@@ -98,11 +100,17 @@ enum AppState<'a> {
     Terminating,
 }
 
+impl<'a> AppState<'a> {
+    fn update(&mut self, maybe_new_app_state: Option<AppState<'a>>) {
+        if let Some(new_app_state) = maybe_new_app_state { *self = new_app_state };
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProcessingState {
-    FreeInput(AvailableActions),
-    Simulation(ChosenActionsForTurn),
-    BattleFinished,
+    ProcessingMidBattleInput(AvailableActions),
+    Simulating(ChosenActionsForTurn),
+    ProcessingPostBattleInput,
 }
 
 #[derive(Debug, Clone)]
@@ -334,7 +342,7 @@ impl<'a> Ui<'a> {
                         Ui::snap_message_log_scroll_index_to_turn_end(message_log_ui_state, battle);
                     },
                 }
-                return Ok(Some(AppState::Processing(ProcessingState::FreeInput(battle.available_actions()))));
+                return Ok(Some(AppState::Processing(ProcessingState::ProcessingMidBattleInput(battle.available_actions()))));
             }
             KeyCode::Esc =>  { return Ok(Some(AppState::Terminating)) },
             _ => NOTHING
@@ -343,7 +351,7 @@ impl<'a> Ui<'a> {
     }
 
     #[must_use]
-    fn update_from_free_input(
+    fn mid_battle_update(
         &mut self, 
         battle: &mut Battle, 
         available_actions: &AvailableActions, 
@@ -413,7 +421,7 @@ impl<'a> Ui<'a> {
                         ally_selected_action,
                         opponent_selected_action,
                     ];
-                    return Some(AppState::Processing(ProcessingState::Simulation(chosen_actions)));
+                    return Some(AppState::Processing(ProcessingState::Simulating(chosen_actions)));
                 } else {
                     battle.push_messages(
                         &[
@@ -470,7 +478,7 @@ impl<'a> Ui<'a> {
     }
 
     #[must_use]
-    fn update_from_post_battle_input(
+    fn post_battle_update(
         &mut self, 
         battle: &mut Battle,
         input_key: KeyCode

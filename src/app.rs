@@ -1,9 +1,9 @@
 use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 
-use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode}, event::{self, Event, KeyCode, KeyEventKind, KeyEvent}, execute};
+use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::sim::{BattleSimulator, Battle, ChosenActionsForTurn, EMPTY_LINE, AvailableActions, ChosenAction, BattlerTeam, MessageBuffer, TeamID, TeamAvailableActions, utils::{NOTHING, Nothing}, BattlerUID, ChoosableAction, EnumeratedChosenAction};
+use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerTeam, BattlerUID, ChoosableAction, ChosenAction, ChosenActionsForTurn, EnumeratedChosenAction, MessageBuffer, TeamAvailableActions, TeamID, EMPTY_LINE};
 
 mod render;
 use render::render_interface;
@@ -32,9 +32,8 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 match processing_state.clone() {
                     ProcessingState::FreeInput(available_actions) => {
                         if let Some(key) = get_key_released(&receiver)? {
-                            ui.update_from_free_input(&mut simulator.battle, &available_actions, key).map_or(NOTHING, |new_state| {
-                                app_state = new_state;
-                            });
+                            let new_app_state = ui.update_from_free_input(&mut simulator.battle, &available_actions, key);
+                            app_state = new_app_state.unwrap_or(app_state);
                         };
                     },
                     ProcessingState::Simulation(chosen_actions) => {
@@ -48,9 +47,8 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                     },
                     ProcessingState::BattleFinished => {
                         if let Some(key) = get_key_released(&receiver)? {
-                            ui.update_from_post_battle_input(&mut simulator.battle, key).map_or(NOTHING, |new_state| {
-                                app_state = new_state;
-                            });
+                            let new_app_state = ui.update_from_post_battle_input(&mut simulator.battle, key);
+                            app_state = new_app_state.unwrap_or(app_state);
                         }
                     }
                 }
@@ -58,9 +56,8 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
             AppState::PromptSwitchOut(ref mut switch_out_state) => { 
                 if let Some(key) = get_key_released(&receiver)? {
                     let team_id = switch_out_state.team_id;
-                    ui.update_switch_out_state(switch_out_state, &mut simulator.battle, team_id, key)?.map_or(NOTHING, |new_state| {
-                        app_state = new_state;
-                    }); 
+                    let new_app_state = ui.update_switch_out_state(switch_out_state, &mut simulator.battle, team_id, key)?;
+                    app_state = new_app_state.unwrap_or(app_state);
                 }
             }, 
             AppState::Terminating => { 
@@ -78,7 +75,9 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
 fn get_key_released(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<Option<KeyCode>> {
     Ok(match receiver.recv()? {
         TuiEvent::Input(key_event) => {
-            if key_event.kind == KeyEventKind::Release { Some(key_event.code) } else { None }
+            // Reminder: Linux does not have the Release and Repeat Flags enabled by default
+            // As such I'm going to avoid using the extra flags, hopefully we don't get weird behaviour.
+            if key_event.kind == KeyEventKind::Press { Some(key_event.code) } else { None }
         },
         TuiEvent::Tick => None,
     })
@@ -118,7 +117,7 @@ pub struct TeamUiState<'a> {
     team_id: TeamID,
     active_battler_status: String,
     team_roster_status: String,
-    list_items: Vec<ListItem<'a>>,	
+    list_items: Vec<ListItem<'a>>,
     list_state: ListState,
     selected_action: Option<EnumeratedChosenAction>,
 }
@@ -157,7 +156,7 @@ type TuiTerminal = Terminal<CrosstermBackend<Stdout>>;
 fn create_configured_terminal() -> AppResult<TuiTerminal> {
     // Raw mode allows us to not require enter presses to get input
     enable_raw_mode().expect("Enabling raw mode should always work.");
-
+    
     let stdout = std::io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;

@@ -2,7 +2,7 @@ use std::ops::{IndexMut, Index, Range};
 
 use crate::sim::utils::vector_to_array_of_options;
 
-use super::game_mechanics::{BattlerUID, MoveUID};
+use super::{game_mechanics::{BattlerUID, MoveUID}, TeamID};
 
 
 /// An action choice before certain details can be established, most often the target.
@@ -28,6 +28,17 @@ pub type EnumeratedChosenAction = (usize, ChosenAction);
 pub struct AvailableActions {
     pub ally_team_available_actions: TeamAvailableActions,
     pub opponent_team_available_actions: TeamAvailableActions,
+}
+
+impl Index<TeamID> for AvailableActions {
+    type Output = TeamAvailableActions;
+
+    fn index(&self, index: TeamID) -> &Self::Output {
+        match index {
+            TeamID::Allies => &self.ally_team_available_actions,
+            TeamID::Opponents => &self.opponent_team_available_actions,
+        }
+    }
 }
 
 

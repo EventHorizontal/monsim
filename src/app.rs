@@ -3,7 +3,7 @@ use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerTeam, BattlerUID, PartialActionChoice, ActionChoice, ChosenActionsForTurn, MessageBuffer, AvailableActionsByTeam, TeamID, EMPTY_LINE};
+use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerUID, PartialActionChoice, ActionChoice, ChosenActionsForTurn, MessageBuffer, AvailableActionsByTeam, TeamID, EMPTY_LINE};
 
 mod render;
 use render::render_interface;
@@ -24,8 +24,10 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     // TODO: I guess we might think about have a "renderables" to export to the UI.
     ui.update(
         available_actions, 
-        BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Allies)), 
-        BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Opponents)),
+        simulator.battle.active_battlers_by_team(TeamID::Allies)
+            .status_string(), 
+        simulator.battle.active_battlers_by_team(TeamID::Opponents)
+            .status_string(),
         simulator.battle.ally_team().to_string(),
         simulator.battle.opponent_team().to_string(),
         simulator.battle.message_buffer.len(),
@@ -54,8 +56,10 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                         let message_buffer_length = simulator.battle.message_buffer.len();
                         ui.update(
                             available_actions, 
-                            BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Allies)), 
-                            BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Opponents)),
+                            simulator.battle.active_battlers_by_team(TeamID::Allies)
+                                .status_string(), 
+                            simulator.battle.active_battlers_by_team(TeamID::Opponents)
+                                .status_string(),
                             simulator.battle.ally_team().to_string(),
                             simulator.battle.opponent_team().to_string(),
                             message_buffer_length,
@@ -541,7 +545,7 @@ impl<'a> TeamUiState<'a> {
         
         TeamUiState {
             team_id,
-            active_battler_status: BattlerTeam::battler_status_as_string(team_active_battler),
+            active_battler_status: team_active_battler.status_string(),
             team_roster_status: team.to_string(),
             list_items: Vec::with_capacity(5),
             list_state: new_list_state(),

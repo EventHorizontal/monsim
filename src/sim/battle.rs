@@ -349,7 +349,7 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
             ("\t \t", "└── ")
         };
         output_string.push_str(&("\t".to_owned() + suffix_str));
-        output_string.push_str(&BattlerTeam::battler_status_as_string(battler));
+        output_string.push_str(&battler.status_string());
         output_string.push_str(&(prefix_str.to_owned() + "│\n"));
         output_string.push_str(&(prefix_str.to_owned() + "├── "));
 

@@ -213,22 +213,6 @@ impl BattlerTeam {
         &mut self.battlers
     }
 
-    pub fn battler_status_as_string(battler: &Battler) -> String {
-        let mut out = String::new();
-        if battler.monster.nickname == battler.monster.species.name {
-            out.push_str(&format![
-                "{} ({}) [HP: {}/{}]\n",
-                battler.monster.species.name, battler.uid, battler.monster.current_health, battler.monster.max_health
-            ]);
-        } else {
-            out.push_str(&format![
-                "{} the {} ({}) [HP: {}/{}]\n",
-                battler.monster.nickname, battler.monster.species.name, battler.uid, battler.monster.current_health, battler.monster.max_health
-            ]);
-        }
-        out
-    }
-
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
         for battler in self.battlers.iter() {
@@ -242,7 +226,7 @@ impl Display for BattlerTeam {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
         for battler in self.battlers() {
-            out.push_str(&Self::battler_status_as_string(battler));
+            out.push_str(&battler.status_string());
         }
         write!(f, "{out}")
     }
@@ -366,6 +350,23 @@ impl Battler {
             })
             .collect()
     }
+
+    pub fn status_string(&self) -> String {
+        let mut out = String::new();
+        if self.monster.nickname == self.monster.species.name {
+            out.push_str(&format![
+                "{} ({}) [HP: {}/{}]\n",
+                self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
+            ]);
+        } else {
+            out.push_str(&format![
+                "{} the {} ({}) [HP: {}/{}]\n",
+                self.monster.nickname, self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
+            ]);
+        }
+        out
+    }
+
 }
 
 impl AllyBattler {

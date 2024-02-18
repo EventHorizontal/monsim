@@ -31,7 +31,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
             AppState::Processing(ref processing_state) => {
                 match processing_state.clone() {
                     ProcessingState::ProcessingMidBattleInput(available_actions) => {
-                        if let Some(key) = get_key_released(&receiver)? {
+                        if let Some(key) = get_key_pressed(&receiver)? {
                             let maybe_new_app_state = ui.mid_battle_update(&mut simulator.battle, &available_actions, key);
                             app_state.update(maybe_new_app_state);
                         };
@@ -46,7 +46,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                         app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions))
                     },
                     ProcessingState::ProcessingPostBattleInput => {
-                        if let Some(key) = get_key_released(&receiver)? {
+                        if let Some(key) = get_key_pressed(&receiver)? {
                             let maybe_new_app_state = ui.post_battle_update(&mut simulator.battle, key);
                             app_state.update(maybe_new_app_state);
                         }
@@ -54,7 +54,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 }
             }
             AppState::PromptSwitchOut(ref mut switch_out_state) => { 
-                if let Some(key) = get_key_released(&receiver)? {
+                if let Some(key) = get_key_pressed(&receiver)? {
                     let team_id = switch_out_state.team_id;
                     let maybe_new_app_state = ui.update_switch_out_state(switch_out_state, &mut simulator.battle, team_id, key)?;
                     app_state.update(maybe_new_app_state);
@@ -74,7 +74,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
 
 
 
-fn get_key_released(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<Option<KeyCode>> {
+fn get_key_pressed(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<Option<KeyCode>> {
     Ok(match receiver.recv()? {
         TuiEvent::Input(key_event) => {
             // Reminder: Linux does not have the Release and Repeat Flags enabled by default

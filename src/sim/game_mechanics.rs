@@ -9,7 +9,7 @@ pub mod move_;
 pub(crate) mod move_dex;
 
 use core::marker::Copy;
-use std::fmt::{Debug, Display, Formatter};
+use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 
 use super::event::{ActivationOrder, CompositeEventResponderInstance, CompositeEventResponderInstanceList, EventFilterOptions};
 pub use ability::*;
@@ -32,6 +32,15 @@ pub struct OpponentBattlerTeam(pub BattlerTeam);
 pub enum TeamID {
     Allies,
     Opponents,
+}
+
+impl TeamID {
+    pub fn other(&self) -> TeamID {
+        match self {
+            TeamID::Allies => TeamID::Opponents,
+            TeamID::Opponents => TeamID::Allies,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,6 +84,50 @@ pub struct OpponentBattler(Battler);
 pub struct BattlerUID {
     pub team_id: TeamID,
     pub battler_number: BattlerNumber,
+}
+
+/// A container for storing an object of type `T` for each team.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct PerTeam<T> {
+    ally_team_item: T,
+    opponent_team_item: T,
+}
+
+impl<T> PerTeam<T> {
+    pub fn new(ally_team_item: T, opponent_team_item: T) -> Self {
+        Self {
+            ally_team_item,
+            opponent_team_item,
+        }
+    }
+
+    pub(crate) fn unwrap(&self) -> (&T, &T) {
+        (&self.ally_team_item, &self.opponent_team_item)
+    }
+
+    pub(crate) fn unwrap_mut(&mut self) -> (&mut T, &mut T) {
+        (&mut self.ally_team_item, &mut self.opponent_team_item)
+    }
+}
+
+impl<T> Index<TeamID> for PerTeam<T> {
+    type Output = T;
+
+    fn index(&self, index: TeamID) -> &Self::Output {
+        match index {
+            TeamID::Allies => &self.ally_team_item,
+            TeamID::Opponents => &self.opponent_team_item,
+        }
+    }
+} 
+
+impl<T> IndexMut<TeamID> for PerTeam<T> {
+    fn index_mut(&mut self, index: TeamID) -> &mut Self::Output {
+        match index {
+            TeamID::Allies => &mut self.ally_team_item,
+            TeamID::Opponents => &mut self.opponent_team_item,
+        }
+    }
 }
 
 pub const ALLY_1: BattlerUID = BattlerUID {

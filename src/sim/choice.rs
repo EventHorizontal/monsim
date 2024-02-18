@@ -26,12 +26,12 @@ pub type EnumeratedChosenAction = (usize, ChosenAction);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableActions {
-    pub ally_team_available_actions: TeamAvailableActions,
-    pub opponent_team_available_actions: TeamAvailableActions,
+    pub ally_team_available_actions: AvailableActionsByTeam,
+    pub opponent_team_available_actions: AvailableActionsByTeam,
 }
 
 impl Index<TeamID> for AvailableActions {
-    type Output = TeamAvailableActions;
+    type Output = AvailableActionsByTeam;
 
     fn index(&self, index: TeamID) -> &Self::Output {
         match index {
@@ -43,14 +43,14 @@ impl Index<TeamID> for AvailableActions {
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TeamAvailableActions {
+pub struct AvailableActionsByTeam {
     moves: [Option<EnumeratedChoosableAction>; 4],
     switch_out: Option<EnumeratedChoosableAction>,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
 }
 
-impl TeamAvailableActions {
+impl AvailableActionsByTeam {
     pub fn new(moves_vec: Vec<EnumeratedChoosableAction>, switch_out: Option<EnumeratedChoosableAction>) -> Self {
         let moves = vector_to_array_of_options(moves_vec);
         Self {
@@ -70,7 +70,7 @@ impl TeamAvailableActions {
     }
 }
 
-impl Index<usize> for TeamAvailableActions {
+impl Index<usize> for AvailableActionsByTeam {
     type Output = Option<EnumeratedChoosableAction>;
     
     fn index(&self, index: usize) -> &Self::Output {
@@ -85,7 +85,7 @@ impl Index<usize> for TeamAvailableActions {
     }
 }
 
-impl IndexMut<usize> for TeamAvailableActions {
+impl IndexMut<usize> for AvailableActionsByTeam {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
         if index < move_count {
@@ -98,7 +98,7 @@ impl IndexMut<usize> for TeamAvailableActions {
     }
 }
 
-impl Iterator for TeamAvailableActions {
+impl Iterator for AvailableActionsByTeam {
     type Item = EnumeratedChoosableAction;
 
     fn next(&mut self) -> Option<Self::Item> {

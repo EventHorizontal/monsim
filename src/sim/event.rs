@@ -218,9 +218,9 @@ impl EventResolver {
             bitmask
         };
         let event_source_filter_passed = composite_event_responder_filters.event_source.bits() == bitmask;
-        let on_battlefield_passed = battle.is_battler_on_field(owner_uid);
+        let is_active_passed = battle.is_active_battler(owner_uid);
 
-        event_source_filter_passed && on_battlefield_passed
+        event_source_filter_passed && is_active_passed
     }
 
     fn get_responders_to_event<R: Copy, C: Copy>(

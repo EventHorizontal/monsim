@@ -2,7 +2,7 @@ use utils::not;
 
 use crate::sim::{
         event::CompositeEventResponderInstanceList, Ability, ChosenAction, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
-        BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, TeamAvailableActions,
+        BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, AvailableActionsByTeam,
         utils,
 };
 
@@ -15,8 +15,7 @@ use std::{
 };
 
 use super::{
-    prng::{self, Prng},
-    TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6, ChoosableAction,
+    prng::{self, Prng}, ChoosableAction, PerTeam, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6
 };
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
@@ -29,11 +28,10 @@ pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 pub struct Battle {
     pub current_action: Option<ChosenAction>,
     pub prng: Prng,
-    pub ally_team: BattlerTeam,
-    pub opponent_team: BattlerTeam,
+    teams: PerTeam<BattlerTeam>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_buffer: MessageBuffer,
-    pub active_battlers: BattlerMap<bool>,
+    pub active_battlers: PerTeam<BattlerUID>,
     pub fainted_battlers: BattlerMap<bool>,
 }
 
@@ -78,23 +76,9 @@ impl Battle {
         Self {
             current_action: None,
             prng: Prng::new(prng::seed_from_time_now()),
-            ally_team: ally_team.0,
-            opponent_team: opponent_team.0,
+            teams: PerTeam::new(ally_team.0, opponent_team.0),
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
-            active_battlers: BattlerMap::new(utils::collection!(
-                ALLY_1     => true,
-                ALLY_2     => false,
-                ALLY_3     => false,
-                ALLY_4     => false,
-                ALLY_5     => false,
-                ALLY_6     => false,
-                OPPONENT_1 => true,
-                OPPONENT_2 => false,
-                OPPONENT_3 => false,
-                OPPONENT_4 => false,
-                OPPONENT_5 => false,
-                OPPONENT_6 => false,
-            )),
+            active_battlers: PerTeam::new(ALLY_1, OPPONENT_1),
             fainted_battlers: BattlerMap::new(utils::collection!(
                 ALLY_1     => false,
                 ALLY_2     => false,
@@ -113,17 +97,13 @@ impl Battle {
     }
 
     pub fn battlers(&self) -> BattlerIterator {
-        let left = self.ally_team.battlers();
-        let right = self.opponent_team.battlers();
-
-        left.iter().chain(right)
+        let (ally_team, opponent_team) = self.teams.unwrap();
+        ally_team.battlers().iter().chain(opponent_team.battlers())
     }
 
     pub fn battlers_mut(&mut self) -> MutableBattlerIterator {
-        let left = self.ally_team.battlers_mut();
-        let right = self.opponent_team.battlers_mut();
-
-        left.iter_mut().chain(right)
+        let (ally_team, opponent_team) = self.teams.unwrap_mut();
+        ally_team.battlers_mut().iter_mut().chain(opponent_team.battlers_mut())
     }
 
     pub fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
@@ -132,11 +112,11 @@ impl Battle {
             .expect("Error: Requested look up for a monster with ID that does not exist in this battle.")
     }
 
-    pub fn is_battler_on_field(&self, battler_uid: BattlerUID) -> bool {
-        self.active_battlers[battler_uid]
+    pub fn is_active_battler(&self, battler_uid: BattlerUID) -> bool {
+        self.active_battlers[battler_uid.team_id] == battler_uid
     }
 
-
+    //TODO: Could use `find_battler()` here perhaps.
     pub fn monster(&self, uid: BattlerUID) -> &Monster {
         &self
             .battlers()
@@ -189,17 +169,17 @@ impl Battle {
 
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team.composite_event_responder_instances());
-        out.append(&mut self.opponent_team.composite_event_responder_instances());
+        out.append(&mut self.ally_team().composite_event_responder_instances());
+        out.append(&mut self.opponent_team().composite_event_responder_instances());
         out
     }
 
     pub fn is_on_ally_team(&self, uid: BattlerUID) -> bool {
-        self.ally_team.battlers().iter().any(|it| it.uid == uid)
+        self.ally_team().battlers().iter().any(|it| it.uid == uid)
     }
 
     pub fn is_on_opponent_team(&self, uid: BattlerUID) -> bool {
-        self.opponent_team.battlers().iter().any(|it| it.uid == uid)
+        self.opponent_team().battlers().iter().any(|it| it.uid == uid)
     }
 
     pub fn are_opponents(&self, owner_uid: BattlerUID, event_caller_uid: BattlerUID) -> bool {
@@ -220,34 +200,25 @@ impl Battle {
             || (self.is_on_opponent_team(event_caller_uid) && self.is_on_opponent_team(owner_uid))
     }
 
-    pub fn active_battlers(&self) -> Vec<&Battler> {
-        self.battlers()
-            .filter(|it| self.active_battlers[it.uid])
-            .collect()
+    pub fn active_battlers(&self) -> PerTeam<&Battler> {
+        let ally_team_active_battler = self.active_battlers_by_team(TeamID::Allies);
+        let opponent_team_active_battler = self.active_battlers_by_team(TeamID::Opponents);
+        PerTeam::new(ally_team_active_battler, opponent_team_active_battler)
     }
 
-    /// Returns `(FirstBattler, Option<SecondBattler>)` depending on 
-    /// if a second battler is on the field.
-    pub fn active_battlers_on_team(&self, team_id: TeamID) -> (&Battler, Option<&Battler>) {
-        let mut active_battlers = self
-            .battlers()
-            .filter(|it| self.active_battlers[it.uid] && it.uid.team_id == team_id);
-        let first_battler = active_battlers
-            .next()
-            .expect("`Battle` should ensure that there is always at least one battler on field.");
-        let maybe_second_battler = active_battlers.next();
-        assert_eq!(active_battlers.next(), None, "There should never be more than 2 battlers on field.");
-        (first_battler, maybe_second_battler)
+    /// Returns a singular battler for now. TODO: This will need to updated for double and multi battle support.
+    pub fn active_battlers_by_team(&self, team_id: TeamID) -> &Battler {
+        let active_battler = self.find_battler(self.active_battlers[team_id]);
+        active_battler
     }
 
-    /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is
-    /// context sensitive.
+    /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is context sensitive.
     pub(crate) fn choice_activation_order(&self, choice: ChosenAction) -> ActivationOrder {
         match choice {
             ChosenAction::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
                 speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
-                order: 0,
+                order: 0, //TODO: Think about ordering
             },
             ChosenAction::SwitchOut { switcher_uid: active_battler_uid, switchee_uid: _ } => ActivationOrder { 
                 priority: 8, 
@@ -258,8 +229,8 @@ impl Battle {
     }
 
     pub fn available_actions(&self) -> AvailableActions {
-        let ally_team_available_actions = self.team_available_actions(TeamID::Allies);
-        let opponent_team_available_actions = self.team_available_actions(TeamID::Opponents);
+        let ally_team_available_actions = self.available_actions_by_team(TeamID::Allies);
+        let opponent_team_available_actions = self.available_actions_by_team(TeamID::Opponents);
 
         AvailableActions {
             ally_team_available_actions,
@@ -267,9 +238,9 @@ impl Battle {
         }
     }
 
-    fn team_available_actions(&self, team_id: TeamID) -> TeamAvailableActions {
+    fn available_actions_by_team(&self, team_id: TeamID) -> AvailableActionsByTeam {
         
-        let team_active_battler = self.active_battlers_on_team(team_id).0;
+        let team_active_battler = self.active_battlers_by_team(team_id);
         let team = self.team(team_id);
         
         let moves = team_active_battler.move_uids();
@@ -288,7 +259,7 @@ impl Battle {
             None
         };
 
-        TeamAvailableActions::new(
+        AvailableActionsByTeam::new(
             move_actions, 
             switch_action,
         )
@@ -307,18 +278,15 @@ impl Battle {
     // TODO: Remove Ally and Opponent varients of BattlerTeam and Battler, 
     // or find a way to make them work. Perhaps methods with TeamID parameter like I used here? Or maybe something more clever while retaining the types...
     pub(crate) fn switch_partners_on_team(&self, team_id: TeamID) -> Vec<&Battler> {
-        let team = match team_id {
-            TeamID::Allies => &self.ally_team,
-            TeamID::Opponents => &self.opponent_team,
-        };
-        
-        team.battlers()
+        self.team(team_id)
+            .battlers()
             .iter()
             .filter(|battler| {
-                let is_valid_switch_partner = not!(self.is_battler_fainted(battler.uid)) && not!(self.active_battlers[battler.uid]);
-                #[allow(clippy::let_and_return)]
-                is_valid_switch_partner
-            })
+                    let is_active_battler_for_team = battler.uid == self.active_battlers[team_id];
+                    let is_valid_switch_partner = not!(self.is_battler_fainted(battler.uid)) && not!(is_active_battler_for_team);
+                    is_valid_switch_partner
+                 }
+            )
             .collect()
     }
 
@@ -326,18 +294,28 @@ impl Battle {
         self.fainted_battlers[battler_uid]
     }
 
-    fn team(&self, team_id: TeamID) -> &BattlerTeam {
-        match team_id {
-            TeamID::Allies => &self.ally_team,
-            TeamID::Opponents => &self.opponent_team,
-        }
+    pub fn team(&self, team_id: TeamID) -> &BattlerTeam {
+        & self.teams[team_id]
     }
 
-    fn team_mut(&mut self, team_id: TeamID) -> &mut BattlerTeam {
-        match team_id {
-            TeamID::Allies => &mut self.ally_team,
-            TeamID::Opponents => &mut self.opponent_team,
-        }
+    pub fn team_mut(&mut self, team_id: TeamID) -> &mut BattlerTeam {
+        &mut self.teams[team_id]
+    }
+
+    pub fn ally_team(&self) -> &BattlerTeam {
+        &self.teams[TeamID::Allies]
+    }
+
+    pub fn ally_team_mut(&mut self) -> &mut BattlerTeam {
+        &mut self.teams[TeamID::Allies]
+    }
+
+    pub fn opponent_team(&self) -> &BattlerTeam {
+        &self.teams[TeamID::Opponents]
+    }
+
+    pub fn opponent_team_mut(&mut self) -> &mut BattlerTeam {
+        &mut self.teams[TeamID::Opponents]
     }
 }
 
@@ -348,14 +326,14 @@ impl Display for Battle {
         push_pretty_tree_for_team(
             &mut out,
             "Ally Team\n", 
-            &self.ally_team, 
-            self.ally_team.battlers().iter().count(),
+            &self.ally_team(), 
+            self.ally_team().battlers().iter().count(),
         );
         push_pretty_tree_for_team(
             &mut out,
             "Opponent Team\n",
-            &self.opponent_team,
-            self.opponent_team.battlers().iter().count(),
+            &self.opponent_team(),
+            self.opponent_team().battlers().iter().count(),
         );
         write!(f, "{}", out)
     }

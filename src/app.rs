@@ -3,7 +3,7 @@ use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerTeam, BattlerUID, ChoosableAction, ChosenAction, ChosenActionsForTurn, EnumeratedChosenAction, MessageBuffer, TeamAvailableActions, TeamID, EMPTY_LINE};
+use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerTeam, BattlerUID, ChoosableAction, ChosenAction, ChosenActionsForTurn, EnumeratedChosenAction, MessageBuffer, AvailableActionsByTeam, TeamID, EMPTY_LINE};
 
 mod render;
 use render::render_interface;
@@ -254,25 +254,25 @@ impl<'a> Ui<'a> {
 
         Ui::snap_message_log_scroll_index_to_turn_end(&mut self.message_log_ui_state, battle);
         
-        let ally_active_battler = battle.active_battlers_on_team(TeamID::Allies).0;
+        let ally_active_battler = battle.active_battlers_by_team(TeamID::Allies);
         
         self.ally_panel_ui_state = TeamUiState {
             active_battler_status: BattlerTeam::battler_status_as_string(ally_active_battler),
-            team_roster_status: battle.ally_team.to_string(),
+            team_roster_status: battle.ally_team().to_string(),
             ..self.ally_panel_ui_state.clone()
         };
 
-        TeamUiState::regenerate_list(&battle.ally_team, &mut self.ally_panel_ui_state.list_items, ally_team_available_actions);
+        TeamUiState::regenerate_list(&battle.ally_team(), &mut self.ally_panel_ui_state.list_items, ally_team_available_actions);
         
-        let opponent_active_battler = battle.active_battlers_on_team(TeamID::Opponents).0;
+        let opponent_active_battler = battle.active_battlers_by_team(TeamID::Opponents);
         
         self.opponent_panel_ui_state = TeamUiState {
             active_battler_status: BattlerTeam::battler_status_as_string(opponent_active_battler),
-            team_roster_status: battle.opponent_team.to_string(),
+            team_roster_status: battle.opponent_team().to_string(),
             ..self.opponent_panel_ui_state.clone()
         };
         
-        TeamUiState::regenerate_list(&battle.opponent_team, &mut self.opponent_panel_ui_state.list_items, opponent_team_available_actions);
+        TeamUiState::regenerate_list(&battle.opponent_team(), &mut self.opponent_panel_ui_state.list_items, opponent_team_available_actions);
     }
     
     fn snap_message_log_scroll_index_to_turn_end(message_log_ui_state: &mut MessageLogUiState, battle: &mut Battle) {
@@ -430,7 +430,7 @@ impl<'a> Ui<'a> {
                             &EMPTY_LINE
                         ]
                     );
-                    Ui::snap_message_log_scroll_index_to_turn_end(&mut self.message_log_ui_state, battle);                  
+                    Ui::snap_message_log_scroll_index_to_turn_end(&mut self.message_log_ui_state, battle);
                 }
             },
             _ => NOTHING,
@@ -442,7 +442,7 @@ impl<'a> Ui<'a> {
     fn update_ui_selection_state(
         team_ui_state: &mut TeamUiState, 
         battle: &mut Battle, 
-        team_available_actions: TeamAvailableActions, 
+        team_available_actions: AvailableActionsByTeam, 
     ) -> Option<AppState<'a>> {
         let switch_action_index = team_available_actions.switch_out_action_index();
         let switch_selected = team_ui_state.list_state.selected() == switch_action_index;
@@ -456,7 +456,7 @@ impl<'a> Ui<'a> {
             .collect::<Vec<_>>();
 
         let switch_out_state = SwitchOutState {
-            switching_battler: battle.active_battlers_on_team(team_id).0.uid,
+            switching_battler: battle.active_battlers_by_team(team_id).uid,
             team_id, 
             list_of_choices, 
             list_state: new_list_state(),
@@ -468,8 +468,8 @@ impl<'a> Ui<'a> {
             if let Some(selected_index) = team_ui_state.list_state.selected() {
                 team_ui_state.selected_action = team_available_actions[selected_index].map( |(idx, choosable_action)| {
                     match choosable_action {
-                        ChoosableAction::Move(move_uid) => (idx, ChosenAction::Move { move_uid, target_uid: todo!() }),
-                        ChoosableAction::SwitchOut { switcher_uid } => (idx, ChosenAction::SwitchOut { switcher_uid, switchee_uid: todo!() }),
+                        ChoosableAction::Move(move_uid) =>  todo!(),
+                        ChoosableAction::SwitchOut { switcher_uid } => todo!(),
                     }
                 }); 
             };
@@ -515,14 +515,8 @@ impl MessageLogUiState {
 
 impl<'a> TeamUiState<'a> {
     fn new(battle: &mut Battle, team_id: TeamID) -> TeamUiState<'a> {
-        let (team, team_active_battler) = match team_id {
-            TeamID::Allies => {
-                (&battle.ally_team, battle.active_battlers_on_team(TeamID::Allies).0)
-            },
-            TeamID::Opponents => {
-                (&battle.opponent_team, battle.active_battlers_on_team(TeamID::Opponents).0)
-            },
-        };
+        let team = battle.team(team_id);
+        let team_active_battler = battle.active_battlers_by_team(team_id);
         
         TeamUiState {
             team_id,
@@ -551,7 +545,7 @@ impl<'a> TeamUiState<'a> {
         self.list_items.len()
     }
 
-    fn regenerate_list(team: &BattlerTeam, list_items: &mut Vec<ListItem>, available_actions: TeamAvailableActions) {
+    fn regenerate_list(team: &BattlerTeam, list_items: &mut Vec<ListItem>, available_actions: AvailableActionsByTeam) {
         list_items.clear();
         for choice in available_actions.into_iter() {
             match choice {

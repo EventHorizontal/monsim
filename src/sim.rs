@@ -252,8 +252,7 @@ mod action {
         }
 
         pub fn switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
-            battle.active_battlers[active_battler_uid] = false;
-            battle.active_battlers[benched_battler_uid] = true;
+            battle.active_battlers[active_battler_uid.team_id] = active_battler_uid;
             battle.push_message(&format![
                 "{active_battler} switched out! Go {benched_battler}!", 
                 active_battler = battle.monster(active_battler_uid).nickname,

@@ -1,7 +1,7 @@
 use utils::not;
 
 use crate::sim::{
-        event::CompositeEventResponderInstanceList, Ability, ChosenAction, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
+        event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
         BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, AvailableActionsByTeam,
         utils,
 };
@@ -15,7 +15,7 @@ use std::{
 };
 
 use super::{
-    prng::{self, Prng}, ChoosableAction, PerTeam, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6
+    prng::{self, Prng}, PartialActionChoice, PerTeam, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6
 };
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
@@ -26,7 +26,6 @@ pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
-    pub current_action: Option<ChosenAction>,
     pub prng: Prng,
     teams: PerTeam<BattlerTeam>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
@@ -74,7 +73,6 @@ impl<T> IndexMut<BattlerUID> for BattlerMap<T> {
 impl Battle {
     pub fn new(ally_team: AllyBattlerTeam, opponent_team: OpponentBattlerTeam) -> Self {
         Self {
-            current_action: None,
             prng: Prng::new(prng::seed_from_time_now()),
             teams: PerTeam::new(ally_team.0, opponent_team.0),
             message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
@@ -213,14 +211,14 @@ impl Battle {
     }
 
     /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is context sensitive.
-    pub(crate) fn choice_activation_order(&self, choice: ChosenAction) -> ActivationOrder {
+    pub(crate) fn choice_activation_order(&self, choice: ActionChoice) -> ActivationOrder {
         match choice {
-            ChosenAction::Move { move_uid, target_uid: _ } => ActivationOrder {
+            ActionChoice::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
                 speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
                 order: 0, //TODO: Think about ordering
             },
-            ChosenAction::SwitchOut { switcher_uid: active_battler_uid, switchee_uid: _ } => ActivationOrder { 
+            ActionChoice::SwitchOut { switcher_uid: active_battler_uid, switchee_uid: _ } => ActivationOrder { 
                 priority: 8, 
                 speed: self.monster(active_battler_uid).stats[Stat::Speed], 
                 order: 0
@@ -244,17 +242,19 @@ impl Battle {
         let team = self.team(team_id);
         
         let moves = team_active_battler.move_uids();
-        let mut count = 0usize;
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
-            let choosable_action = ChoosableAction::Move(move_uid);
-            move_actions.push((count, choosable_action));
-            count += 1;
+            let partial_action = PartialActionChoice::Move { 
+                move_uid,
+                target_uid: self.active_battlers_by_team(team_id.other()).uid,
+                display_text: self.move_(move_uid).species.name 
+            };
+            move_actions.push(partial_action);
         }
 
         let any_benched_ally_battlers = team.battlers().len() > 1;
         let switch_action = if any_benched_ally_battlers {
-            Some((count, ChoosableAction::SwitchOut { switcher_uid: team_active_battler.uid }))
+            Some(PartialActionChoice::SwitchOut { switcher_uid: team_active_battler.uid })
         } else {
             None
         };

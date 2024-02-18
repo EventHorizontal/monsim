@@ -55,7 +55,7 @@ impl BattleSimulator {
         self.battle.available_actions()
     }
 
-    pub fn simulate_turn(&mut self, chosen_actions: ChosenActionsForTurn) -> TurnResult {
+    pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActionsForTurn) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
 
@@ -64,19 +64,15 @@ impl BattleSimulator {
         self.battle
             .push_messages(&[&format!["Turn {turn_number}", turn_number = self.turn_number], &EMPTY_LINE]);
 
-        let mut chosen_actions = chosen_actions.iter().map(|(_, chosen_action)| { *chosen_action }).collect::<Vec<_>>();
-
-        ordering::context_sensitive_sort_by_activation_order(&mut self.battle, &mut chosen_actions);
+        ordering::sort_action_choices_by_activation_order(&mut self.battle, &mut chosen_actions);
 
         'turn: for chosen_action in chosen_actions.into_iter() {
-            self.battle.current_action = Some(chosen_action);
-            
             match chosen_action {
-                ChosenAction::Move { move_uid, target_uid } => match self.battle.move_(move_uid).category() {
+                ActionChoice::Move { move_uid, target_uid } => match self.battle.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut self.battle, move_uid, target_uid),
                     MoveCategory::Status => PrimaryAction::status_move(&mut self.battle, move_uid, target_uid),
                 },
-                ChosenAction::SwitchOut { switcher_uid, switchee_uid } => {
+                ActionChoice::SwitchOut { switcher_uid, switchee_uid } => {
                     PrimaryAction::switch_out(&mut self.battle, switcher_uid, switchee_uid)
                 }
             }?;

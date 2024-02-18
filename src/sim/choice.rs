@@ -2,27 +2,26 @@ use std::ops::{IndexMut, Index, Range};
 
 use crate::sim::utils::vector_to_array_of_options;
 
-use super::{game_mechanics::{BattlerUID, MoveUID}, TeamID};
+use super::{game_mechanics::{BattlerUID, MoveUID}, Move, TeamID};
 
 
 /// An action choice before certain details can be established, most often the target.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChoosableAction {
-    Move(MoveUID),
+pub enum PartialActionChoice {
+    /// This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent battler is the target. 
+    Move{ move_uid: MoveUID, target_uid: BattlerUID, display_text: &'static str},
+    /// A switch out action before we know which battler to switch with.
     SwitchOut { switcher_uid: BattlerUID },
 }
 
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChosenAction {
+pub enum ActionChoice {
     Move { move_uid: MoveUID, target_uid: BattlerUID },
     SwitchOut { switcher_uid: BattlerUID, switchee_uid: BattlerUID },
 }
 
-pub type ChosenActionsForTurn = [EnumeratedChosenAction; 2];
-pub type EnumeratedChoosableAction = (usize, ChoosableAction);
-pub type EnumeratedChosenAction = (usize, ChosenAction);
-
+pub type ChosenActionsForTurn = [ActionChoice; 2];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableActions {
@@ -44,14 +43,14 @@ impl Index<TeamID> for AvailableActions {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableActionsByTeam {
-    moves: [Option<EnumeratedChoosableAction>; 4],
-    switch_out: Option<EnumeratedChoosableAction>,
+    moves: [Option<PartialActionChoice>; 4],
+    switch_out: Option<PartialActionChoice>,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
 }
 
 impl AvailableActionsByTeam {
-    pub fn new(moves_vec: Vec<EnumeratedChoosableAction>, switch_out: Option<EnumeratedChoosableAction>) -> Self {
+    pub fn new(moves_vec: Vec<PartialActionChoice>, switch_out: Option<PartialActionChoice>) -> Self {
         let moves = vector_to_array_of_options(moves_vec);
         Self {
             moves,
@@ -66,12 +65,13 @@ impl AvailableActionsByTeam {
     }
 
     pub fn switch_out_action_index(&self) -> Option<usize> {
-        self.switch_out.map(|it| { it.0 })
+        let move_count = self.moves.iter().flatten().count();
+        self.switch_out.map(|_| { move_count })
     }
 }
 
 impl Index<usize> for AvailableActionsByTeam {
-    type Output = Option<EnumeratedChoosableAction>;
+    type Output = Option<PartialActionChoice>;
     
     fn index(&self, index: usize) -> &Self::Output {
         let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
@@ -99,7 +99,7 @@ impl IndexMut<usize> for AvailableActionsByTeam {
 }
 
 impl Iterator for AvailableActionsByTeam {
-    type Item = EnumeratedChoosableAction;
+    type Item = PartialActionChoice;
 
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.iter_cursor;

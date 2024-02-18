@@ -3,7 +3,7 @@ use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerTeam, BattlerUID, ChoosableAction, ChosenAction, ChosenActionsForTurn, EnumeratedChosenAction, MessageBuffer, AvailableActionsByTeam, TeamID, EMPTY_LINE};
+use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerTeam, BattlerUID, PartialActionChoice, ActionChoice, ChosenActionsForTurn, MessageBuffer, AvailableActionsByTeam, TeamID, EMPTY_LINE};
 
 mod render;
 use render::render_interface;
@@ -21,7 +21,15 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     create_io_thread(sender);
     
     let available_actions = simulator.available_actions();
-    ui.regenerate(&mut simulator.battle, available_actions);
+    // TODO: I guess we might think about have a "renderables" to export to the UI.
+    ui.update(
+        available_actions, 
+        BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Allies)), 
+        BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Opponents)),
+        simulator.battle.ally_team().to_string(),
+        simulator.battle.opponent_team().to_string(),
+        simulator.battle.message_buffer.len(),
+    );
     let mut app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions));
     
     // Render interface once before the update loop starts.
@@ -32,8 +40,9 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 match processing_state.clone() {
                     ProcessingState::ProcessingMidBattleInput(available_actions) => {
                         if let Some(key) = get_key_pressed(&receiver)? {
-                            let maybe_new_app_state = ui.mid_battle_update(&mut simulator.battle, &available_actions, key);
-                            app_state.update(maybe_new_app_state);
+                            let message_log_length = simulator.battle.message_buffer.len();
+                            let maybe_new_app_state = ui.mid_battle_update(&mut simulator.battle, &available_actions, key, message_log_length);
+                            app_state.transition_to(maybe_new_app_state);
                         };
                     },
                     ProcessingState::Simulating(chosen_actions) => {
@@ -42,13 +51,21 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                             Err(error) => simulator.battle.push_message(&format!["Simulator: {:?}", error]),
                         };
                         let available_actions = simulator.available_actions();
-                        ui.regenerate(&mut simulator.battle, available_actions);
+                        let message_buffer_length = simulator.battle.message_buffer.len();
+                        ui.update(
+                            available_actions, 
+                            BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Allies)), 
+                            BattlerTeam::battler_status_as_string(simulator.battle.active_battlers_by_team(TeamID::Opponents)),
+                            simulator.battle.ally_team().to_string(),
+                            simulator.battle.opponent_team().to_string(),
+                            message_buffer_length,
+                        );
                         app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions))
                     },
                     ProcessingState::ProcessingPostBattleInput => {
                         if let Some(key) = get_key_pressed(&receiver)? {
                             let maybe_new_app_state = ui.post_battle_update(&mut simulator.battle, key);
-                            app_state.update(maybe_new_app_state);
+                            app_state.transition_to(maybe_new_app_state);
                         }
                     }
                 }
@@ -57,7 +74,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 if let Some(key) = get_key_pressed(&receiver)? {
                     let team_id = switch_out_state.team_id;
                     let maybe_new_app_state = ui.update_switch_out_state(switch_out_state, &mut simulator.battle, team_id, key)?;
-                    app_state.update(maybe_new_app_state);
+                    app_state.transition_to(maybe_new_app_state);
                 }
             }, 
             AppState::Terminating => { 
@@ -71,8 +88,6 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     println!("monsim_tui exited successfully");
     Ok(NOTHING)
 }
-
-
 
 fn get_key_pressed(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<Option<KeyCode>> {
     Ok(match receiver.recv()? {
@@ -88,20 +103,20 @@ fn get_key_pressed(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<O
 #[derive(Debug, Clone)]
 pub struct Ui<'a> {
     currently_selected_widget: SelectableWidget,
-    message_log_ui_state: MessageLogUiState,
-    ally_panel_ui_state: TeamUiState<'a>,
-    opponent_panel_ui_state: TeamUiState<'a>,
+    message_log_panel: MessageLogUiState,
+    ally_ui_panel: TeamUiState<'a>,
+    opponent_ui_panel: TeamUiState<'a>,
 }
 
 #[derive(Debug, Clone)]
 enum AppState<'a> {
     Processing(ProcessingState),
-    PromptSwitchOut(SwitchOutState<'a>),
+    PromptSwitchOut(ProposedSwitch<'a>),
     Terminating,
 }
 
 impl<'a> AppState<'a> {
-    fn update(&mut self, maybe_new_app_state: Option<AppState<'a>>) {
+    fn transition_to(&mut self, maybe_new_app_state: Option<AppState<'a>>) {
         if let Some(new_app_state) = maybe_new_app_state { *self = new_app_state };
     }
 }
@@ -127,7 +142,7 @@ pub struct TeamUiState<'a> {
     team_roster_status: String,
     list_items: Vec<ListItem<'a>>,
     list_state: ListState,
-    selected_action: Option<EnumeratedChosenAction>,
+    selected_item_index: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -140,7 +155,7 @@ enum SelectableWidget {
 }
 
 #[derive(Debug, Clone)]
-pub struct SwitchOutState<'a> {
+pub struct ProposedSwitch<'a> {
     switching_battler: BattlerUID,
     team_id: TeamID,
     list_of_choices: Vec<(BattlerUID, &'a str, &'a str)>,
@@ -222,12 +237,12 @@ impl<'a> Ui<'a> {
     pub fn new(battle: &mut Battle) -> Ui<'a> {
         Ui {
             currently_selected_widget: SelectableWidget::MessageLog,
-            message_log_ui_state: MessageLogUiState::new(),
-            ally_panel_ui_state: TeamUiState::new(
+            message_log_panel: MessageLogUiState::new(),
+            ally_ui_panel: TeamUiState::new(
                 battle,
                 TeamID::Allies,
             ),
-            opponent_panel_ui_state: TeamUiState::new(
+            opponent_ui_panel: TeamUiState::new(
                 battle,
                 TeamID::Opponents,
             ),
@@ -235,67 +250,74 @@ impl<'a> Ui<'a> {
     } 
 
     fn scroll_message_log_up(&mut self) {
-        self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.message_log_scroll_idx.saturating_sub(1);
-        self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.message_log_scroll_idx.min(self.message_log_ui_state.message_log_last_scrollable_line_idx);
+        self.message_log_panel.message_log_scroll_idx = self.message_log_panel.message_log_scroll_idx.saturating_sub(1);
+        self.message_log_panel.message_log_scroll_idx = self.message_log_panel.message_log_scroll_idx.min(self.message_log_panel.message_log_last_scrollable_line_idx);
     }
 
     fn scroll_message_log_down(&mut self, message_log_length: usize) {
-        self.message_log_ui_state.message_log_scroll_idx = (self.message_log_ui_state.message_log_scroll_idx + 1)
+        self.message_log_panel.message_log_scroll_idx = (self.message_log_panel.message_log_scroll_idx + 1)
             .min(message_log_length);
-        self.message_log_ui_state.message_log_scroll_idx = self.message_log_ui_state.message_log_scroll_idx.min(self.message_log_ui_state.message_log_last_scrollable_line_idx);
+        self.message_log_panel.message_log_scroll_idx = self.message_log_panel.message_log_scroll_idx.min(self.message_log_panel.message_log_last_scrollable_line_idx);
     }
 
-    fn regenerate(&mut self, battle: &mut Battle, available_actions: AvailableActions) {
+    fn update(&mut self, 
+        available_actions: AvailableActions,
+        ally_active_battler: String,
+        opponent_active_battler: String,
+        ally_benched_battlers: String,
+        opponent_benched_battlers: String,
+        message_buffer_length: usize,
+    ) {
+        
+        Ui::snap_message_log_scroll_index_to_turn_end(&mut self.message_log_panel, message_buffer_length);
         
         let AvailableActions {
             ally_team_available_actions,
             opponent_team_available_actions,
         } = available_actions;
 
-        Ui::snap_message_log_scroll_index_to_turn_end(&mut self.message_log_ui_state, battle);
+        self.ally_ui_panel.update_list(ally_team_available_actions);
+        self.opponent_ui_panel.update_list(opponent_team_available_actions);
         
-        let ally_active_battler = battle.active_battlers_by_team(TeamID::Allies);
-        
-        self.ally_panel_ui_state = TeamUiState {
-            active_battler_status: BattlerTeam::battler_status_as_string(ally_active_battler),
-            team_roster_status: battle.ally_team().to_string(),
-            ..self.ally_panel_ui_state.clone()
+        self.ally_ui_panel = TeamUiState {
+            active_battler_status: ally_active_battler,
+            team_roster_status: ally_benched_battlers,
+            ..self.ally_ui_panel.clone()
         };
 
-        TeamUiState::regenerate_list(&battle.ally_team(), &mut self.ally_panel_ui_state.list_items, ally_team_available_actions);
+        // TeamUiState::update_list(&battle.ally_team(), &mut self.ally_ui_panel.list_items, ally_team_available_actions);
         
-        let opponent_active_battler = battle.active_battlers_by_team(TeamID::Opponents);
         
-        self.opponent_panel_ui_state = TeamUiState {
-            active_battler_status: BattlerTeam::battler_status_as_string(opponent_active_battler),
-            team_roster_status: battle.opponent_team().to_string(),
-            ..self.opponent_panel_ui_state.clone()
+        self.opponent_ui_panel = TeamUiState {
+            active_battler_status: opponent_active_battler,
+            team_roster_status: opponent_benched_battlers,
+            ..self.opponent_ui_panel.clone()
         };
         
-        TeamUiState::regenerate_list(&battle.opponent_team(), &mut self.opponent_panel_ui_state.list_items, opponent_team_available_actions);
+        // TeamUiState::update_list(&battle.opponent_team(), &mut self.opponent_ui_panel.list_items, opponent_team_available_actions);
     }
     
-    fn snap_message_log_scroll_index_to_turn_end(message_log_ui_state: &mut MessageLogUiState, battle: &mut Battle) {
+    fn snap_message_log_scroll_index_to_turn_end(message_log_ui_state: &mut MessageLogUiState, message_buffer_length: usize) {
         message_log_ui_state.message_log_scroll_idx = message_log_ui_state.last_message_buffer_length;
         message_log_ui_state.message_log_last_scrollable_line_idx = message_log_ui_state.message_log_scroll_idx;
-        message_log_ui_state.last_message_buffer_length = battle.message_buffer.len();
+        message_log_ui_state.last_message_buffer_length = message_buffer_length;
     }
 
     #[must_use]
     fn update_switch_out_state(
         &mut self,
-        switch_out_state: &mut SwitchOutState,
+        switch_out_state: &mut ProposedSwitch,
         battle: &mut Battle,
         team_id: TeamID,
         input_key: KeyCode,
     ) -> AppResult<Option<AppState<'a>>> {
 
         let team_ui_state = match team_id {
-            TeamID::Allies => &mut self.ally_panel_ui_state,
-            TeamID::Opponents => &mut self.opponent_panel_ui_state,
+            TeamID::Allies => &mut self.ally_ui_panel,
+            TeamID::Opponents => &mut self.opponent_ui_panel,
         };
 
-        let message_log_ui_state = &mut self.message_log_ui_state;
+        let message_log_ui_state = &mut self.message_log_panel;
 
         match input_key {
             KeyCode::Up => {
@@ -325,11 +347,7 @@ impl<'a> Ui<'a> {
             KeyCode::Enter => {
                 match switch_out_state.list_state.selected() {
                     Some(index) => {
-                        let benched_battler_uid = switch_out_state.list_of_choices[index].0;
-                        team_ui_state.selected_action = Some((team_ui_state.list_items.len() - 1, ChosenAction::SwitchOut { 
-                            switcher_uid: switch_out_state.switching_battler, 
-                            switchee_uid: benched_battler_uid,
-                        }));
+                        team_ui_state.selected_item_index = Some(index);
                     },
                     None => {
                         battle.push_messages(
@@ -339,7 +357,7 @@ impl<'a> Ui<'a> {
                                 &EMPTY_LINE
                             ]
                         );
-                        Ui::snap_message_log_scroll_index_to_turn_end(message_log_ui_state, battle);
+                        Ui::snap_message_log_scroll_index_to_turn_end(message_log_ui_state, battle.message_buffer.len());
                     },
                 }
                 return Ok(Some(AppState::Processing(ProcessingState::ProcessingMidBattleInput(battle.available_actions()))));
@@ -355,7 +373,8 @@ impl<'a> Ui<'a> {
         &mut self, 
         battle: &mut Battle, 
         available_actions: &AvailableActions, 
-        input_key: KeyCode
+        input_key: KeyCode,
+        message_log_length: usize,
     ) -> Option<AppState<'a>> {
         
         if input_key == KeyCode::Esc {
@@ -368,8 +387,8 @@ impl<'a> Ui<'a> {
                     SelectableWidget::MessageLog => { 
                         self.scroll_message_log_up();
                     },
-                    SelectableWidget::AllyChoices => { self.ally_panel_ui_state.scroll_selection_up() },
-                    SelectableWidget::OpponentChoices => { self.opponent_panel_ui_state.scroll_selection_up(); },
+                    SelectableWidget::AllyChoices => { self.ally_ui_panel.scroll_selection_up() },
+                    SelectableWidget::OpponentChoices => { self.opponent_ui_panel.scroll_selection_up(); },
                     SelectableWidget::AllyRoster => unreachable!(),
                     SelectableWidget::OpponentRoster => unreachable!(),
                 }
@@ -380,8 +399,8 @@ impl<'a> Ui<'a> {
                         let message_log_length = battle.message_buffer.len(); 
                         self.scroll_message_log_down(message_log_length);
                     },
-                    SelectableWidget::AllyChoices => { self.ally_panel_ui_state.scroll_selection_down() },
-                    SelectableWidget::OpponentChoices => { self.opponent_panel_ui_state.scroll_selection_down(); },
+                    SelectableWidget::AllyChoices => { self.ally_ui_panel.scroll_selection_down() },
+                    SelectableWidget::OpponentChoices => { self.opponent_ui_panel.scroll_selection_down(); },
                     SelectableWidget::AllyRoster => unreachable!(),
                     SelectableWidget::OpponentRoster => unreachable!(),
                 }
@@ -396,7 +415,7 @@ impl<'a> Ui<'a> {
                 match self.currently_selected_widget {
                     SelectableWidget::AllyChoices => { 
                         Ui::update_ui_selection_state(
-                            &mut self.ally_panel_ui_state, 
+                            &mut self.ally_ui_panel, 
                             battle,
                             available_actions.ally_team_available_actions,
                         );
@@ -404,7 +423,7 @@ impl<'a> Ui<'a> {
                     SelectableWidget::MessageLog => NOTHING,
                     SelectableWidget::OpponentChoices => {
                         Ui::update_ui_selection_state(
-                            &mut self.opponent_panel_ui_state, 
+                            &mut self.opponent_ui_panel, 
                             battle,
                             available_actions.opponent_team_available_actions,
                         );
@@ -414,12 +433,20 @@ impl<'a> Ui<'a> {
                 }
             }
             KeyCode::Tab => { 
-                if let (Some(ally_selected_action), Some(opponent_selected_action)) =
-                    (self.ally_panel_ui_state.selected_action, self.opponent_panel_ui_state.selected_action)
+                if let (Some(ally_selected_item_index), Some(opponent_selected_item_index)) =
+                    (self.ally_ui_panel.selected_item_index, self.opponent_ui_panel.selected_item_index)
                 {
+                    let fill_out_partial_action = |partial_action| {
+                        match partial_action {
+                            PartialActionChoice::Move { move_uid, target_uid, .. } => ActionChoice::Move { move_uid, target_uid },
+                            PartialActionChoice::SwitchOut { switcher_uid } => todo!(),
+                        }
+                    };
+                    let ally_partial_action = available_actions[TeamID::Allies][ally_selected_item_index].expect("Indices should be valid");
+                    let opponent_partial_action = available_actions[TeamID::Opponents][opponent_selected_item_index].expect("Indices should be valid");
                     let chosen_actions = [
-                        ally_selected_action,
-                        opponent_selected_action,
+                        fill_out_partial_action(ally_partial_action),
+                        fill_out_partial_action(opponent_partial_action)
                     ];
                     return Some(AppState::Processing(ProcessingState::Simulating(chosen_actions)));
                 } else {
@@ -430,7 +457,7 @@ impl<'a> Ui<'a> {
                             &EMPTY_LINE
                         ]
                     );
-                    Ui::snap_message_log_scroll_index_to_turn_end(&mut self.message_log_ui_state, battle);
+                    Ui::snap_message_log_scroll_index_to_turn_end(&mut self.message_log_panel, message_log_length);
                 }
             },
             _ => NOTHING,
@@ -439,6 +466,7 @@ impl<'a> Ui<'a> {
         None
     }
 
+    /// May update the `AppState`
     fn update_ui_selection_state(
         team_ui_state: &mut TeamUiState, 
         battle: &mut Battle, 
@@ -455,7 +483,7 @@ impl<'a> Ui<'a> {
             })
             .collect::<Vec<_>>();
 
-        let switch_out_state = SwitchOutState {
+        let switch_out_state = ProposedSwitch {
             switching_battler: battle.active_battlers_by_team(team_id).uid,
             team_id, 
             list_of_choices, 
@@ -465,14 +493,7 @@ impl<'a> Ui<'a> {
         if switch_selected {
             Some(AppState::PromptSwitchOut(switch_out_state))
         } else {
-            if let Some(selected_index) = team_ui_state.list_state.selected() {
-                team_ui_state.selected_action = team_available_actions[selected_index].map( |(idx, choosable_action)| {
-                    match choosable_action {
-                        ChoosableAction::Move(move_uid) =>  todo!(),
-                        ChoosableAction::SwitchOut { switcher_uid } => todo!(),
-                    }
-                }); 
-            };
+            team_ui_state.selected_item_index = team_ui_state.list_state.selected();
             None
         }
     }
@@ -524,7 +545,7 @@ impl<'a> TeamUiState<'a> {
             team_roster_status: team.to_string(),
             list_items: Vec::with_capacity(5),
             list_state: new_list_state(),
-            selected_action: None,
+            selected_item_index: None,
         }
     }
 
@@ -545,20 +566,15 @@ impl<'a> TeamUiState<'a> {
         self.list_items.len()
     }
 
-    fn regenerate_list(team: &BattlerTeam, list_items: &mut Vec<ListItem>, available_actions: AvailableActionsByTeam) {
-        list_items.clear();
-        for choice in available_actions.into_iter() {
+    fn update_list(&mut self, available_actions_by_team: AvailableActionsByTeam) {
+        self.list_items.clear();
+        for choice in available_actions_by_team.into_iter() {
             match choice {
-                (_, ChoosableAction::Move(move_uid)) => {
-                    for battler in team.battlers() {
-                        if battler.uid == move_uid.battler_uid {
-                            let move_ = battler.moveset[move_uid.move_number as usize];
-                            list_items.push(ListItem::new(move_.species.name));
-                        }
-                    }
+                PartialActionChoice::Move { display_text, .. } => {
+                    self.list_items.push(ListItem::new(display_text));
                 },
-                (_, ChoosableAction::SwitchOut { switcher_uid: _ }) => {
-                    list_items.push(ListItem::new("Switch Out"));
+                PartialActionChoice::SwitchOut { switcher_uid: _ } => {
+                    self.list_items.push(ListItem::new("Switch Out"));
                 },
             }
         }

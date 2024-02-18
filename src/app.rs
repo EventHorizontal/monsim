@@ -64,7 +64,14 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                             simulator.battle.opponent_team().to_string(),
                             message_buffer_length,
                         );
-                        app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions))
+                        match simulator.sim_state {
+                            crate::sim::SimState::BattleOngoing => {
+                                app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions));
+                            },
+                            crate::sim::SimState::BattleFinished => {
+                                app_state = AppState::Processing(ProcessingState::ProcessingPostBattleInput);
+                            },
+                        }
                     },
                     ProcessingState::ProcessingPostBattleInput => {
                         if let Some(key) = get_key_pressed(&receiver)? {
@@ -509,6 +516,10 @@ impl<'a> Ui<'a> {
         input_key: KeyCode
     ) -> Option<AppState<'a>> {
         
+        if input_key == KeyCode::Esc {
+            return Some(AppState::Terminating);
+        }
+
         match input_key {
             KeyCode::Up => { self.scroll_message_log_up(); },
             KeyCode::Down => { 

@@ -51,7 +51,7 @@ impl BattleSimulator {
         }
     }
 
-    pub fn generate_available_actions(&self) -> AvailableActions {
+    pub fn available_actions(&self) -> AvailableActions {
         self.battle.available_actions()
     }
 

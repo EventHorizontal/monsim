@@ -20,7 +20,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     let (sender, receiver) = mpsc::channel();
     create_io_thread(sender);
     
-    let available_actions = simulator.generate_available_actions();
+    let available_actions = simulator.available_actions();
     ui.regenerate(&mut simulator.battle, available_actions);
     let mut app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions));
     
@@ -41,7 +41,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                             Ok(_) => simulator.battle.push_message(&"Simulator: The turn was calculated successfully."),
                             Err(error) => simulator.battle.push_message(&format!["Simulator: {:?}", error]),
                         };
-                        let available_actions = simulator.generate_available_actions();
+                        let available_actions = simulator.available_actions();
                         ui.regenerate(&mut simulator.battle, available_actions);
                         app_state = AppState::Processing(ProcessingState::ProcessingMidBattleInput(available_actions))
                     },

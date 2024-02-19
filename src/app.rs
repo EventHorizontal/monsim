@@ -295,9 +295,6 @@ impl<'a> Ui<'a> {
             team_roster_status: ally_benched_battlers,
             ..self.ally_ui_panel.clone()
         };
-
-        // TeamUiState::update_list(&battle.ally_team(), &mut self.ally_ui_panel.list_items, ally_team_available_actions);
-        
         
         self.opponent_ui_panel = TeamUiState {
             active_battler_status: opponent_active_battler,
@@ -305,7 +302,6 @@ impl<'a> Ui<'a> {
             ..self.opponent_ui_panel.clone()
         };
         
-        // TeamUiState::update_list(&battle.opponent_team(), &mut self.opponent_ui_panel.list_items, opponent_team_available_actions);
     }
     
     fn snap_message_log_scroll_index_to_turn_end(message_log_ui_state: &mut MessageLogUiState, message_buffer_length: usize) {

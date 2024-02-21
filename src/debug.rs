@@ -50,3 +50,20 @@ macro_rules! debug_location {
         ]
     };
 }
+
+use monsim_utils::{Nothing, NOTHING};
+use std::error::Error;
+#[cfg(feature="debug")]
+pub fn remove_debug_log_file() -> Result<Nothing, Box<dyn Error>> {
+
+    #[cfg(feature = "debug")]
+    if let Err(e) = std::fs::remove_file("debug_output.txt") {
+        if std::io::ErrorKind::NotFound != e.kind() {
+            Err(Box::new(e) as Box<dyn Error>)
+        } else {
+            Ok(NOTHING)
+        }
+    } else {
+        Ok(NOTHING)
+    }
+}

@@ -4,7 +4,7 @@ pub(super) fn render_interface<'a>(
     ui: &mut Ui,
     app_state: &mut AppState,
     terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, 
-    message_buffer: &MessageBuffer,
+    message_buffer: &MessageLog,
 ) -> std::io::Result<CompletedFrame<'a>> {
 
     terminal.draw(|frame| {
@@ -155,7 +155,7 @@ fn construct_choice_menu_widget<'a>(team_ui_state: &'a TeamUiState, currently_se
 }
 
 /// `message_log_scroll_index` is the index of  the first line of the message buffer to be rendered.
-fn construct_message_log_widget<'a>(message_buffer: &'a MessageBuffer, message_log_ui_state:&'a mut MessageLogUiState, currently_selected_list: SelectableWidget) -> Paragraph<'a> {
+fn construct_message_log_widget<'a>(message_buffer: &'a MessageLog, message_log_ui_state:&'a mut MessageLogUiState, currently_selected_list: SelectableWidget) -> Paragraph<'a> {
     let text = message_buffer
         .iter()
         .enumerate()

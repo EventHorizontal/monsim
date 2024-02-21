@@ -29,80 +29,51 @@ pub enum SimError {
     InvalidStateReached(String),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SimState {
-    BattleOngoing,
-    BattleFinished,
-}
-
+/// The main engine behind `monsim`. This struct is a namespace for all the simulator functionality. It contains no data, just functions that transform a `Battle` from one state to another.
 #[derive(Debug)]
-pub struct BattleSimulator {
-    pub battle: Battle,
-    pub sim_state: SimState,
-    pub turn_number: u8,
-}
+pub struct BattleSimulator;
 
 impl BattleSimulator {
-    pub fn new(battle: Battle) -> Self {
-        BattleSimulator {
-            battle,
-            sim_state: SimState::BattleOngoing,
-            turn_number: 0,
-        }
-    }
 
-    pub fn available_actions(&self) -> AvailableActions {
-        self.battle.available_actions()
-    }
-
-    pub fn simulate_turn(&mut self, mut chosen_actions: ChosenActionsForTurn) -> TurnResult {
+    pub fn simulate_turn(mut battle: &mut Battle, mut chosen_actions: ChosenActionsForTurn) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
 
-        self.increment_turn_number()?;
+        assert!(not!(battle.is_finished), "The simulator cannot be called on a finished battle.");
 
-        self.battle
-            .push_messages(&[&format!["Turn {turn_number}", turn_number = self.turn_number], &EMPTY_LINE]);
+        battle.increment_turn_number()
+            .map_err(|message| { SimError::InvalidStateReached(String::from(message))})?;
+        battle.push_messages_to_log(&[&format!["Turn {turn_number}", turn_number = battle.turn_number], &EMPTY_LINE]);
 
-        ordering::sort_action_choices_by_activation_order(&mut self.battle, &mut chosen_actions);
+        ordering::sort_action_choices_by_activation_order(&mut battle, &mut chosen_actions);
 
         'turn: for chosen_action in chosen_actions.into_iter() {
             match chosen_action {
-                ActionChoice::Move { move_uid, target_uid } => match self.battle.move_(move_uid).category() {
-                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut self.battle, move_uid, target_uid),
-                    MoveCategory::Status => PrimaryAction::status_move(&mut self.battle, move_uid, target_uid),
+                ActionChoice::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
+                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut battle, move_uid, target_uid),
+                    MoveCategory::Status => PrimaryAction::status_move(&mut battle, move_uid, target_uid),
                 },
                 ActionChoice::SwitchOut { switcher_uid, switchee_uid } => {
-                    PrimaryAction::switch_out(&mut self.battle, switcher_uid, switchee_uid)
+                    PrimaryAction::switch_out(&mut battle, switcher_uid, switchee_uid)
                 }
             }?;
 
-            let maybe_fainted_battler = self.battle.battlers().find(|battler| self.battle.is_battler_fainted(battler.uid));
+            let maybe_fainted_battler = battle.battlers().find(|battler| battle.is_battler_fainted(battler.uid));
             if let Some(battler) = maybe_fainted_battler {
-                self.battle
-                    .push_messages(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], &EMPTY_LINE]);
-                self.sim_state = SimState::BattleFinished;
+                battle
+                    .push_messages_to_log(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], &EMPTY_LINE]);
+                battle.is_finished = true;
                 break 'turn;
             };
             
-            self.battle.push_message(&EMPTY_LINE);
+            battle.push_message_to_log(&EMPTY_LINE);
         }
 
-        if self.sim_state == SimState::BattleFinished {
-            self.battle.push_messages(&[&EMPTY_LINE, &"The battle ended."]);
+        if battle.is_finished {
+            battle.push_messages_to_log(&[&EMPTY_LINE, &"The battle ended."]);
         }
-        self.battle.push_messages(&[&"---", &EMPTY_LINE]);
+        battle.push_messages_to_log(&[&"---", &EMPTY_LINE]);
 
-        Ok(NOTHING)
-    }
-
-    /// Tries to increment turn number and fails if the turn number exceeds 255 after
-    /// addition, returning a `SimError::InvalidStateError`.
-    fn increment_turn_number(&mut self) -> TurnResult {
-        match self.turn_number.checked_add(1) {
-            Some(turn_number) => self.turn_number = turn_number,
-            None => return Err(SimError::InvalidStateReached(String::from("Turn limit exceeded (Limit = 255 turns)"))),
-        };
         Ok(NOTHING)
     }
 }
@@ -133,14 +104,14 @@ mod action {
             let attacker_uid = move_uid.battler_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
-            battle.push_message(&format![
+            battle.push_message_to_log(&format![
                 "{attacker} used {_move}",
                 attacker = battle.monster(attacker_uid).nickname,
                 _move = battle.move_(move_uid).species.name
             ]);
 
             if EventResolver::broadcast_trial_event(battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
-                battle.push_message(&"The move failed!");
+                battle.push_message_to_log(&"The move failed!");
                 return Ok(NOTHING);
             }
 
@@ -182,7 +153,7 @@ mod action {
 
             // If the opponent is immune, damage calculation is skipped.
             if type_matchup_multiplier.is_matchup_ineffective() {
-                battle.push_message(&"It was ineffective...");
+                battle.push_message_to_log(&"It was ineffective...");
                 return Ok(NOTHING);
             }
 
@@ -211,9 +182,9 @@ mod action {
                     unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
                 }
             };
-            battle.push_message(&format!["It was {type_effectiveness}!"]);
-            battle.push_message(&format!["{target} took {damage} damage!", target = battle.monster(target_uid).nickname,]);
-            battle.push_message(&format![
+            battle.push_message_to_log(&format!["It was {type_effectiveness}!"]);
+            battle.push_message_to_log(&format!["{target} took {damage} damage!", target = battle.monster(target_uid).nickname,]);
+            battle.push_message_to_log(&format![
                 "{target} has {num_hp} health left.",
                 target = battle.monster(target_uid).nickname,
                 num_hp = battle.monster(target_uid).current_health
@@ -226,14 +197,14 @@ mod action {
             let attacker_uid = move_uid.battler_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
-            battle.push_message(&format![
+            battle.push_message_to_log(&format![
                 "{attacker} used {move_}",
                 attacker = battle.monster(attacker_uid).nickname,
                 move_ = battle.move_(move_uid).species.name
             ]);
 
             if EventResolver::broadcast_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), &OnTryMove) == Outcome::Failure {
-                battle.push_message(&"The move failed!");
+                battle.push_message_to_log(&"The move failed!");
                 return Ok(NOTHING);
             }
 
@@ -249,7 +220,7 @@ mod action {
 
         pub fn switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
             battle.active_battlers[active_battler_uid.team_id] = active_battler_uid;
-            battle.push_message(&format![
+            battle.push_message_to_log(&format![
                 "{active_battler} switched out! Go {benched_battler}!", 
                 active_battler = battle.monster(active_battler_uid).nickname,
                 benched_battler = battle.monster(benched_battler_uid).nickname
@@ -297,7 +268,7 @@ mod action {
             if EventResolver::broadcast_trial_event(battle, battler_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
                 let effective_stages = battle.monster_mut(battler_uid).stat_modifiers.raise_stat(stat, number_of_stages);
 
-                battle.push_message(&format![
+                battle.push_message_to_log(&format![
                     "{monster}\'s {stat} was raised by {stages} stage(s)!",
                     monster = battle.monster(battler_uid).name(),
                     stat = stat,
@@ -306,7 +277,7 @@ mod action {
 
                 Outcome::Success
             } else {
-                battle.push_message(&format!["{monster}'s stats were not raised.", monster = battle.monster(battler_uid).name()]);
+                battle.push_message_to_log(&format!["{monster}'s stats were not raised.", monster = battle.monster(battler_uid).name()]);
 
                 Outcome::Failure
             }
@@ -321,7 +292,7 @@ mod action {
             if EventResolver::broadcast_trial_event(battle, battler_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
                 let effective_stages = battle.monster_mut(battler_uid).stat_modifiers.lower_stat(stat, number_of_stages);
 
-                battle.push_message(&format![
+                battle.push_message_to_log(&format![
                     "{monster}\'s {stat} was lowered by {stages} stage(s)!",
                     monster = battle.monster(battler_uid).name(),
                     stat = stat,
@@ -330,7 +301,7 @@ mod action {
 
                 Outcome::Success
             } else {
-                battle.push_message(&format!["{monster}'s stats were not lowered.", monster = battle.monster(battler_uid).name()]);
+                battle.push_message_to_log(&format!["{monster}'s stats were not lowered.", monster = battle.monster(battler_uid).name()]);
 
                 Outcome::Failure
             }

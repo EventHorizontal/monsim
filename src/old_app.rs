@@ -3,7 +3,7 @@ use std::{sync::mpsc, time::{Duration, Instant}, thread, io::Stdout};
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
 use tui::{backend::CrosstermBackend, Terminal, terminal::CompletedFrame, widgets::{ListState, ListItem, Paragraph, Block, Borders, Wrap, List}, layout::{Layout, Direction, Constraint, Rect, Alignment}, Frame, text::{Span, Spans}, style::{Style, Color, Modifier}};
 
-use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerUID, PartialActionChoice, ActionChoice, ChosenActionsForTurn, MessageBuffer, AvailableActionsByTeam, TeamID, EMPTY_LINE};
+use crate::sim::{utils::{Nothing, NOTHING}, AvailableActions, Battle, BattleSimulator, BattlerUID, PartialActionChoice, ActionChoice, ChosenActionsForTurn, MessageLog, AvailableActionsByTeam, TeamID, EMPTY_LINE};
 
 mod render;
 use render::render_interface;
@@ -357,14 +357,14 @@ impl<'a> Ui<'a> {
                         team_ui_state.selected_item_index = Some(index);
                     },
                     None => {
-                        battle.push_messages(
+                        battle.push_messages_to_log(
                             &[
                                 &"Simulator: Switchee was not chosen. Please select a battler to switch to before activating the simulation.",
                                 &"---",
                                 &EMPTY_LINE
                             ]
                         );
-                        Ui::snap_message_log_scroll_index_to_turn_end(message_log_ui_state, battle.message_buffer.len());
+                        Ui::snap_message_log_scroll_index_to_turn_end(message_log_ui_state, battle.message_log.len());
                     },
                 }
                 return Ok(Some(AppState::Processing(ProcessingState::ProcessingMidBattleInput(battle.available_actions()))));
@@ -403,7 +403,7 @@ impl<'a> Ui<'a> {
             KeyCode::Down => {
                 match self.currently_selected_widget {
                     SelectableWidget::MessageLog => { 
-                        let message_log_length = battle.message_buffer.len(); 
+                        let message_log_length = battle.message_log.len(); 
                         self.scroll_message_log_down(message_log_length);
                     },
                     SelectableWidget::AllyChoices => { self.ally_ui_panel.scroll_selection_down() },
@@ -457,7 +457,7 @@ impl<'a> Ui<'a> {
                     ];
                     return Some(AppState::Processing(ProcessingState::Simulating(chosen_actions)));
                 } else {
-                    battle.push_messages(
+                    battle.push_messages_to_log(
                         &[
                             &"Simulator: Actions were not chosen... please select something before activating the simulation.",
                             &"---",
@@ -519,7 +519,7 @@ impl<'a> Ui<'a> {
         match input_key {
             KeyCode::Up => { self.scroll_message_log_up(); },
             KeyCode::Down => { 
-                let message_log_length = battle.message_buffer.len(); 
+                let message_log_length = battle.message_log.len(); 
                 self.scroll_message_log_down(message_log_length); 
             },
             _ => NOTHING,

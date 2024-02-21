@@ -25,12 +25,12 @@ pub type ChosenActionsForTurn = [ActionChoice; 2];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableActions {
-    pub ally_team_available_actions: AvailableActionsByTeam,
-    pub opponent_team_available_actions: AvailableActionsByTeam,
+    pub ally_team_available_actions: AvailableActionsForTeam,
+    pub opponent_team_available_actions: AvailableActionsForTeam,
 }
 
 impl Index<TeamID> for AvailableActions {
-    type Output = AvailableActionsByTeam;
+    type Output = AvailableActionsForTeam;
 
     fn index(&self, index: TeamID) -> &Self::Output {
         match index {
@@ -42,14 +42,14 @@ impl Index<TeamID> for AvailableActions {
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AvailableActionsByTeam {
+pub struct AvailableActionsForTeam {
     moves: [Option<PartialActionChoice>; 4],
     switch_out: Option<PartialActionChoice>,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
 }
 
-impl AvailableActionsByTeam {
+impl AvailableActionsForTeam {
     pub fn new(moves_vec: Vec<PartialActionChoice>, switch_out: Option<PartialActionChoice>) -> Self {
         let moves = vector_to_array_of_options(moves_vec);
         Self {
@@ -70,7 +70,7 @@ impl AvailableActionsByTeam {
     }
 }
 
-impl Index<usize> for AvailableActionsByTeam {
+impl Index<usize> for AvailableActionsForTeam {
     type Output = Option<PartialActionChoice>;
     
     fn index(&self, index: usize) -> &Self::Output {
@@ -85,7 +85,7 @@ impl Index<usize> for AvailableActionsByTeam {
     }
 }
 
-impl IndexMut<usize> for AvailableActionsByTeam {
+impl IndexMut<usize> for AvailableActionsForTeam {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
         if index < move_count {
@@ -98,7 +98,7 @@ impl IndexMut<usize> for AvailableActionsByTeam {
     }
 }
 
-impl Iterator for AvailableActionsByTeam {
+impl Iterator for AvailableActionsForTeam {
     type Item = PartialActionChoice;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -1,8 +1,8 @@
-use utils::not;
+use utils::{not, Nothing, NOTHING};
 
 use crate::sim::{
         event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
-        BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, AvailableActionsByTeam,
+        BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, AvailableActionsForTeam,
         utils,
 };
 
@@ -21,15 +21,17 @@ use super::{
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
 type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battler>>;
 
-pub type MessageBuffer = Vec<String>;
+pub type MessageLog = Vec<String>;
 pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
+    pub is_finished: bool,
+    pub turn_number: u8,
     pub prng: Prng,
     teams: PerTeam<BattlerTeam>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
-    pub message_buffer: MessageBuffer,
+    pub message_log: MessageLog,
     pub active_battlers: PerTeam<BattlerUID>,
     pub fainted_battlers: BattlerMap<bool>,
 }
@@ -73,9 +75,11 @@ impl<T> IndexMut<BattlerUID> for BattlerMap<T> {
 impl Battle {
     pub fn new(ally_team: AllyBattlerTeam, opponent_team: OpponentBattlerTeam) -> Self {
         Self {
+            is_finished: false,
+            turn_number: 0,
             prng: Prng::new(prng::seed_from_time_now()),
             teams: PerTeam::new(ally_team.0, opponent_team.0),
-            message_buffer: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+            message_log: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
             active_battlers: PerTeam::new(ALLY_1, OPPONENT_1),
             fainted_battlers: BattlerMap::new(utils::collection!(
                 ALLY_1     => false,
@@ -91,6 +95,14 @@ impl Battle {
                 OPPONENT_5 => false,
                 OPPONENT_6 => false,
             ))
+        }
+    }
+
+    /// Tries to increment the turn number by checked addition, and returns an error if the turn number limit (255) is exceeded.
+    pub(crate) fn increment_turn_number(&mut self) -> Result<Nothing, &str> {
+        match self.turn_number.checked_add(1) {
+            Some(turn_number) => { self.turn_number = turn_number;  Ok(NOTHING)},
+            None => Err("Turn limit (255) exceeded."),
         }
     }
 
@@ -236,7 +248,7 @@ impl Battle {
         }
     }
 
-    fn available_actions_by_team(&self, team_id: TeamID) -> AvailableActionsByTeam {
+    fn available_actions_by_team(&self, team_id: TeamID) -> AvailableActionsForTeam {
         
         let team_active_battler = self.active_battlers_by_team(team_id);
         let team = self.team(team_id);
@@ -259,19 +271,19 @@ impl Battle {
             None
         };
 
-        AvailableActionsByTeam::new(
+        AvailableActionsForTeam::new(
             move_actions, 
             switch_action,
         )
     }
 
-    pub fn push_message(&mut self, message: &dyn Display) {
-        self.message_buffer.push(format!["{}", message]);
+    pub fn push_message_to_log(&mut self, message: &dyn Display) {
+        self.message_log.push(format!["{}", message]);
     }
 
-    pub fn push_messages(&mut self, messages: &[&dyn Display]) {
+    pub fn push_messages_to_log(&mut self, messages: &[&dyn Display]) {
         for message in messages {
-            self.message_buffer.push(format!["{}", message]);
+            self.message_log.push(format!["{}", message]);
         }
     }
 
@@ -317,6 +329,22 @@ impl Battle {
     pub fn opponent_team_mut(&mut self) -> &mut BattlerTeam {
         &mut self.teams[TeamID::Opponents]
     }
+
+    pub fn renderables(&self) -> Renderables {
+        Renderables {
+            available_actions: self.available_actions(),
+            team_status_renderables: PerTeam::new(
+                RenderablesForTeam {
+                    active_battler_status: self.active_battlers_by_team(TeamID::Allies).status_string(),
+                    team_status: self.ally_team().to_string(),
+                },
+                RenderablesForTeam {
+                    active_battler_status: self.active_battlers_by_team(TeamID::Opponents).status_string(),
+                    team_status: self.opponent_team().to_string(), 
+                }),
+            message_log: &self.message_log,
+        }
+    } 
 }
 
 impl Display for Battle {
@@ -377,4 +405,24 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
         }
         output_string.push_str(&(prefix_str.to_owned() + "\n"));
     }
+}
+
+/// Holds all the info needed to render the UI.
+pub struct Renderables<'a> {
+    pub available_actions: AvailableActions,
+    pub team_status_renderables: PerTeam<RenderablesForTeam>,
+    pub message_log: &'a MessageLog
+}
+
+pub struct RenderablesForTeam {
+    pub active_battler_status: String,
+    pub team_status: String,
+}
+
+pub struct BattlerStatusRenderable {
+    pub nickname: String,
+    pub species_name: String,
+    pub level: u16,
+    pub max_health: u16,
+    pub current_health: u16,
 }

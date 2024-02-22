@@ -407,6 +407,7 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
     }
 }
 
+#[derive(Debug, Clone)]
 /// Holds all the info needed to render the UI.
 pub struct Renderables<'a> {
     pub available_actions: AvailableActions,
@@ -414,11 +415,13 @@ pub struct Renderables<'a> {
     pub message_log: &'a MessageLog
 }
 
+#[derive(Debug, Clone)]
 pub struct RenderablesForTeam {
     pub active_battler_status: String,
     pub team_status: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct BattlerStatusRenderable {
     pub nickname: String,
     pub species_name: String,

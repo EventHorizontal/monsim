@@ -67,8 +67,14 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
 
             AppState::Simulating(chosen_actions) => {
                 let turn_result = BattleSimulator::simulate_turn(&mut battle, chosen_actions);
+                #[cfg(feature = "debug")]
                 match turn_result {
-                    Ok(_) => battle.push_message_to_log(&"Simulator: The turn was calculated successfully."),
+                    Ok(_) => battle.push_messages_to_log(
+                        &[
+                            "Simulator: The turn was calculated successfully.", 
+                            EMPTY_LINE
+                        ]
+                    ),
                     Err(error) => battle.push_message_to_log(&format!["Simulator: {:?}", error]),
                 };
                 ui.update_message_log(battle.message_log.len());

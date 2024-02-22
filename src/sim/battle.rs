@@ -277,11 +277,11 @@ impl Battle {
         )
     }
 
-    pub fn push_message_to_log(&mut self, message: &dyn Display) {
+    pub fn push_message_to_log<'a>(&mut self, message: &'a str) {
         self.message_log.push(format!["{}", message]);
     }
 
-    pub fn push_messages_to_log(&mut self, messages: &[&dyn Display]) {
+    pub fn push_messages_to_log<'a>(&mut self, messages: &[&'a str]) {
         for message in messages {
             self.message_log.push(format!["{}", message]);
         }

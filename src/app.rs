@@ -77,6 +77,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                     ),
                     Err(error) => battle.push_message_to_log(&format!["Simulator: {:?}", error]),
                 };
+                // TODO: Investigate whether updating the message log seperately is worth the possible syncing issues
                 ui.update_message_log(battle.message_log.len());
                 ui.update_team_status_panels(&battle.renderables());
                 
@@ -118,7 +119,7 @@ fn update_from_input(
                 KeyCode::Enter => { ui.select_currently_hightlighted_choice(); None },
                 KeyCode::Tab => { 
                     if let Some(selected_indices) = ui.selections_if_both_selected() {
-                        let chosen_actions = translate_selection_indices_to_action_choices(selected_indices, available_actions);
+                        let chosen_actions = translate_selected_indices_to_action_choices(selected_indices, available_actions);
                         Some(AppState::Simulating(chosen_actions))
                     } else {
                         battle.push_messages_to_log(
@@ -152,7 +153,7 @@ fn update_from_input(
     }
 }
 
-fn translate_selection_indices_to_action_choices(selected_indices: PerTeam<usize>, available_actions: AvailableActions) -> ChosenActionsForTurn {
+fn translate_selected_indices_to_action_choices(selected_indices: PerTeam<usize>, available_actions: AvailableActions) -> ChosenActionsForTurn {
     
     let ally_team_selected_index = selected_indices[TeamID::Allies];
     let ally_team_partial_action = available_actions[TeamID::Allies][ally_team_selected_index]

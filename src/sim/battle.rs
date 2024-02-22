@@ -27,7 +27,7 @@ pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
     pub is_finished: bool,
-    pub turn_number: u8,
+    pub turn_number: u16,
     pub prng: Prng,
     teams: PerTeam<BattlerTeam>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
@@ -98,11 +98,11 @@ impl Battle {
         }
     }
 
-    /// Tries to increment the turn number by checked addition, and returns an error if the turn number limit (255) is exceeded.
+    /// Tries to increment the turn number by checked addition, and returns an error if the turn number limit (u16::MAX) is exceeded.
     pub(crate) fn increment_turn_number(&mut self) -> Result<Nothing, &str> {
         match self.turn_number.checked_add(1) {
-            Some(turn_number) => { self.turn_number = turn_number;  Ok(NOTHING)},
-            None => Err("Turn limit (255) exceeded."),
+            Some(turn_number) => { self.turn_number = turn_number; Ok(NOTHING)},
+            None => Err("Turn limit (65535) exceeded."),
         }
     }
 

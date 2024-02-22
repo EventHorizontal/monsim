@@ -7,14 +7,14 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::{debug_to_file, sim::{ActionChoice, AvailableActions, Battle, BattleSimulator, ChosenActionsForTurn, PartialActionChoice, PerTeam, TeamID, EMPTY_LINE}};
+use crate::sim::{ActionChoice, AvailableActions, Battle, BattleSimulator, ChosenActionsForTurn, PartialActionChoice, PerTeam, TeamID, EMPTY_LINE};
 
 pub type AppResult<S> = Result<S, Box<dyn Error>>;
 
 #[derive(Debug, Clone)]
 enum AppState {
-    Processing(ProcessingState),
-    PromptingSwitchOut,
+    AcceptingInput(InputMode),
+    Simulating(ChosenActionsForTurn),
     Terminating,
 }
 
@@ -27,10 +27,10 @@ impl AppState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProcessingState {
-    ProcessingMidBattleInput(AvailableActions),
-    Simulating(ChosenActionsForTurn),
-    ProcessingPostBattleInput,
+pub enum InputMode {
+    MidBattle(AvailableActions),
+    SwitchOutPrompt,
+    PostBattle,
 }
 
 /// The main function for the application
@@ -40,32 +40,45 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     spawn_input_capturing_thread(sender);
     
     let available_actions = battle.available_actions();
-    let mut current_app_state = AppState::Processing(
-        ProcessingState::ProcessingMidBattleInput(available_actions)
+    let mut current_app_state = AppState::AcceptingInput(
+        InputMode::MidBattle(available_actions)
     );
     
     let mut terminal = acquire_terminal()?;
     let mut ui = Ui::new(&battle.renderables());
-    ui.render_to(&mut terminal, &battle.message_log)?;
+    ui.render(&mut terminal, &battle.message_log)?;
 
     'main: loop {
         match current_app_state {
             
-            AppState::Processing(processing_state) => {
+            AppState::AcceptingInput(processing_state) => {
                 // The app information only updates when input is received from the io thread. This may change in the future.
                 if let Some(pressed_key) = get_pressed_key(&receiver)? {
-                    let optional_new_app_state = processing_state_update(
+                    let optional_new_app_state = update_from_input(
                         &mut ui,
                         &mut battle,
                         processing_state, 
                         pressed_key
                     );
+                    ui.update_team_status_panels(&battle.renderables());
                     current_app_state.transition(optional_new_app_state);
                 }
             },
-            
-            AppState::PromptingSwitchOut => {
-                todo!()
+
+            AppState::Simulating(chosen_actions) => {
+                let turn_result = BattleSimulator::simulate_turn(&mut battle, chosen_actions);
+                match turn_result {
+                    Ok(_) => battle.push_message_to_log(&"Simulator: The turn was calculated successfully."),
+                    Err(error) => battle.push_message_to_log(&format!["Simulator: {:?}", error]),
+                };
+                ui.update_message_log(battle.message_log.len());
+                ui.update_team_status_panels(&battle.renderables());
+                
+                if battle.is_finished {
+                    current_app_state.transition(Some(AppState::AcceptingInput(InputMode::PostBattle)));
+                } else {
+                    current_app_state.transition(Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_actions()))))
+                }
             },
             
             AppState::Terminating => {
@@ -73,22 +86,22 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 break 'main;
             },
         }
-        ui.render_to(&mut terminal, &battle.message_log)?;
+        ui.render(&mut terminal, &battle.message_log)?;
     }
 
     println!("monsim_tui exited successfully");
     Ok(NOTHING)
 }
 
-/// Handles updating the app appropriately while in the processing state and optionally returns a new `AppState` to replace the current one.
-fn processing_state_update(
+/// Uses the received input to update the `Ui` accordingly and optionally returns a new `AppState` to replace the current one.
+fn update_from_input(
     ui: &mut Ui,
-    mut battle: &mut Battle,
-    current_processing_state: ProcessingState, 
+    battle: &mut Battle,
+    current_input_mode: InputMode, 
     pressed_key: KeyCode,
 ) -> Option<AppState> {
-    match current_processing_state {
-        ProcessingState::ProcessingMidBattleInput(available_actions) => {
+    match current_input_mode {
+        InputMode::MidBattle(available_actions) => {
             match pressed_key {
                 KeyCode::Esc => { Some(AppState::Terminating) },
 
@@ -100,7 +113,7 @@ fn processing_state_update(
                 KeyCode::Tab => { 
                     if let Some(selected_indices) = ui.selections_if_both_selected() {
                         let chosen_actions = translate_selection_indices_to_action_choices(selected_indices, available_actions);
-                        Some(AppState::Processing(ProcessingState::Simulating(chosen_actions)))
+                        Some(AppState::Simulating(chosen_actions))
                     } else {
                         battle.push_messages_to_log(
                             &[
@@ -109,30 +122,19 @@ fn processing_state_update(
                                 &EMPTY_LINE
                             ]
                         );
-                        ui.snap_message_log_to_beginning_of_last_message(battle.message_log.len());
+                        ui.snap_message_log_cursor_to_beginning_of_last_message();
                         None
                     }
                  },
                  _ => None
             }
         },
-        ProcessingState::Simulating(chosen_actions) => {
-            let turn_result = BattleSimulator::simulate_turn(&mut battle, chosen_actions);
 
-            match turn_result {
-                Ok(_) => battle.push_message_to_log(&"Simulator: The turn was calculated successfully."),
-                Err(error) => battle.push_message_to_log(&format!["Simulator: {:?}", error]),
-            };
-            debug_to_file!(battle.message_log);
-            ui.update(&battle.renderables());
-            
-            if battle.is_finished {
-                Some(AppState::Processing(ProcessingState::ProcessingPostBattleInput))
-            } else {
-                Some(AppState::Processing(ProcessingState::ProcessingMidBattleInput(battle.available_actions())))
-            }
+        InputMode::SwitchOutPrompt => {
+            todo!()
         },
-        ProcessingState::ProcessingPostBattleInput => {
+
+        InputMode::PostBattle => {
             match pressed_key {
                 KeyCode::Esc => { Some(AppState::Terminating) },
 

@@ -3,7 +3,7 @@ use std::io::Stdout;
 use monsim_utils::NOTHING;
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
-use crate::{debug_to_file, sim::{AvailableActionsForTeam, MessageLog, PartialActionChoice, PerTeam, Renderables, TeamID}};
+use crate::sim::{AvailableActionsForTeam, MessageLog, PartialActionChoice, PerTeam, Renderables, TeamID};
 
 pub(super) struct Ui<'a> {
     currently_selected_panel: SelectablePanelID,
@@ -38,10 +38,11 @@ struct MessageLogPanel {
     _selectable_panel_id: SelectablePanelID,
 
     // The index of the first line to be rendered
-    scroll_index: usize,
-    last_scrollable_line_index: usize,
+    scroll_cursor: usize,
+    last_scrollable_line_cursor: usize,
 
-    previous_message_log_length: usize,
+    last_message_log_length: usize,
+    current_message_log_length: usize,
 }
 
 struct TeamStatusPanel {
@@ -117,17 +118,21 @@ impl<'a> Ui<'a> {
             ),
             message_log_panel: MessageLogPanel {
                 _selectable_panel_id: SelectablePanelID::MessageLog,
-                scroll_index: 0,
-                last_scrollable_line_index: 0,
-                previous_message_log_length: 0,
+                scroll_cursor: 0,
+                last_scrollable_line_cursor: 0,
+                last_message_log_length: 0,
+                current_message_log_length: renderables.message_log.len(),
             },
             selected_choice_indices: PerTeam::new(None, None),
         }
     }
 
-    pub fn update(&mut self, renderables: &Renderables) {
-        self.snap_message_log_to_beginning_of_last_message(renderables.message_log.len());
+    pub(super) fn update_message_log(&mut self, new_length: usize) {
+        self.message_log_panel.update_length(new_length);
+        self.snap_message_log_cursor_to_beginning_of_last_message();
+    }
 
+    pub(super) fn update_team_status_panels(&mut self, renderables: &Renderables) {
         self.update_team_status_panel(TeamID::Allies, renderables);
         self.update_team_status_panel(TeamID::Opponents, renderables);
     }
@@ -141,7 +146,7 @@ impl<'a> Ui<'a> {
 
     }
 
-    pub(super) fn render_to(&self, terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, message_log: &MessageLog) -> std::io::Result<CompletedFrame<'a>> {
+    pub(super) fn render(&self, terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, message_log: &MessageLog) -> std::io::Result<CompletedFrame<'a>> {
         terminal.draw(|frame| {
             let chunks = Ui::divide_screen_into_chunks(frame);
             
@@ -258,16 +263,17 @@ impl<'a> Ui<'a> {
     }
 
     pub(super) fn scroll_message_log_up(&mut self) {
-        self.message_log_panel.scroll_up()
+        self.message_log_panel.scroll_up();
     }
 
     pub(super) fn scroll_message_log_down(&mut self) {
-        self.message_log_panel.scroll_down()
+        self.message_log_panel.scroll_down();
     }
 
-    pub(crate) fn snap_message_log_to_beginning_of_last_message(&mut self, new_message_log_length: usize) {
-        self.message_log_panel.snap_to_beginning_of_last_message(new_message_log_length);
+    pub(crate) fn snap_message_log_cursor_to_beginning_of_last_message(&mut self) {
+        self.message_log_panel.snap_to_beginning_of_last_message();
     }
+
 }
 
 impl SelectablePanelID {
@@ -359,10 +365,13 @@ impl MessageLogPanel {
         let text = message_log
             .iter()
             .enumerate()
-            .filter_map(|(idx, element)| {
-                if idx >= self.scroll_index { 
+            .filter_map(|(index, element)| {
+                if index >= self.scroll_cursor { 
                     if element.contains("Turn") {
-                        Some(Spans::from(Span::styled(element, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))))
+                        Some(Spans::from(Span::styled(element, Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD)
+                        )))
                     } else {
                         Some(Spans::from(Span::raw(element)))
                     }
@@ -386,20 +395,23 @@ impl MessageLogPanel {
     }
     
     fn scroll_up(&mut self) {
-        self.scroll_index = self.scroll_index.saturating_sub(1);
-        // TODO: Check if the following line is redundant.
-        self.scroll_index = self.scroll_index.min(self.last_scrollable_line_index);
+        self.scroll_cursor = self.scroll_cursor.saturating_sub(1);
     }
 
     fn scroll_down(&mut self) {
-        self.scroll_index = (self.scroll_index + 1).min(self.previous_message_log_length);
-        self.scroll_index = self.scroll_index.min(self.last_scrollable_line_index);
+        self.scroll_cursor = (self.scroll_cursor + 1).min(self.current_message_log_length);
+        self.scroll_cursor = self.scroll_cursor.min(self.last_scrollable_line_cursor);
     }
 
-    fn snap_to_beginning_of_last_message(&mut self, new_message_log_length: usize) {
-        self.scroll_index = self.previous_message_log_length;
-        self.last_scrollable_line_index = self.scroll_index;
-        self.previous_message_log_length = new_message_log_length;
+    fn snap_to_beginning_of_last_message(&mut self) {
+        self.scroll_cursor = self.last_message_log_length;
+        // The end of the scrollable segment should be the beginning of the messages for the most recent turn calculated.
+        self.last_scrollable_line_cursor = self.scroll_cursor;
+    }
+
+    fn update_length(&mut self, new_length: usize) {
+        self.last_message_log_length = self.current_message_log_length;
+        self.current_message_log_length = new_length;
     }
 }
 

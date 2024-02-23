@@ -87,7 +87,8 @@ impl Index<usize> for AvailableActionsForTeam {
 
 impl IndexMut<usize> for AvailableActionsForTeam {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
+        // Counting the `Some` values
+        let move_count = self.moves.iter().flatten().count();
         if index < move_count {
             &mut self.moves[index]
         } else if index == move_count && self.switch_out.is_some() {
@@ -103,7 +104,8 @@ impl Iterator for AvailableActionsForTeam {
 
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.iter_cursor;
-        let move_count = self.moves.iter().flatten().count(); // we keep the Some variants at the beginning so we should get the Length of the array.
+        // Counting the `Some` values
+        let move_count = self.moves.iter().flatten().count();
         if index < move_count {
             self.iter_cursor += 1;
             Some(self.moves[index].expect("validated index"))

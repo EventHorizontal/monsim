@@ -353,18 +353,19 @@ impl Battler {
 
     pub fn status_string(&self) -> String {
         let mut out = String::new();
-        if self.monster.nickname == self.monster.species.name {
-            out.push_str(&format![
-                "{} ({}) [HP: {}/{}]\n",
-                self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
-            ]);
-        } else {
-            out.push_str(&format![
-                "{} the {} ({}) [HP: {}/{}]\n",
-                self.monster.nickname, self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
-            ]);
-        }
+        out.push_str(&format![
+            "{} ({}) [HP: {}/{}]\n",
+            self.full_name(), self.uid, self.monster.current_health, self.monster.max_health
+        ]);
         out
+    }
+
+    pub(crate) fn full_name(&self) -> &'static str {
+        if self.monster.nickname == self.monster.species.name {
+            &format!["{}", self.monster.species.name]
+        } else {
+            &format!["{} the {}", self.monster.nickname, self.monster.species.name]
+        }
     }
 
 }

@@ -23,11 +23,6 @@ pub struct BattlerTeam {
     battlers: Vec<Battler>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AllyBattlerTeam(pub BattlerTeam);
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpponentBattlerTeam(pub BattlerTeam);
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TeamID {
     Allies,

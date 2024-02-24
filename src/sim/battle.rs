@@ -1,8 +1,8 @@
 use utils::{not, ArrayOfOptionals, Nothing, NOTHING};
 
 use crate::sim::{
-        event::CompositeEventResponderInstanceList, Ability, FullySpecifiedAction, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
-        BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, AvailableActionsForTeam,
+        event::CompositeEventResponderInstanceList, Ability, FullySpecifiedAction, ActivationOrder, AvailableActions, Battler, BattlerNumber,
+        BattlerTeam, BattlerUID, Monster, Move, MoveUID, Stat, AvailableActionsForTeam,
         utils,
 };
 
@@ -74,12 +74,12 @@ impl<T> IndexMut<BattlerUID> for BattlerMap<T> {
 }
 
 impl Battle {
-    pub fn new(ally_team: AllyBattlerTeam, opponent_team: OpponentBattlerTeam) -> Self {
+    pub fn new(teams: PerTeam<BattlerTeam>) -> Self {
         Self {
             is_finished: false,
             turn_number: 0,
             prng: Prng::new(prng::seed_from_time_now()),
-            teams: PerTeam::new(ally_team.0, opponent_team.0),
+            teams,
             message_log: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
             active_battler_uids: PerTeam::new(ALLY_1, OPPONENT_1),
             fainted_battlers: BattlerMap::new(utils::collection!(

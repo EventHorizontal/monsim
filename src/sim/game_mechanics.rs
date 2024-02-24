@@ -360,11 +360,11 @@ impl Battler {
         out
     }
 
-    pub(crate) fn full_name(&self) -> &'static str {
+    pub(crate) fn full_name(&self) -> String {
         if self.monster.nickname == self.monster.species.name {
-            &format!["{}", self.monster.species.name]
+            format!["{}", self.monster.species.name]
         } else {
-            &format!["{} the {}", self.monster.nickname, self.monster.species.name]
+            format!["{} the {}", self.monster.nickname, self.monster.species.name]
         }
     }
 

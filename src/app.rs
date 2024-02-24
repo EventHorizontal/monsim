@@ -12,6 +12,7 @@ use crate::sim::{AvailableActions, Battle, BattleSimulator, BattlerUID, ChosenAc
 pub type AppResult<S> = Result<S, Box<dyn Error>>;
 
 #[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
 enum AppState {
     AcceptingInput(InputMode),
     Simulating(ChosenActionsForTurn),
@@ -27,6 +28,7 @@ impl AppState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)]
 pub enum InputMode {
     MidBattle(AvailableActions),
     SwitcheePrompt { 
@@ -74,9 +76,9 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
             },
 
             AppState::Simulating(chosen_actions) => {
-                let turn_result = BattleSimulator::simulate_turn(&mut battle, *chosen_actions);
+                let _turn_result = BattleSimulator::simulate_turn(&mut battle, *chosen_actions);
                 #[cfg(feature = "debug")]
-                match turn_result {
+                match _turn_result {
                     Ok(_) => battle.push_messages_to_log(
                         &[
                             "Simulator: The turn was calculated successfully.", 

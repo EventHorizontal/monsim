@@ -35,7 +35,7 @@ pub struct BattleSimulator;
 
 impl BattleSimulator {
 
-    pub fn simulate_turn(mut battle: &mut Battle, mut chosen_actions: ChosenActionsForTurn) -> TurnResult {
+    pub fn simulate_turn(battle: &mut Battle, mut chosen_actions: ChosenActionsForTurn) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
 
@@ -43,36 +43,36 @@ impl BattleSimulator {
 
         battle.increment_turn_number()
             .map_err(|message| { SimError::InvalidStateReached(String::from(message))})?;
-        battle.push_messages_to_log(&[&format!["Turn {turn_number}", turn_number = battle.turn_number], &EMPTY_LINE]);
+        battle.push_messages_to_log(&[&format!["Turn {turn_number}", turn_number = battle.turn_number], EMPTY_LINE]);
 
-        ordering::sort_action_choices_by_activation_order(&mut battle, &mut chosen_actions);
+        ordering::sort_action_choices_by_activation_order(battle, &mut chosen_actions);
 
         'turn: for chosen_action in chosen_actions.into_iter() {
             match chosen_action {
                 FullySpecifiedAction::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
-                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut battle, move_uid, target_uid),
-                    MoveCategory::Status => PrimaryAction::status_move(&mut battle, move_uid, target_uid),
+                    MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(battle, move_uid, target_uid),
+                    MoveCategory::Status => PrimaryAction::status_move(battle, move_uid, target_uid),
                 },
                 FullySpecifiedAction::SwitchOut { switcher_uid, switchee_uid } => {
-                    PrimaryAction::switch_out(&mut battle, switcher_uid, switchee_uid)
+                    PrimaryAction::switch_out(battle, switcher_uid, switchee_uid)
                 }
             }?;
 
             let maybe_fainted_battler = battle.battlers().find(|battler| battle.is_battler_fainted(battler.uid));
             if let Some(battler) = maybe_fainted_battler {
                 battle
-                    .push_messages_to_log(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], &EMPTY_LINE]);
+                    .push_messages_to_log(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], EMPTY_LINE]);
                 battle.is_finished = true;
                 break 'turn;
             };
             
-            battle.push_message_to_log(&EMPTY_LINE);
+            battle.push_message_to_log(EMPTY_LINE);
         }
 
         if battle.is_finished {
-            battle.push_messages_to_log(&[&EMPTY_LINE, &"The battle ended."]);
+            battle.push_messages_to_log(&[EMPTY_LINE, &"The battle ended."]);
         }
-        battle.push_messages_to_log(&[&"---", &EMPTY_LINE]);
+        battle.push_messages_to_log(&[&"---", EMPTY_LINE]);
 
         Ok(NOTHING)
     }
@@ -111,7 +111,7 @@ mod action {
             ]);
 
             if EventResolver::broadcast_trial_event(battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
-                battle.push_message_to_log(&"The move failed!");
+                battle.push_message_to_log("The move failed!");
                 return Ok(NOTHING);
             }
 
@@ -153,7 +153,7 @@ mod action {
 
             // If the opponent is immune, damage calculation is skipped.
             if type_matchup_multiplier.is_matchup_ineffective() {
-                battle.push_message_to_log(&"It was ineffective...");
+                battle.push_message_to_log("It was ineffective...");
                 return Ok(NOTHING);
             }
 
@@ -204,7 +204,7 @@ mod action {
             ]);
 
             if EventResolver::broadcast_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), &OnTryMove) == Outcome::Failure {
-                battle.push_message_to_log(&"The move failed!");
+                battle.push_message_to_log("The move failed!");
                 return Ok(NOTHING);
             }
 

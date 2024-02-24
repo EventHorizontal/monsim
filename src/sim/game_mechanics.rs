@@ -366,7 +366,7 @@ impl Battler {
 
     pub(crate) fn full_name(&self) -> String {
         if self.monster.nickname == self.monster.species.name {
-            format!["{}", self.monster.species.name]
+            self.monster.species.name.to_string()
         } else {
             format!["{} the {}", self.monster.nickname, self.monster.species.name]
         }

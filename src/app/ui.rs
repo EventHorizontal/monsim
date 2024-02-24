@@ -76,8 +76,8 @@ struct TeamStatusPanel {
     team_status: String,
 }
 
-const ALLY_TEAM_NAME: &'static str = "Ally";
-const OPPONENT_TEAM_NAME: &'static str = "Opponent";
+const ALLY_TEAM_NAME: &str = "Ally";
+const OPPONENT_TEAM_NAME: &str = "Opponent";
 const MAX_ACTION_CHOICES: usize = 8;
 
 impl<'a> Ui<'a> {
@@ -381,7 +381,7 @@ impl SelectablePanelID {
 }
 
 impl ActiveBattlerStatusPanel {
-    fn as_renderable_widget<'a>(&'a self) -> Paragraph<'a> {
+    fn as_renderable_widget(&self) -> Paragraph<'_> {
         Paragraph::new(self.active_battler_status.as_str())
             .block(Block::default().title(format![" {team_name} Active Monster ", team_name = self.team_name])
             .borders(Borders::ALL))
@@ -487,7 +487,7 @@ impl MessageLogPanel {
 }
 
 impl TeamStatusPanel {
-    fn as_renderable_widget<'a>(&'a self) -> Paragraph<'a> {
+    fn as_renderable_widget(&self) -> Paragraph<'_> {
         Paragraph::new(self.team_status.as_str())
                 .block(
                     Block::default()

@@ -281,13 +281,13 @@ impl Battle {
         )
     }
 
-    pub fn push_message_to_log<'a>(&mut self, message: &'a str) {
-        self.message_log.push(format!["{}", message]);
+    pub fn push_message_to_log(&mut self, message: &str) {
+        self.message_log.push(message.to_string());
     }
 
-    pub fn push_messages_to_log<'a>(&mut self, messages: &[&'a str]) {
+    pub fn push_messages_to_log(&mut self, messages: &[&str]) {
         for message in messages {
-            self.message_log.push(format!["{}", message]);
+            self.message_log.push(message.to_string());
         }
     }
 
@@ -359,13 +359,13 @@ impl Display for Battle {
         push_pretty_tree_for_team(
             &mut out,
             "Ally Team\n", 
-            &self.ally_team(), 
+            self.ally_team(), 
             self.ally_team().battlers().iter().count(),
         );
         push_pretty_tree_for_team(
             &mut out,
             "Opponent Team\n",
-            &self.opponent_team(),
+            self.opponent_team(),
             self.opponent_team().battlers().iter().count(),
         );
         write!(f, "{}", out)

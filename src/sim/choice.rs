@@ -4,7 +4,7 @@ use monsim_utils::ArrayOfOptionals;
 
 use crate::sim::utils::slice_to_array_of_options;
 
-use super::{game_mechanics::{BattlerUID, MoveUID}, Move, TeamID};
+use super::{game_mechanics::{BattlerUID, MoveUID}, TeamID};
 
 
 /// An action choice before certain details can be established, most often the target.

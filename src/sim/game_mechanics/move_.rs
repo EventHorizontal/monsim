@@ -116,7 +116,7 @@ impl MoveSet {
     }
 
     pub fn moves(&self) -> Iter<Move> {
-        return self.moves.iter();
+        self.moves.iter()
     }
 
     pub fn move_(&self, id: MoveNumber) -> &Move {

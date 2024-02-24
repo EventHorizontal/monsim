@@ -22,7 +22,7 @@ pub fn write_debug_to_file(message: String) -> std::io::Result<()> {
 }
 
 #[macro_export]
-#[cfg(feature = "debug")]
+/// Only produces the file if the `debug` feature flag is enabled.
 macro_rules! debug_to_file {
     ($x: expr) => {
         #[cfg(feature = "debug")]

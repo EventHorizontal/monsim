@@ -70,11 +70,6 @@ impl From<usize> for BattlerNumber {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AllyBattler(Battler);
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpponentBattler(Battler);
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BattlerUID {
     pub team_id: TeamID,
@@ -367,18 +362,6 @@ impl Battler {
         }
     }
 
-}
-
-impl AllyBattler {
-    pub fn inner(&self) -> Battler {
-        self.0.clone()
-    }
-}
-
-impl OpponentBattler {
-    pub fn inner(&self) -> Battler {
-        self.0.clone()
-    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

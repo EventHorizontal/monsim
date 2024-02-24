@@ -49,11 +49,11 @@ impl BattleSimulator {
 
         'turn: for chosen_action in chosen_actions.into_iter() {
             match chosen_action {
-                ActionChoice::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
+                FullySpecifiedAction::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(&mut battle, move_uid, target_uid),
                     MoveCategory::Status => PrimaryAction::status_move(&mut battle, move_uid, target_uid),
                 },
-                ActionChoice::SwitchOut { switcher_uid, switchee_uid } => {
+                FullySpecifiedAction::SwitchOut { switcher_uid, switchee_uid } => {
                     PrimaryAction::switch_out(&mut battle, switcher_uid, switchee_uid)
                 }
             }?;
@@ -219,7 +219,7 @@ mod action {
         }
 
         pub fn switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
-            battle.active_battlers[active_battler_uid.team_id] = active_battler_uid;
+            battle.active_battler_uids[active_battler_uid.team_id] = benched_battler_uid;
             battle.push_message_to_log(&format![
                 "{active_battler} switched out! Go {benched_battler}!", 
                 active_battler = battle.monster(active_battler_uid).nickname,

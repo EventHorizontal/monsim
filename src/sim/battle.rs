@@ -1,7 +1,7 @@
-use utils::{not, Nothing, NOTHING};
+use utils::{not, ArrayOfOptionals, Nothing, NOTHING};
 
 use crate::sim::{
-        event::CompositeEventResponderInstanceList, Ability, ActionChoice, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
+        event::CompositeEventResponderInstanceList, Ability, FullySpecifiedAction, ActivationOrder, AllyBattlerTeam, AvailableActions, Battler, BattlerNumber,
         BattlerTeam, BattlerUID, Monster, Move, MoveUID, OpponentBattlerTeam, Stat, AvailableActionsForTeam,
         utils,
 };
@@ -15,7 +15,7 @@ use std::{
 };
 
 use super::{
-    prng::{self, Prng}, PartialActionChoice, PerTeam, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6
+    prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6
 };
 
 type BattlerIterator<'a> = Chain<Iter<'a, Battler>, Iter<'a, Battler>>;
@@ -24,6 +24,7 @@ type MutableBattlerIterator<'a> = Chain<IterMut<'a, Battler>, IterMut<'a, Battle
 pub type MessageLog = Vec<String>;
 pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
+/// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
     pub is_finished: bool,
@@ -32,7 +33,7 @@ pub struct Battle {
     teams: PerTeam<BattlerTeam>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
-    pub active_battlers: PerTeam<BattlerUID>,
+    pub active_battler_uids: PerTeam<BattlerUID>,
     pub fainted_battlers: BattlerMap<bool>,
 }
 
@@ -80,7 +81,7 @@ impl Battle {
             prng: Prng::new(prng::seed_from_time_now()),
             teams: PerTeam::new(ally_team.0, opponent_team.0),
             message_log: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
-            active_battlers: PerTeam::new(ALLY_1, OPPONENT_1),
+            active_battler_uids: PerTeam::new(ALLY_1, OPPONENT_1),
             fainted_battlers: BattlerMap::new(utils::collection!(
                 ALLY_1     => false,
                 ALLY_2     => false,
@@ -116,14 +117,14 @@ impl Battle {
         ally_team.battlers_mut().iter_mut().chain(opponent_team.battlers_mut())
     }
 
-    pub fn find_battler(&self, battler_uid: BattlerUID) -> &Battler {
+    pub fn battler(&self, battler_uid: BattlerUID) -> &Battler {
         self.battlers()
             .find(|it| it.uid == battler_uid)
             .expect("Error: Requested look up for a monster with ID that does not exist in this battle.")
     }
 
     pub fn is_active_battler(&self, battler_uid: BattlerUID) -> bool {
-        self.active_battlers[battler_uid.team_id] == battler_uid
+        self.active_battler_uids[battler_uid.team_id] == battler_uid
     }
 
     //TODO: Could use `find_battler()` here perhaps.
@@ -211,26 +212,26 @@ impl Battle {
     }
 
     pub fn active_battlers(&self) -> PerTeam<&Battler> {
-        let ally_team_active_battler = self.active_battlers_by_team(TeamID::Allies);
-        let opponent_team_active_battler = self.active_battlers_by_team(TeamID::Opponents);
+        let ally_team_active_battler = self.active_battlers_on_team(TeamID::Allies);
+        let opponent_team_active_battler = self.active_battlers_on_team(TeamID::Opponents);
         PerTeam::new(ally_team_active_battler, opponent_team_active_battler)
     }
 
     /// Returns a singular battler for now. TODO: This will need to updated for double and multi battle support.
-    pub fn active_battlers_by_team(&self, team_id: TeamID) -> &Battler {
-        let active_battler = self.find_battler(self.active_battlers[team_id]);
+    pub fn active_battlers_on_team(&self, team_id: TeamID) -> &Battler {
+        let active_battler = self.battler(self.active_battler_uids[team_id]);
         active_battler
     }
 
     /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is context sensitive.
-    pub(crate) fn choice_activation_order(&self, choice: ActionChoice) -> ActivationOrder {
+    pub(crate) fn choice_activation_order(&self, choice: FullySpecifiedAction) -> ActivationOrder {
         match choice {
-            ActionChoice::Move { move_uid, target_uid: _ } => ActivationOrder {
+            FullySpecifiedAction::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
                 speed: self.monster(move_uid.battler_uid).stats[Stat::Speed],
                 order: 0, //TODO: Think about ordering
             },
-            ActionChoice::SwitchOut { switcher_uid: active_battler_uid, switchee_uid: _ } => ActivationOrder { 
+            FullySpecifiedAction::SwitchOut { switcher_uid: active_battler_uid, switchee_uid: _ } => ActivationOrder { 
                 priority: 8, 
                 speed: self.monster(active_battler_uid).stats[Stat::Speed], 
                 order: 0
@@ -250,15 +251,15 @@ impl Battle {
 
     fn available_actions_by_team(&self, team_id: TeamID) -> AvailableActionsForTeam {
         
-        let team_active_battler = self.active_battlers_by_team(team_id);
+        let team_active_battler = self.active_battlers_on_team(team_id);
         let team = self.team(team_id);
         
         let moves = team_active_battler.move_uids();
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
-            let partial_action = PartialActionChoice::Move { 
+            let partial_action = PartiallySpecifiedAction::Move { 
                 move_uid,
-                target_uid: self.active_battlers_by_team(team_id.other()).uid,
+                target_uid: self.active_battlers_on_team(team_id.other()).uid,
                 display_text: self.move_(move_uid).species.name 
             };
             move_actions.push(partial_action);
@@ -266,13 +267,16 @@ impl Battle {
 
         let any_benched_ally_battlers = team.battlers().len() > 1;
         let switch_action = if any_benched_ally_battlers {
-            Some(PartialActionChoice::SwitchOut { switcher_uid: team_active_battler.uid })
+            Some(PartiallySpecifiedAction::SwitchOut { 
+                switcher_uid: team_active_battler.uid, 
+                possible_switchee_uids: self.valid_switchees_by_uid(team_id),
+            })
         } else {
             None
         };
 
         AvailableActionsForTeam::new(
-            move_actions, 
+            &move_actions, 
             switch_action,
         )
     }
@@ -287,19 +291,20 @@ impl Battle {
         }
     }
 
-    // TODO: Remove Ally and Opponent varients of BattlerTeam and Battler, 
-    // or find a way to make them work. Perhaps methods with TeamID parameter like I used here? Or maybe something more clever while retaining the types...
-    pub(crate) fn switch_partners_on_team(&self, team_id: TeamID) -> Vec<&Battler> {
-        self.team(team_id)
-            .battlers()
-            .iter()
-            .filter(|battler| {
-                    let is_active_battler_for_team = battler.uid == self.active_battlers[team_id];
-                    let is_valid_switch_partner = not!(self.is_battler_fainted(battler.uid)) && not!(is_active_battler_for_team);
-                    is_valid_switch_partner
-                 }
-            )
-            .collect()
+    /// Returns an array of options where all the `Some` variants are at the beginning.
+    pub(crate) fn valid_switchees_by_uid(&self, team_id: TeamID) -> ArrayOfOptionals<BattlerUID, 5> {
+        let mut number_of_switchees = 0;
+        let mut switchees = [None; 5];
+        for battler in self.team(team_id).battlers().iter() {
+            let is_active_battler_for_team = battler.uid == self.active_battler_uids[team_id];
+            let is_valid_switch_partner = not!(self.is_battler_fainted(battler.uid)) && not!(is_active_battler_for_team);
+            if is_valid_switch_partner {
+                switchees[number_of_switchees] = Some(battler.uid);
+                number_of_switchees += 1;
+                assert!(number_of_switchees < 6);
+            }
+        }
+        switchees
     }
 
     pub fn is_battler_fainted(&self, battler_uid: BattlerUID) -> bool {
@@ -335,11 +340,11 @@ impl Battle {
             available_actions: self.available_actions(),
             team_status_renderables: PerTeam::new(
                 RenderablesForTeam {
-                    active_battler_status: self.active_battlers_by_team(TeamID::Allies).status_string(),
+                    active_battler_status: self.active_battlers_on_team(TeamID::Allies).status_string(),
                     team_status: self.ally_team().to_string(),
                 },
                 RenderablesForTeam {
-                    active_battler_status: self.active_battlers_by_team(TeamID::Opponents).status_string(),
+                    active_battler_status: self.active_battlers_on_team(TeamID::Opponents).status_string(),
                     team_status: self.opponent_team().to_string(), 
                 }),
             message_log: &self.message_log,

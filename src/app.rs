@@ -4,10 +4,10 @@ use ui::Ui;
 use std::{error::Error, io::Stdout, sync::mpsc, thread, time::{Duration, Instant}};
 
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
-use monsim_utils::{Nothing, NOTHING};
+use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::sim::{ActionChoice, AvailableActions, Battle, BattleSimulator, ChosenActionsForTurn, PartialActionChoice, PerTeam, TeamID, EMPTY_LINE};
+use crate::sim::{AvailableActions, Battle, BattleSimulator, BattlerUID, ChosenActionsForTurn, FullySpecifiedAction, PartiallySpecifiedAction, PerTeam, TeamID, EMPTY_LINE};
 
 pub type AppResult<S> = Result<S, Box<dyn Error>>;
 
@@ -29,7 +29,11 @@ impl AppState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputMode {
     MidBattle(AvailableActions),
-    SwitchOutPrompt,
+    SwitcheePrompt { 
+        switcher_uid: BattlerUID,
+        possible_switchee_uids: ArrayOfOptionals<BattlerUID, 5>,
+        highlight_cursor: usize,
+    },
     PostBattle,
 }
 
@@ -45,28 +49,32 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     );
     
     let mut terminal = acquire_terminal()?;
-    let mut ui = Ui::new(&battle.renderables());
-    ui.render(&mut terminal, &battle.message_log)?;
+    let mut ui = Ui::new(&battle);
+    ui.render(&mut terminal, &battle, &current_app_state)?;
+
+    // Will store action related information until they can be built.
+    let mut chosen_actions_for_turn = PerTeam::new(None, None);
 
     'main: loop {
-        match current_app_state {
+        match &mut current_app_state {
             
-            AppState::AcceptingInput(processing_state) => {
+            AppState::AcceptingInput(input_mode) => {
                 // The app information only updates when input is received from the io thread. This may change in the future.
                 if let Some(pressed_key) = get_pressed_key(&receiver)? {
                     let optional_new_app_state = update_from_input(
                         &mut ui,
                         &mut battle,
-                        processing_state, 
+                        input_mode, 
+                        &mut chosen_actions_for_turn,
                         pressed_key
                     );
-                    ui.update_team_status_panels(&battle.renderables());
+                    ui.update_team_status_panels(&battle);
                     current_app_state.transition(optional_new_app_state);
                 }
             },
 
             AppState::Simulating(chosen_actions) => {
-                let turn_result = BattleSimulator::simulate_turn(&mut battle, chosen_actions);
+                let turn_result = BattleSimulator::simulate_turn(&mut battle, *chosen_actions);
                 #[cfg(feature = "debug")]
                 match turn_result {
                     Ok(_) => battle.push_messages_to_log(
@@ -79,7 +87,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 };
                 // TODO: Investigate whether updating the message log seperately is worth the possible syncing issues
                 ui.update_message_log(battle.message_log.len());
-                ui.update_team_status_panels(&battle.renderables());
+                ui.update_team_status_panels(&battle);
                 
                 if battle.is_finished {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::PostBattle)));
@@ -93,18 +101,19 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 break 'main;
             },
         }
-        ui.render(&mut terminal, &battle.message_log)?;
+        ui.render(&mut terminal, &battle, &current_app_state)?;
     }
 
     println!("monsim_tui exited successfully");
     Ok(NOTHING)
 }
 
-/// Uses the received input to update the `Ui` accordingly and optionally returns a new `AppState` to replace the current one.
+/// Updates the `Ui` according to the input received and optionally returns a new `AppState` to transition to.
 fn update_from_input(
     ui: &mut Ui,
     battle: &mut Battle,
-    current_input_mode: InputMode, 
+    current_input_mode: &mut InputMode,
+    chosen_actions_for_turn: &mut PerTeam<Option<FullySpecifiedAction>>,
     pressed_key: KeyCode,
 ) -> Option<AppState> {
     match current_input_mode {
@@ -116,11 +125,30 @@ fn update_from_input(
                 KeyCode::Down => { ui.scroll_current_widget_down(); None },
                 KeyCode::Left => { ui.select_left_widget(); None },
                 KeyCode::Right => { ui.select_right_widget(); None },
-                KeyCode::Enter => { ui.select_currently_hightlighted_choice(); None },
+                KeyCode::Enter => {
+                    let maybe_selected_menu_item = ui.select_currently_hightlighted_menu_item();
+                    if let Some((selected_menu_item_index, team_id)) = maybe_selected_menu_item {
+                        let available_actions_for_team = available_actions[team_id];
+                        let selected_action = available_actions_for_team.get_by_index(selected_menu_item_index);
+                        match selected_action {
+                            PartiallySpecifiedAction::Move { move_uid, target_uid, .. } => {
+                                chosen_actions_for_turn[team_id] = Some(FullySpecifiedAction::Move { move_uid, target_uid })
+                            },
+                            PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids } => {
+                                // Update the switchee list when the switch option is selected.
+                                return Some(AppState::AcceptingInput(InputMode::SwitcheePrompt {
+                                    switcher_uid,
+                                    possible_switchee_uids,
+                                    highlight_cursor: 0,
+                                }));
+                            },
+                        }
+                    }
+                    None
+                },
                 KeyCode::Tab => { 
-                    if let Some(selected_indices) = ui.selections_if_both_selected() {
-                        let chosen_actions = translate_selected_indices_to_action_choices(selected_indices, available_actions);
-                        Some(AppState::Simulating(chosen_actions))
+                    if let (Some(ally_team_action), Some(opponent_team_action)) = (chosen_actions_for_turn[TeamID::Allies], chosen_actions_for_turn[TeamID::Opponents]) {
+                        Some(AppState::Simulating([ally_team_action, opponent_team_action]))
                     } else {
                         battle.push_messages_to_log(
                             &[
@@ -137,8 +165,32 @@ fn update_from_input(
             }
         },
 
-        InputMode::SwitchOutPrompt => {
-            todo!()
+        InputMode::SwitcheePrompt { switcher_uid, possible_switchee_uids, highlight_cursor} => {
+            match pressed_key {
+                KeyCode::Esc => {
+                    Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_actions())))
+                },
+
+                KeyCode::Up => {
+                    let list_length = possible_switchee_uids.iter().flatten().count();
+                    Ui::scroll_up_wrapped(highlight_cursor, list_length);
+                    None
+                },
+                KeyCode::Down => { 
+                    let list_length = possible_switchee_uids.iter().flatten().count();
+                    Ui::scroll_down_wrapped(highlight_cursor, list_length); 
+                    None 
+                },
+                KeyCode::Enter => {
+                    if let Some(switchee_uid) = possible_switchee_uids[*highlight_cursor] {
+                        chosen_actions_for_turn[switcher_uid.team_id] = Some(FullySpecifiedAction::SwitchOut { switcher_uid: *switcher_uid, switchee_uid });
+                        Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_actions())))
+                    } else {
+                        None
+                    }
+                }
+                _ => None
+            }
         },
 
         InputMode::PostBattle => {
@@ -151,29 +203,6 @@ fn update_from_input(
             }
         },
     }
-}
-
-fn translate_selected_indices_to_action_choices(selected_indices: PerTeam<usize>, available_actions: AvailableActions) -> ChosenActionsForTurn {
-    
-    let ally_team_selected_index = selected_indices[TeamID::Allies];
-    let ally_team_partial_action = available_actions[TeamID::Allies][ally_team_selected_index]
-        .expect("The index should have been validated.");
-
-    let opponent_team_selected_index = selected_indices[TeamID::Opponents];
-    let opponent_team_partial_action = available_actions[TeamID::Opponents][opponent_team_selected_index]
-        .expect("The index should have been validated.");
-
-    let fill_out_partial_action = |partial_action| {
-        match partial_action {
-            PartialActionChoice::Move { move_uid, target_uid, .. } => ActionChoice::Move { move_uid, target_uid },
-            PartialActionChoice::SwitchOut { .. } => todo!(),
-        }
-    };
-    
-    [
-        fill_out_partial_action(ally_team_partial_action),
-        fill_out_partial_action(opponent_team_partial_action)
-    ]
 }
 
 type TuiTerminal = Terminal<CrosstermBackend<Stdout>>;

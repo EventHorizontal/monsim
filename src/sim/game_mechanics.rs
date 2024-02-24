@@ -220,15 +220,19 @@ impl BattlerTeam {
         }
         out
     }
-}
 
-impl Display for BattlerTeam {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    pub(crate) fn team_status_string(&self) -> String {
         let mut out = String::new();
         for battler in self.battlers() {
             out.push_str(&battler.status_string());
         }
-        write!(f, "{out}")
+        out
+    }
+}
+
+impl Display for BattlerTeam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.team_status_string())
     }
 }
 

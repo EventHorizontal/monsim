@@ -1,9 +1,11 @@
 use std::io::Stdout;
 
-use monsim_utils::NOTHING;
+use monsim_utils::ArrayOfOptionals;
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
-use crate::sim::{AvailableActionsForTeam, MessageLog, PartialActionChoice, PerTeam, Renderables, TeamID};
+use crate::sim::{AvailableActionsForTeam, Battle, BattlerUID, PartiallySpecifiedAction, PerTeam, TeamID};
+
+use super::{AppState, InputMode};
 
 pub(super) struct Ui<'a> {
     currently_selected_panel: SelectablePanelID,
@@ -15,7 +17,7 @@ pub(super) struct Ui<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SelectablePanelID {
+pub(super) enum SelectablePanelID {
     AllyTeamChoiceSelectionMenu,
     MessageLog,
     OpponentTeamChoiceSelectionMenu,
@@ -31,7 +33,7 @@ struct ActionChoiceSelectionMenu<'a> {
     selectable_panel_id: SelectablePanelID,
     action_choice_list: Vec<ListItem<'a>>,
     list_state: ListState,
-    currently_selected_choice_index: Option<usize>,
+    selection_cursor: Option<usize>,
 }
 
 struct MessageLogPanel {
@@ -45,6 +47,30 @@ struct MessageLogPanel {
     current_message_log_length: usize,
 }
 
+
+struct SwitcheePrompt;
+
+impl SwitcheePrompt {
+    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: ArrayOfOptionals<BattlerUID, 5>) -> List<'a> {
+        let list_items = possible_switchee_uids.into_iter()
+            .flatten()
+            .map(|battler_uid| {
+                ListItem::new(battle.battler(battler_uid).full_name())
+            }).collect::<Vec<_>>();
+
+        List::new(list_items)
+            .block(
+                Block::default()
+                    .title(
+                        Span::styled("Switchee?", Style::default().fg(Color::Yellow))
+                    )
+                    .borders(Borders::ALL),
+            )
+            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+            .highlight_symbol(">>")
+    }
+}
+
 struct TeamStatusPanel {
     team_name: &'static str,
     team_status: String,
@@ -55,65 +81,60 @@ const OPPONENT_TEAM_NAME: &'static str = "Opponent";
 const MAX_ACTION_CHOICES: usize = 8;
 
 impl<'a> Ui<'a> {
-    pub(super) fn new(renderables: &Renderables) -> Self {
+    pub(super) fn new(battle: &Battle) -> Self {
+     
+        let available_actions = battle.available_actions();
 
-        // TODO: There is some redundancy in this lambda with `update_action_choice_list`, but they are slightly different, how to reconcile?
-        let get_action_choices_as_vec = |team_id| {
-            let available_actions_for_team = renderables.available_actions[team_id];
-            let mut action_choice_list = Vec::with_capacity(MAX_ACTION_CHOICES);
-            for action_choice in available_actions_for_team {
-                match action_choice {
-                    PartialActionChoice::Move { display_text, .. } => {
-                        action_choice_list.push(ListItem::new(display_text));
-                    },
-                    PartialActionChoice::SwitchOut { switcher_uid: _ } => {
-                        action_choice_list.push(ListItem::new("Switch Out"));
-                    },
-                }
-            }
-            action_choice_list
-        };
+        let mut ally_team_action_choice_list = Vec::with_capacity(MAX_ACTION_CHOICES);
+        let ally_team_available_actions = available_actions[TeamID::Allies];
+        Self::action_choice_list_from_available_actions_for_team(
+            &mut ally_team_action_choice_list, 
+            ally_team_available_actions
+        );
+        
+        let mut opponent_team_action_choice_list = Vec::with_capacity(MAX_ACTION_CHOICES);
+        let opponent_team_available_actions = available_actions[TeamID::Opponents];
+        Self::action_choice_list_from_available_actions_for_team(
+            &mut opponent_team_action_choice_list,
+            opponent_team_available_actions
+        );
 
         Self {
             currently_selected_panel: SelectablePanelID::MessageLog,
             active_battler_status_panels: PerTeam::new(
                 ActiveBattlerStatusPanel {
                     team_name: ALLY_TEAM_NAME,
-                    active_battler_status: renderables.team_status_renderables[TeamID::Allies]
-                        .active_battler_status.clone(),
+                    active_battler_status: battle.active_battlers_on_team(TeamID::Allies).status_string(),
                 }, 
                 ActiveBattlerStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
-                    active_battler_status: renderables.team_status_renderables[TeamID::Opponents]
-                        .active_battler_status.clone(),
+                    active_battler_status: battle.active_battlers_on_team(TeamID::Opponents).status_string(),
                     }
                 ),
             action_choice_selection_menus: PerTeam::new(
                     ActionChoiceSelectionMenu { 
                         team_name: ALLY_TEAM_NAME, 
                         selectable_panel_id: SelectablePanelID::AllyTeamChoiceSelectionMenu,
-                        action_choice_list: get_action_choices_as_vec(TeamID::Allies),
-                        list_state: new_list_state(),
-                        currently_selected_choice_index: None,
+                        action_choice_list: ally_team_action_choice_list,
+                        list_state: new_list_state(0),
+                        selection_cursor: None,
                     },
                     ActionChoiceSelectionMenu { 
                         team_name: OPPONENT_TEAM_NAME,
                         selectable_panel_id: SelectablePanelID::OpponentTeamChoiceSelectionMenu,
-                        action_choice_list: get_action_choices_as_vec(TeamID::Opponents),
-                        list_state: new_list_state(),
-                        currently_selected_choice_index: None, 
+                        action_choice_list: opponent_team_action_choice_list,
+                        list_state: new_list_state(0),
+                        selection_cursor: None, 
                     },
                 ),
             team_status_panels: PerTeam::new(
                 TeamStatusPanel {
                     team_name: ALLY_TEAM_NAME,
-                    team_status: renderables.team_status_renderables[TeamID::Allies]
-                        .team_status.clone(),
+                    team_status: battle.ally_team().team_status_string(),
                 },
                 TeamStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
-                    team_status: renderables.team_status_renderables[TeamID::Opponents]
-                        .team_status.clone(),
+                    team_status: battle.opponent_team().team_status_string(),
                 }, 
             ),
             message_log_panel: MessageLogPanel {
@@ -121,7 +142,7 @@ impl<'a> Ui<'a> {
                 scroll_cursor: 0,
                 last_scrollable_line_cursor: 0,
                 last_message_log_length: 0,
-                current_message_log_length: renderables.message_log.len(),
+                current_message_log_length: battle.message_log.len(),
             },
             selected_choice_indices: PerTeam::new(None, None),
         }
@@ -132,44 +153,82 @@ impl<'a> Ui<'a> {
         self.snap_message_log_cursor_to_beginning_of_last_message();
     }
 
-    pub(super) fn update_team_status_panels(&mut self, renderables: &Renderables) {
-        self.update_team_status_panel(TeamID::Allies, renderables);
-        self.update_team_status_panel(TeamID::Opponents, renderables);
+    pub(super) fn update_team_status_panels(&mut self, battle: &Battle) {
+        self.update_team_status_panel(TeamID::Allies, battle);
+        self.update_team_status_panel(TeamID::Opponents, battle);
     }
 
-    fn update_team_status_panel(&mut self, team_id: TeamID, renderables: &Renderables) {
-        let renderables_for_team = &renderables.team_status_renderables[team_id];
+    fn update_team_status_panel(&mut self, team_id: TeamID, battle: &Battle) {
         
-        self.action_choice_selection_menus[team_id].update_action_choice_list(renderables.available_actions[team_id]);
-        self.active_battler_status_panels[team_id].active_battler_status = renderables_for_team.active_battler_status.clone();
-        self.team_status_panels[team_id].team_status = renderables_for_team.team_status.clone();
-
+        Self::action_choice_list_from_available_actions_for_team(
+            &mut self.action_choice_selection_menus[team_id].action_choice_list, 
+            battle.available_actions()[team_id]
+        );
+        self.active_battler_status_panels[team_id].active_battler_status = battle.active_battlers_on_team(team_id).status_string();
+        self.team_status_panels[team_id].team_status = battle.team(team_id).team_status_string();
     }
 
-    pub(super) fn render(&self, terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, message_log: &MessageLog) -> std::io::Result<CompletedFrame<'a>> {
+    pub(super) fn render(
+        &self, terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, 
+        battle: &Battle,
+        current_app_state: &super::AppState,
+    ) -> std::io::Result<CompletedFrame<'a>> {
         terminal.draw(|frame| {
             let chunks = Ui::divide_screen_into_chunks(frame);
             
             // Render the Ally team UI
             let ally_team_panel_chunks = Ui::divide_team_panel_into_chunks(chunks[0]);
-            let (ally_team_active_battler_status_widget, ally_team_choice_menu_widget, ally_team_status_widget) = self.renderable_widgets_for_team(TeamID::Allies);
+            let (
+                ally_team_active_battler_status_widget,
+                ally_team_choice_menu_widget, 
+                ally_team_status_widget
+            ) = self.renderable_widgets_for_team(TeamID::Allies);
 
             frame.render_widget(ally_team_active_battler_status_widget, ally_team_panel_chunks[0]);
             // TODO: think about how to remove this clone (and possibly similar ones elsewhere)
             frame.render_stateful_widget(ally_team_choice_menu_widget, ally_team_panel_chunks[1], &mut self.action_choice_selection_menus[TeamID::Allies].list_state.clone());
             frame.render_widget(ally_team_status_widget, ally_team_panel_chunks[2]);
 
-            // Render the message log
-            let message_log_widget = self.message_log_panel.as_renderable_widget(message_log, self.currently_selected_panel == SelectablePanelID::MessageLog);
-            frame.render_widget(message_log_widget, chunks[1]);
+            let message_log_widget = self.message_log_panel.as_renderable_widget(&battle.message_log, self.currently_selected_panel == SelectablePanelID::MessageLog);
+            // If we are on the SwitcheePrompt, then show the SwitcheePrompt widget
+            if let AppState::AcceptingInput(InputMode::SwitcheePrompt {
+                possible_switchee_uids,
+                highlight_cursor,
+                ..
+            }) = *current_app_state {
+                let switchee_prompt_widget = SwitcheePrompt::as_renderable_widget(battle, possible_switchee_uids);
+                let middle_third_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(
+                    [
+                        Constraint::Max(7),
+                        Constraint::Percentage(80),
+                    ].as_ref(),
+                    )
+                    .split(chunks[1]);
+                let mut switchee_prompt_list_state = new_list_state(highlight_cursor);
+                
+                //Render the message log and switchee prompt
+                frame.render_stateful_widget(switchee_prompt_widget, middle_third_chunks[0], &mut switchee_prompt_list_state);
+                frame.render_widget(message_log_widget, middle_third_chunks[1]);
+            } else {
+                // Render the message log
+                frame.render_widget(message_log_widget, chunks[1]);
+            }
 
             // Render the Opponent team UI
             let opponent_team_panel_chunks = Ui::divide_team_panel_into_chunks(chunks[2]);
-            let (opponent_team_active_battler_status_widget, opponent_team_choice_menu_widget, opponent_team_status_widget) = self.renderable_widgets_for_team(TeamID::Opponents);
+            let (
+                opponent_team_active_battler_status_widget,
+                opponent_team_choice_menu_widget, 
+                opponent_team_status_widget
+            ) = self.renderable_widgets_for_team(TeamID::Opponents);
 
             frame.render_widget(opponent_team_active_battler_status_widget, opponent_team_panel_chunks[0]);
             frame.render_stateful_widget(opponent_team_choice_menu_widget, opponent_team_panel_chunks[1], &mut self.action_choice_selection_menus[TeamID::Opponents].list_state.clone());
             frame.render_widget(opponent_team_status_widget, opponent_team_panel_chunks[2]);
+
+            
         })
     }
 
@@ -235,7 +294,16 @@ impl<'a> Ui<'a> {
         self.currently_selected_panel.shift_right()
     }
 
-    pub(super) fn select_currently_hightlighted_choice(&mut self) {
+    pub(super) fn scroll_up_wrapped(cursor: &mut usize, list_length: usize) {
+        *cursor = (*cursor + list_length - 1) % list_length 
+    }
+    
+    pub(super) fn scroll_down_wrapped(cursor: &mut usize, list_length: usize) {
+        *cursor = (*cursor + 1) % list_length 
+    }
+
+    /// Returns the index and `TeamID` of the selected choice if one was successfully selected.
+    pub(super) fn select_currently_hightlighted_menu_item(&mut self) -> Option<(usize, TeamID)> {
         let maybe_team_id = match self.currently_selected_panel {
             SelectablePanelID::AllyTeamChoiceSelectionMenu => Some(TeamID::Allies),
             SelectablePanelID::MessageLog => None,
@@ -244,19 +312,7 @@ impl<'a> Ui<'a> {
         if let Some(team_id) = maybe_team_id {
             let highlighted_choice_index = self.action_choice_selection_menus[team_id].list_state.selected().expect("This is initialised to Some and never set to None afterwards");
             self.selected_choice_indices[team_id] = Some(highlighted_choice_index);
-        }
-    }
-
-    /// Only returns `Some` if both teams have made selections
-    pub(super) fn selections_if_both_selected(&self) -> Option<PerTeam<usize>> {
-        let ally_team_selected_choice_index = self.selected_choice_indices[TeamID::Allies];
-        let opponent_team_selected_choice_index = self.selected_choice_indices[TeamID::Opponents];
-        
-        if let (
-            Some(ally_team_selected_choice_index), 
-            Some(opponent_team_selected_choice_index)
-        ) = (ally_team_selected_choice_index, opponent_team_selected_choice_index) {
-            Some(PerTeam::new(ally_team_selected_choice_index, opponent_team_selected_choice_index))
+            Some((highlighted_choice_index, team_id))
         } else {
             None
         }
@@ -274,6 +330,36 @@ impl<'a> Ui<'a> {
         self.message_log_panel.snap_to_beginning_of_last_message();
     }
 
+    fn action_choice_list_from_available_actions_for_team(list_to_fill: &mut Vec<ListItem>, available_actions_for_team: AvailableActionsForTeam) {
+        list_to_fill.clear();
+        for action_choice in available_actions_for_team.as_vec() {
+            match action_choice {
+                PartiallySpecifiedAction::Move { display_text, .. } => {
+                    list_to_fill.push(ListItem::new(display_text));
+                },
+                PartiallySpecifiedAction::SwitchOut { .. } => {
+                    list_to_fill.push(ListItem::new("Switch Out"));
+                },
+            }
+        }
+    }
+
+    // pub(super) fn scroll_switchee_prompt_down(&mut self) {
+    //     let highlighted_item = self.switchee_prompt.list_state.selected().expect("Initialised to Some and never set to None.");
+    //     let list_length = self.switchee_prompt.switchee_list.len();
+    //     self.switchee_prompt.list_state.select(Some((highlighted_item + 1) % list_length));
+    // }
+
+    // pub(super) fn scroll_switchee_prompt_up(&mut self) {
+    //     let highlighted_item = self.switchee_prompt.list_state.selected().expect("Initialised to Some and never set to None.");
+    //     let list_length = self.switchee_prompt.switchee_list.len();
+    //     self.switchee_prompt.list_state.select(Some(((highlighted_item + list_length) - 1) % list_length));
+    // }
+
+    // pub(crate) fn select_currently_highlighted_switchee(&mut self) {
+    //     let highlighted_item = self.switchee_prompt.list_state.selected().expect("Initialised to Some and never set to None.");
+    //     self.switchee_prompt.selection_cursor = Some(highlighted_item);
+    // }
 }
 
 impl SelectablePanelID {
@@ -282,7 +368,6 @@ impl SelectablePanelID {
             SelectablePanelID::AllyTeamChoiceSelectionMenu => { *self = SelectablePanelID::MessageLog },
             SelectablePanelID::MessageLog => { *self = SelectablePanelID::OpponentTeamChoiceSelectionMenu },
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => { *self = SelectablePanelID::AllyTeamChoiceSelectionMenu },
-            _ => NOTHING, // Shifting right does nothing.
         }
     }
 
@@ -291,7 +376,6 @@ impl SelectablePanelID {
             SelectablePanelID::AllyTeamChoiceSelectionMenu => { *self = SelectablePanelID::OpponentTeamChoiceSelectionMenu },
             SelectablePanelID::MessageLog => { *self = SelectablePanelID::AllyTeamChoiceSelectionMenu },
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => { *self = SelectablePanelID::MessageLog },
-            _ => NOTHING, // Shifting right does nothing.
         }
     }
 }
@@ -309,7 +393,7 @@ impl ActiveBattlerStatusPanel {
 impl<'a> ActionChoiceSelectionMenu<'a> {
     fn as_renderable_widget(&self, is_selected: bool) -> List<'a> {
         let list_items = self.action_choice_list.iter().enumerate().map(|(i, list_item)| {
-            let is_selected_item = self.currently_selected_choice_index == Some(i);
+            let is_selected_item = self.selection_cursor == Some(i);
             if is_selected_item {
                 // Colour the selected choice green
                 list_item.clone().style(Style::default().fg(Color::Green))
@@ -344,20 +428,6 @@ impl<'a> ActionChoiceSelectionMenu<'a> {
         let new_highlighted_index = (currently_highlighted_index + 1) % self.action_choice_list.len();
         self.list_state.select(Some(new_highlighted_index));
     }
-
-    fn update_action_choice_list(&mut self, available_actions_for_team: AvailableActionsForTeam) {
-        self.action_choice_list.clear();
-        for action_choice in available_actions_for_team {
-            match action_choice {
-                PartialActionChoice::Move { display_text, .. } => {
-                    self.action_choice_list.push(ListItem::new(display_text));
-                },
-                PartialActionChoice::SwitchOut { switcher_uid: _ } => {
-                    self.action_choice_list.push(ListItem::new("Switch Out"));
-                },
-            }
-        }
-    }
 }
 
 impl MessageLogPanel {
@@ -366,7 +436,8 @@ impl MessageLogPanel {
             .iter()
             .enumerate()
             .filter_map(|(index, element)| {
-                if index >= self.scroll_cursor { 
+                if index >= self.scroll_cursor {
+                    // FIXME: Possible bug that will highlight any message with "Turn" in Cyan. Most problematic for messages involving moves like "U-Turn" or "Flip Turn". 
                     if element.contains("Turn") {
                         Some(Spans::from(Span::styled(element, Style::default()
                             .fg(Color::Cyan)
@@ -430,8 +501,8 @@ impl TeamStatusPanel {
     }
 }
 
-fn new_list_state() -> ListState {
+fn new_list_state(initial_selection: usize) -> ListState {
     let mut list_state = ListState::default();
-    list_state.select(Some(0));
+    list_state.select(Some(initial_selection));
     list_state
 }

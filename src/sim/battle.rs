@@ -334,22 +334,6 @@ impl Battle {
     pub fn opponent_team_mut(&mut self) -> &mut BattlerTeam {
         &mut self.teams[TeamID::Opponents]
     }
-
-    pub fn renderables(&self) -> Renderables {
-        Renderables {
-            available_actions: self.available_actions(),
-            team_status_renderables: PerTeam::new(
-                RenderablesForTeam {
-                    active_battler_status: self.active_battlers_on_team(TeamID::Allies).status_string(),
-                    team_status: self.ally_team().to_string(),
-                },
-                RenderablesForTeam {
-                    active_battler_status: self.active_battlers_on_team(TeamID::Opponents).status_string(),
-                    team_status: self.opponent_team().to_string(), 
-                }),
-            message_log: &self.message_log,
-        }
-    } 
 }
 
 impl Display for Battle {
@@ -410,27 +394,4 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
         }
         output_string.push_str(&(prefix_str.to_owned() + "\n"));
     }
-}
-
-#[derive(Debug, Clone)]
-/// Holds all the info needed to render the UI.
-pub struct Renderables<'a> {
-    pub available_actions: AvailableActions,
-    pub team_status_renderables: PerTeam<RenderablesForTeam>,
-    pub message_log: &'a MessageLog
-}
-
-#[derive(Debug, Clone)]
-pub struct RenderablesForTeam {
-    pub active_battler_status: String,
-    pub team_status: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct BattlerStatusRenderable {
-    pub nickname: String,
-    pub species_name: String,
-    pub level: u16,
-    pub max_health: u16,
-    pub current_health: u16,
 }

@@ -4,7 +4,7 @@ use monsim_utils::ArrayOfOptionals;
 
 use crate::sim::utils::slice_to_array_of_options;
 
-use super::{game_mechanics::{MonsterUID, MoveUID}, TeamID};
+use super::{game_mechanics::{MonsterUID, MoveUID}, PerTeam, TeamID};
 
 
 /// An action choice before certain details can be established, most often the target.
@@ -23,7 +23,7 @@ pub enum FullySpecifiedAction {
     SwitchOut { switcher_uid: MonsterUID, switchee_uid: MonsterUID },
 }
 
-pub type ChosenActionsForTurn = [FullySpecifiedAction; 2];
+pub type ChosenActionsForTurn = PerTeam<FullySpecifiedAction>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableActions {

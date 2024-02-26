@@ -86,16 +86,17 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                     ),
                     Err(error) => battle.push_message_to_log(&format!["Simulator: {:?}", error]),
                 };
+                
                 // TODO: Investigate whether updating the message log seperately is worth the possible syncing issues
                 ui.update_message_log(battle.message_log.len());
                 ui.update_team_status_panels(&battle);
-                if let FullySpecifiedAction::SwitchOut { .. } = chosen_actions[0] {
-                    ui.reset_team_choice_menu(TeamID::Allies);
-                    chosen_actions_for_turn[TeamID::Allies] = None;
-                } else if let FullySpecifiedAction::SwitchOut { .. } = chosen_actions[1] {
-                    ui.reset_team_choice_menu(TeamID::Opponents);
-                    chosen_actions_for_turn[TeamID::Opponents] = None;
-
+                
+                for team_id in [TeamID::Allies, TeamID::Opponents] {
+                    if let FullySpecifiedAction::SwitchOut { .. } = chosen_actions[team_id] {
+                        ui.reset_team_choice_menu(team_id);
+                        chosen_actions_for_turn[team_id] = None;
+                    }
+                    
                 }
                 
                 if battle.is_finished {
@@ -157,7 +158,7 @@ fn update_from_input(
                 },
                 KeyCode::Tab => { 
                     if let (Some(ally_team_action), Some(opponent_team_action)) = (chosen_actions_for_turn[TeamID::Allies], chosen_actions_for_turn[TeamID::Opponents]) {
-                        Some(AppState::Simulating([ally_team_action, opponent_team_action]))
+                        Some(AppState::Simulating(PerTeam::new(ally_team_action, opponent_team_action)))
                     } else {
                         battle.push_messages_to_log(
                             &[

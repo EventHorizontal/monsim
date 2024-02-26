@@ -31,7 +31,8 @@ impl AppState {
 #[allow(clippy::large_enum_variant)]
 pub enum InputMode {
     MidBattle(AvailableActions),
-    SwitcheePrompt { 
+    SwitcheePrompt {
+        is_between_turn_switch: bool,
         switcher_uid: MonsterUID,
         possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>,
         highlight_cursor: usize,
@@ -93,14 +94,23 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 
                 for team_id in [TeamID::Allies, TeamID::Opponents] {
                     if let FullySpecifiedAction::SwitchOut { .. } = chosen_actions[team_id] {
-                        ui.reset_team_choice_menu(team_id);
+                        ui.clear_choice_menu_selection_for_team(team_id);
                         chosen_actions_for_turn[team_id] = None;
                     }
-                    
                 }
                 
+                // If a Monster has fainted, we need to switch it out
+                let maybe_fainted_active_battler = battle.active_monsters().as_array().into_iter().find(|monster| { monster.is_fainted });
                 if battle.is_finished {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::PostBattle)));
+                } else if let Some(fainted_battler) = maybe_fainted_active_battler {
+                    // FIXME: We cannot handle multiple simultaneous fainted battlers with this logic
+                    current_app_state.transition(Some(AppState::AcceptingInput(InputMode::SwitcheePrompt { 
+                        is_between_turn_switch: true,
+                        switcher_uid: fainted_battler.uid,
+                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.uid.team_id),
+                        highlight_cursor: 0 
+                    })));
                 } else {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_actions()))))
                 }
@@ -147,6 +157,7 @@ fn update_from_input(
                             PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids } => {
                                 // Update the switchee list when the switch option is selected.
                                 return Some(AppState::AcceptingInput(InputMode::SwitcheePrompt {
+                                    is_between_turn_switch: false,
                                     switcher_uid,
                                     possible_switchee_uids,
                                     highlight_cursor: 0,
@@ -175,7 +186,7 @@ fn update_from_input(
             }
         },
 
-        InputMode::SwitcheePrompt { switcher_uid, possible_switchee_uids, highlight_cursor} => {
+        InputMode::SwitcheePrompt { is_between_turn_switch, switcher_uid, possible_switchee_uids, highlight_cursor} => {
             match pressed_key {
                 KeyCode::Esc => {
                     Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_actions())))
@@ -193,7 +204,19 @@ fn update_from_input(
                 },
                 KeyCode::Enter => {
                     if let Some(switchee_uid) = possible_switchee_uids[*highlight_cursor] {
-                        chosen_actions_for_turn[switcher_uid.team_id] = Some(FullySpecifiedAction::SwitchOut { switcher_uid: *switcher_uid, switchee_uid });
+                        // HACK: cleaner/more systematic way to do this?
+                        if *is_between_turn_switch {
+                            let _ = BattleSimulator::between_turn_switch_out(battle, *switcher_uid, switchee_uid);
+                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_id);
+                            // HACK: This fixes the issue of targetting the previous fainted foe until we have a more robust targetting system
+                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_id.other());
+                            ui.update_team_status_panels(battle);
+                            ui.update_message_log(battle.message_log.len());
+
+                            *chosen_actions_for_turn = PerTeam::both(None);
+                        } else {
+                            chosen_actions_for_turn[switcher_uid.team_id] = Some(FullySpecifiedAction::SwitchOut { switcher_uid: *switcher_uid, switchee_uid });
+                        }
                         Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_actions())))
                     } else {
                         None

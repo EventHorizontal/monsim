@@ -41,6 +41,13 @@ impl<T: Clone> PerTeam<T> {
         }
     }
 
+    pub(crate) fn both(item: T) -> Self {
+        Self {
+            ally_team_item: item.clone(),
+            opponent_team_item: item,
+        }
+    }
+
     pub(crate) fn unwrap(&self) -> (&T, &T) {
         (&self.ally_team_item, &self.opponent_team_item)
     }
@@ -53,6 +60,7 @@ impl<T: Clone> PerTeam<T> {
     pub(crate) fn as_array(&self) -> [T; 2] {
         [self.ally_team_item.clone(), self.opponent_team_item.clone()]
     }
+    
 }
 
 impl<T: Clone> Index<TeamID> for PerTeam<T> {

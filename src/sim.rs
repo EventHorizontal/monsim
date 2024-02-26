@@ -38,7 +38,7 @@ impl BattleSimulator {
     pub fn simulate_turn(battle: &mut Battle, chosen_actions: ChosenActionsForTurn) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
-
+        
         assert!(not!(battle.is_finished), "The simulator cannot be called on a finished battle.");
 
         battle.increment_turn_number()
@@ -60,7 +60,7 @@ impl BattleSimulator {
             }?;
 
             // Check if a Monster fainted this turn
-            let maybe_fainted_monster = battle.monsters().find(|monster| battle.monster(monster.uid).is_fainted);
+            let maybe_fainted_monster = battle.monsters().find(|monster| battle.monster(monster.uid).is_fainted && battle.is_active_monster(monster.uid));
             if let Some(monster) = maybe_fainted_monster {
                 battle
                     .push_messages_to_log(&[&format!["{fainted_monster} fainted!", fainted_monster = monster.name()], EMPTY_LINE]);
@@ -70,12 +70,13 @@ impl BattleSimulator {
                 if are_all_ally_team_monsters_fainted {
                     battle.is_finished = true;
                     battle.push_message_to_log("Opponent Team won!");
+                    break 'turn;
                 } 
                 if are_all_opponent_team_monsters_fainted {
                     battle.is_finished = true;
                     battle.push_message_to_log("Ally Team won!");
+                    break 'turn;
                 }
-                break 'turn;
             };
 
 
@@ -88,6 +89,10 @@ impl BattleSimulator {
         battle.push_messages_to_log(&[&"---", EMPTY_LINE]);
 
         Ok(NOTHING)
+    }
+    
+    pub(crate) fn between_turn_switch_out(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
+        action::PrimaryAction::switch_out(battle, active_monster_uid, benched_monster_uid)
     }
 }
 

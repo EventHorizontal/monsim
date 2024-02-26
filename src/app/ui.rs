@@ -346,7 +346,7 @@ impl<'a> Ui<'a> {
         }
     }
 
-    pub(super) fn reset_team_choice_menu(&mut self, team_id: TeamID) {
+    pub(super) fn clear_choice_menu_selection_for_team(&mut self, team_id: TeamID) {
         self.action_choice_selection_menus[team_id].list_state.select(Some(0));
         self.action_choice_selection_menus[team_id].selection_cursor = None;
     }

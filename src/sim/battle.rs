@@ -178,7 +178,6 @@ impl Battle {
     fn available_actions_by_team(&self, team_id: TeamID) -> AvailableActionsForTeam {
         
         let team_active_monster = self.active_monsters_on_team(team_id);
-        let team = self.team(team_id);
         
         let moves = team_active_monster.move_uids();
         let mut move_actions = Vec::with_capacity(4);
@@ -191,11 +190,11 @@ impl Battle {
             move_actions.push(partial_action);
         }
 
-        let any_benched_ally_monsters = team.monsters().len() > 1;
-        let switch_action = if any_benched_ally_monsters {
+        let possible_switchee_uids = self.valid_switchees_by_uid(team_id);
+        let switch_action = if not!(possible_switchee_uids.iter().flatten().count() == 0 ) {
             Some(PartiallySpecifiedAction::SwitchOut { 
                 switcher_uid: team_active_monster.uid, 
-                possible_switchee_uids: self.valid_switchees_by_uid(team_id),
+                possible_switchee_uids,
             })
         } else {
             None

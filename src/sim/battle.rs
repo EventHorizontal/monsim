@@ -1,16 +1,14 @@
 use utils::{not, ArrayOfOptionals, Nothing, NOTHING};
 
 use crate::sim::{
-        event::CompositeEventResponderInstanceList, Ability, FullySpecifiedAction, ActivationOrder, AvailableActions, Monster, MonsterNumber,
+        event::CompositeEventResponderInstanceList, Ability, FullySpecifiedAction, ActivationOrder, AvailableActions, Monster,
         MonsterTeam, MonsterUID, Move, MoveUID, Stat, AvailableActionsForTeam,
         utils,
 };
 
 use std::{
-    collections::HashMap,
     fmt::Display,
     iter::Chain,
-    ops::{Index, IndexMut},
     slice::{Iter, IterMut},
 };
 
@@ -34,43 +32,6 @@ pub struct Battle {
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
     pub active_monster_uids: PerTeam<MonsterUID>,
-    // pub fainted_monsters: MonsterMap<bool>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MonsterMap<T> {
-    map: HashMap<MonsterUID, T>,
-}
-
-impl<T> MonsterMap<T> {
-    pub fn new(map: HashMap<MonsterUID, T>) -> Self {
-        for team_id in [TeamID::Allies, TeamID::Opponents].into_iter() {
-            for number in 0..=5 {
-                let monster_number = MonsterNumber::from(number);
-                let monster_uid = MonsterUID { team_id, monster_number };
-                assert!(
-                    map.contains_key(&monster_uid),
-                    "Could not find {monster_uid} in hash_map for MonsterMap construction"
-                )
-            }
-        }
-        Self { map }
-    }
-}
-
-impl<T> Index<MonsterUID> for MonsterMap<T> {
-    type Output = T;
-
-    fn index(&self, index: MonsterUID) -> &Self::Output {
-        self.map.get(&index).expect("All MonsterUIDs should have a bool value")
-    }
-}
-
-
-impl<T> IndexMut<MonsterUID> for MonsterMap<T> {
-    fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
-        self.map.get_mut(&index).expect("All MonsterUIDs should have a bool value")
-    }
 }
 
 impl Battle {

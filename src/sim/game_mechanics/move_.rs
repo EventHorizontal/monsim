@@ -4,6 +4,7 @@ use crate::sim::{
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
+use max_size_vec::MaxSizeVec;
 
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {
@@ -92,7 +93,7 @@ const MAX_MOVES_PER_MOVESET: usize = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MoveSet {
-    moves: Vec<Move>,
+    moves: MaxSizeVec<Move, 4>,
 }
 
 impl Index<usize> for MoveSet {
@@ -112,6 +113,9 @@ impl MoveSet {
     pub fn new(moves: Vec<Move>) -> Self {
         assert!(moves.first().is_some(), "There is no first move.");
         assert!(moves.len() <= MAX_MOVES_PER_MOVESET);
+        let moves_iter = moves.into_iter();
+        let mut moves = MaxSizeVec::new();
+        moves_iter.for_each(|move_| { moves.push(move_)});
         MoveSet { moves }
     }
 

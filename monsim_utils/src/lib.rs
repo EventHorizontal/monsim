@@ -1,4 +1,4 @@
-use std::ops::{Add, Index, IndexMut, Mul, Not, Sub};
+use std::ops::{Add, Mul, Not, Sub};
 
 /// Type alias for readability of parentheses
 pub type Nothing = ();
@@ -178,53 +178,4 @@ macro_rules! not {
     ($x: expr) => {
         !$x
     };
-}
-
-/// An array that can be grown to a known max size. The requirement for `T` to be `Copy` is inspired by the fact that this type is mostly to bypass the fact that normal vectors are _not_ `Copy`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MaxSizedVec<T: Copy, const N: usize>{
-    vec_elements: [Option<T>; N],
-    iteration_cursor: usize,
-}
-
-impl<T: Copy, const N: usize> MaxSizedVec<T, N> {
-    pub fn new(elements: &[T]) -> Self {
-        assert!(elements.len() <= N, "`MaxSizedVector<T, N>` cannot hold more than `N` elements");
-        let mut elements_: [Option<T>; N] = [None; N];
-        for (index, element) in elements.into_iter().enumerate() {
-            elements_[index] = Some(*element);
-        }
-        Self { vec_elements: elements_, iteration_cursor: 0 }
-    }
-
-    pub fn as_vec(&self) -> Vec<T> {
-        self.vec_elements
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-    }
-}
-
-impl<T: Copy, const N: usize> Iterator for  MaxSizedVec<T, N> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let element = self.vec_elements[self.iteration_cursor];
-        self.iteration_cursor += 1;
-        element
-    }
-}
-
-impl<T: Copy, const N: usize> Index<usize> for MaxSizedVec<T, N> {
-    type Output = Option<T>;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.vec_elements[index]
-    }
-}
-
-impl<T: Copy, const N: usize> IndexMut<usize> for MaxSizedVec<T, N> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.vec_elements[index]
-    }
 }

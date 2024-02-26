@@ -42,50 +42,52 @@ mod main {
                 }
             }
         );
-        assert_eq!(test_battle, {
+        assert_eq!(test_battle, 
             Battle::new(
-                AllyBattlerTeam(BattlerTeam::new(vec![
-                    (Battler::new(
-                        BattlerUID {
-                            team_id: TeamID::Allies,
-                            battler_number: BattlerNumber::from(0usize),
-                        },
-                        monster::Monster::new(monster_dex::Torchic, "Ruby"),
-                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
-                        ability::Ability::new(ability_dex::FlashFire),
-                    )),
-                    (Battler::new(
-                        BattlerUID {
-                            team_id: TeamID::Allies,
-                            battler_number: BattlerNumber::from(1usize),
-                        },
-                        monster::Monster::new(monster_dex::Mudkip, "Sapphire"),
-                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
-                        ability::Ability::new(ability_dex::FlashFire),
-                    )),
-                    (Battler::new(
-                        BattlerUID {
-                            team_id: TeamID::Allies,
-                            battler_number: BattlerNumber::from(2usize),
-                        },
-                        monster::Monster::new(monster_dex::Treecko, "Emerald"),
-                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Bubble)), (move_::Move::new(move_dex::Scratch))]),
-                        ability::Ability::new(ability_dex::FlashFire),
-                    )),
-                ])),
-                OpponentBattlerTeam(BattlerTeam::new(vec![
-                    (Battler::new(
-                        BattlerUID {
-                            team_id: TeamID::Opponents,
-                            battler_number: BattlerNumber::from(0usize),
-                        },
-                        monster::Monster::new(monster_dex::Drifblim, "Cheerio"),
-                        move_::MoveSet::new(vec![(move_::Move::new(move_dex::Tackle)), (move_::Move::new(move_dex::Growl))]),
-                        ability::Ability::new(ability_dex::FlashFire),
-                    )),
-                ])),
+                PerTeam::new(
+                    BattlerTeam::new(vec![
+                        (Battler::new(
+                            BattlerUID {
+                                team_id: TeamID::Allies,
+                                battler_number: BattlerNumber::from(0usize),
+                            },
+                            monster::Monster::new(monster_dex::Torchic, "Ruby"),
+                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
+                            ability::Ability::new(ability_dex::FlashFire),
+                        )),
+                        (Battler::new(
+                            BattlerUID {
+                                team_id: TeamID::Allies,
+                                battler_number: BattlerNumber::from(1usize),
+                            },
+                            monster::Monster::new(monster_dex::Mudkip, "Sapphire"),
+                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
+                            ability::Ability::new(ability_dex::FlashFire),
+                        )),
+                        (Battler::new(
+                            BattlerUID {
+                                team_id: TeamID::Allies,
+                                battler_number: BattlerNumber::from(2usize),
+                            },
+                            monster::Monster::new(monster_dex::Treecko, "Emerald"),
+                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Bubble)), (move_::Move::new(move_dex::Scratch))]),
+                            ability::Ability::new(ability_dex::FlashFire),
+                        )),
+                    ]),
+                    BattlerTeam::new(vec![
+                        (Battler::new(
+                            BattlerUID {
+                                team_id: TeamID::Opponents,
+                                battler_number: BattlerNumber::from(0usize),
+                            },
+                            monster::Monster::new(monster_dex::Drifblim, "Cheerio"),
+                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Tackle)), (move_::Move::new(move_dex::Growl))]),
+                            ability::Ability::new(ability_dex::FlashFire),
+                        )),
+                    ]),
+                )
             )
-        });
+        );
     }
 }
 

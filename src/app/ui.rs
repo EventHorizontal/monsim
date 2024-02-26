@@ -343,23 +343,6 @@ impl<'a> Ui<'a> {
             }
         }
     }
-
-    // pub(super) fn scroll_switchee_prompt_down(&mut self) {
-    //     let highlighted_item = self.switchee_prompt.list_state.selected().expect("Initialised to Some and never set to None.");
-    //     let list_length = self.switchee_prompt.switchee_list.len();
-    //     self.switchee_prompt.list_state.select(Some((highlighted_item + 1) % list_length));
-    // }
-
-    // pub(super) fn scroll_switchee_prompt_up(&mut self) {
-    //     let highlighted_item = self.switchee_prompt.list_state.selected().expect("Initialised to Some and never set to None.");
-    //     let list_length = self.switchee_prompt.switchee_list.len();
-    //     self.switchee_prompt.list_state.select(Some(((highlighted_item + list_length) - 1) % list_length));
-    // }
-
-    // pub(crate) fn select_currently_highlighted_switchee(&mut self) {
-    //     let highlighted_item = self.switchee_prompt.list_state.selected().expect("Initialised to Some and never set to None.");
-    //     self.switchee_prompt.selection_cursor = Some(highlighted_item);
-    // }
 }
 
 impl SelectablePanelID {

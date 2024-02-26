@@ -13,7 +13,6 @@ pub(super) struct Ui<'a> {
     active_monster_status_panels: PerTeam<ActiveMonsterStatusPanel>,
     team_status_panels: PerTeam<TeamStatusPanel>,
     action_choice_selection_menus: PerTeam<ActionChoiceSelectionMenu<'a>>,
-    selected_choice_indices: PerTeam<Option<usize>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -144,7 +143,6 @@ impl<'a> Ui<'a> {
                 last_message_log_length: 0,
                 current_message_log_length: battle.message_log.len(),
             },
-            selected_choice_indices: PerTeam::new(None, None),
         }
     }
 
@@ -311,7 +309,6 @@ impl<'a> Ui<'a> {
         };
         if let Some(team_id) = maybe_team_id {
             let highlighted_choice_index = self.action_choice_selection_menus[team_id].list_state.selected().expect("This is initialised to Some and never set to None afterwards");
-            self.selected_choice_indices[team_id] = Some(highlighted_choice_index);
             self.action_choice_selection_menus[team_id].selection_cursor = Some(highlighted_choice_index);
             Some((highlighted_choice_index, team_id))
         } else {
@@ -343,6 +340,11 @@ impl<'a> Ui<'a> {
                 },
             }
         }
+    }
+
+    pub(super) fn reset_team_choice_menu(&mut self, team_id: TeamID) {
+        self.action_choice_selection_menus[team_id].list_state.select(Some(0));
+        self.action_choice_selection_menus[team_id].selection_cursor = None;
     }
 }
 

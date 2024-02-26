@@ -89,6 +89,14 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 // TODO: Investigate whether updating the message log seperately is worth the possible syncing issues
                 ui.update_message_log(battle.message_log.len());
                 ui.update_team_status_panels(&battle);
+                if let FullySpecifiedAction::SwitchOut { .. } = chosen_actions[0] {
+                    ui.reset_team_choice_menu(TeamID::Allies);
+                    chosen_actions_for_turn[TeamID::Allies] = None;
+                } else if let FullySpecifiedAction::SwitchOut { .. } = chosen_actions[1] {
+                    ui.reset_team_choice_menu(TeamID::Opponents);
+                    chosen_actions_for_turn[TeamID::Opponents] = None;
+
+                }
                 
                 if battle.is_finished {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::PostBattle)));

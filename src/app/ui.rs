@@ -312,6 +312,7 @@ impl<'a> Ui<'a> {
         if let Some(team_id) = maybe_team_id {
             let highlighted_choice_index = self.action_choice_selection_menus[team_id].list_state.selected().expect("This is initialised to Some and never set to None afterwards");
             self.selected_choice_indices[team_id] = Some(highlighted_choice_index);
+            self.action_choice_selection_menus[team_id].selection_cursor = Some(highlighted_choice_index);
             Some((highlighted_choice_index, team_id))
         } else {
             None
@@ -385,6 +386,7 @@ impl<'a> ActionChoiceSelectionMenu<'a> {
                 list_item.clone()
             }
         }).collect::<Vec<_>>();
+        crate::debug_to_file!(self.selection_cursor);
 
         List::new(list_items)
             .block(

@@ -114,7 +114,7 @@ impl Battle {
 
     pub fn battlers_mut(&mut self) -> MutableBattlerIterator {
         let (ally_team, opponent_team) = self.teams.unwrap_mut();
-        ally_team.battlers_mut().iter_mut().chain(opponent_team.battlers_mut())
+        ally_team.battlers_mut().iter_mut().chain(opponent_team.battlers_mut().iter_mut())
     }
 
     pub fn battler(&self, battler_uid: BattlerUID) -> &Battler {

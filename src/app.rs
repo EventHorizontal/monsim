@@ -7,7 +7,7 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::sim::{AvailableActions, Battle, BattleSimulator, BattlerUID, ChosenActionsForTurn, FullySpecifiedAction, PartiallySpecifiedAction, PerTeam, TeamID, EMPTY_LINE};
+use crate::sim::{AvailableActions, Battle, BattleSimulator, MonsterUID, ChosenActionsForTurn, FullySpecifiedAction, PartiallySpecifiedAction, PerTeam, TeamID, EMPTY_LINE};
 
 pub type AppResult<S> = Result<S, Box<dyn Error>>;
 
@@ -32,8 +32,8 @@ impl AppState {
 pub enum InputMode {
     MidBattle(AvailableActions),
     SwitcheePrompt { 
-        switcher_uid: BattlerUID,
-        possible_switchee_uids: ArrayOfOptionals<BattlerUID, 5>,
+        switcher_uid: MonsterUID,
+        possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>,
         highlight_cursor: usize,
     },
     PostBattle,
@@ -41,7 +41,6 @@ pub enum InputMode {
 
 /// The main function for the application
 pub fn run(mut battle: Battle) -> AppResult<Nothing> {
-    
     let (sender, receiver) = mpsc::channel();
     spawn_input_capturing_thread(sender);
     

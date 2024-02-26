@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{Battle, BattlerUID, ElementalType, EventFilterOptions, MoveCategory, MoveSpecies, SecondaryAction, Stat, DEFAULT_RESPONSE};
+use monsim::sim::{Battle, MonsterUID, ElementalType, EventFilterOptions, MoveCategory, MoveSpecies, SecondaryAction, Stat, DEFAULT_RESPONSE};
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -64,7 +64,7 @@ pub const Growl: MoveSpecies = MoveSpecies {
     composite_event_responder: DEFAULT_RESPONSE,
     priority: 0,
     composite_event_responder_filters: EventFilterOptions::default(),
-    on_activate: Some(|battle: &mut Battle, _attacker_uid: BattlerUID, target_uid: BattlerUID| {
+    on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),
 };

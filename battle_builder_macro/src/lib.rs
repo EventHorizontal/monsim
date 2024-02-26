@@ -1,6 +1,6 @@
 mod dsl_syntax;
 
-use dsl_syntax::{ExprBattle, ExprBattlerTeam, GameMechanicType, path_to_ident};
+use dsl_syntax::{ExprBattle, ExprMonsterTeam, GameMechanicType, path_to_ident};
 use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use syn::parse_macro_input;
@@ -37,25 +37,25 @@ pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Construct the streams of Tokens_______________________________________________________
     
     let ExprBattle { 
-        ally_expr_battler_team, 
-        opponent_expr_battler_team 
+        ally_expr_monster_team, 
+        opponent_expr_monster_team 
     } = context_expr;
 
-    let ally_team_type = ally_expr_battler_team.team_type.clone();
-    let opponent_team_type = opponent_expr_battler_team.team_type.clone();
+    let ally_team_type = ally_expr_monster_team.team_type.clone();
+    let opponent_team_type = opponent_expr_monster_team.team_type.clone();
     
-    let ally_battlers_vec = battler_team_to_tokens(
-        ally_expr_battler_team
+    let ally_monsters_vec = monster_team_to_tokens(
+        ally_expr_monster_team
     );
-    let opponent_battlers_vec = battler_team_to_tokens(
-        opponent_expr_battler_team
+    let opponent_monsters_vec = monster_team_to_tokens(
+        opponent_expr_monster_team
     );
     
     let output = quote!(
         { 
             monsim::sim::Battle::new(
-                monsim::sim::PerTeam::new(#ally_team_type::new(#ally_battlers_vec),
-                #opponent_team_type::new(#opponent_battlers_vec))
+                monsim::sim::PerTeam::new(#ally_team_type::new(#ally_monsters_vec),
+                #opponent_team_type::new(#opponent_monsters_vec))
             )
         }
     );
@@ -64,20 +64,19 @@ pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     output.into()
 }
 
-fn battler_team_to_tokens<'a>(
-    expr_battler_team: ExprBattlerTeam
+fn monster_team_to_tokens<'a>(
+    expr_monster_team: ExprMonsterTeam
 ) -> TokenStream {
-    let team_name_ident = expr_battler_team.team_path;
+    let team_name_ident = expr_monster_team.team_path;
     let sim_ident = quote!(monsim::sim);
     let move_mod = quote!(#sim_ident::move_);
-    let mut comma_separated_battlers = quote!();
+    let mut comma_separated_monsters = quote!();
     
     // Iterate through monsters
-    for (index, monster) in expr_battler_team.monster_fields.into_iter().enumerate() {
+    for (index, monster) in expr_monster_team.monster_fields.into_iter().enumerate() {
         let monster_species = monster.monster_instance_path.clone();
-        let monster_nickname = monster.nickname_literal.unwrap_or(Literal::string(
-            path_to_ident(&monster.monster_instance_path).to_string().as_str()
-        ));
+        let monster_nickname = monster.nickname_literal;
+        let monster_nickname = if monster_nickname.is_some() { quote!(Some(#monster_nickname))} else { quote!(None) };
         let mut ability_type_path = None;
         let mut ability_species = quote!();
         let mut moves_vec_delimited = quote!();
@@ -103,21 +102,22 @@ fn battler_team_to_tokens<'a>(
         }
 
         moves_vec_delimited = quote!(vec![#moves_vec_delimited]);
-        let monster_number = quote!(BattlerNumber::from(#index));
+        let monster_number = quote!(MonsterNumber::from(#index));
         let monster_type_path = monster.monster_type_path;
         let ability_type_path = ability_type_path.expect("Every monster must have an ability.");
         
-        comma_separated_battlers = quote!(
-            #comma_separated_battlers 
-            #sim_ident::Battler::new(
-                #sim_ident::BattlerUID { team_id: #sim_ident::TeamID::#team_name_ident, battler_number: #sim_ident::#monster_number },
-                #monster_type_path::new(#monster_species, #monster_nickname),
+        comma_separated_monsters = quote!(
+            #comma_separated_monsters 
+            #sim_ident::Monster::new(
+                #sim_ident::MonsterUID { team_id: #sim_ident::TeamID::#team_name_ident, monster_number: #sim_ident::#monster_number },
+                #monster_species, 
+                #monster_nickname,
                 #move_mod::MoveSet::new(#moves_vec_delimited),
                 #ability_type_path::new(#ability_species),
             ),        
         );
     }
 
-    quote!(vec![#comma_separated_battlers])
+    quote!(vec![#comma_separated_monsters])
 }
 

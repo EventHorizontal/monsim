@@ -1,4 +1,4 @@
-use crate::sim::{event::EventFilterOptions, Battle, BattlerUID, CompositeEventResponder};
+use crate::sim::{event::EventFilterOptions, Battle, MonsterUID, CompositeEventResponder};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,8 +11,8 @@ pub struct AbilitySpecies {
     pub dex_number: u16,
     pub name: &'static str,
     pub composite_event_responder: CompositeEventResponder,
-    /// `fn(battle: &mut Battle, ability_holder: BattlerUID)`
-    pub on_activate: fn(&mut Battle, BattlerUID),
+    /// `fn(battle: &mut Battle, ability_holder: MonsterUID)`
+    pub on_activate: fn(&mut Battle, MonsterUID),
     pub filters: EventFilterOptions,
     pub order: u16,
 }
@@ -36,7 +36,7 @@ impl Ability {
         Ability { species }
     }
 
-    pub fn on_activate(&self, battle: &mut Battle, owner_uid: BattlerUID) {
+    pub fn on_activate(&self, battle: &mut Battle, owner_uid: MonsterUID) {
         (self.species.on_activate)(battle, owner_uid);
     }
 

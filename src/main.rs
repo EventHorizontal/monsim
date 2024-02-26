@@ -11,7 +11,7 @@ use utils::Nothing;
 fn main() -> AppResult<Nothing> {
     let battle = build_battle!(
         {
-            Allies: BattlerTeam {
+            Allies: MonsterTeam {
                 Torchic: Monster = "Ruby" {
                     Ember: Move,
                     Scratch: Move,
@@ -30,7 +30,7 @@ fn main() -> AppResult<Nothing> {
                     WaterAbsorb: Ability,
                 },
             },
-            Opponents: BattlerTeam {
+            Opponents: MonsterTeam {
                 Drifloon: Monster {
                     Scratch: Move,
                     Ember: Move,

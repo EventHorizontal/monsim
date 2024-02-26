@@ -3,14 +3,14 @@ use std::io::Stdout;
 use monsim_utils::ArrayOfOptionals;
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
-use crate::sim::{AvailableActionsForTeam, Battle, BattlerUID, PartiallySpecifiedAction, PerTeam, TeamID};
+use crate::sim::{AvailableActionsForTeam, Battle, MonsterUID, PartiallySpecifiedAction, PerTeam, TeamID};
 
 use super::{AppState, InputMode};
 
 pub(super) struct Ui<'a> {
     currently_selected_panel: SelectablePanelID,
     message_log_panel: MessageLogPanel,
-    active_battler_status_panels: PerTeam<ActiveBattlerStatusPanel>,
+    active_monster_status_panels: PerTeam<ActiveMonsterStatusPanel>,
     team_status_panels: PerTeam<TeamStatusPanel>,
     action_choice_selection_menus: PerTeam<ActionChoiceSelectionMenu<'a>>,
     selected_choice_indices: PerTeam<Option<usize>>,
@@ -23,9 +23,9 @@ pub(super) enum SelectablePanelID {
     OpponentTeamChoiceSelectionMenu,
 }
 
-struct ActiveBattlerStatusPanel {
+struct ActiveMonsterStatusPanel {
     team_name: &'static str,
-    active_battler_status: String,
+    active_monster_status: String,
 }
 
 struct ActionChoiceSelectionMenu<'a> {
@@ -51,11 +51,11 @@ struct MessageLogPanel {
 struct SwitcheePrompt;
 
 impl SwitcheePrompt {
-    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: ArrayOfOptionals<BattlerUID, 5>) -> List<'a> {
+    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>) -> List<'a> {
         let list_items = possible_switchee_uids.into_iter()
             .flatten()
-            .map(|battler_uid| {
-                ListItem::new(battle.battler(battler_uid).full_name())
+            .map(|monster_uid| {
+                ListItem::new(battle.monster(monster_uid).full_name())
             }).collect::<Vec<_>>();
 
         List::new(list_items)
@@ -101,14 +101,14 @@ impl<'a> Ui<'a> {
 
         Self {
             currently_selected_panel: SelectablePanelID::MessageLog,
-            active_battler_status_panels: PerTeam::new(
-                ActiveBattlerStatusPanel {
+            active_monster_status_panels: PerTeam::new(
+                ActiveMonsterStatusPanel {
                     team_name: ALLY_TEAM_NAME,
-                    active_battler_status: battle.active_battlers_on_team(TeamID::Allies).status_string(),
+                    active_monster_status: battle.active_monsters_on_team(TeamID::Allies).status_string(),
                 }, 
-                ActiveBattlerStatusPanel {
+                ActiveMonsterStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
-                    active_battler_status: battle.active_battlers_on_team(TeamID::Opponents).status_string(),
+                    active_monster_status: battle.active_monsters_on_team(TeamID::Opponents).status_string(),
                     }
                 ),
             action_choice_selection_menus: PerTeam::new(
@@ -164,7 +164,7 @@ impl<'a> Ui<'a> {
             &mut self.action_choice_selection_menus[team_id].action_choice_list, 
             battle.available_actions()[team_id]
         );
-        self.active_battler_status_panels[team_id].active_battler_status = battle.active_battlers_on_team(team_id).status_string();
+        self.active_monster_status_panels[team_id].active_monster_status = battle.active_monsters_on_team(team_id).status_string();
         self.team_status_panels[team_id].team_status = battle.team(team_id).team_status_string();
     }
 
@@ -179,12 +179,12 @@ impl<'a> Ui<'a> {
             // Render the Ally team UI
             let ally_team_panel_chunks = Ui::divide_team_panel_into_chunks(chunks[0]);
             let (
-                ally_team_active_battler_status_widget,
+                ally_team_active_monster_status_widget,
                 ally_team_choice_menu_widget, 
                 ally_team_status_widget
             ) = self.renderable_widgets_for_team(TeamID::Allies);
 
-            frame.render_widget(ally_team_active_battler_status_widget, ally_team_panel_chunks[0]);
+            frame.render_widget(ally_team_active_monster_status_widget, ally_team_panel_chunks[0]);
             // TODO: think about how to remove this clone (and possibly similar ones elsewhere)
             frame.render_stateful_widget(ally_team_choice_menu_widget, ally_team_panel_chunks[1], &mut self.action_choice_selection_menus[TeamID::Allies].list_state.clone());
             frame.render_widget(ally_team_status_widget, ally_team_panel_chunks[2]);
@@ -219,12 +219,12 @@ impl<'a> Ui<'a> {
             // Render the Opponent team UI
             let opponent_team_panel_chunks = Ui::divide_team_panel_into_chunks(chunks[2]);
             let (
-                opponent_team_active_battler_status_widget,
+                opponent_team_active_monster_status_widget,
                 opponent_team_choice_menu_widget, 
                 opponent_team_status_widget
             ) = self.renderable_widgets_for_team(TeamID::Opponents);
 
-            frame.render_widget(opponent_team_active_battler_status_widget, opponent_team_panel_chunks[0]);
+            frame.render_widget(opponent_team_active_monster_status_widget, opponent_team_panel_chunks[0]);
             frame.render_stateful_widget(opponent_team_choice_menu_widget, opponent_team_panel_chunks[1], &mut self.action_choice_selection_menus[TeamID::Opponents].list_state.clone());
             frame.render_widget(opponent_team_status_widget, opponent_team_panel_chunks[2]);
 
@@ -233,11 +233,11 @@ impl<'a> Ui<'a> {
     }
 
     fn renderable_widgets_for_team(&self, team_id: TeamID) -> (Paragraph<'_>, List<'_>, Paragraph<'_>) {
-        let active_battler_status_widget = self.active_battler_status_panels[team_id].as_renderable_widget();
+        let active_monster_status_widget = self.active_monster_status_panels[team_id].as_renderable_widget();
         let is_choice_menu_selected = self.currently_selected_panel == self.action_choice_selection_menus[team_id].selectable_panel_id;
         let choice_menu_widget = self.action_choice_selection_menus[team_id].as_renderable_widget(is_choice_menu_selected);
         let team_status_widget = self.team_status_panels[team_id].as_renderable_widget();
-        (active_battler_status_widget, choice_menu_widget, team_status_widget)
+        (active_monster_status_widget, choice_menu_widget, team_status_widget)
     }
 
     fn divide_screen_into_chunks(frame: &mut Frame<CrosstermBackend<Stdout>>) -> Vec<Rect> {
@@ -380,9 +380,9 @@ impl SelectablePanelID {
     }
 }
 
-impl ActiveBattlerStatusPanel {
+impl ActiveMonsterStatusPanel {
     fn as_renderable_widget(&self) -> Paragraph<'_> {
-        Paragraph::new(self.active_battler_status.as_str())
+        Paragraph::new(self.active_monster_status.as_str())
             .block(Block::default().title(format![" {team_name} Active Monster ", team_name = self.team_name])
             .borders(Borders::ALL))
             .alignment(Alignment::Left)

@@ -58,10 +58,10 @@ impl BattleSimulator {
                 }
             }?;
 
-            let maybe_fainted_battler = battle.battlers().find(|battler| battle.is_battler_fainted(battler.uid));
-            if let Some(battler) = maybe_fainted_battler {
+            let maybe_fainted_monster = battle.monsters().find(|monster| battle.is_monster_fainted(monster.uid));
+            if let Some(monster) = maybe_fainted_monster {
                 battle
-                    .push_messages_to_log(&[&format!["{fainted_battler} fainted!", fainted_battler = battler.monster.nickname], EMPTY_LINE]);
+                    .push_messages_to_log(&[&format!["{fainted_monster} fainted!", fainted_monster = monster.name()], EMPTY_LINE]);
                 battle.is_finished = true;
                 break 'turn;
             };
@@ -100,13 +100,13 @@ mod action {
         ///
         /// Calculates and applies the effects of a damaging move
         /// corresponding to `move_uid` being used on `target_uid`
-        pub fn damaging_move(battle: &mut Battle, move_uid: MoveUID, target_uid: BattlerUID) -> TurnResult {
-            let attacker_uid = move_uid.battler_uid;
+        pub fn damaging_move(battle: &mut Battle, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
+            let attacker_uid = move_uid.monster_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
             battle.push_message_to_log(&format![
                 "{attacker} used {_move}",
-                attacker = battle.monster(attacker_uid).nickname,
+                attacker = battle.monster(attacker_uid).name(),
                 _move = battle.move_(move_uid).species.name
             ]);
 
@@ -183,23 +183,23 @@ mod action {
                 }
             };
             battle.push_message_to_log(&format!["It was {type_effectiveness}!"]);
-            battle.push_message_to_log(&format!["{target} took {damage} damage!", target = battle.monster(target_uid).nickname,]);
+            battle.push_message_to_log(&format!["{target} took {damage} damage!", target = battle.monster(target_uid).name(),]);
             battle.push_message_to_log(&format![
                 "{target} has {num_hp} health left.",
-                target = battle.monster(target_uid).nickname,
+                target = battle.monster(target_uid).name(),
                 num_hp = battle.monster(target_uid).current_health
             ]);
 
             Ok(NOTHING)
         }
 
-        pub fn status_move(battle: &mut Battle, move_uid: MoveUID, target_uid: BattlerUID) -> TurnResult {
-            let attacker_uid = move_uid.battler_uid;
+        pub fn status_move(battle: &mut Battle, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
+            let attacker_uid = move_uid.monster_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
             battle.push_message_to_log(&format![
                 "{attacker} used {move_}",
-                attacker = battle.monster(attacker_uid).nickname,
+                attacker = battle.monster(attacker_uid).name(),
                 move_ = battle.move_(move_uid).species.name
             ]);
 
@@ -218,12 +218,12 @@ mod action {
             Ok(NOTHING)
         }
 
-        pub fn switch_out(battle: &mut Battle, active_battler_uid: BattlerUID, benched_battler_uid: BattlerUID) -> TurnResult {
-            battle.active_battler_uids[active_battler_uid.team_id] = benched_battler_uid;
+        pub fn switch_out(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
+            battle.active_monster_uids[active_monster_uid.team_id] = benched_monster_uid;
             battle.push_message_to_log(&format![
-                "{active_battler} switched out! Go {benched_battler}!", 
-                active_battler = battle.monster(active_battler_uid).nickname,
-                benched_battler = battle.monster(benched_battler_uid).nickname
+                "{active_monster} switched out! Go {benched_monster}!", 
+                active_monster = battle.monster(active_monster_uid).name(),
+                benched_monster = battle.monster(benched_monster_uid).name()
             ]);
             Ok(NOTHING)
         }
@@ -236,9 +236,9 @@ mod action {
         ///
         /// This function should be used when an amount of damage has already been calculated,
         /// and the only thing left to do is to deduct it from the HP of the target.
-        pub fn damage(battle: &mut Battle, target_uid: BattlerUID, damage: u16) {
+        pub fn damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
             battle.monster_mut(target_uid).current_health = battle.monster(target_uid).current_health.saturating_sub(damage);
-            if battle.monster(target_uid).current_health == 0 { battle.fainted_battlers[target_uid] = true; };
+            if battle.monster(target_uid).current_health == 0 { battle.fainted_monsters[target_uid] = true; };
         }
 
         /// **Secondary Action** This action can only be triggered by other Actions.
@@ -246,7 +246,7 @@ mod action {
         /// Resolves activation of any ability.
         ///
         /// Returns a `bool` indicating whether the ability succeeded.
-        pub fn activate_ability(battle: &mut Battle, ability_holder_uid: BattlerUID) -> Outcome {
+        pub fn activate_ability(battle: &mut Battle, ability_holder_uid: MonsterUID) -> Outcome {
             let calling_context = AbilityUsed::new(ability_holder_uid);
 
             if EventResolver::broadcast_trial_event(battle, ability_holder_uid, calling_context, &OnTryActivateAbility) == Outcome::Success {
@@ -261,23 +261,23 @@ mod action {
 
         /// **Secondary Action** This action can only be triggered by other Actions.
         ///
-        /// Resolves raising the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
+        /// Resolves raising the `stat` stat of the monster corresponding to `monster_uid` by `number_of_stages`. The stat cannot be HP.
         ///
         /// Returns a `bool` indicating whether the stat raising succeeded.
-        pub fn raise_stat(battle: &mut Battle, battler_uid: BattlerUID, stat: Stat, number_of_stages: u8) -> Outcome {
-            if EventResolver::broadcast_trial_event(battle, battler_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
-                let effective_stages = battle.monster_mut(battler_uid).stat_modifiers.raise_stat(stat, number_of_stages);
+        pub fn raise_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
+            if EventResolver::broadcast_trial_event(battle, monster_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
+                let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.raise_stat(stat, number_of_stages);
 
                 battle.push_message_to_log(&format![
                     "{monster}\'s {stat} was raised by {stages} stage(s)!",
-                    monster = battle.monster(battler_uid).name(),
+                    monster = battle.monster(monster_uid).name(),
                     stat = stat,
                     stages = effective_stages
                 ]);
 
                 Outcome::Success
             } else {
-                battle.push_message_to_log(&format!["{monster}'s stats were not raised.", monster = battle.monster(battler_uid).name()]);
+                battle.push_message_to_log(&format!["{monster}'s stats were not raised.", monster = battle.monster(monster_uid).name()]);
 
                 Outcome::Failure
             }
@@ -285,23 +285,23 @@ mod action {
 
         /// **Secondary Action** This action can only be triggered by other Actions.
         ///
-        /// Resolves lowering the `stat` stat of the battler corresponding to `battler_uid` by `number_of_stages`. The stat cannot be HP.
+        /// Resolves lowering the `stat` stat of the monster corresponding to `monster_uid` by `number_of_stages`. The stat cannot be HP.
         ///
         /// Returns a `bool` indicating whether the stat lowering succeeded.
-        pub fn lower_stat(battle: &mut Battle, battler_uid: BattlerUID, stat: Stat, number_of_stages: u8) -> Outcome {
-            if EventResolver::broadcast_trial_event(battle, battler_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
-                let effective_stages = battle.monster_mut(battler_uid).stat_modifiers.lower_stat(stat, number_of_stages);
+        pub fn lower_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
+            if EventResolver::broadcast_trial_event(battle, monster_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
+                let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.lower_stat(stat, number_of_stages);
 
                 battle.push_message_to_log(&format![
                     "{monster}\'s {stat} was lowered by {stages} stage(s)!",
-                    monster = battle.monster(battler_uid).name(),
+                    monster = battle.monster(monster_uid).name(),
                     stat = stat,
                     stages = effective_stages
                 ]);
 
                 Outcome::Success
             } else {
-                battle.push_message_to_log(&format!["{monster}'s stats were not lowered.", monster = battle.monster(battler_uid).name()]);
+                battle.push_message_to_log(&format!["{monster}'s stats were not lowered.", monster = battle.monster(monster_uid).name()]);
 
                 Outcome::Failure
             }

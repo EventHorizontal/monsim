@@ -67,7 +67,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
         ..DEFAULT_RESPONSE
     },
     on_activate: |battle, owner_uid| {
-        let owner_name = battle.battler(owner_uid).monster.nickname;
+        let owner_name = battle.monster(owner_uid).name();
         battle.push_message_to_log(&format!["{owner_name}'s Water Absorb activated!"]);
     },
     filters: EventFilterOptions::default(),

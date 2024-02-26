@@ -7,7 +7,7 @@ use super::{
 use crate::sim::{
     action::SecondaryAction,
     event::{EventFilterOptions, DEFAULT_RESPONSE},
-    Battle, BattlerUID, Stat, MOVE_DEFAULTS,
+    Battle, MonsterUID, Stat, MOVE_DEFAULTS,
 };
 
 pub const Tackle: MoveSpecies = MoveSpecies {
@@ -57,7 +57,7 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    on_activate: Some(|battle: &mut Battle, _attacker_uid: BattlerUID, target_uid: BattlerUID| {
+    on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),
     ..MOVE_DEFAULTS

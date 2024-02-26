@@ -16,7 +16,7 @@ mod main {
         extern crate self as monsim;
         let test_battle = build_battle!(
             {
-                Allies: BattlerTeam {
+                Allies: MonsterTeam {
                     Torchic: Monster = "Ruby" {
                         Scratch: Move,
                         Ember: Move,
@@ -33,8 +33,8 @@ mod main {
                         FlashFire: Ability,
                     },
                 },
-                Opponents: BattlerTeam {
-                    Drifblim: Monster = "Cheerio" {
+                Opponents: MonsterTeam {
+                    Drifblim: Monster {
                         Tackle: Move,
                         Growl: Move,
                         FlashFire: Ability,
@@ -45,42 +45,46 @@ mod main {
         assert_eq!(test_battle, 
             Battle::new(
                 PerTeam::new(
-                    BattlerTeam::new(vec![
-                        (Battler::new(
-                            BattlerUID {
+                    MonsterTeam::new(vec![
+                        (Monster::new(
+                            MonsterUID {
                                 team_id: TeamID::Allies,
-                                battler_number: BattlerNumber::from(0usize),
+                                monster_number: MonsterNumber::from(0usize),
                             },
-                            monster::Monster::new(monster_dex::Torchic, "Ruby"),
+                            monster_dex::Torchic, 
+                            Some("Ruby"),
                             move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
                             ability::Ability::new(ability_dex::FlashFire),
                         )),
-                        (Battler::new(
-                            BattlerUID {
+                        (Monster::new(
+                            MonsterUID {
                                 team_id: TeamID::Allies,
-                                battler_number: BattlerNumber::from(1usize),
+                                monster_number: MonsterNumber::from(1usize),
                             },
-                            monster::Monster::new(monster_dex::Mudkip, "Sapphire"),
+                            monster_dex::Mudkip, 
+                            Some("Sapphire"),
                             move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
                             ability::Ability::new(ability_dex::FlashFire),
                         )),
-                        (Battler::new(
-                            BattlerUID {
+                        (Monster::new(
+                            MonsterUID {
                                 team_id: TeamID::Allies,
-                                battler_number: BattlerNumber::from(2usize),
+                                monster_number: MonsterNumber::from(2usize),
                             },
-                            monster::Monster::new(monster_dex::Treecko, "Emerald"),
+                            monster_dex::Treecko, 
+                            Some("Emerald"),
                             move_::MoveSet::new(vec![(move_::Move::new(move_dex::Bubble)), (move_::Move::new(move_dex::Scratch))]),
                             ability::Ability::new(ability_dex::FlashFire),
                         )),
                     ]),
-                    BattlerTeam::new(vec![
-                        (Battler::new(
-                            BattlerUID {
+                    MonsterTeam::new(vec![
+                        (Monster::new(
+                            MonsterUID {
                                 team_id: TeamID::Opponents,
-                                battler_number: BattlerNumber::from(0usize),
+                                monster_number: MonsterNumber::from(0usize),
                             },
-                            monster::Monster::new(monster_dex::Drifblim, "Cheerio"),
+                            monster_dex::Drifblim, 
+                            None,
                             move_::MoveSet::new(vec![(move_::Move::new(move_dex::Tackle)), (move_::Move::new(move_dex::Growl))]),
                             ability::Ability::new(ability_dex::FlashFire),
                         )),
@@ -92,11 +96,11 @@ mod main {
 }
 
 #[cfg(all(test, feature = "debug"))]
-mod bcontext {
+mod battle {
     use battle_builder_macro::build_battle;
 
     #[test]
-    fn test_display_battle_context() {
+    fn test_display_battle() {
         extern crate self as monsim;
         use crate::sim::*;
         use crate::sim::{
@@ -104,9 +108,9 @@ mod bcontext {
             monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
             move_dex::{Bubble, Ember, Scratch, Tackle},
         };
-        let test_bcontext = build_battle!(
+        let test_battle = build_battle!(
             {
-                Allies: BattlerTeam {
+                Allies: MonsterTeam {
                     Torchic: Monster = "Ruby" {
                         Ember: Move,
                         Scratch: Move,
@@ -123,7 +127,7 @@ mod bcontext {
                         FlashFire: Ability,
                     },
                 },
-                Opponents: BattlerTeam {
+                Opponents: MonsterTeam {
                     Drifloon: Monster = "Cheerio" {
                         Scratch: Move,
                         Ember: Move,
@@ -132,9 +136,9 @@ mod bcontext {
                 }
             }
         );
-        println!("{}", test_bcontext);
+        println!("{}", test_battle);
         assert_eq!(
-            format!["{}", test_bcontext],
+            format!["{}", test_battle],
             String::from(
                 "Ally Team
 \t├── Ruby the Torchic (Allies_1) [HP: 152/152]

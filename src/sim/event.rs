@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::BattlerUID, Battle, Nothing, Outcome, Percent};
+use crate::sim::{game_mechanics::MonsterUID, Battle, Nothing, Outcome, Percent};
 use broadcast_contexts::*;
 use event_setup_macro::event_setup;
 
@@ -32,7 +32,7 @@ pub type EventResponderWithLifeTime<'a, R, C> = fn(&'a mut Battle, C, R) -> R;
 pub struct EventResponderInstance<R: Copy, C: Copy> {
     pub event_name: &'static str,
     pub event_responder: EventResponder<R, C>,
-    pub owner_uid: BattlerUID,
+    pub owner_uid: MonsterUID,
     pub activation_order: ActivationOrder,
     pub filters: EventFilterOptions,
 }
@@ -55,24 +55,24 @@ bitflags::bitflags! {
 }
 
 pub mod broadcast_contexts {
-    use crate::sim::{BattlerUID, MoveUID};
+    use crate::sim::{MonsterUID, MoveUID};
 
     #[derive(Debug, Clone, Copy)]
     pub struct MoveUsed {
-        pub attacker_uid: BattlerUID,
+        pub attacker_uid: MonsterUID,
         pub move_uid: MoveUID,
-        pub target_uid: BattlerUID,
+        pub target_uid: MonsterUID,
     }
 
     #[derive(Debug, Clone, Copy)]
     pub struct AbilityUsed {
-        pub ability_holder_uid: BattlerUID,
+        pub ability_holder_uid: MonsterUID,
     }
 
     impl MoveUsed {
-        pub fn new(move_uid: MoveUID, target_uid: BattlerUID) -> Self {
+        pub fn new(move_uid: MoveUID, target_uid: MonsterUID) -> Self {
             Self {
-                attacker_uid: move_uid.battler_uid,
+                attacker_uid: move_uid.monster_uid,
                 move_uid,
                 target_uid,
             }
@@ -80,7 +80,7 @@ pub mod broadcast_contexts {
     }
 
     impl AbilityUsed {
-        pub fn new(ability_user_uid: BattlerUID) -> Self {
+        pub fn new(ability_user_uid: MonsterUID) -> Self {
             Self {
                 ability_holder_uid: ability_user_uid,
             }
@@ -129,7 +129,7 @@ event_setup![
 #[derive(Debug, Clone, Copy)]
 pub struct CompositeEventResponderInstance {
     pub composite_event_responder: CompositeEventResponder,
-    pub owner_uid: BattlerUID,
+    pub owner_uid: MonsterUID,
     pub activation_order: ActivationOrder,
     pub filters: EventFilterOptions,
 }
@@ -146,7 +146,7 @@ pub struct ActivationOrder {
 impl EventResolver {
     pub fn broadcast_trial_event<C: Copy>(
         battle: &mut Battle,
-        broadcaster_uid: BattlerUID,
+        broadcaster_uid: MonsterUID,
         calling_context: C,
         event: &dyn InBattleEvent<EventReturnType = Outcome, ContextType = C>,
     ) -> Outcome {
@@ -158,7 +158,7 @@ impl EventResolver {
     /// `short_circuit` is an optional value that, if returned by a responder in the chain, the resolution short-circuits and returns early.
     pub fn broadcast_event<R: PartialEq + Copy, C: Copy>(
         battle: &mut Battle,
-        broadcaster_uid: BattlerUID,
+        broadcaster_uid: MonsterUID,
         calling_context: C,
         event: &dyn InBattleEvent<EventReturnType = R, ContextType = C>,
         default: R,
@@ -199,8 +199,8 @@ impl EventResolver {
 
     fn filter_composite_event_responders(
         battle: &Battle,
-        event_caller_uid: BattlerUID,
-        owner_uid: BattlerUID,
+        event_caller_uid: MonsterUID,
+        owner_uid: MonsterUID,
         composite_event_responder_filters: EventFilterOptions,
     ) -> bool {
         let bitmask = {
@@ -218,7 +218,7 @@ impl EventResolver {
             bitmask
         };
         let event_source_filter_passed = composite_event_responder_filters.event_source.bits() == bitmask;
-        let is_active_passed = battle.is_active_battler(owner_uid);
+        let is_active_passed = battle.is_active_monster(owner_uid);
 
         event_source_filter_passed && is_active_passed
     }
@@ -296,7 +296,7 @@ mod tests {
         for i in 0..=1 {
             let test_battle = build_battle!(
                 {
-                    Allies: BattlerTeam {
+                    Allies: MonsterTeam {
                         Torchic: Monster = "Ruby" {
                             Scratch: Move,
                             Ember: Move,
@@ -313,7 +313,7 @@ mod tests {
                             FlashFire: Ability,
                         },
                     },
-                    Opponents: BattlerTeam {
+                    Opponents: MonsterTeam {
                         Drifblim: Monster {
                             Scratch: Move,
                             Ember: Move,
@@ -333,7 +333,7 @@ mod tests {
 
             result[i] = event_responder_instances
                 .into_iter()
-                .map(|event_responder_instance| test_battle.monster(event_responder_instance.owner_uid).nickname)
+                .map(|event_responder_instance| test_battle.monster(event_responder_instance.owner_uid).name())
                 .collect::<Vec<_>>();
         }
 
@@ -359,7 +359,7 @@ mod tests {
         for i in 0..=1 {
             let test_battle = build_battle!(
                 {
-                    Allies: BattlerTeam {
+                    Allies: MonsterTeam {
                         Torchic: Monster = "A" {
                             Scratch: Move,
                             Ember: Move,
@@ -391,7 +391,7 @@ mod tests {
                             FlashFire: Ability,
                         }
                     },
-                    Opponents: BattlerTeam {
+                    Opponents: MonsterTeam {
                         Drifblim: Monster = "G" {
                             Scratch: Move,
                             Ember: Move,
@@ -436,7 +436,7 @@ mod tests {
 
             result[i] = event_responder_instances
                 .into_iter()
-                .map(|event_responder_instance| test_battle.monster(event_responder_instance.owner_uid).nickname)
+                .map(|event_responder_instance| test_battle.monster(event_responder_instance.owner_uid).name())
                 .collect::<Vec<_>>();
         }
 
@@ -446,7 +446,7 @@ mod tests {
         assert_eq!(result[0][0], "G");
         // Check that the Torchics are all in the middle.
         for name in ["A", "B", "C", "D", "E", "H", "I", "J", "K", "L"].iter() {
-            assert!(result[0].contains(name));
+            assert!(result[0].contains(&name.to_string()));
         }
         //Check that the Mudkip is last.
         assert_eq!(result[0][11], "F");
@@ -461,11 +461,11 @@ mod tests {
             ability_dex::FlashFire,
             monster_dex::{Mudkip, Torchic, Treecko},
             move_dex::{Bubble, Ember, Scratch, Tackle},
-            BattlerNumber, TeamID,
+            MonsterNumber, TeamID,
         };
         let test_battle = build_battle!(
             {
-                Allies: BattlerTeam {
+                Allies: MonsterTeam {
                     Torchic: Monster = "Ruby" {
                         Ember: Move,
                         Scratch: Move,
@@ -477,7 +477,7 @@ mod tests {
                         FlashFire: Ability,
                     },
                 },
-                Opponents: BattlerTeam {
+                Opponents: MonsterTeam {
                     Treecko: Monster = "Emerald" {
                         Scratch: Move,
                         Ember: Move,
@@ -489,13 +489,13 @@ mod tests {
 
         let passed_filter = EventResolver::filter_composite_event_responders(
             &test_battle,
-            BattlerUID {
+            MonsterUID {
                 team_id: TeamID::Allies,
-                battler_number: BattlerNumber::_1,
+                monster_number: MonsterNumber::_1,
             },
-            BattlerUID {
+            MonsterUID {
                 team_id: TeamID::Opponents,
-                battler_number: BattlerNumber::_1,
+                monster_number: MonsterNumber::_1,
             },
             EventFilterOptions::default(),
         );
@@ -509,9 +509,9 @@ mod tests {
         let event_responder_instance = EventResponderInstance {
             event_name: event_dex::OnTryMove.name(),
             event_responder: FlashFire.composite_event_responder.on_try_move.unwrap(),
-            owner_uid: BattlerUID {
+            owner_uid: MonsterUID {
                 team_id: crate::sim::TeamID::Allies,
-                battler_number: crate::sim::BattlerNumber::_1,
+                monster_number: crate::sim::MonsterNumber::_1,
             },
             activation_order: crate::sim::ActivationOrder {
                 priority: 1,

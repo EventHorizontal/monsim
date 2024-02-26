@@ -21,8 +21,8 @@ use super::event::CompositeEventResponderInstanceList;
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BattlerTeam {
-    battlers: MaxSizeVec<Battler, 6>,
+pub struct MonsterTeam {
+    monsters: MaxSizeVec<Monster, 6>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -92,40 +92,40 @@ impl Display for TeamID {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MoveUID {
-    pub battler_uid: BattlerUID,
+    pub monster_uid: MonsterUID,
     pub move_number: MoveNumber,
 }
 
-impl BattlerTeam {
-    pub fn new(battlers: Vec<Battler>) -> Self {
-        assert!(battlers.first().is_some(), "There is not a single monster in the team.");
-        assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
-        let battlers_iter = battlers.into_iter();
-        let mut battlers = MaxSizeVec::new();
-        battlers_iter.for_each(|battler| {battlers.push(battler)});
-        BattlerTeam { battlers }
+impl MonsterTeam {
+    pub fn new(monsters: Vec<Monster>) -> Self {
+        assert!(monsters.first().is_some(), "There is not a single monster in the team.");
+        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
+        let monsters_iter = monsters.into_iter();
+        let mut monsters = MaxSizeVec::new();
+        monsters_iter.for_each(|monster| {monsters.push(monster)});
+        MonsterTeam { monsters }
     }
 
-    pub fn battlers(&self) -> &MaxSizeVec<Battler, 6> {
-        &self.battlers
+    pub fn monsters(&self) -> &MaxSizeVec<Monster, 6> {
+        &self.monsters
     }
 
-    pub fn battlers_mut(&mut self) -> &mut MaxSizeVec<Battler, 6> {
-        &mut self.battlers
+    pub fn monsters_mut(&mut self) -> &mut MaxSizeVec<Monster, 6> {
+        &mut self.monsters
     }
 
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
-        for battler in self.battlers.iter() {
-            out.append(&mut battler.composite_event_responder_instances())
+        for monster in self.monsters.iter() {
+            out.append(&mut monster.composite_event_responder_instances())
         }
         out
     }
 
     pub(crate) fn team_status_string(&self) -> String {
         let mut out = String::new();
-        for battler in self.battlers() {
-            out.push_str(&battler.status_string());
+        for monster in self.monsters() {
+            out.push_str(&monster.status_string());
         }
         out
     }

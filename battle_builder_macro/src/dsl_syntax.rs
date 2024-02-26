@@ -9,16 +9,16 @@ use syn::{
 
 #[derive(Clone, Debug)]
 pub struct ExprBattle {
-    pub ally_expr_battler_team: ExprBattlerTeam,
-    pub opponent_expr_battler_team: ExprBattlerTeam,
+    pub ally_expr_monster_team: ExprMonsterTeam,
+    pub opponent_expr_monster_team: ExprMonsterTeam,
 }
 
 impl Parse for ExprBattle {
     fn parse(input: ParseStream) -> Result<Self> {
-        let battle_contents = parse_braced_comma_separated_list::<ExprBattlerTeam>(input)?;
+        let battle_contents = parse_braced_comma_separated_list::<ExprMonsterTeam>(input)?;
         let mut battle_contents = battle_contents.iter();
 
-        let mut check_team_id = |id_to_match: &str| -> Result<ExprBattlerTeam> {
+        let mut check_team_id = |id_to_match: &str| -> Result<ExprMonsterTeam> {
             let team_expr = battle_contents
                 .next()
                 .expect("Error: Failed to parse team identifier.")
@@ -40,24 +40,24 @@ impl Parse for ExprBattle {
             }
         };
 
-        let ally_expr_battler_team = check_team_id("Allies")?;
-        let opponent_expr_battler_team = check_team_id("Opponents")?;
+        let ally_expr_monster_team = check_team_id("Allies")?;
+        let opponent_expr_monster_team = check_team_id("Opponents")?;
 
         Ok(ExprBattle {
-            ally_expr_battler_team,
-            opponent_expr_battler_team,
+            ally_expr_monster_team,
+            opponent_expr_monster_team,
         })
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct ExprBattlerTeam {
+pub struct ExprMonsterTeam {
     pub team_path: ExprPath,
     pub team_type: ExprPath,
     pub monster_fields: Punctuated<ExprMonster, Comma>,
 }
 
-impl Parse for ExprBattlerTeam {
+impl Parse for ExprMonsterTeam {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let team_ident: ExprPath = input.parse().expect(
             "Error: Failed to parse TeamExpression identifier in expected TeamExpression.",
@@ -80,7 +80,7 @@ impl Parse for ExprBattlerTeam {
             ));
         };
 
-        Ok(ExprBattlerTeam {
+        Ok(ExprMonsterTeam {
             team_path: team_ident,
             team_type,
             monster_fields,

@@ -4,23 +4,23 @@ use monsim_utils::ArrayOfOptionals;
 
 use crate::sim::utils::slice_to_array_of_options;
 
-use super::{game_mechanics::{BattlerUID, MoveUID}, TeamID};
+use super::{game_mechanics::{MonsterUID, MoveUID}, TeamID};
 
 
 /// An action choice before certain details can be established, most often the target.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartiallySpecifiedAction {
-    /// This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent battler is the target. 
-    Move{ move_uid: MoveUID, target_uid: BattlerUID, display_text: &'static str},
-    /// A switch out action before we know which battler to switch with.
-    SwitchOut { switcher_uid: BattlerUID, possible_switchee_uids: ArrayOfOptionals<BattlerUID, 5> },
+    /// This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
+    Move{ move_uid: MoveUID, target_uid: MonsterUID, display_text: &'static str},
+    /// A switch out action before we know which monster to switch with.
+    SwitchOut { switcher_uid: MonsterUID, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5> },
 }
 
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedAction {
-    Move { move_uid: MoveUID, target_uid: BattlerUID },
-    SwitchOut { switcher_uid: BattlerUID, switchee_uid: BattlerUID },
+    Move { move_uid: MoveUID, target_uid: MonsterUID },
+    SwitchOut { switcher_uid: MonsterUID, switchee_uid: MonsterUID },
 }
 
 pub type ChosenActionsForTurn = [FullySpecifiedAction; 2];

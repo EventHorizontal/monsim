@@ -9,85 +9,118 @@ use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamID };
 use crate::sim::{event::{CompositeEventResponderInstance, CompositeEventResponderInstanceList}, ActivationOrder, CompositeEventResponder, ElementalType, EventFilterOptions};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Battler {
-    pub uid: BattlerUID,
-    pub monster: Monster,
+pub struct Monster {
+    pub uid: MonsterUID,
+    nickname: Option<&'static str>,
+    pub level: u16,
+    pub max_health: u16,
+    pub nature: MonsterNature,
+    pub stats: StatSet,
+    pub stat_modifiers: StatModifierSet,
+    pub current_health: u16,
+    pub species: MonsterSpecies,
     pub moveset: MoveSet,
     pub ability: Ability,
 }
 
-pub const ALLY_1: BattlerUID = BattlerUID {
+#[derive(Clone, Copy)]
+pub struct MonsterSpecies {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub primary_type: ElementalType,
+    pub secondary_type: Option<ElementalType>,
+    pub base_stats: StatSet,
+    pub composite_event_responder: CompositeEventResponder,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MonsterUID {
+    pub team_id: TeamID,
+    pub monster_number: MonsterNumber,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MonsterNumber {
+    _1,
+    _2,
+    _3,
+    _4,
+    _5,
+    _6,
+}
+
+pub const ALLY_1: MonsterUID = MonsterUID {
     team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_1,
+    monster_number: MonsterNumber::_1,
 };
-pub const ALLY_2: BattlerUID = BattlerUID {
+pub const ALLY_2: MonsterUID = MonsterUID {
     team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_2,
+    monster_number: MonsterNumber::_2,
 };
-pub const ALLY_3: BattlerUID = BattlerUID {
+pub const ALLY_3: MonsterUID = MonsterUID {
     team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_3,
+    monster_number: MonsterNumber::_3,
 };
-pub const ALLY_4: BattlerUID = BattlerUID {
+pub const ALLY_4: MonsterUID = MonsterUID {
     team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_4,
+    monster_number: MonsterNumber::_4,
 };
-pub const ALLY_5: BattlerUID = BattlerUID {
+pub const ALLY_5: MonsterUID = MonsterUID {
     team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_5,
+    monster_number: MonsterNumber::_5,
 };
-pub const ALLY_6: BattlerUID = BattlerUID {
+pub const ALLY_6: MonsterUID = MonsterUID {
     team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_6,
+    monster_number: MonsterNumber::_6,
 };
 
-pub const OPPONENT_1: BattlerUID = BattlerUID {
+pub const OPPONENT_1: MonsterUID = MonsterUID {
     team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_1,
+    monster_number: MonsterNumber::_1,
 };
-pub const OPPONENT_2: BattlerUID = BattlerUID {
+pub const OPPONENT_2: MonsterUID = MonsterUID {
     team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_2,
+    monster_number: MonsterNumber::_2,
 };
-pub const OPPONENT_3: BattlerUID = BattlerUID {
+pub const OPPONENT_3: MonsterUID = MonsterUID {
     team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_3,
+    monster_number: MonsterNumber::_3,
 };
-pub const OPPONENT_4: BattlerUID = BattlerUID {
+pub const OPPONENT_4: MonsterUID = MonsterUID {
     team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_4,
+    monster_number: MonsterNumber::_4,
 };
-pub const OPPONENT_5: BattlerUID = BattlerUID {
+pub const OPPONENT_5: MonsterUID = MonsterUID {
     team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_5,
+    monster_number: MonsterNumber::_5,
 };
-pub const OPPONENT_6: BattlerUID = BattlerUID {
+pub const OPPONENT_6: MonsterUID = MonsterUID {
     team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_6,
+    monster_number: MonsterNumber::_6,
 };
 
-impl Display for BattlerUID {
+impl Display for MonsterUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}{:?}", self.team_id, self.battler_number)
+        write!(f, "{:?}{:?}", self.team_id, self.monster_number)
     }
 }
 
-impl Display for Battler {
+impl Display for Monster {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
-        if self.monster.nickname == self.monster.species.name {
+        if let Some(nickname) = self.nickname {
             out.push_str(
                 format![
-                    "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
+                    "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
+                    nickname, self.species.name, self.uid, self.current_health, self.max_health
                 ]
                 .as_str(),
             );
         } else {
             out.push_str(
                 format![
-                    "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.monster.nickname, self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
+                    "{} ({}) [HP: {}/{}]\n\t│\t│\n",
+                    self.species.name, self.uid, self.current_health, self.max_health
                 ]
                 .as_str(),
             );
@@ -96,7 +129,7 @@ impl Display for Battler {
         let number_of_effects = self.moveset.moves().count();
 
         out.push_str("\t│\t├── ");
-        out.push_str(format!["type {:?}/{:?} \n", self.monster.species.primary_type, self.monster.species.secondary_type].as_str());
+        out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, self.species.secondary_type].as_str());
 
         out.push_str("\t│\t├── ");
         out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
@@ -114,28 +147,82 @@ impl Display for Battler {
     }
 }
 
-impl Battler {
-    pub fn new(uid: BattlerUID, monster: Monster, moveset: MoveSet, ability: Ability) -> Self {
-        Battler {
+impl Monster {
+    pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
+        let level = 50;
+        // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
+        let iv_in_stat = 31;
+        let ev_in_stat = 252;
+        // In-game hp-stat determination formula
+        let health_stat = ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
+        let nature = MonsterNature::Serious;
+
+        // In-game non-hp-stat determination formula
+        let get_non_hp_stat = |stat: Stat| -> u16 {
+            // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
+            let iv_in_stat = 31;
+            let ev_in_stat = 252;
+            let mut out = ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
+            out = f64::floor(out as f64 * nature[stat]) as u16;
+            out
+        };
+        
+        Monster {
             uid,
-            monster,
+            nickname,
+            level,
+            max_health: health_stat,
+            nature,
+            current_health: health_stat,
+            species,
             moveset,
             ability,
+            stats: StatSet {
+                hp: health_stat,
+                att: get_non_hp_stat(Stat::PhysicalAttack),
+                def: get_non_hp_stat(Stat::PhysicalDefense),
+                spa: get_non_hp_stat(Stat::SpecialAttack),
+                spd: get_non_hp_stat(Stat::SpecialDefense),
+                spe: get_non_hp_stat(Stat::Speed),
+            },
+            stat_modifiers: StatModifierSet {
+                att: 0,
+                def: 0,
+                spa: 0,
+                spd: 0,
+                spe: 0,
+            },
         }
     }
 
-    pub fn is_type(&self, test_type: ElementalType) -> bool {
-        self.monster.is_type(test_type)
+    pub fn name(&self) -> String {
+        if let Some(nickname) = self.nickname {
+            nickname.to_owned()
+        } else {
+            self.species.name.to_owned()
+        }
     }
 
-    pub fn monster_composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
+    pub fn full_name(&self) -> String {
+        if let Some(nickname) = self.nickname {
+            format!["{} the {}", nickname, self.species.name]
+        } else {
+            self.species.name.to_string()
+        }
+    }
+
+    pub fn is_type(&self, test_elemental_type: ElementalType) -> bool {
+        self.species.primary_type == test_elemental_type || self.species.secondary_type == Some(test_elemental_type)
+    }
+
+    pub fn composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
         let activation_order = ActivationOrder {
             priority: 0,
-            speed: self.monster.stats[Stat::Speed],
+            speed: self.stats[Stat::Speed],
             order: 0,
         };
         CompositeEventResponderInstance {
-            composite_event_responder: self.monster.composite_event_responder(),
+            composite_event_responder: self.species.composite_event_responder,
             owner_uid: self.uid,
             activation_order,
             filters: EventFilterOptions::default(),
@@ -145,7 +232,7 @@ impl Battler {
     pub fn ability_composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
         let activation_order = ActivationOrder {
             priority: 0,
-            speed: self.monster.stats[Stat::Speed],
+            speed: self.stats[Stat::Speed],
             order: self.ability.species.order,
         };
         CompositeEventResponderInstance {
@@ -156,7 +243,7 @@ impl Battler {
         }
     }
 
-    pub fn moveset_composite_event_responder_instances(&self, uid: BattlerUID) -> CompositeEventResponderInstanceList {
+    pub fn moveset_composite_event_responder_instances(&self, uid: MonsterUID) -> CompositeEventResponderInstanceList {
         self.moveset
             .moves()
             .map(|it| CompositeEventResponderInstance {
@@ -164,7 +251,7 @@ impl Battler {
                 owner_uid: uid,
                 activation_order: ActivationOrder {
                     priority: it.species.priority,
-                    speed: self.monster.stats[Stat::Speed],
+                    speed: self.stats[Stat::Speed],
                     order: 0,
                 },
                 filters: EventFilterOptions::default(),
@@ -174,7 +261,7 @@ impl Battler {
 
     pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
         let mut out = Vec::new();
-        out.push(self.monster_composite_event_responder_instance());
+        out.push(self.composite_event_responder_instance());
         out.append(&mut self.moveset_composite_event_responder_instances(self.uid));
         out.push(self.ability_composite_event_responder_instance());
         out
@@ -185,7 +272,7 @@ impl Battler {
             .moves()
             .enumerate()
             .map(|(idx, _)| MoveUID {
-                battler_uid: self.uid,
+                monster_uid: self.uid,
                 move_number: MoveNumber::from(idx),
             })
             .collect()
@@ -195,70 +282,24 @@ impl Battler {
         let mut out = String::new();
         out.push_str(&format![
             "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.uid, self.monster.current_health, self.monster.max_health
+            self.full_name(), self.uid, self.current_health, self.max_health
         ]);
         out
     }
-
-    pub(crate) fn full_name(&self) -> String {
-        if self.monster.nickname == self.monster.species.name {
-            self.monster.species.name.to_string()
-        } else {
-            format!["{} the {}", self.monster.nickname, self.monster.species.name]
-        }
-    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum BattlerNumber {
-    _1,
-    _2,
-    _3,
-    _4,
-    _5,
-    _6,
-}
-
-impl From<usize> for BattlerNumber {
+impl From<usize> for MonsterNumber {
     fn from(value: usize) -> Self {
         match value {
-            0 => BattlerNumber::_1,
-            1 => BattlerNumber::_2,
-            2 => BattlerNumber::_3,
-            3 => BattlerNumber::_4,
-            4 => BattlerNumber::_5,
-            5 => BattlerNumber::_6,
-            _ => panic!("BattlerNumber can only be formed from usize 0 to 5."),
+            0 => MonsterNumber::_1,
+            1 => MonsterNumber::_2,
+            2 => MonsterNumber::_3,
+            3 => MonsterNumber::_4,
+            4 => MonsterNumber::_5,
+            5 => MonsterNumber::_6,
+            _ => panic!("MonsterNumber can only be formed from usize 0 to 5."),
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct BattlerUID {
-    pub team_id: TeamID,
-    pub battler_number: BattlerNumber,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Monster {
-    pub nickname: &'static str,
-    pub level: u16,
-    pub max_health: u16,
-    pub nature: MonsterNature,
-    pub stats: StatSet,
-    pub stat_modifiers: StatModifierSet,
-    pub current_health: u16,
-    pub species: MonsterSpecies,
-}
-
-#[derive(Clone, Copy)]
-pub struct MonsterSpecies {
-    pub dex_number: u16,
-    pub name: &'static str,
-    pub primary_type: ElementalType,
-    pub secondary_type: Option<ElementalType>,
-    pub base_stats: StatSet,
-    pub composite_event_responder: CompositeEventResponder,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -346,64 +387,6 @@ pub enum MonsterNature {
     Sassy,
     /// +SpecialDefense, -Special Attack
     Careful,
-}
-
-impl Monster {
-    pub fn new(species: MonsterSpecies, nickname: &'static str) -> Self {
-        let level = 50;
-        // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-        let iv_in_stat = 31;
-        let ev_in_stat = 252;
-        // In-game hp-stat determination formula
-        let health_stat = ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
-        let nature = MonsterNature::Serious;
-
-        // In-game non-hp-stat determination formula
-        let get_non_hp_stat = |stat: Stat| -> u16 {
-            // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-            let iv_in_stat = 31;
-            let ev_in_stat = 252;
-            let mut out = ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
-            out = f64::floor(out as f64 * nature[stat]) as u16;
-            out
-        };
-
-        Monster {
-            nickname,
-            level,
-            nature,
-            species,
-            stats: StatSet {
-                hp: health_stat,
-                att: get_non_hp_stat(Stat::PhysicalAttack),
-                def: get_non_hp_stat(Stat::PhysicalDefense),
-                spa: get_non_hp_stat(Stat::SpecialAttack),
-                spd: get_non_hp_stat(Stat::SpecialDefense),
-                spe: get_non_hp_stat(Stat::Speed),
-            },
-            stat_modifiers: StatModifierSet {
-                att: 0,
-                def: 0,
-                spa: 0,
-                spd: 0,
-                spe: 0,
-            },
-            max_health: health_stat,
-            current_health: health_stat,
-        }
-    }
-
-    pub fn is_type(&self, test_elemental_type: ElementalType) -> bool {
-        self.species.primary_type == test_elemental_type || self.species.secondary_type == Some(test_elemental_type)
-    }
-
-    pub fn composite_event_responder(&self) -> CompositeEventResponder {
-        self.species.composite_event_responder
-    }
-
-    pub fn name(&self) -> String {
-        self.nickname.to_owned()
-    }
 }
 
 impl Debug for MonsterSpecies {

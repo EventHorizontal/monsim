@@ -15,7 +15,7 @@ use std::{
 };
 
 use super::{
-    prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6
+    prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID, ALLY_1, OPPONENT_1,
 };
 
 type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
@@ -34,7 +34,7 @@ pub struct Battle {
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
     pub active_monster_uids: PerTeam<MonsterUID>,
-    pub fainted_monsters: MonsterMap<bool>,
+    // pub fainted_monsters: MonsterMap<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,20 +82,6 @@ impl Battle {
             teams,
             message_log: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
             active_monster_uids: PerTeam::new(ALLY_1, OPPONENT_1),
-            fainted_monsters: MonsterMap::new(utils::collection!(
-                ALLY_1     => false,
-                ALLY_2     => false,
-                ALLY_3     => false,
-                ALLY_4     => false,
-                ALLY_5     => false,
-                ALLY_6     => false,
-                OPPONENT_1 => false,
-                OPPONENT_2 => false,
-                OPPONENT_3 => false,
-                OPPONENT_4 => false,
-                OPPONENT_5 => false,
-                OPPONENT_6 => false,
-            ))
         }
     }
 
@@ -136,35 +122,24 @@ impl Battle {
     }
 
     pub fn ability(&self, owner_uid: MonsterUID) -> &Ability {
-        &self
-            .monsters()
-            .find(|it| it.uid == owner_uid)
-            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
+        &self.monster(owner_uid)
             .ability
     }
 
     pub fn ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
         &mut self
-            .monsters_mut()
-            .find(|it| it.uid == owner_uid)
-            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
+            .monster_mut(owner_uid)
             .ability
     }
 
     pub fn move_(&self, move_uid: MoveUID) -> &Move {
-        let owner_uid = move_uid.monster_uid;
-        self.monsters()
-            .find(|it| it.uid == owner_uid)
-            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
+        self.monster(move_uid.owner_uid)
             .moveset
             .move_(move_uid.move_number)
     }
 
     pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
-        let owner_uid = move_uid.monster_uid;
-        self.monsters_mut()
-            .find(|it| it.uid == owner_uid)
-            .unwrap_or_else(|| panic!("Theres should exist a monster with id {:?}", owner_uid))
+        self.monster_mut(move_uid.owner_uid)
             .moveset
             .move_mut(move_uid.move_number)
     }
@@ -218,7 +193,7 @@ impl Battle {
         match choice {
             FullySpecifiedAction::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
-                speed: self.monster(move_uid.monster_uid).stats[Stat::Speed],
+                speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
                 order: 0, //TODO: Think about ordering
             },
             FullySpecifiedAction::SwitchOut { switcher_uid: active_monster_uid, switchee_uid: _ } => ActivationOrder { 
@@ -287,7 +262,7 @@ impl Battle {
         let mut switchees = [None; 5];
         for monster in self.team(team_id).monsters().iter() {
             let is_active_monster_for_team = monster.uid == self.active_monster_uids[team_id];
-            let is_valid_switch_partner = not!(self.is_monster_fainted(monster.uid)) && not!(is_active_monster_for_team);
+            let is_valid_switch_partner = not!(self.monster(monster.uid).is_fainted) && not!(is_active_monster_for_team);
             if is_valid_switch_partner {
                 switchees[number_of_switchees] = Some(monster.uid);
                 number_of_switchees += 1;
@@ -295,10 +270,6 @@ impl Battle {
             }
         }
         switchees
-    }
-
-    pub fn is_monster_fainted(&self, monster_uid: MonsterUID) -> bool {
-        self.fainted_monsters[monster_uid]
     }
 
     pub fn team(&self, team_id: TeamID) -> &MonsterTeam {

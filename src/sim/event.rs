@@ -72,7 +72,7 @@ pub mod broadcast_contexts {
     impl MoveUsed {
         pub fn new(move_uid: MoveUID, target_uid: MonsterUID) -> Self {
             Self {
-                attacker_uid: move_uid.monster_uid,
+                attacker_uid: move_uid.owner_uid,
                 move_uid,
                 target_uid,
             }

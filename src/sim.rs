@@ -59,14 +59,26 @@ impl BattleSimulator {
                 }
             }?;
 
-            let maybe_fainted_monster = battle.monsters().find(|monster| battle.is_monster_fainted(monster.uid));
+            // Check if a Monster fainted this turn
+            let maybe_fainted_monster = battle.monsters().find(|monster| battle.monster(monster.uid).is_fainted);
             if let Some(monster) = maybe_fainted_monster {
                 battle
                     .push_messages_to_log(&[&format!["{fainted_monster} fainted!", fainted_monster = monster.name()], EMPTY_LINE]);
-                battle.is_finished = true;
+                // Check if any of the teams is out of usable Monsters
+                let are_all_ally_team_monsters_fainted = battle.ally_team().monsters().iter().all(|monster| { monster.is_fainted });
+                let are_all_opponent_team_monsters_fainted = battle.opponent_team().monsters().iter().all(|monster| { monster.is_fainted });
+                if are_all_ally_team_monsters_fainted {
+                    battle.is_finished = true;
+                    battle.push_message_to_log("Opponent Team won!");
+                } 
+                if are_all_opponent_team_monsters_fainted {
+                    battle.is_finished = true;
+                    battle.push_message_to_log("Ally Team won!");
+                }
                 break 'turn;
             };
-            
+
+
             battle.push_message_to_log(EMPTY_LINE);
         }
 
@@ -102,7 +114,7 @@ mod action {
         /// Calculates and applies the effects of a damaging move
         /// corresponding to `move_uid` being used on `target_uid`
         pub fn damaging_move(battle: &mut Battle, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
-            let attacker_uid = move_uid.monster_uid;
+            let attacker_uid = move_uid.owner_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
             battle.push_message_to_log(&format![
@@ -195,7 +207,7 @@ mod action {
         }
 
         pub fn status_move(battle: &mut Battle, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
-            let attacker_uid = move_uid.monster_uid;
+            let attacker_uid = move_uid.owner_uid;
             let calling_context = MoveUsed::new(move_uid, target_uid);
 
             battle.push_message_to_log(&format![
@@ -239,7 +251,7 @@ mod action {
         /// and the only thing left to do is to deduct it from the HP of the target.
         pub fn damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
             battle.monster_mut(target_uid).current_health = battle.monster(target_uid).current_health.saturating_sub(damage);
-            if battle.monster(target_uid).current_health == 0 { battle.fainted_monsters[target_uid] = true; };
+            if battle.monster(target_uid).current_health == 0 { battle.monster_mut(target_uid).is_fainted = true; };
         }
 
         /// **Secondary Action** This action can only be triggered by other Actions.

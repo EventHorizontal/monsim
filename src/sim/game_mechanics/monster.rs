@@ -17,6 +17,7 @@ pub struct Monster {
     pub nature: MonsterNature,
     pub stats: StatSet,
     pub stat_modifiers: StatModifierSet,
+    pub is_fainted: bool,
     pub current_health: u16,
     pub species: MonsterSpecies,
     pub moveset: MoveSet,
@@ -174,6 +175,7 @@ impl Monster {
             max_health: health_stat,
             nature,
             current_health: health_stat,
+            is_fainted: false,
             species,
             moveset,
             ability,
@@ -272,7 +274,7 @@ impl Monster {
             .moves()
             .enumerate()
             .map(|(idx, _)| MoveUID {
-                monster_uid: self.uid,
+                owner_uid: self.uid,
                 move_number: MoveNumber::from(idx),
             })
             .collect()

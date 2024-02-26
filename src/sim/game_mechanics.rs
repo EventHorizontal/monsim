@@ -92,7 +92,7 @@ impl Display for TeamID {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MoveUID {
-    pub monster_uid: MonsterUID,
+    pub owner_uid: MonsterUID,
     pub move_number: MoveNumber,
 }
 

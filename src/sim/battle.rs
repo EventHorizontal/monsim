@@ -191,7 +191,8 @@ impl Battle {
         }
 
         let possible_switchee_uids = self.valid_switchees_by_uid(team_id);
-        let switch_action = if not!(possible_switchee_uids.iter().flatten().count() == 0 ) {
+        let any_valid_switchees = not!(possible_switchee_uids.iter().flatten().count() == 0 );
+        let switch_action = if any_valid_switchees {
             Some(PartiallySpecifiedAction::SwitchOut { 
                 switcher_uid: team_active_monster.uid, 
                 possible_switchee_uids,

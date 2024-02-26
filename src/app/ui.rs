@@ -386,7 +386,6 @@ impl<'a> ActionChoiceSelectionMenu<'a> {
                 list_item.clone()
             }
         }).collect::<Vec<_>>();
-        crate::debug_to_file!(self.selection_cursor);
 
         List::new(list_items)
             .block(

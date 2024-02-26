@@ -1,7 +1,7 @@
 mod dsl_syntax;
 
 use dsl_syntax::{ExprBattle, ExprMonsterTeam, GameMechanicType, path_to_ident};
-use proc_macro2::{Literal, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
 
@@ -103,7 +103,6 @@ fn monster_team_to_tokens<'a>(
 
         moves_vec_delimited = quote!(vec![#moves_vec_delimited]);
         let monster_number = quote!(MonsterNumber::from(#index));
-        let monster_type_path = monster.monster_type_path;
         let ability_type_path = ability_type_path.expect("Every monster must have an ability.");
         
         comma_separated_monsters = quote!(

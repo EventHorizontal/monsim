@@ -45,7 +45,7 @@ impl BattleSimulator {
             .map_err(|message| { SimError::InvalidStateReached(String::from(message))})?;
         battle.push_messages_to_log(&[&format!["Turn {turn_number}", turn_number = battle.turn_number], EMPTY_LINE]);
 
-        let mut chosen_actions = [chosen_actions[TeamID::Allies], chosen_actions[TeamID::Opponents]];
+        let mut chosen_actions = chosen_actions.as_array();
         ordering::sort_action_choices_by_activation_order(battle, &mut chosen_actions);
 
         'turn: for chosen_action in chosen_actions.into_iter() {

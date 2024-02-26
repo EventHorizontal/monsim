@@ -15,18 +15,20 @@ pub(super) struct Ui<'a> {
     action_choice_selection_menus: PerTeam<ActionChoiceSelectionMenu<'a>>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum SelectablePanelID {
     AllyTeamChoiceSelectionMenu,
     MessageLog,
     OpponentTeamChoiceSelectionMenu,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct ActiveMonsterStatusPanel {
     team_name: &'static str,
     active_monster_status: String,
 }
 
+#[derive(Debug, Clone)]
 struct ActionChoiceSelectionMenu<'a> {
     team_name: &'static str,
     selectable_panel_id: SelectablePanelID,
@@ -35,6 +37,7 @@ struct ActionChoiceSelectionMenu<'a> {
     selection_cursor: Option<usize>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct MessageLogPanel {
     _selectable_panel_id: SelectablePanelID,
 
@@ -46,7 +49,7 @@ struct MessageLogPanel {
     current_message_log_length: usize,
 }
 
-
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct SwitcheePrompt;
 
 impl SwitcheePrompt {
@@ -70,6 +73,7 @@ impl SwitcheePrompt {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TeamStatusPanel {
     team_name: &'static str,
     team_status: String,

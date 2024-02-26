@@ -10,17 +10,19 @@ pub(crate) mod move_dex;
 
 use core::marker::Copy;
 use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
+use max_size_vec::MaxSizeVec;
 
-use super::event::{ActivationOrder, CompositeEventResponderInstance, CompositeEventResponderInstanceList, EventFilterOptions};
 pub use ability::*;
 pub use monster::*;
 pub use move_::*;
+
+use super::event::CompositeEventResponderInstanceList;
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattlerTeam {
-    battlers: Vec<Battler>,
+    battlers: MaxSizeVec<Battler, 6>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -36,44 +38,6 @@ impl TeamID {
             TeamID::Opponents => TeamID::Allies,
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Battler {
-    pub uid: BattlerUID,
-    pub monster: Monster,
-    pub moveset: MoveSet,
-    pub ability: Ability,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum BattlerNumber {
-    _1,
-    _2,
-    _3,
-    _4,
-    _5,
-    _6,
-}
-
-impl From<usize> for BattlerNumber {
-    fn from(value: usize) -> Self {
-        match value {
-            0 => BattlerNumber::_1,
-            1 => BattlerNumber::_2,
-            2 => BattlerNumber::_3,
-            3 => BattlerNumber::_4,
-            4 => BattlerNumber::_5,
-            5 => BattlerNumber::_6,
-            _ => panic!("BattlerNumber can only be formed from usize 0 to 5."),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct BattlerUID {
-    pub team_id: TeamID,
-    pub battler_number: BattlerNumber,
 }
 
 /// A container for storing an object of type `T` for each team.
@@ -120,65 +84,9 @@ impl<T> IndexMut<TeamID> for PerTeam<T> {
     }
 }
 
-pub const ALLY_1: BattlerUID = BattlerUID {
-    team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_1,
-};
-pub const ALLY_2: BattlerUID = BattlerUID {
-    team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_2,
-};
-pub const ALLY_3: BattlerUID = BattlerUID {
-    team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_3,
-};
-pub const ALLY_4: BattlerUID = BattlerUID {
-    team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_4,
-};
-pub const ALLY_5: BattlerUID = BattlerUID {
-    team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_5,
-};
-pub const ALLY_6: BattlerUID = BattlerUID {
-    team_id: TeamID::Allies,
-    battler_number: BattlerNumber::_6,
-};
-
-pub const OPPONENT_1: BattlerUID = BattlerUID {
-    team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_1,
-};
-pub const OPPONENT_2: BattlerUID = BattlerUID {
-    team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_2,
-};
-pub const OPPONENT_3: BattlerUID = BattlerUID {
-    team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_3,
-};
-pub const OPPONENT_4: BattlerUID = BattlerUID {
-    team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_4,
-};
-pub const OPPONENT_5: BattlerUID = BattlerUID {
-    team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_5,
-};
-pub const OPPONENT_6: BattlerUID = BattlerUID {
-    team_id: TeamID::Opponents,
-    battler_number: BattlerNumber::_6,
-};
-
 impl Display for TeamID {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-impl Display for BattlerUID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}{:?}", self.team_id, self.battler_number)
     }
 }
 
@@ -192,14 +100,17 @@ impl BattlerTeam {
     pub fn new(battlers: Vec<Battler>) -> Self {
         assert!(battlers.first().is_some(), "There is not a single monster in the team.");
         assert!(battlers.len() <= MAX_BATTLERS_PER_TEAM);
+        let battlers_iter = battlers.into_iter();
+        let mut battlers = MaxSizeVec::new();
+        battlers_iter.for_each(|battler| {battlers.push(battler)});
         BattlerTeam { battlers }
     }
 
-    pub fn battlers(&self) -> &Vec<Battler> {
+    pub fn battlers(&self) -> &MaxSizeVec<Battler, 6> {
         &self.battlers
     }
 
-    pub fn battlers_mut(&mut self) -> &mut Vec<Battler> {
+    pub fn battlers_mut(&mut self) -> &mut MaxSizeVec<Battler, 6> {
         &mut self.battlers
     }
 
@@ -218,150 +129,6 @@ impl BattlerTeam {
         }
         out
     }
-}
-
-impl Display for BattlerTeam {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.team_status_string())
-    }
-}
-
-impl Display for Battler {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut out = String::new();
-        if self.monster.nickname == self.monster.species.name {
-            out.push_str(
-                format![
-                    "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
-                ]
-                .as_str(),
-            );
-        } else {
-            out.push_str(
-                format![
-                    "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.monster.nickname, self.monster.species.name, self.uid, self.monster.current_health, self.monster.max_health
-                ]
-                .as_str(),
-            );
-        }
-
-        let number_of_effects = self.moveset.moves().count();
-
-        out.push_str("\t│\t├── ");
-        out.push_str(format!["type {:?}/{:?} \n", self.monster.species.primary_type, self.monster.species.secondary_type].as_str());
-
-        out.push_str("\t│\t├── ");
-        out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
-
-        for (i, move_) in self.moveset.moves().enumerate() {
-            if i < number_of_effects - 1 {
-                out.push_str("\t│\t├── ");
-            } else {
-                out.push_str("\t│\t└── ");
-            }
-            out.push_str(format!["mov {}\n", move_.species.name].as_str());
-        }
-
-        write!(f, "{}", out)
-    }
-}
-
-impl Battler {
-    pub fn new(uid: BattlerUID, monster: Monster, moveset: MoveSet, ability: Ability) -> Self {
-        Battler {
-            uid,
-            monster,
-            moveset,
-            ability,
-        }
-    }
-
-    pub fn is_type(&self, test_type: ElementalType) -> bool {
-        self.monster.is_type(test_type)
-    }
-
-    pub fn monster_composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.monster.stats[Stat::Speed],
-            order: 0,
-        };
-        CompositeEventResponderInstance {
-            composite_event_responder: self.monster.composite_event_responder(),
-            owner_uid: self.uid,
-            activation_order,
-            filters: EventFilterOptions::default(),
-        }
-    }
-
-    pub fn ability_composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.monster.stats[Stat::Speed],
-            order: self.ability.species.order,
-        };
-        CompositeEventResponderInstance {
-            composite_event_responder: self.ability.composite_event_responder(),
-            owner_uid: self.uid,
-            activation_order,
-            filters: EventFilterOptions::default(),
-        }
-    }
-
-    pub fn moveset_composite_event_responder_instances(&self, uid: BattlerUID) -> CompositeEventResponderInstanceList {
-        self.moveset
-            .moves()
-            .map(|it| CompositeEventResponderInstance {
-                composite_event_responder: it.species.composite_event_responder,
-                owner_uid: uid,
-                activation_order: ActivationOrder {
-                    priority: it.species.priority,
-                    speed: self.monster.stats[Stat::Speed],
-                    order: 0,
-                },
-                filters: EventFilterOptions::default(),
-            })
-            .collect::<Vec<_>>()
-    }
-
-    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
-        let mut out = Vec::new();
-        out.push(self.monster_composite_event_responder_instance());
-        out.append(&mut self.moveset_composite_event_responder_instances(self.uid));
-        out.push(self.ability_composite_event_responder_instance());
-        out
-    }
-
-    pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
-        self.moveset
-            .moves()
-            .enumerate()
-            .map(|(idx, _)| MoveUID {
-                battler_uid: self.uid,
-                move_number: MoveNumber::from(idx),
-            })
-            .collect()
-    }
-
-    pub fn status_string(&self) -> String {
-        let mut out = String::new();
-        out.push_str(&format![
-            "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.uid, self.monster.current_health, self.monster.max_health
-        ]);
-        out
-    }
-
-    pub(crate) fn full_name(&self) -> String {
-        if self.monster.nickname == self.monster.species.name {
-            self.monster.species.name.to_string()
-        } else {
-            format!["{} the {}", self.monster.nickname, self.monster.species.name]
-        }
-    }
-
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

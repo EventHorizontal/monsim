@@ -54,8 +54,8 @@ pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let output = quote!(
         { 
             monsim::sim::Battle::new(
-                monsim::sim::PerTeam::new(#ally_team_type::new(#ally_monsters_vec),
-                #opponent_team_type::new(#opponent_monsters_vec))
+                monsim::sim::PerTeam::new(monsim::sim::Ally::new(#ally_team_type::new(#ally_monsters_vec, TeamID::Allies)),
+                monsim::sim::Opponent::new(#opponent_team_type::new(#opponent_monsters_vec, TeamID::Opponents)))
             )
         }
     );

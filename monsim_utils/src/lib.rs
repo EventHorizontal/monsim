@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Not, Sub};
+use std::ops::{Add, Deref, DerefMut, Mul, Not, Sub};
 
 /// Type alias for readability of parentheses
 pub type Nothing = ();
@@ -178,4 +178,66 @@ macro_rules! not {
     ($x: expr) => {
         !$x
     };
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+/// A type that can be deferenced to get data marked as belonging to the Ally Team
+pub struct Ally<T> {
+    item: T
+}
+
+impl<T> Deref for Ally<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        & self.item
+    }
+}
+
+impl<T> DerefMut for Ally<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.item
+    }
+}
+
+impl<T> Ally<T> {
+    pub fn new(item: T) -> Self {
+        Self { item }
+    }
+    
+    pub fn map<U, F>(self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
+        let item = f(self.item);
+        Ally { item }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+/// A type that can be deferenced to get data marked as belonging to the Opponent Team
+pub struct Opponent<T> {
+    item: T
+}
+
+impl<T> Deref for Opponent<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        & self.item
+    }
+}
+
+impl<T> DerefMut for Opponent<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.item
+    }
+}
+
+impl<T> Opponent<T> {
+    pub fn new(item: T) -> Self {
+        Self { item }
+    }
+
+    pub fn map<U, F>(self, f: F) -> Opponent<U> where F: FnOnce(T) -> U {
+        let item = f(self.item);
+        Opponent { item }
+    }
 }

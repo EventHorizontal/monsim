@@ -55,7 +55,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     ui.render(&mut terminal, &battle, &current_app_state)?;
 
     // Will store action related information until they can be built.
-    let mut chosen_actions_for_turn = PerTeam::new(None, None);
+    let mut chosen_actions_for_turn = PerTeam::both(None);
 
     'main: loop {
         match &mut current_app_state {
@@ -100,7 +100,10 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 }
                 
                 // If a Monster has fainted, we need to switch it out
-                let maybe_fainted_active_battler = battle.active_monsters().as_array().into_iter().find(|monster| { monster.is_fainted });
+                let maybe_fainted_active_battler = battle.active_monsters()
+                    .as_array()
+                    .into_iter()
+                    .find(|monster| { monster.is_fainted });
                 if battle.is_finished {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::PostBattle)));
                 } else if let Some(fainted_battler) = maybe_fainted_active_battler {
@@ -168,7 +171,8 @@ fn update_from_input(
                     None
                 },
                 KeyCode::Tab => { 
-                    if let (Some(ally_team_action), Some(opponent_team_action)) = (chosen_actions_for_turn[TeamID::Allies], chosen_actions_for_turn[TeamID::Opponents]) {
+
+                    if let (Some(ally_team_action), Some(opponent_team_action)) = chosen_actions_for_turn.as_pair_of_options() {
                         Some(AppState::Simulating(PerTeam::new(ally_team_action, opponent_team_action)))
                     } else {
                         battle.push_messages_to_log(

@@ -1,4 +1,4 @@
-use utils::{not, ArrayOfOptionals, Nothing, NOTHING};
+use utils::{not, Ally, ArrayOfOptionals, Nothing, Opponent, NOTHING};
 
 use crate::sim::{
         event::CompositeEventResponderInstanceList, Ability, FullySpecifiedAction, ActivationOrder, AvailableActions, Monster,
@@ -13,7 +13,7 @@ use std::{
 };
 
 use super::{
-    prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID, ALLY_1, OPPONENT_1,
+    prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID,
 };
 
 type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
@@ -31,7 +31,6 @@ pub struct Battle {
     teams: PerTeam<MonsterTeam>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
-    pub active_monster_uids: PerTeam<MonsterUID>,
 }
 
 impl Battle {
@@ -42,7 +41,6 @@ impl Battle {
             prng: Prng::new(prng::seed_from_time_now()),
             teams,
             message_log: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
-            active_monster_uids: PerTeam::new(ALLY_1, OPPONENT_1),
         }
     }
 
@@ -79,7 +77,7 @@ impl Battle {
     }
 
     pub fn is_active_monster(&self, monster_uid: MonsterUID) -> bool {
-        self.active_monster_uids[monster_uid.team_id] == monster_uid
+        self.teams[monster_uid.team_id].active_monster_uid == monster_uid
     }
 
     pub fn ability(&self, owner_uid: MonsterUID) -> &Ability {
@@ -139,14 +137,17 @@ impl Battle {
     }
 
     pub fn active_monsters(&self) -> PerTeam<&Monster> {
-        let ally_team_active_monster = self.active_monsters_on_team(TeamID::Allies);
-        let opponent_team_active_monster = self.active_monsters_on_team(TeamID::Opponents);
-        PerTeam::new(ally_team_active_monster, opponent_team_active_monster)
+        let ally_team_active_monster = Ally::new(self.monster(self.ally_team().active_monster_uid));
+        let opponent_team_active_monster = Opponent::new(self.monster(self.opponent_team().active_monster_uid));
+        PerTeam::new(
+            ally_team_active_monster,
+            opponent_team_active_monster,
+        )
     }
 
     /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
     pub fn active_monsters_on_team(&self, team_id: TeamID) -> &Monster {
-        self.monster(self.active_monster_uids[team_id])
+        self.monster(self.teams[team_id].active_monster_uid)
     }
 
     /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is context sensitive.
@@ -222,7 +223,7 @@ impl Battle {
         let mut number_of_switchees = 0;
         let mut switchees = [None; 5];
         for monster in self.team(team_id).monsters().iter() {
-            let is_active_monster_for_team = monster.uid == self.active_monster_uids[team_id];
+            let is_active_monster_for_team = monster.uid == self.teams[team_id].active_monster_uid;
             let is_valid_switch_partner = not!(self.monster(monster.uid).is_fainted) && not!(is_active_monster_for_team);
             if is_valid_switch_partner {
                 switchees[number_of_switchees] = Some(monster.uid);
@@ -241,20 +242,20 @@ impl Battle {
         &mut self.teams[team_id]
     }
 
-    pub fn ally_team(&self) -> &MonsterTeam {
-        &self.teams[TeamID::Allies]
+    pub fn ally_team(&self) -> &Ally<MonsterTeam> {
+        self.teams.ally()
     }
 
-    pub fn ally_team_mut(&mut self) -> &mut MonsterTeam {
-        &mut self.teams[TeamID::Allies]
+    pub fn ally_team_mut(&mut self) -> &mut Ally<MonsterTeam> {
+        self.teams.ally_mut()
     }
 
-    pub fn opponent_team(&self) -> &MonsterTeam {
-        &self.teams[TeamID::Opponents]
+    pub fn opponent_team(&self) -> &Opponent<MonsterTeam> {
+        self.teams.opponent()
     }
 
-    pub fn opponent_team_mut(&mut self) -> &mut MonsterTeam {
-        &mut self.teams[TeamID::Opponents]
+    pub fn opponent_team_mut(&mut self) -> &mut Opponent<MonsterTeam> {
+        self.teams.opponent_mut()
     }
 }
 

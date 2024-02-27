@@ -45,7 +45,7 @@ mod main {
         assert_eq!(test_battle, 
             Battle::new(
                 PerTeam::new(
-                    MonsterTeam::new(vec![
+                    Ally::new(MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
                                 team_id: TeamID::Allies,
@@ -76,8 +76,8 @@ mod main {
                             move_::MoveSet::new(vec![(move_::Move::new(move_dex::Bubble)), (move_::Move::new(move_dex::Scratch))]),
                             ability::Ability::new(ability_dex::FlashFire),
                         )),
-                    ]),
-                    MonsterTeam::new(vec![
+                    ], TeamID::Allies)),
+                    Opponent::new(MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
                                 team_id: TeamID::Opponents,
@@ -88,7 +88,7 @@ mod main {
                             move_::MoveSet::new(vec![(move_::Move::new(move_dex::Tackle)), (move_::Move::new(move_dex::Growl))]),
                             ability::Ability::new(ability_dex::FlashFire),
                         )),
-                    ]),
+                    ], TeamID::Opponents)),
                 )
             )
         );

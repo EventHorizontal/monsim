@@ -17,7 +17,7 @@ pub use event::{
     DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
-pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent};
+pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent, Ally, Opponent};
 pub(crate) use utils::{not, NOTHING, Nothing}; // For internal use
 
 use prng::Prng;
@@ -60,13 +60,23 @@ impl BattleSimulator {
             }?;
 
             // Check if a Monster fainted this turn
-            let maybe_fainted_monster = battle.monsters().find(|monster| battle.monster(monster.uid).is_fainted && battle.is_active_monster(monster.uid));
-            if let Some(monster) = maybe_fainted_monster {
+            let maybe_fainted_acitve_monster = battle.monsters()
+                .find(|monster| battle.monster(monster.uid).is_fainted && battle.is_active_monster(monster.uid));
+            if let Some(fainted_active_monster) = maybe_fainted_acitve_monster {
+                
                 battle
-                    .push_messages_to_log(&[&format!["{fainted_monster} fainted!", fainted_monster = monster.name()], EMPTY_LINE]);
+                    .push_messages_to_log(&[&format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.name()], EMPTY_LINE]);
+                
                 // Check if any of the teams is out of usable Monsters
-                let are_all_ally_team_monsters_fainted = battle.ally_team().monsters().iter().all(|monster| { monster.is_fainted });
-                let are_all_opponent_team_monsters_fainted = battle.opponent_team().monsters().iter().all(|monster| { monster.is_fainted });
+                let are_all_ally_team_monsters_fainted = battle.ally_team()
+                    .monsters()
+                    .iter()
+                    .all(|monster| { monster.is_fainted });
+                let are_all_opponent_team_monsters_fainted = battle.opponent_team()
+                    .monsters()
+                    .iter()
+                    .all(|monster| { monster.is_fainted });
+                
                 if are_all_ally_team_monsters_fainted {
                     battle.is_finished = true;
                     battle.push_message_to_log("Opponent Team won!");
@@ -237,7 +247,7 @@ mod action {
         }
 
         pub fn switch_out(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
-            battle.active_monster_uids[active_monster_uid.team_id] = benched_monster_uid;
+            battle.team_mut(active_monster_uid.team_id).active_monster_uid = benched_monster_uid;
             battle.push_message_to_log(&format![
                 "{active_monster} switched out! Go {benched_monster}!", 
                 active_monster = battle.monster(active_monster_uid).name(),

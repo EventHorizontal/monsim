@@ -1,13 +1,16 @@
 use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use max_size_vec::MaxSizeVec;
+use monsim_utils::{Ally, Opponent};
 
-use crate::sim::event::CompositeEventResponderInstanceList;
+use crate::sim::{event::CompositeEventResponderInstanceList, MonsterNumber};
 use super::{Monster, MonsterUID, MoveNumber};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonsterTeam {
+    pub id: TeamID,
+    pub active_monster_uid: MonsterUID,
     monsters: MaxSizeVec<Monster, 6>,
 }
 
@@ -28,39 +31,71 @@ impl TeamID {
 
 /// A container for storing an object of type `T` for each team.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct PerTeam<T: Clone> {
-    ally_team_item: T,
-    opponent_team_item: T,
+pub struct PerTeam<T> {
+    ally_team_item: Ally<T>,
+    opponent_team_item: Opponent<T>,
 }
 
-impl<T: Clone> PerTeam<T> {
-    pub fn new(ally_team_item: T, opponent_team_item: T) -> Self {
+impl<T> PerTeam<T> {
+    pub fn new(ally_team_item: Ally<T>, opponent_team_item: Opponent<T>) -> Self {
         Self {
             ally_team_item,
             opponent_team_item,
         }
     }
 
-    pub(crate) fn both(item: T) -> Self {
-        Self {
-            ally_team_item: item.clone(),
-            opponent_team_item: item,
-        }
+    pub fn ally(&self) -> &Ally<T> {
+        &self.ally_team_item
     }
 
-    pub(crate) fn unwrap(&self) -> (&T, &T) {
+    pub fn ally_mut(&mut self) -> &mut Ally<T> {
+        &mut self.ally_team_item
+    }
+
+    pub fn opponent(&self) -> &Opponent<T> {
+        &self.opponent_team_item
+    }
+
+    pub fn opponent_mut(&mut self) -> &mut Opponent<T> {
+        &mut self.opponent_team_item
+    }
+
+    pub fn unwrap(&self) -> (&Ally<T>, &Opponent<T>) {
         (&self.ally_team_item, &self.opponent_team_item)
     }
 
-    pub(crate) fn unwrap_mut(&mut self) -> (&mut T, &mut T) {
+    pub fn unwrap_mut(&mut self) -> (&mut Ally<T>, &mut Opponent<T>) {
         (&mut self.ally_team_item, &mut self.opponent_team_item)
+    }
+
+    pub fn map<U: Clone, F: Clone>(self, f: F) -> PerTeam<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        PerTeam::new(self.ally_team_item.map(f.clone()), self.opponent_team_item.map(f))
+    }
+}
+
+impl<T: Clone> PerTeam<Option<T>> {
+    pub fn as_pair_of_options(&self) -> (Option<Ally<T>>, Option<Opponent<T>>) {
+        let (ally_team_item, opponent_team_item) = self.unwrap();
+        let (ally_team_item, opponent_team_item) = ((**ally_team_item).clone(), (**opponent_team_item).clone());
+        (ally_team_item.map(|item| { Ally::new(item) }), opponent_team_item.map(|item| { Opponent::new(item) }))
+    }
+}
+
+impl<T: Clone> PerTeam<T> {
+    pub(crate) fn both(item: T) -> Self {
+        Self {
+            ally_team_item: Ally::new(item.clone()),
+            opponent_team_item: Opponent::new(item),
+        }
     }
 
     /// Returns a copy of the items
     pub(crate) fn as_array(&self) -> [T; 2] {
-        [self.ally_team_item.clone(), self.opponent_team_item.clone()]
+        [(*self.ally_team_item).clone(), (*self.opponent_team_item).clone()]
     }
-    
 }
 
 impl<T: Clone> Index<TeamID> for PerTeam<T> {
@@ -96,13 +131,17 @@ pub struct MoveUID {
 }
 
 impl MonsterTeam {
-    pub fn new(monsters: Vec<Monster>) -> Self {
+    pub fn new(monsters: Vec<Monster>, id: TeamID) -> Self {
         assert!(monsters.first().is_some(), "There is not a single monster in the team.");
         assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
         let monsters_iter = monsters.into_iter();
         let mut monsters = MaxSizeVec::new();
         monsters_iter.for_each(|monster| {monsters.push(monster)});
-        MonsterTeam { monsters }
+        MonsterTeam {
+            id,
+            active_monster_uid: MonsterUID { team_id: id, monster_number: MonsterNumber::_1}, 
+            monsters 
+        }
     }
 
     pub fn monsters(&self) -> &MaxSizeVec<Monster, 6> {

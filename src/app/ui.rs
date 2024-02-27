@@ -1,6 +1,6 @@
 use std::io::Stdout;
 
-use monsim_utils::ArrayOfOptionals;
+use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
 use crate::sim::{AvailableActionsForTeam, Battle, MonsterUID, PartiallySpecifiedAction, PerTeam, TeamID};
@@ -105,40 +105,40 @@ impl<'a> Ui<'a> {
         Self {
             currently_selected_panel: SelectablePanelID::MessageLog,
             active_monster_status_panels: PerTeam::new(
-                ActiveMonsterStatusPanel {
+                Ally::new(ActiveMonsterStatusPanel {
                     team_name: ALLY_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamID::Allies).status_string(),
-                }, 
-                ActiveMonsterStatusPanel {
+                }), 
+                Opponent::new(ActiveMonsterStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamID::Opponents).status_string(),
                     }
-                ),
+                )),
             action_choice_selection_menus: PerTeam::new(
-                    ActionChoiceSelectionMenu { 
+                    Ally::new(ActionChoiceSelectionMenu { 
                         team_name: ALLY_TEAM_NAME, 
                         selectable_panel_id: SelectablePanelID::AllyTeamChoiceSelectionMenu,
                         action_choice_list: ally_team_action_choice_list,
                         list_state: new_list_state(0),
                         selection_cursor: None,
-                    },
-                    ActionChoiceSelectionMenu { 
+                    }),
+                    Opponent::new(ActionChoiceSelectionMenu { 
                         team_name: OPPONENT_TEAM_NAME,
                         selectable_panel_id: SelectablePanelID::OpponentTeamChoiceSelectionMenu,
                         action_choice_list: opponent_team_action_choice_list,
                         list_state: new_list_state(0),
                         selection_cursor: None, 
-                    },
+                    }),
                 ),
             team_status_panels: PerTeam::new(
-                TeamStatusPanel {
+                Ally::new(TeamStatusPanel {
                     team_name: ALLY_TEAM_NAME,
                     team_status: battle.ally_team().team_status_string(),
-                },
-                TeamStatusPanel {
+                }),
+                Opponent::new(TeamStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     team_status: battle.opponent_team().team_status_string(),
-                }, 
+                }), 
             ),
             message_log_panel: MessageLogPanel {
                 _selectable_panel_id: SelectablePanelID::MessageLog,

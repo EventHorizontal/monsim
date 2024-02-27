@@ -210,7 +210,7 @@ fn update_from_input(
                     if let Some(switchee_uid) = possible_switchee_uids[*highlight_cursor] {
                         // HACK: cleaner/more systematic way to do this?
                         if *is_between_turn_switch {
-                            let _ = BattleSimulator::between_turn_switch_out(battle, *switcher_uid, switchee_uid);
+                            let _ = BattleSimulator::switch_out_between_turns(battle, *switcher_uid, switchee_uid);
                             ui.clear_choice_menu_selection_for_team(switcher_uid.team_id);
                             // HACK: This fixes the issue of targetting the previous fainted foe until we have a more robust targetting system
                             ui.clear_choice_menu_selection_for_team(switcher_uid.team_id.other());

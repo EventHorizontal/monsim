@@ -101,7 +101,7 @@ impl BattleSimulator {
         Ok(NOTHING)
     }
     
-    pub(crate) fn between_turn_switch_out(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
+    pub(crate) fn switch_out_between_turns(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
         action::PrimaryAction::switch_out(battle, active_monster_uid, benched_monster_uid)
     }
 }

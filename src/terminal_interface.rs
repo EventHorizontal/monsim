@@ -25,22 +25,28 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 writeln!(locked_stdout, "Choose an Action for the Ally Team")?;
                 writeln!(locked_stdout, "")?;
                 display_choices(&ally_team_available_actions, &mut locked_stdout)?;
+                
                 let chosen_action_index = input()?;
+                
                 let quit_choice_index = ally_team_available_actions.count();
                 if chosen_action_index == quit_choice_index {
                     break 'main;
                 }
+                
                 let ally_team_chosen_action = fully_specify_team_action(ally_team_available_actions, chosen_action_index)?;
 
                 // Opponent choices
                 writeln!(locked_stdout, "Choose an Action for the Opponent Team")?;
                 writeln!(locked_stdout, "")?;
                 display_choices(&opponent_team_available_actions, &mut locked_stdout)?;
+                
                 let chosen_action_index = input()?;
-                let quit_choice_index = ally_team_available_actions.count();
+                
+                let quit_choice_index = opponent_team_available_actions.count();
                 if chosen_action_index == quit_choice_index {
                     break 'main;
                 }
+                
                 let opponent_team_chosen_action = fully_specify_team_action(opponent_team_available_actions, chosen_action_index)?;
 
                 let chosen_actions = PerTeam::new(ally_team_chosen_action, opponent_team_chosen_action);

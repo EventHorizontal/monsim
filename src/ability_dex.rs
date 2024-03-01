@@ -35,7 +35,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         ..DEFAULT_RESPONSE
     },
     on_activate: |battle, _owner_uid| {
-        battle.push_message_to_log("Flash Fire activated!");
+        battle.message_log.push("Flash Fire activated!".to_string());
     },
     filters: EventFilterOptions::default(),
     order: 0,
@@ -68,7 +68,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     },
     on_activate: |battle, owner_uid| {
         let owner_name = battle.monster(owner_uid).name();
-        battle.push_message_to_log(&format!["{owner_name}'s Water Absorb activated!"]);
+        battle.message_log.push(format!["{owner_name}'s Water Absorb activated!"]);
     },
     filters: EventFilterOptions::default(),
     order: 0,

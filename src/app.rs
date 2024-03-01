@@ -79,13 +79,13 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 let _turn_result = BattleSimulator::simulate_turn(&mut battle, *chosen_actions);
                 #[cfg(feature = "debug")]
                 match _turn_result {
-                    Ok(_) => battle.push_messages_to_log(
+                    Ok(_) => battle.message_log.extend(
                         &[
                             "Simulator: The turn was calculated successfully.", 
                             EMPTY_LINE
                         ]
                     ),
-                    Err(error) => battle.push_message_to_log(&format!["Simulator: {:?}", error]),
+                    Err(error) => battle.message_log.push(format!["Simulator: {:?}", error].to_string()),
                 };
                 
                 // TODO: Investigate whether updating the message log seperately is worth the possible syncing issues
@@ -157,7 +157,7 @@ fn update_from_input(
                             PartiallySpecifiedAction::Move { move_uid, target_uid, .. } => {
                                 chosen_actions_for_turn[team_id] = Some(FullySpecifiedAction::Move { move_uid, target_uid })
                             },
-                            PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids } => {
+                            PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids, .. } => {
                                 // Update the switchee list when the switch option is selected.
                                 return Some(AppState::AcceptingInput(InputMode::SwitcheePrompt {
                                     is_between_turn_switch: false,
@@ -175,7 +175,7 @@ fn update_from_input(
                     if let (Some(ally_team_action), Some(opponent_team_action)) = chosen_actions_for_turn.as_pair_of_options() {
                         Some(AppState::Simulating(PerTeam::new(ally_team_action, opponent_team_action)))
                     } else {
-                        battle.push_messages_to_log(
+                        battle.message_log.extend(
                             &[
                                 &"Simulator: Actions were not chosen... please select something before activating the simulation.",
                                 &"---",

@@ -241,3 +241,24 @@ impl<T> Opponent<T> {
         Opponent { item }
     }
 }
+
+pub trait TeamAffiliation<T> {
+    type R<V>;
+    fn map<U, F>(self, f: F) -> Self::R<U> where F: FnOnce(T) -> U;
+}
+
+impl<T> TeamAffiliation<T> for Ally<T> {
+    type R<V> = Ally<V>;
+
+    fn map<U, F>(self, f: F) -> Self::R<U> where F: FnOnce(T) -> U {
+        self.map(f)
+    }
+}
+
+impl<T> TeamAffiliation<T> for Opponent<T> {
+    type R<V> = Opponent<V>;
+
+    fn map<U, F>(self, f: F) -> Self::R<U> where F: FnOnce(T) -> U {
+        self.map(f)
+    }
+}

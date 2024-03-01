@@ -1,4 +1,4 @@
-use monsim::{app::{self, AppResult}, sim::*};
+use monsim::{app::AppResult, sim::*};
 mod ability_dex;
 mod monster_dex;
 mod move_dex;
@@ -44,5 +44,6 @@ fn main() -> AppResult<Nothing> {
             }
         }
     );
-    app::run(battle)
+
+    monsim::run(battle)
 }

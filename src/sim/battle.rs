@@ -1,3 +1,5 @@
+mod message_log;
+
 use utils::{not, Ally, ArrayOfOptionals, Nothing, Opponent, NOTHING};
 
 use crate::sim::{
@@ -6,21 +8,13 @@ use crate::sim::{
         utils,
 };
 
-use std::{
-    fmt::Display,
-    iter::Chain,
-    slice::{Iter, IterMut},
-};
+use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
 
-use super::{
-    prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID,
-};
+use super::{prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID};
+use message_log::MessageLog;
 
 type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
 type MutableMonsterIterator<'a> = Chain<IterMut<'a, Monster>, IterMut<'a, Monster>>;
-
-pub type MessageLog = Vec<String>;
-pub const CONTEXT_MESSAGE_BUFFER_SIZE: usize = 20;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,7 +34,7 @@ impl Battle {
             turn_number: 0,
             prng: Prng::new(prng::seed_from_time_now()),
             teams,
-            message_log: Vec::with_capacity(CONTEXT_MESSAGE_BUFFER_SIZE),
+            message_log: MessageLog::new(),
         }
     }
 
@@ -197,6 +191,7 @@ impl Battle {
             Some(PartiallySpecifiedAction::SwitchOut { 
                 switcher_uid: team_active_monster.uid, 
                 possible_switchee_uids,
+                display_text: "Switch Out",
             })
         } else {
             None
@@ -206,16 +201,6 @@ impl Battle {
             &move_actions, 
             switch_action,
         )
-    }
-
-    pub fn push_message_to_log(&mut self, message: &str) {
-        self.message_log.push(message.to_string());
-    }
-
-    pub fn push_messages_to_log(&mut self, messages: &[&str]) {
-        for message in messages {
-            self.message_log.push(message.to_string());
-        }
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
@@ -259,7 +244,7 @@ impl Battle {
     }
 }
 
-impl Display for Battle {
+impl<'a> Display for Battle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 

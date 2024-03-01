@@ -1,6 +1,6 @@
 use std::ops::{IndexMut, Index, Range};
 
-use monsim_utils::ArrayOfOptionals;
+use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
 
 use crate::sim::utils::slice_to_array_of_options;
 
@@ -13,7 +13,7 @@ pub enum PartiallySpecifiedAction {
     /// This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
     Move{ move_uid: MoveUID, target_uid: MonsterUID, display_text: &'static str},
     /// A switch out action before we know which monster to switch with.
-    SwitchOut { switcher_uid: MonsterUID, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5> },
+    SwitchOut { switcher_uid: MonsterUID, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>, display_text: &'static str },
 }
 
 /// An action whose details have been fully specified.
@@ -39,6 +39,16 @@ impl Index<TeamID> for AvailableActions {
             TeamID::Allies => &self.ally_team_available_actions,
             TeamID::Opponents => &self.opponent_team_available_actions,
         }
+    }
+}
+
+impl AvailableActions {
+    pub(crate) fn unwrap(&self) -> (Ally<AvailableActionsForTeam>, Opponent<AvailableActionsForTeam>) {
+        (Ally::new(self.ally_team_available_actions), Opponent::new(self.opponent_team_available_actions))
+    }
+
+    pub(crate) fn unwrap_mut(&mut self) -> (Ally<AvailableActionsForTeam>, Opponent<AvailableActionsForTeam>) {
+        (Ally::new(self.ally_team_available_actions), Opponent::new(self.opponent_team_available_actions))
     }
 }
 
@@ -94,6 +104,15 @@ impl AvailableActionsForTeam {
         } else {
             panic!("Index out of bounds for AvailableActionsForTeam.")
         }
+    }
+    
+    pub(crate) fn count(&self) -> usize {
+        let mut count = 0;
+        for index in 0..4 {
+            if self.moves[index].is_some() { count += 1; };
+        }
+        if self.switch_out.is_some() { count += 1; }
+        count
     }
 }
 

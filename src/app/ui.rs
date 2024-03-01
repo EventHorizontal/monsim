@@ -191,7 +191,7 @@ impl<'a> Ui<'a> {
             frame.render_stateful_widget(ally_team_choice_menu_widget, ally_team_panel_chunks[1], &mut self.action_choice_selection_menus[TeamID::Allies].list_state.clone());
             frame.render_widget(ally_team_status_widget, ally_team_panel_chunks[2]);
 
-            let message_log_widget = self.message_log_panel.as_renderable_widget(&battle.message_log, self.currently_selected_panel == SelectablePanelID::MessageLog);
+            let message_log_widget = self.message_log_panel.as_renderable_widget(&battle.message_log.as_vec(), self.currently_selected_panel == SelectablePanelID::MessageLog);
             // If we are on the SwitcheePrompt, then show the SwitcheePrompt widget
             if let AppState::AcceptingInput(InputMode::SwitcheePrompt {
                 possible_switchee_uids,
@@ -339,8 +339,8 @@ impl<'a> Ui<'a> {
                 PartiallySpecifiedAction::Move { display_text, .. } => {
                     list_to_fill.push(ListItem::new(display_text));
                 },
-                PartiallySpecifiedAction::SwitchOut { .. } => {
-                    list_to_fill.push(ListItem::new("Switch Out"));
+                PartiallySpecifiedAction::SwitchOut { display_text, .. } => {
+                    list_to_fill.push(ListItem::new(display_text));
                 },
             }
         }

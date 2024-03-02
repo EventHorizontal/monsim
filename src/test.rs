@@ -249,6 +249,7 @@ mod prng {
     }
 }
 
+#[cfg(all(test, feature = "debug"))]
 mod utils {
     use monsim_utils::{Ally, Team};
 

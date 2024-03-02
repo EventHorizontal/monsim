@@ -46,10 +46,6 @@ impl AvailableActions {
     pub(crate) fn unwrap(&self) -> (Ally<AvailableActionsForTeam>, Opponent<AvailableActionsForTeam>) {
         (Ally::new(self.ally_team_available_actions), Opponent::new(self.opponent_team_available_actions))
     }
-
-    pub(crate) fn unwrap_mut(&mut self) -> (Ally<AvailableActionsForTeam>, Opponent<AvailableActionsForTeam>) {
-        (Ally::new(self.ally_team_available_actions), Opponent::new(self.opponent_team_available_actions))
-    }
 }
 
 

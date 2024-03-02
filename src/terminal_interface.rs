@@ -33,7 +33,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
                     },
-                    Choice::Action(ally_team_fully_specified_action) => ally_team_fully_specified_action.expect_ally(),
+                    Choice::Action(fully_specified_action) => fully_specified_action.expect_ally(),
                 };
 
                 // Opponent choices
@@ -46,7 +46,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
                     },
-                    Choice::Action(opponent_team_fully_specified_action) => opponent_team_fully_specified_action.expect_opponent(),
+                    Choice::Action(fully_specified_action) => fully_specified_action.expect_opponent(),
                 };
 
                 // Package both team's choices up

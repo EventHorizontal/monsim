@@ -81,6 +81,11 @@ impl AvailableActionsForTeam {
         self.switch_out
     }
 
+    pub fn switch_out_action_index(&self) -> Option<usize> {
+        let move_count = self.moves.iter().flatten().count();
+        self.switch_out.map(|_| move_count )
+    }
+
     pub(crate) fn as_vec(&self) -> Vec<PartiallySpecifiedAction> {
         [
             self.moves[0],

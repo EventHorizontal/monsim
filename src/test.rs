@@ -248,3 +248,22 @@ mod prng {
         assert!(avg_probability_deviation < 5.0e-3);
     }
 }
+
+mod utils {
+    use monsim_utils::{Ally, Team};
+
+    #[test]
+    #[should_panic]
+    fn test_expect_wrong_team() {
+        let item = Ally::new(10usize);
+        let item = Team::ally(item);
+        (item.map(|i| { i - 1 }).expect_opponent());
+    }
+
+    #[test]
+    fn test_expect_right_team() {
+        let item = Ally::new(10usize);
+        let item = Team::ally(item);
+        item.map(|i| {i + 1}).expect_ally();
+    }
+}

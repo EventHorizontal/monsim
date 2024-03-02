@@ -67,13 +67,6 @@ impl<T> PerTeam<T> {
     pub fn unwrap_mut(&mut self) -> (&mut Ally<T>, &mut Opponent<T>) {
         (&mut self.ally_team_item, &mut self.opponent_team_item)
     }
-
-    pub fn map<U: Clone, F: Clone>(self, f: F) -> PerTeam<U>
-    where
-        F: FnOnce(T) -> U,
-    {
-        PerTeam::new(self.ally_team_item.map(f.clone()), self.opponent_team_item.map(f))
-    }
 }
 
 impl<T: Clone> PerTeam<Option<T>> {
@@ -96,9 +89,16 @@ impl<T: Clone> PerTeam<T> {
     pub(crate) fn as_array(&self) -> [T; 2] {
         [(*self.ally_team_item).clone(), (*self.opponent_team_item).clone()]
     }
+
+    pub fn map<U: Clone, F>(self, f: F) -> PerTeam<U>
+    where
+        F: Fn(T) -> U,
+    {
+        PerTeam::new(self.ally_team_item.map(&f), self.opponent_team_item.map(f))
+    }
 }
 
-impl<T: Clone> Index<TeamID> for PerTeam<T> {
+impl<T> Index<TeamID> for PerTeam<T> {
     type Output = T;
 
     fn index(&self, index: TeamID) -> &Self::Output {
@@ -109,7 +109,7 @@ impl<T: Clone> Index<TeamID> for PerTeam<T> {
     }
 } 
 
-impl<T: Clone> IndexMut<TeamID> for PerTeam<T> {
+impl<T> IndexMut<TeamID> for PerTeam<T> {
     fn index_mut(&mut self, index: TeamID) -> &mut Self::Output {
         match index {
             TeamID::Allies => &mut self.ally_team_item,

@@ -182,83 +182,110 @@ macro_rules! not {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// A type that can be deferenced to get data marked as belonging to the Ally Team
-pub struct Ally<T> {
-    item: T
-}
+pub struct Ally<T>(pub T);
 
 impl<T> Deref for Ally<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        & self.item
+        & self.0
     }
 }
 
 impl<T> DerefMut for Ally<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.item
+        &mut self.0
     }
 }
 
 impl<T> Ally<T> {
     pub fn new(item: T) -> Self {
-        Self { item }
+        Self(item)
     }
-    
-    pub fn map<U, F>(self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
-        let item = f(self.item);
-        Ally { item }
+}
+
+impl<T: Clone> Ally<T> {
+    pub fn map<U, F>(&self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
+        let item = f(self.0.clone());
+        Ally(item)
     }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// A type that can be deferenced to get data marked as belonging to the Opponent Team
-pub struct Opponent<T> {
-    item: T
-}
+pub struct Opponent<T>(pub T);
 
 impl<T> Deref for Opponent<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        & self.item
+        & self.0
     }
 }
 
 impl<T> DerefMut for Opponent<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.item
+        &mut self.0
     }
 }
 
 impl<T> Opponent<T> {
     pub fn new(item: T) -> Self {
-        Self { item }
-    }
-
-    pub fn map<U, F>(self, f: F) -> Opponent<U> where F: FnOnce(T) -> U {
-        let item = f(self.item);
-        Opponent { item }
+        Self(item)
     }
 }
 
-pub trait TeamAffiliation<T> {
-    type R<V>;
-    fn map<U, F>(self, f: F) -> Self::R<U> where F: FnOnce(T) -> U;
-}
-
-impl<T> TeamAffiliation<T> for Ally<T> {
-    type R<V> = Ally<V>;
-
-    fn map<U, F>(self, f: F) -> Self::R<U> where F: FnOnce(T) -> U {
-        self.map(f)
+impl<T: Clone> Opponent<T> {
+    pub fn map<U, F>(&self, f: F) -> Opponent<U> where F: FnOnce(T) -> U {
+        let item = f(self.0.clone());
+        Opponent(item)
     }
 }
 
-impl<T> TeamAffiliation<T> for Opponent<T> {
-    type R<V> = Opponent<V>;
+pub enum Team<T> {
+    Ally(Ally<T>),
+    Opponent(Opponent<T>)
+}
 
-    fn map<U, F>(self, f: F) -> Self::R<U> where F: FnOnce(T) -> U {
-        self.map(f)
+impl<T> Team<T> {
+    pub fn ally(item: Ally<T>) -> Self {
+        Self::Ally(item)
+    }
+
+    pub fn opponent(item: Opponent<T>) -> Self {
+        Self::Opponent(item)
+    }
+    
+    pub fn apply<U, F>(&self, f: F) -> U where F: FnOnce(&T) -> U {
+        match self {
+            Team::Ally(a) => f(&**a),
+            Team::Opponent(o) => f(&**o),
+        }
+    }
+
+    pub fn expect_ally(self) -> Ally<T> {
+        match self {
+            Team::Ally(a) => a,
+            Team::Opponent(_) => panic!(),
+        }
+    }
+
+    pub fn expect_opponent(self) -> Opponent<T> {
+        match self {
+            Team::Ally(_) => panic!(),
+            Team::Opponent(o) => o,
+        }
     }
 }
+
+impl<T: Clone> Team<T> {
+    pub fn map<U, F>(&self, f: F) -> Team<U> 
+        where F: FnOnce(T) -> U
+    {
+        match self {
+            Team::Ally(a) => Team::Ally(a.map(f)),
+            Team::Opponent(o) => Team::Opponent(o.map(f)),
+        }
+    }
+}
+

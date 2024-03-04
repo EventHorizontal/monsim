@@ -22,38 +22,27 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 
                 let (ally_team_available_actions, opponent_team_available_actions) = available_actions.unwrap();
 
-                // TODO: remove duplication
-                if battle.active_monsters()[TeamID::Allies].is_fainted {
-                    if let Some(PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = ally_team_available_actions.switch_out_action() {
-                        let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
-                        let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.active_monsters()[TeamID::Allies].name());
-                        for (index, switchee_name) in switchee_names {
-                            let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
-                        }
-                        let chosen_switchee_index = input_as_usize(&mut locked_stdout, possible_switchee_uids.iter().flatten().count()).unwrap();
-                        let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index].unwrap();
-                        BattleSimulator::switch_out_between_turns(&mut battle, switcher_uid, chosen_switchee_uid)?;
-                        last_turn_chosen_actions = None;
-                    } else {
-                        turn_stage = TurnStage::BattleEnded;
-                        continue;
-                    }
-                }
+                // HACK: We removed the duplication but this is a _very_ cumbersome way of getting the data... the way to fix this is to restructure `Battle` to actually be able
+                // to get multiple pieces of data at once.
+                let active_monsters = battle.active_monsters();
+                let (ally_team_active_monster, opponent_team_active_monster) = active_monsters.unwrap();
 
-                if battle.active_monsters()[TeamID::Opponents].is_fainted {
-                    if let Some(PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = ally_team_available_actions.switch_out_action() {
-                        let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
-                        let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.active_monsters()[TeamID::Opponents].name());
-                        for (index, switchee_name) in switchee_names {
-                            let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
+                for active_monster in [(**ally_team_active_monster).clone(), (**opponent_team_active_monster).clone()] {
+                    if active_monster.is_fainted {
+                        if let Some(PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = ally_team_available_actions.switch_out_action() {
+                            let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
+                            let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", active_monster.name());
+                            for (index, switchee_name) in switchee_names {
+                                let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
+                            }
+                            let chosen_switchee_index = input_as_usize(&mut locked_stdout, possible_switchee_uids.iter().flatten().count()).unwrap();
+                            let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index].unwrap();
+                            BattleSimulator::switch_out_between_turns(&mut battle, switcher_uid, chosen_switchee_uid)?;
+                            last_turn_chosen_actions = None;
+                        } else {
+                            turn_stage = TurnStage::BattleEnded;
+                            continue 'main;
                         }
-                        let chosen_switchee_index = input_as_usize(&mut locked_stdout, possible_switchee_uids.iter().flatten().count()).unwrap();
-                        let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index].unwrap();
-                        BattleSimulator::switch_out_between_turns(&mut battle, switcher_uid, chosen_switchee_uid)?;
-                        last_turn_chosen_actions = None;
-                    } else {
-                        turn_stage = TurnStage::BattleEnded;
-                        continue;
                     }
                 }
                 

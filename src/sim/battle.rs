@@ -3,14 +3,14 @@ mod message_log;
 use utils::{not, Ally, ArrayOfOptionals, Nothing, Opponent, NOTHING};
 
 use crate::sim::{
-        event::CompositeEventResponderInstanceList, Ability, FullySpecifiedAction, ActivationOrder, AvailableActions, Monster,
+        Ability, FullySpecifiedAction, ActivationOrder, AvailableActions, Monster,
         MonsterTeam, MonsterUID, Move, MoveUID, Stat, AvailableActionsForTeam,
         utils,
 };
 
 use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
 
-use super::{prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID};
+use super::{event::EventHandlerDeckInstance, prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID};
 use message_log::MessageLog;
 
 type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
@@ -97,10 +97,10 @@ impl Battle {
             .move_mut(move_uid.move_number)
     }
 
-    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
+    pub fn event_handler_deck_instances(&self) -> Vec<EventHandlerDeckInstance> {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team().composite_event_responder_instances());
-        out.append(&mut self.opponent_team().composite_event_responder_instances());
+        out.append(&mut self.ally_team().event_handler_deck_instances());
+        out.append(&mut self.opponent_team().event_handler_deck_instances());
         out
     }
 

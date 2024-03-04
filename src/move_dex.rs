@@ -9,9 +9,9 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
+    event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventFilterOptions::default(),
+    event_handler_deck_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -22,9 +22,9 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
+    event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventFilterOptions::default(),
+    event_handler_deck_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -35,9 +35,9 @@ pub const Ember: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
+    event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventFilterOptions::default(),
+    event_handler_deck_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -48,9 +48,9 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
+    event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventFilterOptions::default(),
+    event_handler_deck_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 
@@ -61,9 +61,9 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    composite_event_responder: DEFAULT_RESPONSE,
+    event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    composite_event_responder_filters: EventFilterOptions::default(),
+    event_handler_deck_filters: EventFilterOptions::default(),
     on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),

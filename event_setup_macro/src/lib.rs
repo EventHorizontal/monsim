@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::quote;
-use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, braced, Pat, ExprTuple};
+use syn::{braced, parse::{Parse, ParseStream}, parse_macro_input, Attribute, ExprMatch, ExprTuple, Pat, Token};
 
 /// Generates the struct `EventResponder`, the default constant and the `InBattleEvent` trait plus implementations for each event, when given a list of event identifiers.
 /// The syntax for this is as follows
@@ -22,23 +22,25 @@ use syn::{parse_macro_input, ExprMatch, Token, parse::{Parse, ParseStream}, brac
 /// ```
 #[proc_macro]
 pub fn event_setup(input: TokenStream) -> TokenStream {
-    let expr_cer: ExprCompositeEventResponder = parse_macro_input!(input);
+    let expr_ehd: ExprEventHandlerDeck = parse_macro_input!(input);
     
-    let first_pub_keyword = expr_cer.first_pub_keyword;
-    let struct_keyword = expr_cer.struct_keyword;
-    let struct_name = expr_cer.struct_name;
-    let match_expr = expr_cer.match_expr;
-    let second_pub_keyword = expr_cer.second_pub_keyword;
-    let const_keyword = expr_cer.const_keyword;
-    let default_responder_constant_name = expr_cer.default_responder_constant_name;
-    let default_responder_value = expr_cer.default_responder_value;
-    let third_pub_keyword = expr_cer.third_pub_keyword;
-    let trait_keyword = expr_cer.trait_keyword;
-    let trait_name = expr_cer.trait_name;
+    let doc_comment = expr_ehd.doc_comment;
+    let first_pub_keyword = expr_ehd.first_pub_keyword;
+    let struct_keyword = expr_ehd.struct_keyword;
+    let struct_name = expr_ehd.struct_name;
+    let match_expr = expr_ehd.match_expr;
+    let second_pub_keyword = expr_ehd.second_pub_keyword;
+    let const_keyword = expr_ehd.const_keyword;
+    let default_handler_constant_name = expr_ehd.default_handler_constant_name;
+    let default_handler_value = expr_ehd.default_handler_value;
+    let third_pub_keyword = expr_ehd.third_pub_keyword;
+    let trait_keyword = expr_ehd.trait_keyword;
+    let trait_name = expr_ehd.trait_name;
 
     let mut fields = quote!();
     let mut fields_for_constant = quote!();
     let mut events = quote!();
+    let event_handler_type_name = quote!(EventHandler);
     for expression in match_expr.arms {
         let mut comments = quote!();
         let mut maybe_context_type = None;
@@ -70,12 +72,12 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
             Some(tokens) => tokens,
             None => panic!("A context must be specified for each field."),
         };
-        let responder_identifier = expression.pat;
-        let responder_return_type = *expression.body;
+        let handler_ident = expression.pat;
+        let handler_return_type = *expression.body;
         
-        let pat_ident = match responder_identifier {
+        let pat_ident = match handler_ident {
             Pat::Ident( ref pat_ident) => pat_ident.clone(),
-            _ => panic!("Error: Expected responder_identifier to be an identifier."),
+            _ => panic!("Error: Expected handler_ident to be an identifier."),
         };
         let trait_name_string_in_pascal_case = to_pascal_case(pat_ident.clone().ident.to_string());
         let event_trait_literal = Literal::string(&trait_name_string_in_pascal_case);
@@ -86,11 +88,11 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
             fields = quote!( 
                 #fields
                 #comments
-                pub #responder_identifier: Option<EventResponder<#responder_return_type, #context_type>>,
+                pub #handler_ident: Option<#event_handler_type_name<#handler_return_type, #context_type>>,
             );
             fields_for_constant = quote!(
                 #fields_for_constant
-                #responder_identifier: #default_responder_value,
+                #handler_ident: #default_handler_value,
             );
             events = quote!(
                 #events
@@ -99,10 +101,10 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
                 pub struct #trait_name_ident_in_pascal_case;
 
                 impl #trait_name for #trait_name_ident_in_pascal_case {
-                    type EventReturnType = #responder_return_type;
+                    type EventReturnType = #handler_return_type;
                     type ContextType = #context_type;
-                    fn corresponding_responder(&self, composite_event_responder: &#struct_name) -> Option<EventResponder<Self::EventReturnType, Self::ContextType>> {
-                        composite_event_responder.#responder_identifier
+                    fn corresponding_handler(&self, event_handler_deck: &#struct_name) -> Option<#event_handler_type_name<Self::EventReturnType, Self::ContextType>> {
+                        event_handler_deck.#handler_ident
                     }
         
                     fn name(&self) -> &'static str {
@@ -113,12 +115,13 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
     }
 
     let output_token_stream = quote!(
+        #doc_comment
         #[derive(Debug, Clone, Copy)]
         #first_pub_keyword #struct_keyword #struct_name {
             #fields
         }
 
-        #second_pub_keyword #const_keyword #default_responder_constant_name: #struct_name = #struct_name {
+        #second_pub_keyword #const_keyword #default_handler_constant_name: #struct_name = #struct_name {
             #fields_for_constant
         };
 
@@ -126,10 +129,10 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
             type EventReturnType: Sized + Clone + Copy;
             type ContextType: Sized + Clone + Copy;
 
-            fn corresponding_responder(
+            fn corresponding_handler(
                 &self,
-                composite_event_responder: &#struct_name,
-            ) -> Option<EventResponder<Self::EventReturnType, Self::ContextType>>;
+                event_handler_deck: &#struct_name,
+            ) -> Option<#event_handler_type_name<Self::EventReturnType, Self::ContextType>>;
 
             fn name(&self) -> &'static str;
         }
@@ -161,22 +164,24 @@ fn to_pascal_case(input_string: String) -> String {
     output_string.replace("_", "")
 }
 
-struct ExprCompositeEventResponder {
+struct ExprEventHandlerDeck {
+    doc_comment: Attribute,
     first_pub_keyword: Token![pub],
     struct_keyword: Token![struct],
     struct_name: Ident,
     match_expr: ExprMatch,
     second_pub_keyword: Token![pub],
     const_keyword: Token![const],
-    default_responder_constant_name: Ident,
-    default_responder_value: Ident,
+    default_handler_constant_name: Ident,
+    default_handler_value: Ident,
     third_pub_keyword: Token![pub],
     trait_keyword: Token![trait],
     trait_name: Ident,
 }
 
-impl Parse for ExprCompositeEventResponder {
+impl Parse for ExprEventHandlerDeck {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let doc_comment = input.call(Attribute::parse_outer)?[0].clone();
         let first_pub_keyword: Token![pub] = input.parse()?;
         let struct_keyword: Token![struct] = input.parse()?;
         let struct_name: Ident = input.parse()?;
@@ -185,9 +190,9 @@ impl Parse for ExprCompositeEventResponder {
         let match_expr: ExprMatch = content.parse()?;
         let second_pub_keyword: Token![pub] = input.parse()?;
         let const_keyword: Token![const] = input.parse()?;
-        let default_responder_constant_name: Ident = input.parse()?;
+        let default_handler_constant_name: Ident = input.parse()?;
         let _: Token![=] = input.parse()?;
-        let default_responder_value: Ident = input.parse()?;
+        let default_handler_value: Ident = input.parse()?;
         let _: Token![;] = input.parse()?;
         let third_pub_keyword: Token![pub] = input.parse()?;
         let trait_keyword: Token![trait] = input.parse()?;
@@ -195,14 +200,15 @@ impl Parse for ExprCompositeEventResponder {
         let _: Token![;] = input.parse()?;
         Ok(
             Self {
+                doc_comment,
                 first_pub_keyword,
                 struct_keyword,
                 struct_name,
                 match_expr,
-                default_responder_constant_name,
+                default_handler_constant_name,
                 second_pub_keyword,
                 const_keyword,
-                default_responder_value,
+                default_handler_value,
                 third_pub_keyword,
                 trait_keyword,
                 trait_name,

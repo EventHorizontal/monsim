@@ -6,7 +6,7 @@ use std::{
 
 use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamID };
 
-use crate::sim::{event::{CompositeEventResponderInstance, CompositeEventResponderInstanceList}, ActivationOrder, CompositeEventResponder, ElementalType, EventFilterOptions};
+use crate::sim::{event::EventHandlerDeckInstance, ActivationOrder, EventHandlerDeck, ElementalType, EventFilterOptions};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Monster {
@@ -31,7 +31,7 @@ pub struct MonsterSpecies {
     pub primary_type: ElementalType,
     pub secondary_type: Option<ElementalType>,
     pub base_stats: StatSet,
-    pub composite_event_responder: CompositeEventResponder,
+    pub event_handler_deck: EventHandlerDeck,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -217,39 +217,25 @@ impl Monster {
         self.species.primary_type == test_elemental_type || self.species.secondary_type == Some(test_elemental_type)
     }
 
-    pub fn composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: 0,
-        };
-        CompositeEventResponderInstance {
-            composite_event_responder: self.species.composite_event_responder,
-            owner_uid: self.uid,
-            activation_order,
-            filters: EventFilterOptions::default(),
-        }
-    }
-
-    pub fn ability_composite_event_responder_instance(&self) -> CompositeEventResponderInstance {
+    pub fn ability_event_handler_deck_instance(&self) -> EventHandlerDeckInstance {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.stats[Stat::Speed],
             order: self.ability.species.order,
         };
-        CompositeEventResponderInstance {
-            composite_event_responder: self.ability.composite_event_responder(),
+        EventHandlerDeckInstance {
+            event_handler_deck: self.ability.event_handler_deck(),
             owner_uid: self.uid,
             activation_order,
             filters: EventFilterOptions::default(),
         }
     }
 
-    pub fn moveset_composite_event_responder_instances(&self, uid: MonsterUID) -> CompositeEventResponderInstanceList {
+    pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<EventHandlerDeckInstance> {
         self.moveset
             .moves()
-            .map(|it| CompositeEventResponderInstance {
-                composite_event_responder: it.species.composite_event_responder,
+            .map(|it| EventHandlerDeckInstance {
+                event_handler_deck: it.species.event_handler_deck,
                 owner_uid: uid,
                 activation_order: ActivationOrder {
                     priority: it.species.priority,
@@ -261,11 +247,21 @@ impl Monster {
             .collect::<Vec<_>>()
     }
 
-    pub fn composite_event_responder_instances(&self) -> CompositeEventResponderInstanceList {
-        let mut out = Vec::new();
-        out.push(self.composite_event_responder_instance());
-        out.append(&mut self.moveset_composite_event_responder_instances(self.uid));
-        out.push(self.ability_composite_event_responder_instance());
+    pub fn event_handler_deck_instances(&self) -> Vec<EventHandlerDeckInstance> {
+        let activation_order = ActivationOrder {
+            priority: 0,
+            speed: self.stats[Stat::Speed],
+            order: 0,
+        };
+        let monster_event_handler_deck_instance = EventHandlerDeckInstance {
+            event_handler_deck: self.species.event_handler_deck,
+            owner_uid: self.uid,
+            activation_order,
+            filters: EventFilterOptions::default(),
+        };
+        let mut out = vec![monster_event_handler_deck_instance];
+        out.append(&mut self.moveset_event_handler_deck_instances(self.uid));
+        out.push(self.ability_event_handler_deck_instance());
         out
     }
 

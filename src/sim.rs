@@ -15,7 +15,7 @@ pub use battle_builder_macro::build_battle;
 pub use battle_constants::*;
 pub use choice::*;
 pub use event::{
-    broadcast_contexts::*, event_dex, ActivationOrder, CompositeEventResponder, EventFilterOptions, EventResolver, EventResponder, InBattleEvent, TargetFlags,
+    broadcast_contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilterOptions, EventDispatcher, EventHandler, InBattleEvent, TargetFlags,
     DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
@@ -170,7 +170,7 @@ mod action {
                 _move = battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
+            if EventDispatcher::broadcast_trial_event(battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
                 battle.message_log.push("The move failed!".to_string());
                 return Ok(NOTHING);
             }
@@ -231,7 +231,7 @@ mod action {
 
             // Do the calculated damage to the target
             SecondaryAction::damage(battle, target_uid, damage);
-            EventResolver::broadcast_event(battle, attacker_uid, calling_context, &OnDamageDealt, NOTHING, None);
+            EventDispatcher::broadcast_event(battle, attacker_uid, calling_context, &OnDamageDealt, NOTHING, None);
 
             let type_effectiveness = match type_matchup_multiplier {
                 Percent(25) | Percent(50) => "not very effective",
@@ -263,7 +263,7 @@ mod action {
                 move_ = battle.move_(move_uid).species.name
             ]);
 
-            if EventResolver::broadcast_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), &OnTryMove) == Outcome::Failure {
+            if EventDispatcher::broadcast_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), &OnTryMove) == Outcome::Failure {
                 battle.message_log.push("The move failed!".to_string());
                 return Ok(NOTHING);
             }
@@ -273,7 +273,7 @@ mod action {
                 move_.on_activate(battle, attacker_uid, target_uid);
             }
 
-            EventResolver::broadcast_event(battle, attacker_uid, calling_context, &OnStatusMoveUsed, NOTHING, None);
+            EventDispatcher::broadcast_event(battle, attacker_uid, calling_context, &OnStatusMoveUsed, NOTHING, None);
 
             Ok(NOTHING)
         }
@@ -290,10 +290,10 @@ mod action {
     }
 
     impl SecondaryAction {
-        /// **Secondary Action** This action can only be triggered by other Actions.
+        /// **SEventDispatcheron** This action can only be triggered by other Actions.
         ///
         /// Deducts `damage` from HP of target corresponding to `target_uid`.
-        ///
+        ///EventDispatcher
         /// This function should be used when an amount of damage has already been calculated,
         /// and the only thing left to do is to deduct it from the HP of the target.
         pub fn damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
@@ -309,10 +309,10 @@ mod action {
         pub fn activate_ability(battle: &mut Battle, ability_holder_uid: MonsterUID) -> Outcome {
             let calling_context = AbilityUsed::new(ability_holder_uid);
 
-            if EventResolver::broadcast_trial_event(battle, ability_holder_uid, calling_context, &OnTryActivateAbility) == Outcome::Success {
+            if EventDispatcher::broadcast_trial_event(battle, ability_holder_uid, calling_context, &OnTryActivateAbility) == Outcome::Success {
                 let ability = *battle.ability(ability_holder_uid);
                 ability.on_activate(battle, ability_holder_uid);
-                EventResolver::broadcast_event(battle, ability_holder_uid, calling_context, &OnAbilityActivated, NOTHING, None);
+                EventDispatcher::broadcast_event(battle, ability_holder_uid, calling_context, &OnAbilityActivated, NOTHING, None);
                 Outcome::Success
             } else {
                 Outcome::Failure
@@ -325,7 +325,7 @@ mod action {
         ///
         /// Returns a `bool` indicating whether the stat raising succeeded.
         pub fn raise_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-            if EventResolver::broadcast_trial_event(battle, monster_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
+            if EventDispatcher::broadcast_trial_event(battle, monster_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
                 let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.raise_stat(stat, number_of_stages);
 
                 battle.message_log.push(format![
@@ -349,7 +349,7 @@ mod action {
         ///
         /// Returns a `bool` indicating whether the stat lowering succeeded.
         pub fn lower_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-            if EventResolver::broadcast_trial_event(battle, monster_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
+            if EventDispatcher::broadcast_trial_event(battle, monster_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
                 let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.lower_stat(stat, number_of_stages);
 
                 battle.message_log.push(format![

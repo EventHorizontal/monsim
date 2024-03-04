@@ -3,14 +3,14 @@
 use super::{ability::AbilitySpecies, ElementalType};
 use crate::{
     debug_location,
-    sim::{event::broadcast_contexts::MoveUsed, CompositeEventResponder, EventFilterOptions, EventResponder, Outcome, SecondaryAction, DEFAULT_RESPONSE},
+    sim::{event::broadcast_contexts::MoveUsed, EventHandlerDeck, EventFilterOptions, EventHandler, Outcome, SecondaryAction, DEFAULT_RESPONSE},
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
-    composite_event_responder: CompositeEventResponder {
-        on_try_move: Some(EventResponder {
+    event_handler_deck: EventHandlerDeck {
+        on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
             dbg_location: debug_location!("FlashFire->on_try_move"),
             callback: |battle,
@@ -41,8 +41,8 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
 pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     dex_number: 002,
     name: "Water Absorb",
-    composite_event_responder: CompositeEventResponder {
-        on_try_move: Some(EventResponder {
+    event_handler_deck: EventHandlerDeck {
+        on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
             dbg_location: debug_location!("WaterAbsorb->on_try_move"),
             callback: |battle,

@@ -1,5 +1,5 @@
 use crate::sim::{
-    event::{CompositeEventResponder, EventFilterOptions},
+    event::{EventHandlerDeck, EventFilterOptions},
     Battle, MonsterUID, ElementalType, DEFAULT_RESPONSE,
 };
 use core::{fmt::Debug, slice::Iter};
@@ -15,8 +15,8 @@ pub struct MoveSpecies {
     pub base_power: u16,
     pub base_accuracy: u16,
     pub priority: u16,
-    pub composite_event_responder: CompositeEventResponder,
-    pub composite_event_responder_filters: EventFilterOptions,
+    pub event_handler_deck: EventHandlerDeck,
+    pub event_handler_deck_filters: EventFilterOptions,
     /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
     pub on_activate: Option<fn(&mut Battle, MonsterUID, MonsterUID)>,
 }
@@ -29,8 +29,8 @@ pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     base_power: 50,
     base_accuracy: 100,
     priority: 0,
-    composite_event_responder: DEFAULT_RESPONSE,
-    composite_event_responder_filters: EventFilterOptions::default(),
+    event_handler_deck: DEFAULT_RESPONSE,
+    event_handler_deck_filters: EventFilterOptions::default(),
     on_activate: None,
 };
 

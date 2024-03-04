@@ -2,7 +2,7 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, Team, NOTHING};
 
-use crate::{app::AppResult, sim::{AvailableActions, AvailableActionsForTeam, Battle, BattleSimulator, ChosenActionsForTurn, FullySpecifiedAction, PartiallySpecifiedAction, PerTeam, TeamID}};
+use crate::{app::AppResult, sim::{AvailableActions, AvailableActionsForTeam, Battle, BattleSimulator, ChosenActionsForTurn, FullySpecifiedAction, PartiallySpecifiedAction, PerTeam}};
 
 enum TurnStage {
     ChooseActions(AvailableActions),

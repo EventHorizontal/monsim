@@ -81,6 +81,7 @@ impl BattleSimulator {
         ordering::sort_action_choices_by_activation_order(battle, &mut chosen_actions);
 
         'turn: for chosen_action in chosen_actions.into_iter() {
+            
             match chosen_action {
                 FullySpecifiedAction::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(battle, move_uid, target_uid),
@@ -94,10 +95,13 @@ impl BattleSimulator {
             // Check if a Monster fainted this turn
             let maybe_fainted_acitve_monster = battle.monsters()
                 .find(|monster| battle.monster(monster.uid).is_fainted && battle.is_active_monster(monster.uid));
+            
             if let Some(fainted_active_monster) = maybe_fainted_acitve_monster {
                 
-                battle
-                    .message_log.extend(&[&format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.name()], EMPTY_LINE]);
+                battle.message_log.extend(&[
+                    &format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.name()], 
+                    EMPTY_LINE
+                ]);
                 
                 // Check if any of the teams is out of usable Monsters
                 let are_all_ally_team_monsters_fainted = battle.ally_team()
@@ -111,18 +115,17 @@ impl BattleSimulator {
                 
                 if are_all_ally_team_monsters_fainted {
                     battle.is_finished = true;
-                    battle.message_log.push("Opponent Team won!".to_string());
+                    battle.message_log.push_str("Opponent Team won!");
                     break 'turn;
                 } 
                 if are_all_opponent_team_monsters_fainted {
                     battle.is_finished = true;
-                    battle.message_log.push("Ally Team won!".to_string());
+                    battle.message_log.push_str("Ally Team won!");
                     break 'turn;
                 }
             };
 
-
-            battle.message_log.push(EMPTY_LINE.to_string());
+            battle.message_log.push_str(EMPTY_LINE);
         }
 
         if battle.is_finished {
@@ -171,7 +174,7 @@ mod action {
             ]);
 
             if EventDispatcher::broadcast_trial_event(battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
-                battle.message_log.push("The move failed!".to_string());
+                battle.message_log.push_str("The move failed!");
                 return Ok(NOTHING);
             }
 
@@ -213,7 +216,7 @@ mod action {
 
             // If the opponent is immune, damage calculation is skipped.
             if type_matchup_multiplier.is_matchup_ineffective() {
-                battle.message_log.push("It was ineffective...".to_string());
+                battle.message_log.push_str("It was ineffective...");
                 return Ok(NOTHING);
             }
 
@@ -264,7 +267,7 @@ mod action {
             ]);
 
             if EventDispatcher::broadcast_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), &OnTryMove) == Outcome::Failure {
-                battle.message_log.push("The move failed!".to_string());
+                battle.message_log.push_str("The move failed!");
                 return Ok(NOTHING);
             }
 
@@ -305,7 +308,7 @@ mod action {
         ///
         /// Resolves activation of any ability.
         ///
-        /// Returns a `bool` indicating whether the ability succeeded.
+        /// Returns a `Outcome` indicating whether the ability succeeded.
         pub fn activate_ability(battle: &mut Battle, ability_holder_uid: MonsterUID) -> Outcome {
             let calling_context = AbilityUsed::new(ability_holder_uid);
 

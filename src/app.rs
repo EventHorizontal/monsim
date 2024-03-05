@@ -85,7 +85,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                             EMPTY_LINE
                         ]
                     ),
-                    Err(error) => battle.message_log.push(format!["Simulator: {:?}", error].to_string()),
+                    Err(error) => battle.message_log.push(format!["Simulator: {:?}", error]),
                 };
                 
                 // TODO: Investigate whether updating the message log seperately is worth the possible syncing issues

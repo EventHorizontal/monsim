@@ -80,6 +80,10 @@ impl Move {
             on_activate_logic(battle, owner_uid, target_uid);
         }
     }
+    
+    pub fn is_type(&self, elemental_type: ElementalType) -> bool {
+        self.species.elemental_type == elemental_type
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

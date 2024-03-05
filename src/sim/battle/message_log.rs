@@ -41,6 +41,10 @@ impl MessageLog {
         self.messages.push(message);
     }
 
+    pub fn push_str(&mut self, message: &str) {
+        self.messages.push(message.to_string());
+    }
+
     pub fn extend(&mut self, messages: &[&str]) {
         for message in messages {
             self.messages.push(message.to_string());

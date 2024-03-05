@@ -6,7 +6,7 @@ use super::{
 };
 use crate::sim::{
     action::SecondaryAction,
-    event::{EventFilterOptions, DEFAULT_RESPONSE},
+    event::{EventFilteringOptions, DEFAULT_RESPONSE},
     Battle, MonsterUID, Stat, MOVE_DEFAULTS,
 };
 

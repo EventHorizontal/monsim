@@ -181,10 +181,10 @@ mod event {
 
     #[test]
     #[cfg(feature = "debug")]
-    fn test_print_event_responder() {
+    fn test_print_event_handler() {
         use crate::sim::game_mechanics::ability_dex::FlashFire;
-        let event_responder = FlashFire.event_handler_deck.on_try_move.unwrap();
-        println!("{:?}", event_responder);
+        let event_handler = FlashFire.event_handler_deck.on_try_move.unwrap();
+        println!("{:?}", event_handler);
     }
 
     #[test]

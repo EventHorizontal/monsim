@@ -1,4 +1,4 @@
-use crate::sim::{event::EventFilterOptions, Battle, MonsterUID, EventHandlerDeck};
+use crate::sim::{event::EventFilteringOptions, Battle, MonsterUID, EventHandlerDeck};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -13,7 +13,7 @@ pub struct AbilitySpecies {
     pub event_handler_deck: EventHandlerDeck,
     /// `fn(battle: &mut Battle, ability_holder: MonsterUID)`
     pub on_activate: fn(&mut Battle, MonsterUID),
-    pub filters: EventFilterOptions,
+    pub filtering_options: EventFilteringOptions,
     pub order: u16,
 }
 

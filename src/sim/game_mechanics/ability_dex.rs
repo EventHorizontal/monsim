@@ -3,7 +3,7 @@
 use super::{ability::AbilitySpecies, ElementalType};
 use crate::{
     debug_location,
-    sim::{event::broadcast_contexts::MoveUsed, EventHandlerDeck, EventFilterOptions, EventHandler, Outcome, SecondaryAction, DEFAULT_RESPONSE},
+    sim::{event::broadcast_contexts::MoveUsed, EventHandlerDeck, EventFilteringOptions, EventHandler, Outcome, SecondaryAction, DEFAULT_RESPONSE},
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -34,7 +34,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.message_log.push("Flash Fire activated!".to_string());
     },
-    filters: EventFilterOptions::default(),
+    filtering_options: EventFilteringOptions::default(),
     order: 0,
 };
 
@@ -66,6 +66,6 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.message_log.push("Water Absorb activated!".to_string());
     },
-    filters: EventFilterOptions::default(),
+    filtering_options: EventFilteringOptions::default(),
     order: 0,
 };

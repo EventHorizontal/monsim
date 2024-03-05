@@ -6,7 +6,7 @@ use std::{
 
 use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamID };
 
-use crate::sim::{event::EventHandlerDeckInstance, ActivationOrder, EventHandlerDeck, ElementalType, EventFilterOptions};
+use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventHandlerDeck, ElementalType, EventFilteringOptions};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Monster {
@@ -217,24 +217,24 @@ impl Monster {
         self.species.primary_type == test_elemental_type || self.species.secondary_type == Some(test_elemental_type)
     }
 
-    pub fn ability_event_handler_deck_instance(&self) -> EventHandlerDeckInstance {
+    pub fn ability_event_handler_deck_instance(&self) -> OwnedEventHandlerDeck {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.stats[Stat::Speed],
             order: self.ability.species.order,
         };
-        EventHandlerDeckInstance {
+        OwnedEventHandlerDeck {
             event_handler_deck: self.ability.event_handler_deck(),
             owner_uid: self.uid,
             activation_order,
-            filters: EventFilterOptions::default(),
+            filtering_options: EventFilteringOptions::default(),
         }
     }
 
-    pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<EventHandlerDeckInstance> {
+    pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<OwnedEventHandlerDeck> {
         self.moveset
             .moves()
-            .map(|it| EventHandlerDeckInstance {
+            .map(|it| OwnedEventHandlerDeck {
                 event_handler_deck: it.species.event_handler_deck,
                 owner_uid: uid,
                 activation_order: ActivationOrder {
@@ -242,22 +242,22 @@ impl Monster {
                     speed: self.stats[Stat::Speed],
                     order: 0,
                 },
-                filters: EventFilterOptions::default(),
+                filtering_options: EventFilteringOptions::default(),
             })
             .collect::<Vec<_>>()
     }
 
-    pub fn event_handler_deck_instances(&self) -> Vec<EventHandlerDeckInstance> {
+    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
         let activation_order = ActivationOrder {
             priority: 0,
             speed: self.stats[Stat::Speed],
             order: 0,
         };
-        let monster_event_handler_deck_instance = EventHandlerDeckInstance {
+        let monster_event_handler_deck_instance = OwnedEventHandlerDeck {
             event_handler_deck: self.species.event_handler_deck,
             owner_uid: self.uid,
             activation_order,
-            filters: EventFilterOptions::default(),
+            filtering_options: EventFilteringOptions::default(),
         };
         let mut out = vec![monster_event_handler_deck_instance];
         out.append(&mut self.moveset_event_handler_deck_instances(self.uid));

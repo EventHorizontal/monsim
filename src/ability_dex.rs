@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-        Ability, AbilitySpecies, EventHandlerDeck, ElementalType, EventFilterOptions, EventHandler, MoveUsed, SecondaryAction,
+        Ability, AbilitySpecies, EventHandlerDeck, ElementalType, EventFilteringOptions, EventHandler, MoveUsed, SecondaryAction,
         DEFAULT_RESPONSE,
         utils::{Outcome, not},
 };
@@ -15,7 +15,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     event_handler_deck: EventHandlerDeck {
         on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
-            dbg_location: debug_location!("FlashFire->on_try_move"),
+            dbg_location: debug_location!("FlashFire/OnTryMove"),
             callback: |battle,
                        MoveUsed {
                            attacker_uid,
@@ -37,7 +37,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     on_activate: |battle, _owner_uid| {
         battle.message_log.push("Flash Fire activated!".to_string());
     },
-    filters: EventFilterOptions::default(),
+    filtering_options: EventFilteringOptions::default(),
     order: 0,
 };
 
@@ -47,7 +47,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     event_handler_deck: EventHandlerDeck {
         on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
-            dbg_location: debug_location!("WaterAbsorb->on_try_move"),
+            dbg_location: debug_location!("WaterAbsorb/OnTryMove"),
             callback: |battle,
                        MoveUsed {
                            attacker_uid,
@@ -70,6 +70,6 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
         let owner_name = battle.monster(owner_uid).name();
         battle.message_log.push(format!["{owner_name}'s Water Absorb activated!"]);
     },
-    filters: EventFilterOptions::default(),
+    filtering_options: EventFilteringOptions::default(),
     order: 0,
 };

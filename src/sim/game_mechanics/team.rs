@@ -2,7 +2,7 @@ use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use max_size_vec::MaxSizeVec;
 use monsim_utils::{Ally, Opponent};
 
-use crate::sim::{event::EventHandlerDeckInstance, MonsterNumber};
+use crate::sim::{event::OwnedEventHandlerDeck, MonsterNumber};
 use super::{Monster, MonsterUID, MoveNumber};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
@@ -152,7 +152,7 @@ impl MonsterTeam {
         &mut self.monsters
     }
 
-    pub fn event_handler_deck_instances(&self) -> Vec<EventHandlerDeckInstance> {
+    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
         let mut out = Vec::new();
         for monster in self.monsters.iter() {
             out.append(&mut monster.event_handler_deck_instances())

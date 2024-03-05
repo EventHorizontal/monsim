@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{Battle, MonsterUID, ElementalType, EventFilterOptions, MoveCategory, MoveSpecies, SecondaryAction, Stat, DEFAULT_RESPONSE};
+use monsim::sim::{Battle, MonsterUID, ElementalType, EventFilteringOptions, MoveCategory, MoveSpecies, SecondaryAction, Stat, DEFAULT_RESPONSE};
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -11,7 +11,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_deck_filters: EventFilterOptions::default(),
+    event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
 
@@ -24,7 +24,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_deck_filters: EventFilterOptions::default(),
+    event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
 
@@ -37,7 +37,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_deck_filters: EventFilterOptions::default(),
+    event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
 
@@ -50,7 +50,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_deck_filters: EventFilterOptions::default(),
+    event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
 
@@ -63,7 +63,7 @@ pub const Growl: MoveSpecies = MoveSpecies {
     base_accuracy: 100,
     event_handler_deck: DEFAULT_RESPONSE,
     priority: 0,
-    event_handler_deck_filters: EventFilterOptions::default(),
+    event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),

@@ -9,8 +9,8 @@ use super::{game_mechanics::{MonsterUID, MoveUID}, PerTeam, TeamID};
 
 /// An action choice before certain details can be established, most often the target.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PartiallySpecifiedAction {
-    /// This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
+pub enum PartiallySpecifiedChoice {
+    /// TODO: This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
     Move{ move_uid: MoveUID, target_uid: MonsterUID, display_text: &'static str},
     /// A switch out action before we know which monster to switch with.
     SwitchOut { switcher_uid: MonsterUID, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>, display_text: &'static str },
@@ -18,48 +18,48 @@ pub enum PartiallySpecifiedAction {
 
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FullySpecifiedAction {
+pub enum FullySpecifiedChoice {
     Move { move_uid: MoveUID, target_uid: MonsterUID },
     SwitchOut { switcher_uid: MonsterUID, switchee_uid: MonsterUID },
 }
 
-pub type ChosenActionsForTurn = PerTeam<FullySpecifiedAction>;
+pub type ChoicesForTurn = PerTeam<FullySpecifiedChoice>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AvailableActions {
-    pub ally_team_available_actions: AvailableActionsForTeam,
-    pub opponent_team_available_actions: AvailableActionsForTeam,
+pub struct AvailableChoices {
+    pub ally_team_available_choices: AvailableChoicesForTeam,
+    pub opponent_team_available_choices: AvailableChoicesForTeam,
 }
 
-impl Index<TeamID> for AvailableActions {
-    type Output = AvailableActionsForTeam;
+impl Index<TeamID> for AvailableChoices {
+    type Output = AvailableChoicesForTeam;
 
     fn index(&self, index: TeamID) -> &Self::Output {
         match index {
-            TeamID::Allies => &self.ally_team_available_actions,
-            TeamID::Opponents => &self.opponent_team_available_actions,
+            TeamID::Allies => &self.ally_team_available_choices,
+            TeamID::Opponents => &self.opponent_team_available_choices,
         }
     }
 }
 
-impl AvailableActions {
-    pub(crate) fn unwrap(&self) -> (Ally<AvailableActionsForTeam>, Opponent<AvailableActionsForTeam>) {
-        (Ally::new(self.ally_team_available_actions), Opponent::new(self.opponent_team_available_actions))
+impl AvailableChoices {
+    pub(crate) fn unwrap(&self) -> (Ally<AvailableChoicesForTeam>, Opponent<AvailableChoicesForTeam>) {
+        (Ally(self.ally_team_available_choices), Opponent(self.opponent_team_available_choices))
     }
 }
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AvailableActionsForTeam {
+pub struct AvailableChoicesForTeam {
     // All the Some variants should be in the beginning.
-    moves: [Option<PartiallySpecifiedAction>; 4],
-    switch_out: Option<PartiallySpecifiedAction>,
+    moves: [Option<PartiallySpecifiedChoice>; 4],
+    switch_out: Option<PartiallySpecifiedChoice>,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
 }
 
-impl AvailableActionsForTeam {
-    pub fn new(moves_vec: &[PartiallySpecifiedAction], switch_out: Option<PartiallySpecifiedAction>) -> Self {
+impl AvailableChoicesForTeam {
+    pub fn new(moves_vec: &[PartiallySpecifiedChoice], switch_out: Option<PartiallySpecifiedChoice>) -> Self {
         let moves = slice_to_array_of_options(moves_vec);
         Self {
             moves,
@@ -68,21 +68,21 @@ impl AvailableActionsForTeam {
         }
     }
     
-    pub fn move_action_indices(&self) -> Range<usize> {
+    pub fn move_choice_indices(&self) -> Range<usize> {
         let move_count = self.moves.iter().flatten().count();
         0..move_count
     }
 
-    pub fn switch_out_action(&self) -> Option<PartiallySpecifiedAction> {
+    pub fn switch_out_choice(&self) -> Option<PartiallySpecifiedChoice> {
         self.switch_out
     }
 
-    pub fn switch_out_action_index(&self) -> Option<usize> {
+    pub fn switch_out_choice_index(&self) -> Option<usize> {
         let move_count = self.moves.iter().flatten().count();
         self.switch_out.map(|_| move_count )
     }
 
-    pub(crate) fn as_vec(&self) -> Vec<PartiallySpecifiedAction> {
+    pub(crate) fn as_vec(&self) -> Vec<PartiallySpecifiedChoice> {
         [
             self.moves[0],
             self.moves[1],
@@ -96,7 +96,7 @@ impl AvailableActionsForTeam {
     }
 
     /// panicks if there is no `PartiallySpecifiedAction` at the given index.
-    pub(crate) fn get_by_index(&self, index: usize) -> PartiallySpecifiedAction {
+    pub(crate) fn get_by_index(&self, index: usize) -> PartiallySpecifiedChoice {
         let move_count = self.moves.iter().flatten().count();
         if index < move_count {
             self.moves[index].unwrap()
@@ -117,8 +117,8 @@ impl AvailableActionsForTeam {
     }
 }
 
-impl Index<usize> for AvailableActionsForTeam {
-    type Output = Option<PartiallySpecifiedAction>;
+impl Index<usize> for AvailableChoicesForTeam {
+    type Output = Option<PartiallySpecifiedChoice>;
     
     fn index(&self, index: usize) -> &Self::Output {
         let move_count = self.moves.iter().flatten().count();
@@ -132,7 +132,7 @@ impl Index<usize> for AvailableActionsForTeam {
     }
 }
 
-impl IndexMut<usize> for AvailableActionsForTeam {
+impl IndexMut<usize> for AvailableChoicesForTeam {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         let move_count = self.moves.iter().flatten().count();
         if index < move_count {

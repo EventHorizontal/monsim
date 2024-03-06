@@ -7,7 +7,7 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::sim::{AvailableActions, Battle, BattleSimulator, MonsterUID, ChosenActionsForTurn, FullySpecifiedAction, PartiallySpecifiedAction, PerTeam, TeamID, EMPTY_LINE};
+use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, ChoicesForTurn, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamID, EMPTY_LINE};
 
 pub type AppResult<S> = Result<S, Box<dyn Error>>;
 
@@ -15,7 +15,7 @@ pub type AppResult<S> = Result<S, Box<dyn Error>>;
 #[allow(clippy::large_enum_variant)]
 enum AppState {
     AcceptingInput(InputMode),
-    Simulating(ChosenActionsForTurn),
+    Simulating(ChoicesForTurn),
     Terminating,
 }
 
@@ -30,7 +30,7 @@ impl AppState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(clippy::large_enum_variant)]
 pub enum InputMode {
-    MidBattle(AvailableActions),
+    MidBattle(AvailableChoices),
     SwitcheePrompt {
         is_between_turn_switch: bool,
         switcher_uid: MonsterUID,
@@ -93,7 +93,7 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 ui.update_team_status_panels(&battle);
                 
                 for team_id in [TeamID::Allies, TeamID::Opponents] {
-                    if let FullySpecifiedAction::SwitchOut { .. } = chosen_actions[team_id] {
+                    if let FullySpecifiedChoice::SwitchOut { .. } = chosen_actions[team_id] {
                         ui.clear_choice_menu_selection_for_team(team_id);
                         chosen_actions_for_turn[team_id] = None;
                     }
@@ -136,7 +136,7 @@ fn update_from_input(
     ui: &mut Ui,
     battle: &mut Battle,
     current_input_mode: &mut InputMode,
-    chosen_actions_for_turn: &mut PerTeam<Option<FullySpecifiedAction>>,
+    chosen_actions_for_turn: &mut PerTeam<Option<FullySpecifiedChoice>>,
     pressed_key: KeyCode,
 ) -> Option<AppState> {
     match current_input_mode {
@@ -154,10 +154,10 @@ fn update_from_input(
                         let available_actions_for_team = available_actions[team_id];
                         let selected_action = available_actions_for_team.get_by_index(selected_menu_item_index);
                         match selected_action {
-                            PartiallySpecifiedAction::Move { move_uid, target_uid, .. } => {
-                                chosen_actions_for_turn[team_id] = Some(FullySpecifiedAction::Move { move_uid, target_uid })
+                            PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => {
+                                chosen_actions_for_turn[team_id] = Some(FullySpecifiedChoice::Move { move_uid, target_uid })
                             },
-                            PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids, .. } => {
+                            PartiallySpecifiedChoice::SwitchOut { switcher_uid, possible_switchee_uids, .. } => {
                                 // Update the switchee list when the switch option is selected.
                                 return Some(AppState::AcceptingInput(InputMode::SwitcheePrompt {
                                     is_between_turn_switch: false,
@@ -219,7 +219,7 @@ fn update_from_input(
 
                             *chosen_actions_for_turn = PerTeam::both(None);
                         } else {
-                            chosen_actions_for_turn[switcher_uid.team_id] = Some(FullySpecifiedAction::SwitchOut { switcher_uid: *switcher_uid, switchee_uid });
+                            chosen_actions_for_turn[switcher_uid.team_id] = Some(FullySpecifiedChoice::SwitchOut { switcher_uid: *switcher_uid, switchee_uid });
                         }
                         Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_actions())))
                     } else {

@@ -1,6 +1,6 @@
 use crate::sim::{ActivationOrder, Prng};
 
-use super::{FullySpecifiedAction, Battle};
+use super::{FullySpecifiedChoice, Battle};
 
 /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
 pub(crate) fn sort_by_activation_order<T: Clone + Copy>(prng: &mut Prng, vector: &mut [T], activation_order: &mut dyn FnMut(T) -> ActivationOrder) {
@@ -45,7 +45,7 @@ pub(crate) fn sort_by_activation_order<T: Clone + Copy>(prng: &mut Prng, vector:
     }
 }
 
-pub(crate) fn sort_action_choices_by_activation_order(battle: &mut Battle, vector: &mut [FullySpecifiedAction]) {
+pub(crate) fn sort_choices_by_activation_order(battle: &mut Battle, vector: &mut [FullySpecifiedChoice]) {
     // Sort without resolving speed ties, this sorting is stable, so it doesn't affect the order of condition-wise equal elements.
     vector.sort_by_key(|choice| battle.choice_activation_order(*choice));
     // Sorting is ascending, but we want descending sorting, so reverse the vector.

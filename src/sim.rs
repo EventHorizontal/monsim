@@ -58,7 +58,7 @@ pub struct BattleSimulator;
 
 impl BattleSimulator {
 
-    pub fn simulate_turn(battle: &mut Battle, chosen_actions: ChosenActionsForTurn) -> TurnResult {
+    pub fn simulate_turn(battle: &mut Battle, choices: ChoicesForTurn) -> TurnResult {
         // `simulate_turn` should only call primary actions, by design.
         use action::PrimaryAction;
         
@@ -76,26 +76,26 @@ impl BattleSimulator {
             ]
         );
 
-        let mut chosen_actions = chosen_actions.as_array();
-        ordering::sort_action_choices_by_activation_order(battle, &mut chosen_actions);
+        let mut choices = choices.as_array();
+        ordering::sort_choices_by_activation_order(battle, &mut choices);
 
-        'turn: for chosen_action in chosen_actions.into_iter() {
+        'turn: for choice in choices.into_iter() {
             
-            match chosen_action {
-                FullySpecifiedAction::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
+            match choice {
+                FullySpecifiedChoice::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => PrimaryAction::damaging_move(battle, move_uid, target_uid),
                     MoveCategory::Status => PrimaryAction::status_move(battle, move_uid, target_uid),
                 },
-                FullySpecifiedAction::SwitchOut { switcher_uid, switchee_uid } => {
+                FullySpecifiedChoice::SwitchOut { switcher_uid, switchee_uid } => {
                     PrimaryAction::switch_out(battle, switcher_uid, switchee_uid)
                 }
             }?;
 
             // Check if a Monster fainted this turn
-            let maybe_fainted_acitve_monster = battle.monsters()
+            let maybe_fainted_active_monster = battle.monsters()
                 .find(|monster| battle.monster(monster.uid).is_fainted && battle.is_active_monster(monster.uid));
             
-            if let Some(fainted_active_monster) = maybe_fainted_acitve_monster {
+            if let Some(fainted_active_monster) = maybe_fainted_active_monster {
                 
                 battle.message_log.extend(&[
                     &format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.name()], 

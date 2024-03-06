@@ -3,7 +3,7 @@ use std::io::Stdout;
 use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
-use crate::sim::{AvailableActionsForTeam, Battle, MonsterUID, PartiallySpecifiedAction, PerTeam, TeamID};
+use crate::sim::{AvailableChoicesForTeam, Battle, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamID};
 
 use super::{AppState, InputMode};
 
@@ -332,14 +332,14 @@ impl<'a> Ui<'a> {
         self.message_log_panel.snap_to_beginning_of_last_message();
     }
 
-    fn action_choice_list_from_available_actions_for_team(list_to_fill: &mut Vec<ListItem>, available_actions_for_team: AvailableActionsForTeam) {
+    fn action_choice_list_from_available_actions_for_team(list_to_fill: &mut Vec<ListItem>, available_actions_for_team: AvailableChoicesForTeam) {
         list_to_fill.clear();
         for action_choice in available_actions_for_team.as_vec() {
             match action_choice {
-                PartiallySpecifiedAction::Move { display_text, .. } => {
+                PartiallySpecifiedChoice::Move { display_text, .. } => {
                     list_to_fill.push(ListItem::new(display_text));
                 },
-                PartiallySpecifiedAction::SwitchOut { display_text, .. } => {
+                PartiallySpecifiedChoice::SwitchOut { display_text, .. } => {
                     list_to_fill.push(ListItem::new(display_text));
                 },
             }

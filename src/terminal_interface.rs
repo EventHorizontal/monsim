@@ -2,11 +2,11 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, Team, NOTHING};
 
-use crate::{app::AppResult, sim::{AvailableActions, AvailableActionsForTeam, Battle, BattleSimulator, ChosenActionsForTurn, FullySpecifiedAction, PartiallySpecifiedAction, PerTeam}};
+use crate::{app::AppResult, sim::{AvailableChoices, AvailableChoicesForTeam, Battle, BattleSimulator, ChoicesForTurn, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
 
 enum TurnStage {
-    ChooseActions(AvailableActions),
-    SimulateTurn(ChosenActionsForTurn),
+    ChooseActions(AvailableChoices),
+    SimulateTurn(ChoicesForTurn),
     BattleEnded,
 }
 
@@ -15,23 +15,20 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
 
     // We lock stdout so that we don't have to acquire the lock every time with `println!`
     let mut locked_stdout = io::stdout().lock();
-    let mut last_turn_chosen_actions: Option<PerTeam<FullySpecifiedAction>> = None;
+    let mut last_turn_chosen_actions: Option<PerTeam<FullySpecifiedChoice>> = None;
     'main: loop {
         match turn_stage {
-            TurnStage::ChooseActions(available_actions) => {
-                
-                let (ally_team_available_actions, opponent_team_available_actions) = available_actions.unwrap();
+            TurnStage::ChooseActions(available_choices) => {
 
-                // HACK: We removed the duplication but this is a _very_ cumbersome way of getting the data... the way to fix this is to restructure `Battle` to actually be able
-                // to get multiple pieces of data at once.
-                let active_monsters = battle.active_monsters();
-                let (ally_team_active_monster, opponent_team_active_monster) = active_monsters.unwrap();
+                let active_monsters = battle.active_monster_uids();
+                let (ally_team_active_monster_uid, opponent_team_active_monster_uid) = active_monsters.unwrap();
 
-                for active_monster in [(**ally_team_active_monster).clone(), (**opponent_team_active_monster).clone()] {
-                    if active_monster.is_fainted {
-                        if let Some(PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = ally_team_available_actions.switch_out_action() {
+                // Check if any of the active monsters has fainted and needs to switched out
+                for active_monster_uid in [**ally_team_active_monster_uid, **opponent_team_active_monster_uid] {
+                    if battle.monster(active_monster_uid).is_fainted {
+                        if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = available_choices[active_monster_uid.team_id].switch_out_choice() {
                             let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
-                            let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", active_monster.name());
+                            let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster_uid).name());
                             for (index, switchee_name) in switchee_names {
                                 let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
                             }
@@ -45,6 +42,8 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                         }
                     }
                 }
+
+                let (ally_team_available_choices, opponent_team_available_choices) = available_choices.unwrap();
                 
                 write_empty_line(&mut locked_stdout)?;
                 writeln!(locked_stdout, "Current Battle Status:")?;
@@ -60,15 +59,15 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 // Ally Team choices
                 writeln!(locked_stdout, "Choose an Action for {}", battle.monster(battle.ally_team().active_monster_uid).full_name())?;
                 write_empty_line(&mut locked_stdout)?;
-                display_choices(&ally_team_available_actions, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
+                display_choices(&ally_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
-                let ally_team_fully_specified_action = match translate_input_to_choices(&battle, Team::ally(ally_team_available_actions), &mut locked_stdout, last_turn_chosen_actions)? {
-                    Choice::Quit => {
+                let ally_team_fully_specified_action = match translate_input_to_choices(&battle, Team::ally(ally_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
+                    UIChoice::Quit => {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
                     },
-                    Choice::Action(fully_specified_action) => fully_specified_action.expect_ally(),
-                    Choice::Repeat(last_turn_chosen_actions) => {
+                    UIChoice::Action(fully_specified_action) => fully_specified_action.expect_ally(),
+                    UIChoice::Repeat(last_turn_chosen_actions) => {
                         turn_stage = TurnStage::SimulateTurn(last_turn_chosen_actions);
                         continue;
                     },
@@ -77,15 +76,15 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
                 // Opponent choices
                 writeln!(locked_stdout, "Choose an Action for {}", battle.monster(battle.opponent_team().active_monster_uid).full_name())?;
                 write_empty_line(&mut locked_stdout)?;
-                display_choices(&opponent_team_available_actions, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
+                display_choices(&opponent_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
-                let opponent_team_fully_specified_action = match translate_input_to_choices(&battle, Team::opponent(opponent_team_available_actions), &mut locked_stdout, last_turn_chosen_actions)? {
-                    Choice::Quit => {
+                let opponent_team_fully_specified_action = match translate_input_to_choices(&battle, Team::opponent(opponent_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
+                    UIChoice::Quit => {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
                     },
-                    Choice::Action(fully_specified_action) => fully_specified_action.expect_opponent(),
-                    Choice::Repeat(last_turn_chosen_actions) => {
+                    UIChoice::Action(fully_specified_action) => fully_specified_action.expect_opponent(),
+                    UIChoice::Repeat(last_turn_chosen_actions) => {
                         turn_stage = TurnStage::SimulateTurn(last_turn_chosen_actions);
                         continue;
                     },
@@ -152,13 +151,13 @@ fn input_as_usize(locked_stdout: &mut StdoutLock, options_count: usize) -> AppRe
     }
 }
 
-fn display_choices(available_actions_for_team: &AvailableActionsForTeam, locked_stdout: &mut StdoutLock, last_turn_action: bool) -> AppResult<Nothing> {
+fn display_choices(available_actions_for_team: &AvailableChoicesForTeam, locked_stdout: &mut StdoutLock, last_turn_action: bool) -> AppResult<Nothing> {
     for (index, action) in available_actions_for_team.as_vec().into_iter().enumerate() {
         match action {
-            PartiallySpecifiedAction::Move { display_text, .. } => { 
+            PartiallySpecifiedChoice::Move { display_text, .. } => { 
                 writeln!(locked_stdout, "[{}] Use {}", index + 1,  display_text)?; // This + 1 converts to 1-based counting
             },
-            PartiallySpecifiedAction::SwitchOut { display_text, .. } => { 
+            PartiallySpecifiedChoice::SwitchOut { display_text, .. } => { 
                 writeln!(locked_stdout, "[{}] {}", index + 1, display_text)?; // This + 1 converts to 1-based counting
             },
         }
@@ -174,38 +173,38 @@ fn display_choices(available_actions_for_team: &AvailableActionsForTeam, locked_
     Ok(NOTHING)
 }
 
-enum Choice<T> {
+enum UIChoice<T> {
     Quit,
     Action(T),
-    Repeat(PerTeam<FullySpecifiedAction>),
+    Repeat(PerTeam<FullySpecifiedChoice>),
 }
 
-fn translate_input_to_choices(battle: &Battle, available_actions_for_team: Team<AvailableActionsForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedAction>>) -> AppResult<Choice<Team<FullySpecifiedAction>>> 
+fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> AppResult<UIChoice<Team<FullySpecifiedChoice>>> 
 {
 
-    let available_actions_count = available_actions_for_team.apply(|actions| actions.count() );
+    let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );
     let chosen_action_index = input_as_usize(locked_stdout, available_actions_count + 2)?;
     
     let is_repeat_selected = chosen_action_index == available_actions_count;
     let mut quit_offset = 0;
     if let Some(last_turn_actions) = last_turn_action {
         if is_repeat_selected {
-            return Ok(Choice::Repeat(last_turn_actions));
+            return Ok(UIChoice::Repeat(last_turn_actions));
         }
         quit_offset = 1;
     }
     
     let is_quit_selected = chosen_action_index == available_actions_count + quit_offset;
     if is_quit_selected {
-        return Ok(Choice::Quit);
+        return Ok(UIChoice::Quit);
     }
 
-    let partially_specified_action_for_team = available_actions_for_team.map(|actions| actions[chosen_action_index].unwrap());
+    let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[chosen_action_index].unwrap());
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
-            PartiallySpecifiedAction::Move { move_uid, target_uid, .. } => FullySpecifiedAction::Move { move_uid, target_uid },
+            PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => FullySpecifiedChoice::Move { move_uid, target_uid },
             
-            PartiallySpecifiedAction::SwitchOut { switcher_uid, possible_switchee_uids, .. } => {
+            PartiallySpecifiedChoice::SwitchOut { switcher_uid, possible_switchee_uids, .. } => {
                 let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
                 let _ = writeln!(locked_stdout, "Choose a monster to switch with");
                 for (index, switchee_name) in switchee_names {
@@ -213,9 +212,9 @@ fn translate_input_to_choices(battle: &Battle, available_actions_for_team: Team<
                 }
                 let chosen_switchee_index = input_as_usize(locked_stdout, possible_switchee_uids.iter().flatten().count()).unwrap();
                 let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index].unwrap();
-                FullySpecifiedAction::SwitchOut { switcher_uid, switchee_uid: chosen_switchee_uid }
+                FullySpecifiedChoice::SwitchOut { switcher_uid, switchee_uid: chosen_switchee_uid }
             },
         }
     });
-    Ok(Choice::Action(fully_specified_action_for_team))
+    Ok(UIChoice::Action(fully_specified_action_for_team))
 }

@@ -3,14 +3,14 @@ mod message_log;
 use utils::{not, Ally, ArrayOfOptionals, Nothing, Opponent, NOTHING};
 
 use crate::sim::{
-        Ability, FullySpecifiedAction, ActivationOrder, AvailableActions, Monster,
-        MonsterTeam, MonsterUID, Move, MoveUID, Stat, AvailableActionsForTeam,
+        Ability, FullySpecifiedChoice, ActivationOrder, AvailableChoices, Monster,
+        MonsterTeam, MonsterUID, Move, MoveUID, Stat, AvailableChoicesForTeam,
         utils,
 };
 
 use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
 
-use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedAction, PerTeam, TeamID};
+use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamID};
 use message_log::MessageLog;
 
 type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
@@ -145,14 +145,14 @@ impl Battle {
     }
 
     /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is context sensitive.
-    pub(crate) fn choice_activation_order(&self, choice: FullySpecifiedAction) -> ActivationOrder {
+    pub(crate) fn choice_activation_order(&self, choice: FullySpecifiedChoice) -> ActivationOrder {
         match choice {
-            FullySpecifiedAction::Move { move_uid, target_uid: _ } => ActivationOrder {
+            FullySpecifiedChoice::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
                 speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
                 order: 0, //TODO: Think about ordering
             },
-            FullySpecifiedAction::SwitchOut { switcher_uid: active_monster_uid, switchee_uid: _ } => ActivationOrder { 
+            FullySpecifiedChoice::SwitchOut { switcher_uid: active_monster_uid, switchee_uid: _ } => ActivationOrder { 
                 priority: 8, 
                 speed: self.monster(active_monster_uid).stats[Stat::Speed], 
                 order: 0
@@ -160,24 +160,24 @@ impl Battle {
         }
     }
 
-    pub fn available_actions(&self) -> AvailableActions {
+    pub fn available_actions(&self) -> AvailableChoices {
         let ally_team_available_actions = self.available_actions_by_team(TeamID::Allies);
         let opponent_team_available_actions = self.available_actions_by_team(TeamID::Opponents);
 
-        AvailableActions {
-            ally_team_available_actions,
-            opponent_team_available_actions,
+        AvailableChoices {
+            ally_team_available_choices: ally_team_available_actions,
+            opponent_team_available_choices: opponent_team_available_actions,
         }
     }
 
-    fn available_actions_by_team(&self, team_id: TeamID) -> AvailableActionsForTeam {
+    fn available_actions_by_team(&self, team_id: TeamID) -> AvailableChoicesForTeam {
         
         let team_active_monster = self.active_monsters_on_team(team_id);
         
         let moves = team_active_monster.move_uids();
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
-            let partial_action = PartiallySpecifiedAction::Move { 
+            let partial_action = PartiallySpecifiedChoice::Move { 
                 move_uid,
                 target_uid: self.active_monsters_on_team(team_id.other()).uid,
                 display_text: self.move_(move_uid).species.name 
@@ -188,7 +188,7 @@ impl Battle {
         let possible_switchee_uids = self.valid_switchees_by_uid(team_id);
         let any_valid_switchees = not!(possible_switchee_uids.iter().flatten().count() == 0 );
         let switch_action = if any_valid_switchees {
-            Some(PartiallySpecifiedAction::SwitchOut { 
+            Some(PartiallySpecifiedChoice::SwitchOut { 
                 switcher_uid: team_active_monster.uid, 
                 possible_switchee_uids,
                 display_text: "Switch Out",
@@ -197,7 +197,7 @@ impl Battle {
             None
         };
 
-        AvailableActionsForTeam::new(
+        AvailableChoicesForTeam::new(
             &move_actions, 
             switch_action,
         )
@@ -241,6 +241,10 @@ impl Battle {
 
     pub fn opponent_team_mut(&mut self) -> &mut Opponent<MonsterTeam> {
         self.teams.opponent_mut()
+    }
+    
+    pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
+        PerTeam::new(Ally(self.ally_team().active_monster_uid), Opponent(self.opponent_team().active_monster_uid))
     }
 }
 

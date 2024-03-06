@@ -8,7 +8,8 @@ use event_setup_macro::event_setup;
 pub struct EventDispatcher;
 
 type EventCallback<R, C> = fn(&mut Battle, C, R) -> R;
-pub type EventCallbackWithLifetime<'a, R, C> = fn(&'a mut Battle, C, R) -> R;
+#[cfg(feature = "debug")]
+type EventCallbackWithLifetime<'a, R, C> = fn(&'a mut Battle, C, R) -> R;
 
 /// `R`: indicates return type
 ///
@@ -233,7 +234,7 @@ impl<'a, R: Copy, C: Copy> Debug for EventHandler<R, C> {
                 .finish()
         };
         #[cfg(not(feature = "debug"))]
-        let r = {
+        let out = {
             write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.")
         };
         out

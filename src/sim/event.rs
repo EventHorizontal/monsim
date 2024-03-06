@@ -253,10 +253,12 @@ impl OwnedEventHandlerDeck {
     ) -> Option<OwnedEventHandler<R, C>> {
         let event_handler = event.corresponding_handler(&self.event_handler_deck);
         event_handler.map(|event_handler| OwnedEventHandler {
+            // INFO: Trait methods are non-const so we can only add the `event_name` during runtime.
             event_name: event.name(),
             event_handler,
             owner_uid: self.owner_uid,
             activation_order: self.activation_order,
+            // TODO: Think about wether we want filtering options per handler, per deck or per mechanic
             filtering_options: self.filtering_options,
         })
     }

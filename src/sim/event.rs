@@ -114,7 +114,7 @@ event_setup![
             on_status_move_used => Nothing,
         }
     }
-    const DEFAULT_RESPONSE = None;
+    const DEFAULT_DECK = None;
     pub trait InBattleEvent;
 ];
 
@@ -242,7 +242,7 @@ impl<'a, R: Copy, C: Copy> Debug for EventHandler<R, C> {
 
 impl EventHandlerDeck {
     pub const fn default() -> Self {
-        DEFAULT_RESPONSE
+        DEFAULT_DECK
     }
 }
 

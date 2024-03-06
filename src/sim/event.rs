@@ -225,14 +225,18 @@ impl EventDispatcher {
 
 impl<'a, R: Copy, C: Copy> Debug for EventHandler<R, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if cfg!(feature = "debug") {
+        #[cfg(feature = "debug")]
+        let out = {
             f.debug_struct("EventHandler")
                 .field("callback", &&(self.callback as EventCallbackWithLifetime<'a, R, C>))
                 .field("location", &self.debugging_information)
                 .finish()
-        } else {
+        };
+        #[cfg(not(feature = "debug"))]
+        let r = {
             write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.")
-        }
+        };
+        out
     }
 }
 

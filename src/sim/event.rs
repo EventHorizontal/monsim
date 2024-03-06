@@ -13,20 +13,11 @@ pub type EventCallbackWithLifetime<'a, R, C> = fn(&'a mut Battle, C, R) -> R;
 /// `R`: indicates return type
 ///
 /// `C`: indicates context specifier type
-#[cfg(not(feature = "debug"))]
 #[derive(Clone, Copy)]
 pub struct EventHandler<R: Copy, C: Copy> {
     pub callback: EventCallback<R, C>,
-}
-
-/// `R`: indicates return type
-///
-/// `C`: indicates context specifier type
-#[cfg(feature = "debug")]
-#[derive(Clone, Copy)]
-pub struct EventHandler<R: Copy, C: Copy> {
-    pub callback: EventCallback<R, C>,
-    pub dbg_location: &'static str,
+    #[cfg(feature = "debug")]
+    pub debugging_information: &'static str,
 }
 
 
@@ -123,7 +114,7 @@ event_setup![
             on_status_move_used => Nothing,
         }
     }
-    pub const DEFAULT_RESPONSE = None;
+    const DEFAULT_RESPONSE = None;
     pub trait InBattleEvent;
 ];
 
@@ -232,22 +223,22 @@ impl EventDispatcher {
     }
 }
 
-#[cfg(not(feature = "debug"))]
 impl<'a, R: Copy, C: Copy> Debug for EventHandler<R, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandler")
-            .field("callback", &&(self.callback as EventCallbackWithLifetime<'a, R, C>))
-            .finish()
+        if cfg!(feature = "debug") {
+            f.debug_struct("EventHandler")
+                .field("callback", &&(self.callback as EventCallbackWithLifetime<'a, R, C>))
+                .field("location", &self.debugging_information)
+                .finish()
+        } else {
+            write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.")
+        }
     }
 }
 
-#[cfg(feature = "debug")]
-impl<'a, R: Copy, C: Copy> Debug for EventHandler<R, C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EventHandler")
-            .field("callback", &&(self.callback as EventCallbackWithLifetime<'a, R, C>))
-            .field("location", &self.dbg_location)
-            .finish()
+impl EventHandlerDeck {
+    pub const fn default() -> Self {
+        DEFAULT_RESPONSE
     }
 }
 
@@ -286,9 +277,9 @@ mod tests {
         extern crate self as monsim;
         use crate::sim::*;
         use crate::sim::{
-            ability_dex::FlashFire,
-            monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
-            move_dex::{Bubble, Ember, Scratch, Tackle},
+            test_ability_dex::FlashFire,
+            test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+            test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
@@ -349,9 +340,9 @@ mod tests {
         extern crate self as monsim;
         use crate::sim::*;
         use crate::sim::{
-            ability_dex::FlashFire,
-            monster_dex::{Drifblim, Mudkip, Torchic},
-            move_dex::{Ember, Scratch},
+            test_ability_dex::FlashFire,
+            test_monster_dex::{Drifblim, Mudkip, Torchic},
+            test_move_dex::{Ember, Scratch},
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
@@ -456,9 +447,9 @@ mod tests {
         extern crate self as monsim;
         use crate::sim::*;
         use crate::sim::{
-            ability_dex::FlashFire,
-            monster_dex::{Mudkip, Torchic, Treecko},
-            move_dex::{Bubble, Ember, Scratch, Tackle},
+            test_ability_dex::FlashFire,
+            test_monster_dex::{Mudkip, Torchic, Treecko},
+            test_move_dex::{Bubble, Ember, Scratch, Tackle},
             MonsterNumber, TeamID,
         };
         let test_battle = build_battle!(
@@ -503,7 +494,7 @@ mod tests {
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler_instance() {
-        use crate::sim::ability_dex::FlashFire;
+        use crate::sim::test_ability_dex::FlashFire;
         let event_handler_instance = OwnedEventHandler {
             event_name: event_dex::OnTryMove.name(),
             event_handler: FlashFire.event_handler_deck.on_try_move.unwrap(),

@@ -5,9 +5,7 @@ use super::{
     ElementalType,
 };
 use crate::sim::{
-    action::SecondaryAction,
-    event::{EventFilteringOptions, DEFAULT_RESPONSE},
-    Battle, MonsterUID, Stat, MOVE_DEFAULTS,
+    action::SecondaryAction, event::EventFilteringOptions, Battle, MonsterUID, Move, Stat
 };
 
 pub const Tackle: MoveSpecies = MoveSpecies {
@@ -17,7 +15,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    ..MOVE_DEFAULTS
+    ..MoveSpecies::default()
 };
 
 pub const Scratch: MoveSpecies = MoveSpecies {
@@ -27,7 +25,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    ..MOVE_DEFAULTS
+    ..MoveSpecies::default()
 };
 
 pub const Ember: MoveSpecies = MoveSpecies {
@@ -37,7 +35,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    ..MOVE_DEFAULTS
+    ..MoveSpecies::default()
 };
 
 pub const Bubble: MoveSpecies = MoveSpecies {
@@ -47,7 +45,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    ..MOVE_DEFAULTS
+    ..MoveSpecies::default()
 };
 
 pub const Growl: MoveSpecies = MoveSpecies {
@@ -60,5 +58,5 @@ pub const Growl: MoveSpecies = MoveSpecies {
     on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),
-    ..MOVE_DEFAULTS
+    ..MoveSpecies::default()
 };

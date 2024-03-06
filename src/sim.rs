@@ -16,7 +16,6 @@ pub use battle_constants::*;
 pub use choice::*;
 pub use event::{
     broadcast_contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, InBattleEvent, TargetFlags,
-    DEFAULT_RESPONSE,
 };
 pub use game_mechanics::*;
 pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent, Ally, Opponent};

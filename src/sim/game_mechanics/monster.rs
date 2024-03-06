@@ -106,6 +106,21 @@ impl Display for MonsterUID {
     }
 }
 
+const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
+    dex_number: 000,
+    name: "Unnamed",
+    primary_type: ElementalType::Normal,
+    secondary_type: None,
+    base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
+    event_handler_deck: EventHandlerDeck::default(),
+};
+
+impl MonsterSpecies {
+    pub const fn default() -> Self {
+        MONSTER_DEFAULTS
+    }
+}
+
 impl Display for Monster {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();

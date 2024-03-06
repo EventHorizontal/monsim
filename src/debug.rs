@@ -27,10 +27,8 @@ macro_rules! debug_to_file {
     ($x: expr) => {
         #[cfg(feature = "debug")]
         let debug_file_output_error = crate::debug::write_debug_to_file(format![
-            "[{file}:{line}:{column}]: {name} = {value:#?}",
-            file = std::file!(),
-            line = std::line!(),
-            column = std::column!(),
+            "{location}: {name} = {value:#?}",
+            location: debug_location!(),
             name = stringify!($x),
             value = $x.clone()
         ]);
@@ -39,14 +37,13 @@ macro_rules! debug_to_file {
 
 #[macro_export]
 #[cfg(feature = "debug")]
-macro_rules! debug_location {
-    ($x: expr) => {
+macro_rules! source_code_location {
+    () => {
         const_format::formatcp![
-            "[{file}:{line}:{col}] {message}",
+            "[ {file}:{line}:{col} ]",
             file = std::file!(),
             line = std::line!(),
             col = std::column!(),
-            message = $x
         ]
     };
 }

@@ -1,12 +1,12 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{
-        Ability, AbilitySpecies, EventHandlerDeck, ElementalType, EventFilteringOptions, EventHandler, MoveUsed, SecondaryAction,
-        utils::{Outcome, not},
-};
+use monsim_utils::not;
 
-#[cfg(feature = "debug")]
-use monsim::source_code_location;
+use super::{ability::AbilitySpecies, ElementalType};
+use crate::{
+    source_code_location,
+    sim::{event::broadcast_contexts::MoveUsed, EventHandlerDeck, EventFilteringOptions, EventHandler, Outcome, SecondaryAction},
+};
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,

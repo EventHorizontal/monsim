@@ -1,6 +1,6 @@
 use crate::sim::{
     event::{EventHandlerDeck, EventFilteringOptions},
-    Battle, MonsterUID, ElementalType, DEFAULT_RESPONSE,
+    Battle, MonsterUID, ElementalType,
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
@@ -21,7 +21,7 @@ pub struct MoveSpecies {
     pub on_activate: Option<fn(&mut Battle, MonsterUID, MonsterUID)>,
 }
 
-pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
+const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     dex_number: 000,
     name: "Unnamed",
     elemental_type: ElementalType::Normal,
@@ -29,7 +29,7 @@ pub const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     base_power: 50,
     base_accuracy: 100,
     priority: 0,
-    event_handler_deck: DEFAULT_RESPONSE,
+    event_handler_deck: EventHandlerDeck::default(),
     event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
@@ -47,6 +47,12 @@ impl Debug for MoveSpecies {
 impl PartialEq for MoveSpecies {
     fn eq(&self, other: &Self) -> bool {
         self.dex_number == other.dex_number
+    }
+}
+
+impl MoveSpecies {
+    pub const fn default() -> Self {
+        MOVE_DEFAULTS
     }
 }
 

@@ -29,6 +29,21 @@ impl PartialEq for AbilitySpecies {
     }
 }
 
+const ABILITY_DEFAULTS: AbilitySpecies = AbilitySpecies {
+    dex_number: 000,
+    name: "Unnamed",
+    event_handler_deck: EventHandlerDeck::default(),
+    on_activate: |_battle, _ability_holder_uid| {},
+    filtering_options: EventFilteringOptions::default(),
+    order: 0,
+};
+
+impl AbilitySpecies {
+    pub const fn default() -> Self {
+        ABILITY_DEFAULTS
+    }
+}
+
 impl Eq for AbilitySpecies {}
 
 impl Ability {

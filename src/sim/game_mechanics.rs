@@ -1,12 +1,12 @@
 pub mod ability;
 #[cfg(feature = "debug")]
-pub(crate) mod ability_dex;
+pub(crate) mod test_ability_dex;
 pub mod monster;
 #[cfg(feature = "debug")]
-pub(crate) mod monster_dex;
+pub(crate) mod test_monster_dex;
 pub mod move_;
 #[cfg(feature = "debug")]
-pub(crate) mod move_dex;
+pub(crate) mod test_move_dex;
 pub mod team;
 
 use core::marker::Copy;

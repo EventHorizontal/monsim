@@ -22,6 +22,9 @@ use syn::{braced, parse::{Parse, ParseStream}, parse_macro_input, Attribute, Exp
 /// ```
 #[proc_macro]
 pub fn event_setup(input: TokenStream) -> TokenStream {
+    
+    let event_handler_type = quote!(EventHandler);
+    
     let expr_ehd: ExprEventHandlerDeck = parse_macro_input!(input);
     
     let doc_comment = expr_ehd.doc_comment;
@@ -29,18 +32,18 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
     let struct_keyword = expr_ehd.struct_keyword;
     let struct_name = expr_ehd.struct_name;
     let match_expr = expr_ehd.match_expr;
-    let second_pub_keyword = expr_ehd.second_pub_keyword;
     let const_keyword = expr_ehd.const_keyword;
     let default_handler_constant_name = expr_ehd.default_handler_constant_name;
     let default_handler_value = expr_ehd.default_handler_value;
-    let third_pub_keyword = expr_ehd.third_pub_keyword;
+    let second_pub_keyword = expr_ehd.second_pub_keyword;
     let trait_keyword = expr_ehd.trait_keyword;
     let trait_name = expr_ehd.trait_name;
 
     let mut fields = quote!();
     let mut fields_for_constant = quote!();
     let mut events = quote!();
-    let event_handler_type_name = quote!(EventHandler);
+    let mut macro_fields = quote!();
+
     for expression in match_expr.arms {
         let mut comments = quote!();
         let mut maybe_context_type = None;
@@ -81,14 +84,14 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
         };
         let trait_name_string_in_pascal_case = to_pascal_case(pat_ident.clone().ident.to_string());
         let event_trait_literal = Literal::string(&trait_name_string_in_pascal_case);
-        let trait_name_ident_in_pascal_case = Ident::new(
+        let event_name_ident_in_pascal_case = Ident::new(
             &trait_name_string_in_pascal_case,
             pat_ident.ident.span(),
         );
             fields = quote!( 
                 #fields
                 #comments
-                pub #handler_ident: Option<#event_handler_type_name<#handler_return_type, #context_type>>,
+                pub #handler_ident: Option<#event_handler_type<#handler_return_type, #context_type>>,
             );
             fields_for_constant = quote!(
                 #fields_for_constant
@@ -98,12 +101,12 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
                 #events
 
                 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-                pub struct #trait_name_ident_in_pascal_case;
+                pub struct #event_name_ident_in_pascal_case;
 
-                impl #trait_name for #trait_name_ident_in_pascal_case {
+                impl #trait_name for #event_name_ident_in_pascal_case {
                     type EventReturnType = #handler_return_type;
                     type ContextType = #context_type;
-                    fn corresponding_handler(&self, event_handler_deck: &#struct_name) -> Option<#event_handler_type_name<Self::EventReturnType, Self::ContextType>> {
+                    fn corresponding_handler(&self, event_handler_deck: &#struct_name) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>> {
                         event_handler_deck.#handler_ident
                     }
         
@@ -112,6 +115,11 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
                     }
                 }
             );
+
+            macro_fields = quote!(
+                #macro_fields
+                (stringify![#event_name_ident_in_pascal_case]) => { #handler_ident }
+            )
     }
 
     let output_token_stream = quote!(
@@ -121,20 +129,29 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
             #fields
         }
 
-        #second_pub_keyword #const_keyword #default_handler_constant_name: #struct_name = #struct_name {
+        #const_keyword #default_handler_constant_name: #struct_name = #struct_name {
             #fields_for_constant
         };
 
-        #third_pub_keyword #trait_keyword #trait_name {
+        #second_pub_keyword #trait_keyword #trait_name {
             type EventReturnType: Sized + Clone + Copy;
             type ContextType: Sized + Clone + Copy;
 
             fn corresponding_handler(
                 &self,
                 event_handler_deck: &#struct_name,
-            ) -> Option<#event_handler_type_name<Self::EventReturnType, Self::ContextType>>;
+            ) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>>;
 
             fn name(&self) -> &'static str;
+        }
+
+        #[macro_export]
+        macro_rules! corresponding_handler {
+            ($x: expr) => {
+                match stringify![$x] {
+                    #macro_fields
+                }
+            }            
         }
 
         pub mod event_dex {
@@ -170,11 +187,10 @@ struct ExprEventHandlerDeck {
     struct_keyword: Token![struct],
     struct_name: Ident,
     match_expr: ExprMatch,
-    second_pub_keyword: Token![pub],
     const_keyword: Token![const],
     default_handler_constant_name: Ident,
     default_handler_value: Ident,
-    third_pub_keyword: Token![pub],
+    second_pub_keyword: Token![pub],
     trait_keyword: Token![trait],
     trait_name: Ident,
 }
@@ -188,13 +204,12 @@ impl Parse for ExprEventHandlerDeck {
         let content;
          _ = braced!(content in input);
         let match_expr: ExprMatch = content.parse()?;
-        let second_pub_keyword: Token![pub] = input.parse()?;
         let const_keyword: Token![const] = input.parse()?;
         let default_handler_constant_name: Ident = input.parse()?;
         let _: Token![=] = input.parse()?;
         let default_handler_value: Ident = input.parse()?;
         let _: Token![;] = input.parse()?;
-        let third_pub_keyword: Token![pub] = input.parse()?;
+        let second_pub_keyword: Token![pub] = input.parse()?;
         let trait_keyword: Token![trait] = input.parse()?;
         let trait_name: Ident = input.parse()?;
         let _: Token![;] = input.parse()?;
@@ -206,10 +221,9 @@ impl Parse for ExprEventHandlerDeck {
                 struct_name,
                 match_expr,
                 default_handler_constant_name,
-                second_pub_keyword,
                 const_keyword,
                 default_handler_value,
-                third_pub_keyword,
+                second_pub_keyword,
                 trait_keyword,
                 trait_name,
             }

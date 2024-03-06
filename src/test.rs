@@ -4,10 +4,10 @@ mod main {
 
     use crate::sim::*;
     use crate::sim::{
-        ability_dex::FlashFire,
+        test_ability_dex::FlashFire,
         battle::Battle,
-        monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
-        move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
+        test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+        test_move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
         Ability, Monster, Move,
     };
 
@@ -51,30 +51,30 @@ mod main {
                                 team_id: TeamID::Allies,
                                 monster_number: MonsterNumber::from(0usize),
                             },
-                            monster_dex::Torchic, 
+                            test_monster_dex::Torchic, 
                             Some("Ruby"),
-                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
-                            ability::Ability::new(ability_dex::FlashFire),
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
                         )),
                         (Monster::new(
                             MonsterUID {
                                 team_id: TeamID::Allies,
                                 monster_number: MonsterNumber::from(1usize),
                             },
-                            monster_dex::Mudkip, 
+                            test_monster_dex::Mudkip, 
                             Some("Sapphire"),
-                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Scratch)), (move_::Move::new(move_dex::Ember))]),
-                            ability::Ability::new(ability_dex::FlashFire),
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
                         )),
                         (Monster::new(
                             MonsterUID {
                                 team_id: TeamID::Allies,
                                 monster_number: MonsterNumber::from(2usize),
                             },
-                            monster_dex::Treecko, 
+                            test_monster_dex::Treecko, 
                             Some("Emerald"),
-                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Bubble)), (move_::Move::new(move_dex::Scratch))]),
-                            ability::Ability::new(ability_dex::FlashFire),
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
                         )),
                     ], TeamID::Allies)),
                     Opponent::new(MonsterTeam::new(vec![
@@ -83,10 +83,10 @@ mod main {
                                 team_id: TeamID::Opponents,
                                 monster_number: MonsterNumber::from(0usize),
                             },
-                            monster_dex::Drifblim, 
+                            test_monster_dex::Drifblim, 
                             None,
-                            move_::MoveSet::new(vec![(move_::Move::new(move_dex::Tackle)), (move_::Move::new(move_dex::Growl))]),
-                            ability::Ability::new(ability_dex::FlashFire),
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
                         )),
                     ], TeamID::Opponents)),
                 )
@@ -104,9 +104,9 @@ mod battle {
         extern crate self as monsim;
         use crate::sim::*;
         use crate::sim::{
-            ability_dex::FlashFire,
-            monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
-            move_dex::{Bubble, Ember, Scratch, Tackle},
+            test_ability_dex::FlashFire,
+            test_monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
+            test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
         let test_battle = build_battle!(
             {
@@ -182,7 +182,7 @@ mod event {
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler() {
-        use crate::sim::game_mechanics::ability_dex::FlashFire;
+        use crate::sim::game_mechanics::test_ability_dex::FlashFire;
         let event_handler = FlashFire.event_handler_deck.on_try_move.unwrap();
         println!("{:?}", event_handler);
     }
@@ -190,7 +190,7 @@ mod event {
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler_deck() {
-        use crate::sim::ability_dex::FlashFire;
+        use crate::sim::test_ability_dex::FlashFire;
         println!("{:#?}", FlashFire.event_handler_deck);
     }
 }

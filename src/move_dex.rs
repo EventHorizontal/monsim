@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{Battle, MonsterUID, ElementalType, EventFilteringOptions, MoveCategory, MoveSpecies, SecondaryAction, Stat, DEFAULT_RESPONSE};
+use monsim::sim::{Battle, MonsterUID, ElementalType, EventFilteringOptions, MoveCategory, MoveSpecies, SecondaryAction, Stat};
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -9,10 +9,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    event_handler_deck: DEFAULT_RESPONSE,
-    priority: 0,
-    event_handler_deck_filtering_options: EventFilteringOptions::default(),
-    on_activate: None,
+    ..MoveSpecies::default()
 };
 
 pub const Scratch: MoveSpecies = MoveSpecies {
@@ -22,10 +19,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    event_handler_deck: DEFAULT_RESPONSE,
-    priority: 0,
-    event_handler_deck_filtering_options: EventFilteringOptions::default(),
-    on_activate: None,
+    ..MoveSpecies::default()
 };
 
 pub const Ember: MoveSpecies = MoveSpecies {
@@ -35,10 +29,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    event_handler_deck: DEFAULT_RESPONSE,
-    priority: 0,
-    event_handler_deck_filtering_options: EventFilteringOptions::default(),
-    on_activate: None,
+    ..MoveSpecies::default()
 };
 
 pub const Bubble: MoveSpecies = MoveSpecies {
@@ -48,10 +39,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    event_handler_deck: DEFAULT_RESPONSE,
-    priority: 0,
-    event_handler_deck_filtering_options: EventFilteringOptions::default(),
-    on_activate: None,
+    ..MoveSpecies::default()
 };
 
 pub const Growl: MoveSpecies = MoveSpecies {
@@ -61,10 +49,8 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    event_handler_deck: DEFAULT_RESPONSE,
-    priority: 0,
-    event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
         _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),
+    ..MoveSpecies::default()
 };

@@ -201,9 +201,6 @@ impl<T> DerefMut for Ally<T> {
 }
 
 impl<T> Ally<T> {
-    pub fn new(item: T) -> Self {
-        Self(item)
-    }
 }
 
 impl<T: Clone> Ally<T> {
@@ -244,9 +241,6 @@ impl<T> DerefMut for Opponent<T> {
 }
 
 impl<T> Opponent<T> {
-    pub fn new(item: T) -> Self {
-        Self(item)
-    }
 }
 
 impl<T: Clone> Opponent<T> {

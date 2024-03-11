@@ -105,24 +105,24 @@ impl<'a> Ui<'a> {
         Self {
             currently_selected_panel: SelectablePanelID::MessageLog,
             active_monster_status_panels: PerTeam::new(
-                Ally::new(ActiveMonsterStatusPanel {
+                Ally(ActiveMonsterStatusPanel {
                     team_name: ALLY_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamID::Allies).status_string(),
                 }), 
-                Opponent::new(ActiveMonsterStatusPanel {
+                Opponent(ActiveMonsterStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamID::Opponents).status_string(),
                     }
                 )),
             choice_selection_menus: PerTeam::new(
-                    Ally::new(ChoiceSelectionMenu { 
+                    Ally(ChoiceSelectionMenu { 
                         team_name: ALLY_TEAM_NAME, 
                         selectable_panel_id: SelectablePanelID::AllyTeamChoiceSelectionMenu,
                         choice_list: ally_team_choice_list,
                         list_state: new_list_state(0),
                         selection_cursor: None,
                     }),
-                    Opponent::new(ChoiceSelectionMenu { 
+                    Opponent(ChoiceSelectionMenu { 
                         team_name: OPPONENT_TEAM_NAME,
                         selectable_panel_id: SelectablePanelID::OpponentTeamChoiceSelectionMenu,
                         choice_list: opponent_team_choice_list,
@@ -131,11 +131,11 @@ impl<'a> Ui<'a> {
                     }),
                 ),
             team_status_panels: PerTeam::new(
-                Ally::new(TeamStatusPanel {
+                Ally(TeamStatusPanel {
                     team_name: ALLY_TEAM_NAME,
                     team_status: battle.ally_team().team_status_string(),
                 }),
-                Opponent::new(TeamStatusPanel {
+                Opponent(TeamStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     team_status: battle.opponent_team().team_status_string(),
                 }), 

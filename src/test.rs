@@ -45,7 +45,7 @@ mod main {
         assert_eq!(test_battle, 
             Battle::new(
                 PerTeam::new(
-                    Ally::new(MonsterTeam::new(vec![
+                    Ally(MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
                                 team_id: TeamID::Allies,
@@ -77,7 +77,7 @@ mod main {
                             ability::Ability::new(test_ability_dex::FlashFire),
                         )),
                     ], TeamID::Allies)),
-                    Opponent::new(MonsterTeam::new(vec![
+                    Opponent(MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
                                 team_id: TeamID::Opponents,
@@ -256,14 +256,14 @@ mod utils {
     #[test]
     #[should_panic]
     fn test_expect_wrong_team() {
-        let item = Ally::new(10usize);
+        let item = Ally(10usize);
         let item = Team::ally(item);
         (item.map(|i| { i - 1 }).expect_opponent());
     }
 
     #[test]
     fn test_expect_right_team() {
-        let item = Ally::new(10usize);
+        let item = Ally(10usize);
         let item = Team::ally(item);
         item.map(|i| {i + 1}).expect_ally();
     }

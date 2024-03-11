@@ -65,8 +65,8 @@ impl Battle {
     }
 
     pub fn active_monsters(&self) -> PerTeam<&Monster> {
-        let ally_team_active_monster = Ally::new(self.monster(self.ally_team().active_monster_uid));
-        let opponent_team_active_monster = Opponent::new(self.monster(self.opponent_team().active_monster_uid));
+        let ally_team_active_monster = Ally(self.monster(self.ally_team().active_monster_uid));
+        let opponent_team_active_monster = Opponent(self.monster(self.opponent_team().active_monster_uid));
         PerTeam::new(
             ally_team_active_monster,
             opponent_team_active_monster,

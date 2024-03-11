@@ -79,15 +79,15 @@ impl<T: Clone> PerTeam<Option<T>> {
     pub fn as_pair_of_options(self) -> (Option<Ally<T>>, Option<Opponent<T>>) {
         let (ally_team_item, opponent_team_item) = self.unwrap();
         let (ally_team_item, opponent_team_item) = ((*ally_team_item).clone(), (*opponent_team_item).clone());
-        (ally_team_item.map(|item| { Ally::new(item) }), opponent_team_item.map(|item| { Opponent::new(item) }))
+        (ally_team_item.map(|item| { Ally(item) }), opponent_team_item.map(|item| { Opponent(item) }))
     }
 }
 
 impl<T: Clone> PerTeam<T> {
     pub(crate) fn both(item: T) -> Self {
         Self {
-            ally_team_item: Ally::new(item.clone()),
-            opponent_team_item: Opponent::new(item),
+            ally_team_item: Ally(item.clone()),
+            opponent_team_item: Opponent(item),
         }
     }
 

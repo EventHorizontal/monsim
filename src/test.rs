@@ -221,7 +221,7 @@ mod prng {
     }
 
     #[test]
-    fn test_prng_idempotence() {
+    fn test_if_prng_is_deterministic_for_specific_seed() {
         let seed = seed_from_time_now();
         let mut lcrng_1 = Prng::new(seed);
         let mut lcrng_2 = Prng::new(seed);

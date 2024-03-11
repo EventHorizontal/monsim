@@ -9,8 +9,6 @@ pub mod move_;
 pub(crate) mod test_move_dex;
 pub mod team;
 
-use core::marker::Copy;
-
 pub use ability::*;
 pub use monster::*;
 pub use move_::*;

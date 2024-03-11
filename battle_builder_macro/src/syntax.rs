@@ -18,7 +18,7 @@ impl Parse for ExprBattle {
         let battle_contents = parse_braced_comma_separated_list::<ExprMonsterTeam>(input)?;
         let mut battle_contents = battle_contents.iter();
 
-        let mut check_team_id = |id_to_match: &str| -> Result<ExprMonsterTeam> {
+        let mut check_team_uid = |id_to_match: &str| -> Result<ExprMonsterTeam> {
             let team_expr = battle_contents
                 .next()
                 .expect("Error: Failed to parse team identifier.")
@@ -40,8 +40,8 @@ impl Parse for ExprBattle {
             }
         };
 
-        let ally_expr_monster_team = check_team_id("Allies")?;
-        let opponent_expr_monster_team = check_team_id("Opponents")?;
+        let ally_expr_monster_team = check_team_uid("Allies")?;
+        let opponent_expr_monster_team = check_team_uid("Opponents")?;
 
         Ok(ExprBattle {
             ally_expr_monster_team,
@@ -59,7 +59,7 @@ pub struct ExprMonsterTeam {
 
 impl Parse for ExprMonsterTeam {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let team_ident: ExprPath = input.parse().expect(
+        let team_uident: ExprPath = input.parse().expect(
             "Error: Failed to parse TeamExpression identifier in expected TeamExpression.",
         );
 
@@ -71,17 +71,17 @@ impl Parse for ExprMonsterTeam {
         let monster_count = monster_fields.clone().iter().len();
         if monster_count > 6 || monster_count < 1 {
             return Err(Error::new_spanned(
-                team_ident.clone(),
+                team_uident.clone(),
                 format!(
                     "Error: You can put betweeen one and six monsters on a team. {:?} has {} monsters.", 
-                    path_to_ident(&team_ident).to_string(),
+                    path_to_ident(&team_uident).to_string(),
                     monster_count,
                 ),
             ));
         };
 
         Ok(ExprMonsterTeam {
-            team_path: team_ident,
+            team_path: team_uident,
             team_type,
             monster_fields,
         })

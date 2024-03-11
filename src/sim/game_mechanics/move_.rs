@@ -1,6 +1,6 @@
 use crate::sim::{
     event::{EventHandlerDeck, EventFilteringOptions},
-    Battle, MonsterUID, ElementalType,
+    Battle, MonsterUID, Type,
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
@@ -10,7 +10,7 @@ use max_size_vec::MaxSizeVec;
 pub struct MoveSpecies {
     pub dex_number: u16,
     pub name: &'static str,
-    pub elemental_type: ElementalType,
+    pub type_: Type,
     pub category: MoveCategory,
     pub base_power: u16,
     pub base_accuracy: u16,
@@ -24,7 +24,7 @@ pub struct MoveSpecies {
 const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     dex_number: 000,
     name: "Unnamed",
-    elemental_type: ElementalType::Normal,
+    type_: Type::Normal,
     category: MoveCategory::Physical,
     base_power: 50,
     base_accuracy: 100,
@@ -39,7 +39,7 @@ impl Debug for MoveSpecies {
         write!(
             f,
             "#{:03} {},\n\t type: {:?},\n\t base accuracy: {}",
-            self.dex_number, self.name, self.elemental_type, self.base_accuracy
+            self.dex_number, self.name, self.type_, self.base_accuracy
         )
     }
 }
@@ -87,8 +87,8 @@ impl Move {
         }
     }
     
-    pub fn is_type(&self, elemental_type: ElementalType) -> bool {
-        self.species.elemental_type == elemental_type
+    pub fn is_type(&self, type_: Type) -> bool {
+        self.species.type_ == type_
     }
 }
 

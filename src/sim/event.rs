@@ -457,7 +457,7 @@ mod tests {
             test_ability_dex::FlashFire,
             test_monster_dex::{Mudkip, Torchic, Treecko},
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
-            MonsterNumber, TeamID,
+            MonsterNumber, TeamUID,
         };
         let test_battle = build_battle!(
             {
@@ -486,11 +486,11 @@ mod tests {
         let passed_filter = EventDispatcher::filter_event_handlers(
             &test_battle,
             MonsterUID {
-                team_id: TeamID::Allies,
+                team_uid: TeamUID::Allies,
                 monster_number: MonsterNumber::_1,
             },
             MonsterUID {
-                team_id: TeamID::Opponents,
+                team_uid: TeamUID::Opponents,
                 monster_number: MonsterNumber::_1,
             },
             EventFilteringOptions::default(),
@@ -506,7 +506,7 @@ mod tests {
             event_name: event_dex::OnTryMove.name(),
             event_handler: FlashFire.event_handler_deck.on_try_move.unwrap(),
             owner_uid: MonsterUID {
-                team_id: crate::sim::TeamID::Allies,
+                team_uid: crate::sim::TeamUID::Allies,
                 monster_number: crate::sim::MonsterNumber::_1,
             },
             activation_order: crate::sim::ActivationOrder {

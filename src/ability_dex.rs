@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-        Ability, AbilitySpecies, EventHandlerDeck, ElementalType, EventFilteringOptions, EventHandler, MoveUsed, Effect,
+        Ability, AbilitySpecies, EventHandlerDeck, Type, EventFilteringOptions, EventHandler, MoveUsed, Effect,
         utils::{Outcome, not},
 };
 
@@ -15,7 +15,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventHandler {
             callback: |battle, MoveUsed { attacker_uid, move_uid, target_uid}, _relay| {
                             let current_move = battle.move_(move_uid);
-                            let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
+                            let is_current_move_fire_type = (current_move.species.type_ == Type::Fire);
                             if is_current_move_fire_type {
                                 let activation_succeeded = Effect::activate_ability(battle, target_uid);
                                 return not!(activation_succeeded);
@@ -41,7 +41,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
         on_try_move: Some(EventHandler {
             callback: |battle, MoveUsed { attacker_uid, move_uid, target_uid}, _relay| {
                             let current_move = battle.move_(move_uid);
-                            let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Water);
+                            let is_current_move_fire_type = (current_move.species.type_ == Type::Water);
                             if is_current_move_fire_type {
                                 let activation_succeeded = Effect::activate_ability(battle, target_uid);
                                 return not!(activation_succeeded);

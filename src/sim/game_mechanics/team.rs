@@ -9,22 +9,22 @@ const MAX_BATTLERS_PER_TEAM: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonsterTeam {
-    pub id: TeamID,
+    pub id: TeamUID,
     pub active_monster_uid: MonsterUID,
     monsters: MaxSizeVec<Monster, 6>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum TeamID {
+pub enum TeamUID {
     Allies,
     Opponents,
 }
 
-impl TeamID {
-    pub fn other(&self) -> TeamID {
+impl TeamUID {
+    pub fn other(&self) -> TeamUID {
         match self {
-            TeamID::Allies => TeamID::Opponents,
-            TeamID::Opponents => TeamID::Allies,
+            TeamUID::Allies => TeamUID::Opponents,
+            TeamUID::Opponents => TeamUID::Allies,
         }
     }
 }
@@ -104,22 +104,22 @@ impl<T: Clone> PerTeam<T> {
     }
 }
 
-impl<T> Index<TeamID> for PerTeam<T> {
+impl<T> Index<TeamUID> for PerTeam<T> {
     type Output = T;
 
-    fn index(&self, index: TeamID) -> &Self::Output {
+    fn index(&self, index: TeamUID) -> &Self::Output {
         match index {
-            TeamID::Allies => &self.ally_team_item,
-            TeamID::Opponents => &self.opponent_team_item,
+            TeamUID::Allies => &self.ally_team_item,
+            TeamUID::Opponents => &self.opponent_team_item,
         }
     }
 } 
 
-impl<T> IndexMut<TeamID> for PerTeam<T> {
-    fn index_mut(&mut self, index: TeamID) -> &mut Self::Output {
+impl<T> IndexMut<TeamUID> for PerTeam<T> {
+    fn index_mut(&mut self, index: TeamUID) -> &mut Self::Output {
         match index {
-            TeamID::Allies => &mut self.ally_team_item,
-            TeamID::Opponents => &mut self.opponent_team_item,
+            TeamUID::Allies => &mut self.ally_team_item,
+            TeamUID::Opponents => &mut self.opponent_team_item,
         }
     }
 }
@@ -134,7 +134,7 @@ impl<T: Clone> IntoIterator for PerTeam<T> {
     }
 }
 
-impl Display for TeamID {
+impl Display for TeamUID {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -147,7 +147,7 @@ pub struct MoveUID {
 }
 
 impl MonsterTeam {
-    pub fn new(monsters: Vec<Monster>, id: TeamID) -> Self {
+    pub fn new(monsters: Vec<Monster>, id: TeamUID) -> Self {
         assert!(monsters.first().is_some(), "There is not a single monster in the team.");
         assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
         let monsters_iter = monsters.into_iter();
@@ -155,7 +155,7 @@ impl MonsterTeam {
         monsters_iter.for_each(|monster| {monsters.push(monster)});
         MonsterTeam {
             id,
-            active_monster_uid: MonsterUID { team_id: id, monster_number: MonsterNumber::_1}, 
+            active_monster_uid: MonsterUID { team_uid: id, monster_number: MonsterNumber::_1}, 
             monsters 
         }
     }

@@ -4,7 +4,7 @@ use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
 
 use crate::sim::utils::slice_to_array_of_options;
 
-use super::{game_mechanics::{MonsterUID, MoveUID}, TeamID};
+use super::{game_mechanics::{MonsterUID, MoveUID}, TeamUID};
 
 
 /// An action choice before certain details can be established, most often the target.
@@ -30,13 +30,13 @@ pub struct AvailableChoices {
     pub opponent_team_available_choices: AvailableChoicesForTeam,
 }
 
-impl Index<TeamID> for AvailableChoices {
+impl Index<TeamUID> for AvailableChoices {
     type Output = AvailableChoicesForTeam;
 
-    fn index(&self, index: TeamID) -> &Self::Output {
+    fn index(&self, index: TeamUID) -> &Self::Output {
         match index {
-            TeamID::Allies => &self.ally_team_available_choices,
-            TeamID::Opponents => &self.opponent_team_available_choices,
+            TeamUID::Allies => &self.ally_team_available_choices,
+            TeamUID::Opponents => &self.opponent_team_available_choices,
         }
     }
 }

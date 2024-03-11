@@ -54,8 +54,8 @@ pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let output = quote!(
         { 
             monsim::sim::Battle::new(
-                monsim::sim::PerTeam::new(monsim::sim::Ally(#ally_team_type::new(#ally_monsters_vec, TeamID::Allies)),
-                monsim::sim::Opponent(#opponent_team_type::new(#opponent_monsters_vec, TeamID::Opponents)))
+                monsim::sim::PerTeam::new(monsim::sim::Ally(#ally_team_type::new(#ally_monsters_vec, TeamUID::Allies)),
+                monsim::sim::Opponent(#opponent_team_type::new(#opponent_monsters_vec, TeamUID::Opponents)))
             )
         }
     );
@@ -108,7 +108,7 @@ fn monster_team_to_tokens<'a>(
         comma_separated_monsters = quote!(
             #comma_separated_monsters 
             #sim_ident::Monster::new(
-                #sim_ident::MonsterUID { team_id: #sim_ident::TeamID::#team_name_ident, monster_number: #sim_ident::#monster_number },
+                #sim_ident::MonsterUID { team_uid: #sim_ident::TeamUID::#team_name_ident, monster_number: #sim_ident::#monster_number },
                 #monster_species, 
                 #monster_nickname,
                 #move_mod::MoveSet::new(#moves_vec_delimited),

@@ -54,11 +54,11 @@ impl Action {
         let random_multiplier = ClampedPercent::from(random_multiplier);
 
         let stab_multiplier = {
-            let move_type = battle.move_(move_uid).species.elemental_type;
+            let move_type = battle.move_(move_uid).species.type_;
             if battle.monster(attacker_uid).is_type(move_type) { Percent(125) } else { Percent(100) }
         };
 
-        let move_type = battle.move_(move_uid).species.elemental_type;
+        let move_type = battle.move_(move_uid).species.type_;
         let target_primary_type = battle.monster(target_uid).species.primary_type;
         let target_secondary_type = battle.monster(target_uid).species.secondary_type;
 
@@ -136,7 +136,7 @@ impl Action {
     }
 
     pub fn perform_switch_out(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
-        battle.team_mut(active_monster_uid.team_id).active_monster_uid = benched_monster_uid;
+        battle.team_mut(active_monster_uid.team_uid).active_monster_uid = benched_monster_uid;
         battle.message_log.push(format![
             "{active_monster} switched out! Go {benched_monster}!", 
             active_monster = battle.monster(active_monster_uid).name(),

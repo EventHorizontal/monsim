@@ -23,7 +23,7 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 // Check if any of the active monsters has fainted and needs to switched out
                 for active_monster_uid in battle.active_monster_uids() {
                     if battle.monster(active_monster_uid).is_fainted {
-                        if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids, .. }) = available_choices[active_monster_uid.team_id].switch_out_choice() {
+                        if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids, .. }) = available_choices[active_monster_uid.team_uid].switch_out_choice() {
                             let switchee_names = candidate_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
                             writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster_uid).name())?;
                             for (index, switchee_name) in switchee_names {

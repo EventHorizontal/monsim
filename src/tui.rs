@@ -7,7 +7,7 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamID, EMPTY_LINE};
+use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};
 
 pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 
@@ -92,10 +92,10 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 ui.update_message_log(battle.message_log.len());
                 ui.update_team_status_panels(&battle);
                 
-                for team_id in [TeamID::Allies, TeamID::Opponents] {
-                    if let FullySpecifiedChoice::SwitchOut { .. } = choices[team_id] {
-                        ui.clear_choice_menu_selection_for_team(team_id);
-                        choices_for_turn[team_id] = None;
+                for team_uid in [TeamUID::Allies, TeamUID::Opponents] {
+                    if let FullySpecifiedChoice::SwitchOut { .. } = choices[team_uid] {
+                        ui.clear_choice_menu_selection_for_team(team_uid);
+                        choices_for_turn[team_uid] = None;
                     }
                 }
                 
@@ -110,7 +110,7 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::SwitcheePrompt { 
                         is_between_turn_switch: true,
                         switcher_uid: fainted_battler.uid,
-                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.uid.team_id),
+                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.uid.team_uid),
                         highlight_cursor: 0 
                     })));
                 } else {
@@ -149,12 +149,12 @@ fn update_from_input(
                 KeyCode::Right => { ui.select_right_widget(); None },
                 KeyCode::Enter => {
                     let maybe_selected_menu_item = ui.select_currently_hightlighted_menu_item();
-                    if let Some((selected_menu_item_index, team_id)) = maybe_selected_menu_item {
-                        let available_choices_for_team = available_choices[team_id];
+                    if let Some((selected_menu_item_index, team_uid)) = maybe_selected_menu_item {
+                        let available_choices_for_team = available_choices[team_uid];
                         let selected_choice = available_choices_for_team.get_by_index(selected_menu_item_index);
                         match selected_choice {
                             PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => {
-                                choices_for_turn[team_id] = Some(FullySpecifiedChoice::Move { move_uid, target_uid })
+                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { move_uid, target_uid })
                             },
                             PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: possible_switchee_uids, .. } => {
                                 // Update the switchee list when the switch option is selected.
@@ -210,15 +210,15 @@ fn update_from_input(
                         // HACK: cleaner/more systematic way to do this?
                         if *is_between_turn_switch {
                             let _ = BattleSimulator::switch_out_between_turns(battle, *switcher_uid, switchee_uid);
-                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_id);
+                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid);
                             // HACK: This fixes the issue of targetting the previous fainted foe until we have a more robust targetting system
-                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_id.other());
+                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid.other());
                             ui.update_team_status_panels(battle);
                             ui.update_message_log(battle.message_log.len());
 
                             *choices_for_turn = PerTeam::both(None);
                         } else {
-                            choices_for_turn[switcher_uid.team_id] = Some(FullySpecifiedChoice::SwitchOut { switcher_uid: *switcher_uid, candidate_switchee_uids: switchee_uid });
+                            choices_for_turn[switcher_uid.team_uid] = Some(FullySpecifiedChoice::SwitchOut { switcher_uid: *switcher_uid, candidate_switchee_uids: switchee_uid });
                         }
                         Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
                     } else {

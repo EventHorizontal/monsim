@@ -15,7 +15,7 @@ pub use move_::*;
 pub use team::*;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum ElementalType {
+pub enum Type {
     Bug,
     Dark,
     Dragon,

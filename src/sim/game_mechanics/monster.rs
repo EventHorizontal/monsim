@@ -4,9 +4,9 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamID };
+use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
 
-use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventHandlerDeck, ElementalType, EventFilteringOptions};
+use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventHandlerDeck, Type, EventFilteringOptions};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Monster {
@@ -28,15 +28,15 @@ pub struct Monster {
 pub struct MonsterSpecies {
     pub dex_number: u16,
     pub name: &'static str,
-    pub primary_type: ElementalType,
-    pub secondary_type: Option<ElementalType>,
+    pub primary_type: Type,
+    pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
     pub event_handler_deck: EventHandlerDeck,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MonsterUID {
-    pub team_id: TeamID,
+    pub team_uid: TeamUID,
     pub monster_number: MonsterNumber,
 }
 
@@ -51,65 +51,65 @@ pub enum MonsterNumber {
 }
 
 pub const ALLY_1: MonsterUID = MonsterUID {
-    team_id: TeamID::Allies,
+    team_uid: TeamUID::Allies,
     monster_number: MonsterNumber::_1,
 };
 pub const ALLY_2: MonsterUID = MonsterUID {
-    team_id: TeamID::Allies,
+    team_uid: TeamUID::Allies,
     monster_number: MonsterNumber::_2,
 };
 pub const ALLY_3: MonsterUID = MonsterUID {
-    team_id: TeamID::Allies,
+    team_uid: TeamUID::Allies,
     monster_number: MonsterNumber::_3,
 };
 pub const ALLY_4: MonsterUID = MonsterUID {
-    team_id: TeamID::Allies,
+    team_uid: TeamUID::Allies,
     monster_number: MonsterNumber::_4,
 };
 pub const ALLY_5: MonsterUID = MonsterUID {
-    team_id: TeamID::Allies,
+    team_uid: TeamUID::Allies,
     monster_number: MonsterNumber::_5,
 };
 pub const ALLY_6: MonsterUID = MonsterUID {
-    team_id: TeamID::Allies,
+    team_uid: TeamUID::Allies,
     monster_number: MonsterNumber::_6,
 };
 
 pub const OPPONENT_1: MonsterUID = MonsterUID {
-    team_id: TeamID::Opponents,
+    team_uid: TeamUID::Opponents,
     monster_number: MonsterNumber::_1,
 };
 pub const OPPONENT_2: MonsterUID = MonsterUID {
-    team_id: TeamID::Opponents,
+    team_uid: TeamUID::Opponents,
     monster_number: MonsterNumber::_2,
 };
 pub const OPPONENT_3: MonsterUID = MonsterUID {
-    team_id: TeamID::Opponents,
+    team_uid: TeamUID::Opponents,
     monster_number: MonsterNumber::_3,
 };
 pub const OPPONENT_4: MonsterUID = MonsterUID {
-    team_id: TeamID::Opponents,
+    team_uid: TeamUID::Opponents,
     monster_number: MonsterNumber::_4,
 };
 pub const OPPONENT_5: MonsterUID = MonsterUID {
-    team_id: TeamID::Opponents,
+    team_uid: TeamUID::Opponents,
     monster_number: MonsterNumber::_5,
 };
 pub const OPPONENT_6: MonsterUID = MonsterUID {
-    team_id: TeamID::Opponents,
+    team_uid: TeamUID::Opponents,
     monster_number: MonsterNumber::_6,
 };
 
 impl Display for MonsterUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}{:?}", self.team_id, self.monster_number)
+        write!(f, "{:?}{:?}", self.team_uid, self.monster_number)
     }
 }
 
 const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
     dex_number: 000,
     name: "Unnamed",
-    primary_type: ElementalType::Normal,
+    primary_type: Type::Normal,
     secondary_type: None,
     base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
     event_handler_deck: EventHandlerDeck::default(),
@@ -228,8 +228,8 @@ impl Monster {
         }
     }
 
-    pub fn is_type(&self, test_elemental_type: ElementalType) -> bool {
-        self.species.primary_type == test_elemental_type || self.species.secondary_type == Some(test_elemental_type)
+    pub fn is_type(&self, test_type_: Type) -> bool {
+        self.species.primary_type == test_type_ || self.species.secondary_type == Some(test_type_)
     }
 
     pub fn ability_event_handler_deck_instance(&self) -> OwnedEventHandlerDeck {

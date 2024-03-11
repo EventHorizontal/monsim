@@ -10,7 +10,7 @@ use crate::sim::{
 
 use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
 
-use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamID};
+use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
 
 type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
@@ -51,14 +51,14 @@ impl Battle {
     }
 
     pub fn monster(&self, monster_uid: MonsterUID) -> &Monster {
-        let team = self.team(monster_uid.team_id);
+        let team = self.team(monster_uid.team_uid);
         team.monsters()
             .get(monster_uid.monster_number as usize)
             .expect("Only valid MonsterUIDs are expected to be passed to this")
     }
 
     pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
-        let team = self.team_mut(monster_uid.team_id);
+        let team = self.team_mut(monster_uid.team_uid);
         team.monsters_mut()
             .get_mut(monster_uid.monster_number as usize)
             .expect("Only valid MonsterUIDs are expected to be passed to this")
@@ -78,12 +78,12 @@ impl Battle {
     }
 
     /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
-    pub fn active_monsters_on_team(&self, team_id: TeamID) -> &Monster {
-        self.monster(self.teams[team_id].active_monster_uid)
+    pub fn active_monsters_on_team(&self, team_uid: TeamUID) -> &Monster {
+        self.monster(self.teams[team_uid].active_monster_uid)
     }
 
     pub fn is_active_monster(&self, monster_uid: MonsterUID) -> bool {
-        self.teams[monster_uid.team_id].active_monster_uid == monster_uid
+        self.teams[monster_uid.team_uid].active_monster_uid == monster_uid
     }
 
     // Abilities -----------------
@@ -115,12 +115,12 @@ impl Battle {
 
     // Teams -----------------
 
-    pub fn team(&self, team_id: TeamID) -> &MonsterTeam {
-        & self.teams[team_id]
+    pub fn team(&self, team_uid: TeamUID) -> &MonsterTeam {
+        & self.teams[team_uid]
     }
 
-    pub fn team_mut(&mut self, team_id: TeamID) -> &mut MonsterTeam {
-        &mut self.teams[team_id]
+    pub fn team_mut(&mut self, team_uid: TeamUID) -> &mut MonsterTeam {
+        &mut self.teams[team_uid]
     }
 
     pub fn ally_team(&self) -> Ally<&MonsterTeam> {
@@ -191,8 +191,8 @@ impl Battle {
     }
 
     pub fn available_choices(&self) -> AvailableChoices {
-        let ally_team_available_actions = self.available_choices_for_team(TeamID::Allies);
-        let opponent_team_available_actions = self.available_choices_for_team(TeamID::Opponents);
+        let ally_team_available_actions = self.available_choices_for_team(TeamUID::Allies);
+        let opponent_team_available_actions = self.available_choices_for_team(TeamUID::Opponents);
 
         AvailableChoices {
             ally_team_available_choices: ally_team_available_actions,
@@ -200,22 +200,22 @@ impl Battle {
         }
     }
 
-    fn available_choices_for_team(&self, team_id: TeamID) -> AvailableChoicesForTeam {
+    fn available_choices_for_team(&self, team_uid: TeamUID) -> AvailableChoicesForTeam {
         
-        let active_monster_on_team = self.active_monsters_on_team(team_id);
+        let active_monster_on_team = self.active_monsters_on_team(team_uid);
         
         let moves = active_monster_on_team.move_uids();
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
             let partially_specified_choice = PartiallySpecifiedChoice::Move { 
                 move_uid,
-                target_uid: self.active_monsters_on_team(team_id.other()).uid,
+                target_uid: self.active_monsters_on_team(team_uid.other()).uid,
                 display_text: self.move_(move_uid).species.name 
             };
             move_actions.push(partially_specified_choice);
         }
 
-        let candidate_switchee_uids = self.valid_switchees_by_uid(team_id);
+        let candidate_switchee_uids = self.valid_switchees_by_uid(team_uid);
         let any_valid_switchees = not!(candidate_switchee_uids.iter().flatten().count() == 0 );
         let switch_action = if any_valid_switchees {
             Some(PartiallySpecifiedChoice::SwitchOut { 
@@ -234,11 +234,11 @@ impl Battle {
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn valid_switchees_by_uid(&self, team_id: TeamID) -> ArrayOfOptionals<MonsterUID, 5> {
+    pub(crate) fn valid_switchees_by_uid(&self, team_uid: TeamUID) -> ArrayOfOptionals<MonsterUID, 5> {
         let mut number_of_switchees = 0;
         let mut switchees = [None; 5];
-        for monster in self.team(team_id).monsters().iter() {
-            let is_active_monster_for_team = monster.uid == self.teams[team_id].active_monster_uid;
+        for monster in self.team(team_uid).monsters().iter() {
+            let is_active_monster_for_team = monster.uid == self.teams[team_uid].active_monster_uid;
             let is_valid_switch_partner = not!(self.monster(monster.uid).is_fainted) && not!(is_active_monster_for_team);
             if is_valid_switch_partner {
                 switchees[number_of_switchees] = Some(monster.uid);

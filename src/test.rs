@@ -48,7 +48,7 @@ mod main {
                     Ally(MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
-                                team_id: TeamID::Allies,
+                                team_uid: TeamUID::Allies,
                                 monster_number: MonsterNumber::from(0usize),
                             },
                             test_monster_dex::Torchic, 
@@ -58,7 +58,7 @@ mod main {
                         )),
                         (Monster::new(
                             MonsterUID {
-                                team_id: TeamID::Allies,
+                                team_uid: TeamUID::Allies,
                                 monster_number: MonsterNumber::from(1usize),
                             },
                             test_monster_dex::Mudkip, 
@@ -68,7 +68,7 @@ mod main {
                         )),
                         (Monster::new(
                             MonsterUID {
-                                team_id: TeamID::Allies,
+                                team_uid: TeamUID::Allies,
                                 monster_number: MonsterNumber::from(2usize),
                             },
                             test_monster_dex::Treecko, 
@@ -76,11 +76,11 @@ mod main {
                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
                             ability::Ability::new(test_ability_dex::FlashFire),
                         )),
-                    ], TeamID::Allies)),
+                    ], TeamUID::Allies)),
                     Opponent(MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
-                                team_id: TeamID::Opponents,
+                                team_uid: TeamUID::Opponents,
                                 monster_number: MonsterNumber::from(0usize),
                             },
                             test_monster_dex::Drifblim, 
@@ -88,7 +88,7 @@ mod main {
                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
                             ability::Ability::new(test_ability_dex::FlashFire),
                         )),
-                    ], TeamID::Opponents)),
+                    ], TeamUID::Opponents)),
                 )
             )
         );

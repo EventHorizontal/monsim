@@ -171,7 +171,7 @@ fn update_from_input(
                 },
                 KeyCode::Tab => { 
 
-                    if let (Some(ally_team_choice), Some(opponent_team_choice)) = choices_for_turn.as_pair_of_options() {
+                    if let (Some(ally_team_choice), Some(opponent_team_choice)) = choices_for_turn.to_option_pair() {
                         Some(AppState::Simulating(PerTeam::new(ally_team_choice, opponent_team_choice)))
                     } else {
                         battle.message_log.extend(

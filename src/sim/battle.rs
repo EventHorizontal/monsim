@@ -123,19 +123,19 @@ impl Battle {
         &mut self.teams[team_id]
     }
 
-    pub fn ally_team(&self) -> &Ally<MonsterTeam> {
-        self.teams.ally()
+    pub fn ally_team(&self) -> Ally<&MonsterTeam> {
+        self.teams.ally_ref()
     }
 
-    pub fn ally_team_mut(&mut self) -> &mut Ally<MonsterTeam> {
+    pub fn ally_team_mut(&mut self) -> Ally<&mut MonsterTeam> {
         self.teams.ally_mut()
     }
 
-    pub fn opponent_team(&self) -> &Opponent<MonsterTeam> {
-        self.teams.opponent()
+    pub fn opponent_team(&self) -> Opponent<&MonsterTeam> {
+        self.teams.opponent_ref()
     }
 
-    pub fn opponent_team_mut(&mut self) -> &mut Opponent<MonsterTeam> {
+    pub fn opponent_team_mut(&mut self) -> Opponent<&mut MonsterTeam> {
         self.teams.opponent_mut()
     }
 
@@ -257,13 +257,13 @@ impl<'a> Display for Battle {
         push_pretty_tree_for_team(
             &mut out,
             "Ally Team\n", 
-            self.ally_team(), 
+            *self.ally_team(), 
             self.ally_team().monsters().iter().count(),
         );
         push_pretty_tree_for_team(
             &mut out,
             "Opponent Team\n",
-            self.opponent_team(),
+            *self.opponent_team(),
             self.opponent_team().monsters().iter().count(),
         );
         write!(f, "{}", out)

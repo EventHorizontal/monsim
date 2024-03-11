@@ -4,7 +4,7 @@ use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
 
 use crate::sim::utils::slice_to_array_of_options;
 
-use super::{game_mechanics::{MonsterUID, MoveUID}, PerTeam, TeamID};
+use super::{game_mechanics::{MonsterUID, MoveUID}, TeamID};
 
 
 /// An action choice before certain details can be established, most often the target.
@@ -13,17 +13,16 @@ pub enum PartiallySpecifiedChoice {
     /// TODO: This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
     Move{ move_uid: MoveUID, target_uid: MonsterUID, display_text: &'static str},
     /// A switch out action before we know which monster to switch with.
-    SwitchOut { switcher_uid: MonsterUID, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>, display_text: &'static str },
+    SwitchOut { switcher_uid: MonsterUID, candidate_switchee_uids: ArrayOfOptionals<MonsterUID, 5>, display_text: &'static str },
 }
 
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedChoice {
     Move { move_uid: MoveUID, target_uid: MonsterUID },
-    SwitchOut { switcher_uid: MonsterUID, switchee_uid: MonsterUID },
+    SwitchOut { switcher_uid: MonsterUID, candidate_switchee_uids: MonsterUID },
 }
 
-pub type ChoicesForTurn = PerTeam<FullySpecifiedChoice>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableChoices {

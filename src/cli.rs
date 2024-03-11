@@ -2,16 +2,16 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, Team, NOTHING};
 
-use crate::{tui::TuiResult, sim::{AvailableChoices, AvailableChoicesForTeam, Battle, BattleSimulator, ChoicesForTurn, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
+use crate::{tui::TuiResult, sim::{AvailableChoices, AvailableChoicesForTeam, Battle, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
 
 enum TurnStage {
     ChooseActions(AvailableChoices),
-    SimulateTurn(ChoicesForTurn),
+    SimulateTurn(PerTeam<FullySpecifiedChoice>),
     BattleEnded,
 }
 
 pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
-    let mut turn_stage = TurnStage::ChooseActions(battle.available_actions());
+    let mut turn_stage = TurnStage::ChooseActions(battle.available_choices());
 
     // We lock stdout so that we don't have to acquire the lock every time with `println!`
     let mut locked_stdout = io::stdout().lock();
@@ -20,19 +20,17 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
         match turn_stage {
             TurnStage::ChooseActions(available_choices) => {
 
-                let active_monsters = battle.active_monster_uids();
-
                 // Check if any of the active monsters has fainted and needs to switched out
-                for active_monster in active_monsters {
-                    if battle.monster(active_monster).is_fainted {
-                        if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = available_choices[active_monster.team_id].switch_out_choice() {
-                            let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
-                            let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster).name());
+                for active_monster_uid in battle.active_monster_uids() {
+                    if battle.monster(active_monster_uid).is_fainted {
+                        if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids, .. }) = available_choices[active_monster_uid.team_id].switch_out_choice() {
+                            let switchee_names = candidate_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
+                            writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster_uid).name())?;
                             for (index, switchee_name) in switchee_names {
-                                let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
+                                writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name)?;
                             }
-                            let chosen_switchee_index = input_as_usize(&mut locked_stdout, possible_switchee_uids.iter().flatten().count()).unwrap();
-                            let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index].unwrap();
+                            let chosen_switchee_index = input_as_usize(&mut locked_stdout, candidate_switchee_uids.iter().flatten().count()).unwrap();
+                            let chosen_switchee_uid = candidate_switchee_uids[chosen_switchee_index].unwrap();
                             BattleSimulator::switch_out_between_turns(&mut battle, switcher_uid, chosen_switchee_uid)?;
                             last_turn_chosen_actions = None;
                         } else {
@@ -96,6 +94,8 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 turn_stage = TurnStage::SimulateTurn(chosen_actions);
             },
             TurnStage::SimulateTurn(chosen_actions_for_turn) => {
+
+                battle.message_log.set_last_turn_cursor_to_log_length();
                 
                 BattleSimulator::simulate_turn(&mut battle, chosen_actions_for_turn)?;
 
@@ -105,7 +105,7 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 if battle.is_finished {
                     turn_stage = TurnStage::BattleEnded;
                 } else {
-                    turn_stage = TurnStage::ChooseActions(battle.available_actions());
+                    turn_stage = TurnStage::ChooseActions(battle.available_choices());
                 }
             },
             TurnStage::BattleEnded => {
@@ -203,7 +203,7 @@ fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<
         match action {
             PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => FullySpecifiedChoice::Move { move_uid, target_uid },
             
-            PartiallySpecifiedChoice::SwitchOut { switcher_uid, possible_switchee_uids, .. } => {
+            PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: possible_switchee_uids, .. } => {
                 let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
                 let _ = writeln!(locked_stdout, "Choose a monster to switch with");
                 for (index, switchee_name) in switchee_names {
@@ -211,7 +211,7 @@ fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<
                 }
                 let chosen_switchee_index = input_as_usize(locked_stdout, possible_switchee_uids.iter().flatten().count()).unwrap();
                 let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index].unwrap();
-                FullySpecifiedChoice::SwitchOut { switcher_uid, switchee_uid: chosen_switchee_uid }
+                FullySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: chosen_switchee_uid }
             },
         }
     });

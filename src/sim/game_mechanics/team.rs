@@ -60,7 +60,13 @@ impl<T> PerTeam<T> {
         &mut self.opponent_team_item
     }
 
-    pub fn unwrap(&self) -> (&Ally<T>, &Opponent<T>) {
+    /// Consumes `self`
+    pub fn unwrap(self) -> (Ally<T>, Opponent<T>) {
+        (self.ally_team_item, self.opponent_team_item)
+    }
+
+    /// Returns a reference to internals.
+    pub fn unwrap_ref(&self) -> (&Ally<T>, &Opponent<T>) {
         (&self.ally_team_item, &self.opponent_team_item)
     }
 
@@ -70,9 +76,9 @@ impl<T> PerTeam<T> {
 }
 
 impl<T: Clone> PerTeam<Option<T>> {
-    pub fn as_pair_of_options(&self) -> (Option<Ally<T>>, Option<Opponent<T>>) {
+    pub fn as_pair_of_options(self) -> (Option<Ally<T>>, Option<Opponent<T>>) {
         let (ally_team_item, opponent_team_item) = self.unwrap();
-        let (ally_team_item, opponent_team_item) = ((**ally_team_item).clone(), (**opponent_team_item).clone());
+        let (ally_team_item, opponent_team_item) = ((*ally_team_item).clone(), (*opponent_team_item).clone());
         (ally_team_item.map(|item| { Ally::new(item) }), opponent_team_item.map(|item| { Opponent::new(item) }))
     }
 }
@@ -86,7 +92,7 @@ impl<T: Clone> PerTeam<T> {
     }
 
     /// Returns a copy of the items
-    pub(crate) fn as_array(&self) -> [T; 2] {
+    pub fn as_array(&self) -> [T; 2] {
         [(*self.ally_team_item).clone(), (*self.opponent_team_item).clone()]
     }
 
@@ -115,6 +121,16 @@ impl<T> IndexMut<TeamID> for PerTeam<T> {
             TeamID::Allies => &mut self.ally_team_item,
             TeamID::Opponents => &mut self.opponent_team_item,
         }
+    }
+}
+
+impl<T: Clone> IntoIterator for PerTeam<T> {
+    type Item = T;
+
+    type IntoIter = std::array::IntoIter<T, 2>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_array().into_iter()
     }
 }
 

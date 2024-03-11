@@ -87,8 +87,8 @@ impl Action {
         // TODO: Introduce more damage multipliers as we implement them.
 
         // Do the calculated damage to the target
-        Effect::damage(battle, target_uid, damage);
-        EventDispatcher::dispatch_event(battle, attacker_uid, calling_context, &OnDamageDealt, NOTHING, None);
+        Effect::deal_damage(battle, target_uid, damage);
+        EventDispatcher::dispatch_event(battle, attacker_uid, calling_context, OnDamageDealt, NOTHING, None);
 
         let type_effectiveness = match type_matchup_multiplier {
             Percent(25) | Percent(50) => "not very effective",
@@ -151,7 +151,7 @@ impl Effect {
     ///
     /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
-    pub fn damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
+    pub fn deal_damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
         battle.monster_mut(target_uid).current_health = battle.monster(target_uid).current_health.saturating_sub(damage);
         if battle.monster(target_uid).current_health == 0 { battle.monster_mut(target_uid).is_fainted = true; };
     }

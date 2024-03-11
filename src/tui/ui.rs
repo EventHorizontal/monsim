@@ -12,7 +12,7 @@ pub(super) struct Ui<'a> {
     message_log_panel: MessageLogPanel,
     active_monster_status_panels: PerTeam<ActiveMonsterStatusPanel>,
     team_status_panels: PerTeam<TeamStatusPanel>,
-    action_choice_selection_menus: PerTeam<ActionChoiceSelectionMenu<'a>>,
+    choice_selection_menus: PerTeam<ChoiceSelectionMenu<'a>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -29,10 +29,10 @@ struct ActiveMonsterStatusPanel {
 }
 
 #[derive(Debug, Clone)]
-struct ActionChoiceSelectionMenu<'a> {
+struct ChoiceSelectionMenu<'a> {
     team_name: &'static str,
     selectable_panel_id: SelectablePanelID,
-    action_choice_list: Vec<ListItem<'a>>,
+    choice_list: Vec<ListItem<'a>>,
     list_state: ListState,
     selection_cursor: Option<usize>,
 }
@@ -81,25 +81,25 @@ struct TeamStatusPanel {
 
 const ALLY_TEAM_NAME: &str = "Ally";
 const OPPONENT_TEAM_NAME: &str = "Opponent";
-const MAX_ACTION_CHOICES: usize = 8;
+const MAX_CHOICES: usize = 8;
 
 impl<'a> Ui<'a> {
     pub(super) fn new(battle: &Battle) -> Self {
      
-        let available_actions = battle.available_actions();
+        let available_choices = battle.available_choices();
 
-        let mut ally_team_action_choice_list = Vec::with_capacity(MAX_ACTION_CHOICES);
-        let ally_team_available_actions = available_actions[TeamID::Allies];
-        Self::action_choice_list_from_available_actions_for_team(
-            &mut ally_team_action_choice_list, 
-            ally_team_available_actions
+        let mut ally_team_choice_list = Vec::with_capacity(MAX_CHOICES);
+        let ally_team_available_choices = available_choices[TeamID::Allies];
+        Self::choice_list_from_available_choices_for_team(
+            &mut ally_team_choice_list, 
+            ally_team_available_choices
         );
         
-        let mut opponent_team_action_choice_list = Vec::with_capacity(MAX_ACTION_CHOICES);
-        let opponent_team_available_actions = available_actions[TeamID::Opponents];
-        Self::action_choice_list_from_available_actions_for_team(
-            &mut opponent_team_action_choice_list,
-            opponent_team_available_actions
+        let mut opponent_team_choice_list = Vec::with_capacity(MAX_CHOICES);
+        let opponent_team_available_choices = available_choices[TeamID::Opponents];
+        Self::choice_list_from_available_choices_for_team(
+            &mut opponent_team_choice_list,
+            opponent_team_available_choices
         );
 
         Self {
@@ -114,18 +114,18 @@ impl<'a> Ui<'a> {
                     active_monster_status: battle.active_monsters_on_team(TeamID::Opponents).status_string(),
                     }
                 )),
-            action_choice_selection_menus: PerTeam::new(
-                    Ally::new(ActionChoiceSelectionMenu { 
+            choice_selection_menus: PerTeam::new(
+                    Ally::new(ChoiceSelectionMenu { 
                         team_name: ALLY_TEAM_NAME, 
                         selectable_panel_id: SelectablePanelID::AllyTeamChoiceSelectionMenu,
-                        action_choice_list: ally_team_action_choice_list,
+                        choice_list: ally_team_choice_list,
                         list_state: new_list_state(0),
                         selection_cursor: None,
                     }),
-                    Opponent::new(ActionChoiceSelectionMenu { 
+                    Opponent::new(ChoiceSelectionMenu { 
                         team_name: OPPONENT_TEAM_NAME,
                         selectable_panel_id: SelectablePanelID::OpponentTeamChoiceSelectionMenu,
-                        action_choice_list: opponent_team_action_choice_list,
+                        choice_list: opponent_team_choice_list,
                         list_state: new_list_state(0),
                         selection_cursor: None, 
                     }),
@@ -162,9 +162,9 @@ impl<'a> Ui<'a> {
 
     fn update_team_status_panel(&mut self, team_id: TeamID, battle: &Battle) {
         
-        Self::action_choice_list_from_available_actions_for_team(
-            &mut self.action_choice_selection_menus[team_id].action_choice_list, 
-            battle.available_actions()[team_id]
+        Self::choice_list_from_available_choices_for_team(
+            &mut self.choice_selection_menus[team_id].choice_list, 
+            battle.available_choices()[team_id]
         );
         self.active_monster_status_panels[team_id].active_monster_status = battle.active_monsters_on_team(team_id).status_string();
         self.team_status_panels[team_id].team_status = battle.team(team_id).team_status_string();
@@ -188,7 +188,7 @@ impl<'a> Ui<'a> {
 
             frame.render_widget(ally_team_active_monster_status_widget, ally_team_panel_chunks[0]);
             // TODO: think about how to remove this clone (and possibly similar ones elsewhere)
-            frame.render_stateful_widget(ally_team_choice_menu_widget, ally_team_panel_chunks[1], &mut self.action_choice_selection_menus[TeamID::Allies].list_state.clone());
+            frame.render_stateful_widget(ally_team_choice_menu_widget, ally_team_panel_chunks[1], &mut self.choice_selection_menus[TeamID::Allies].list_state.clone());
             frame.render_widget(ally_team_status_widget, ally_team_panel_chunks[2]);
 
             let message_log_widget = self.message_log_panel.as_renderable_widget(&battle.message_log.as_vec(), self.currently_selected_panel == SelectablePanelID::MessageLog);
@@ -227,7 +227,7 @@ impl<'a> Ui<'a> {
             ) = self.renderable_widgets_for_team(TeamID::Opponents);
 
             frame.render_widget(opponent_team_active_monster_status_widget, opponent_team_panel_chunks[0]);
-            frame.render_stateful_widget(opponent_team_choice_menu_widget, opponent_team_panel_chunks[1], &mut self.action_choice_selection_menus[TeamID::Opponents].list_state.clone());
+            frame.render_stateful_widget(opponent_team_choice_menu_widget, opponent_team_panel_chunks[1], &mut self.choice_selection_menus[TeamID::Opponents].list_state.clone());
             frame.render_widget(opponent_team_status_widget, opponent_team_panel_chunks[2]);
 
             
@@ -236,8 +236,8 @@ impl<'a> Ui<'a> {
 
     fn renderable_widgets_for_team(&self, team_id: TeamID) -> (Paragraph<'_>, List<'_>, Paragraph<'_>) {
         let active_monster_status_widget = self.active_monster_status_panels[team_id].as_renderable_widget();
-        let is_choice_menu_selected = self.currently_selected_panel == self.action_choice_selection_menus[team_id].selectable_panel_id;
-        let choice_menu_widget = self.action_choice_selection_menus[team_id].as_renderable_widget(is_choice_menu_selected);
+        let is_choice_menu_selected = self.currently_selected_panel == self.choice_selection_menus[team_id].selectable_panel_id;
+        let choice_menu_widget = self.choice_selection_menus[team_id].as_renderable_widget(is_choice_menu_selected);
         let team_status_widget = self.team_status_panels[team_id].as_renderable_widget();
         (active_monster_status_widget, choice_menu_widget, team_status_widget)
     }
@@ -267,11 +267,11 @@ impl<'a> Ui<'a> {
     pub(super) fn scroll_current_widget_up(&mut self) {
         match self.currently_selected_panel {
             SelectablePanelID::AllyTeamChoiceSelectionMenu => {
-                self.action_choice_selection_menus[TeamID::Allies].scroll_up();
+                self.choice_selection_menus[TeamID::Allies].scroll_up();
             },
             SelectablePanelID::MessageLog => { self.scroll_message_log_up() },
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => {
-                self.action_choice_selection_menus[TeamID::Opponents].scroll_up();
+                self.choice_selection_menus[TeamID::Opponents].scroll_up();
             },
         }
     }
@@ -279,11 +279,11 @@ impl<'a> Ui<'a> {
     pub(super) fn scroll_current_widget_down(&mut self) {
         match self.currently_selected_panel {
             SelectablePanelID::AllyTeamChoiceSelectionMenu => {
-                self.action_choice_selection_menus[TeamID::Allies].scroll_down();
+                self.choice_selection_menus[TeamID::Allies].scroll_down();
             },
             SelectablePanelID::MessageLog => { self.scroll_message_log_down() },
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => {
-                self.action_choice_selection_menus[TeamID::Opponents].scroll_down();
+                self.choice_selection_menus[TeamID::Opponents].scroll_down();
             },
         }
     }
@@ -312,8 +312,8 @@ impl<'a> Ui<'a> {
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => Some(TeamID::Opponents),
         };
         if let Some(team_id) = maybe_team_id {
-            let highlighted_choice_index = self.action_choice_selection_menus[team_id].list_state.selected().expect("This is initialised to Some and never set to None afterwards");
-            self.action_choice_selection_menus[team_id].selection_cursor = Some(highlighted_choice_index);
+            let highlighted_choice_index = self.choice_selection_menus[team_id].list_state.selected().expect("This is initialised to Some and never set to None afterwards");
+            self.choice_selection_menus[team_id].selection_cursor = Some(highlighted_choice_index);
             Some((highlighted_choice_index, team_id))
         } else {
             None
@@ -332,10 +332,10 @@ impl<'a> Ui<'a> {
         self.message_log_panel.snap_to_beginning_of_last_message();
     }
 
-    fn action_choice_list_from_available_actions_for_team(list_to_fill: &mut Vec<ListItem>, available_actions_for_team: AvailableChoicesForTeam) {
+    fn choice_list_from_available_choices_for_team(list_to_fill: &mut Vec<ListItem>, available_choices_for_team: AvailableChoicesForTeam) {
         list_to_fill.clear();
-        for action_choice in available_actions_for_team.as_vec() {
-            match action_choice {
+        for choice in available_choices_for_team.as_vec() {
+            match choice {
                 PartiallySpecifiedChoice::Move { display_text, .. } => {
                     list_to_fill.push(ListItem::new(display_text));
                 },
@@ -347,8 +347,8 @@ impl<'a> Ui<'a> {
     }
 
     pub(super) fn clear_choice_menu_selection_for_team(&mut self, team_id: TeamID) {
-        self.action_choice_selection_menus[team_id].list_state.select(Some(0));
-        self.action_choice_selection_menus[team_id].selection_cursor = None;
+        self.choice_selection_menus[team_id].list_state.select(Some(0));
+        self.choice_selection_menus[team_id].selection_cursor = None;
     }
 }
 
@@ -380,9 +380,9 @@ impl ActiveMonsterStatusPanel {
     }
 }
 
-impl<'a> ActionChoiceSelectionMenu<'a> {
+impl<'a> ChoiceSelectionMenu<'a> {
     fn as_renderable_widget(&self, is_selected: bool) -> List<'a> {
-        let list_items = self.action_choice_list.iter().enumerate().map(|(i, list_item)| {
+        let list_items = self.choice_list.iter().enumerate().map(|(i, list_item)| {
             let is_selected_item = self.selection_cursor == Some(i);
             if is_selected_item {
                 // Colour the selected choice green
@@ -409,13 +409,13 @@ impl<'a> ActionChoiceSelectionMenu<'a> {
 
     fn scroll_up(&mut self) {
         let currently_highlighted_index = self.list_state.selected().expect("This is initialised to Some and never set to None afterwards");
-        let new_highlighted_index = (currently_highlighted_index + self.action_choice_list.len() - 1) % self.action_choice_list.len();
+        let new_highlighted_index = (currently_highlighted_index + self.choice_list.len() - 1) % self.choice_list.len();
         self.list_state.select(Some(new_highlighted_index));
     }
 
     fn scroll_down(&mut self) {
         let currently_highlighted_index = self.list_state.selected().expect("This is initialised to Some and never set to None afterwards");
-        let new_highlighted_index = (currently_highlighted_index + 1) % self.action_choice_list.len();
+        let new_highlighted_index = (currently_highlighted_index + 1) % self.choice_list.len();
         self.list_state.select(Some(new_highlighted_index));
     }
 }

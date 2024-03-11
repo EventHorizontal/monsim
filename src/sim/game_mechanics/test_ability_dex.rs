@@ -5,7 +5,7 @@ use monsim_utils::not;
 use super::{ability::AbilitySpecies, ElementalType};
 use crate::{
     source_code_location,
-    sim::{event::broadcast_contexts::MoveUsed, EventHandlerDeck, EventFilteringOptions, EventHandler, Outcome, Effect},
+    sim::{event::contexts::MoveUsed, EventHandlerDeck, EventFilteringOptions, EventHandler, Outcome, Effect},
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {

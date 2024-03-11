@@ -16,7 +16,7 @@ pub use battle_builder_macro::build_battle;
 pub use battle_constants::*;
 pub use choice::*;
 pub use event::{
-    broadcast_contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, InBattleEvent, TargetFlags,
+    contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, InBattleEvent, TargetFlags,
 };
 pub use game_mechanics::*;
 pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent, Ally, Opponent};
@@ -59,12 +59,11 @@ pub struct BattleSimulator;
 
 impl BattleSimulator {
 
-    pub fn simulate_turn(battle: &mut Battle, choices: ChoicesForTurn) -> TurnResult {
+    pub fn simulate_turn(battle: &mut Battle, choices: PerTeam<FullySpecifiedChoice>) -> TurnResult {
         
         assert!(not!(battle.is_finished), "The simulator cannot be called on a finished battle.");
 
-        battle.message_log.set_last_turn_cursor_to_log_length();
-        battle.increment_turn_number()
+        Self::increment_turn_number(battle)
             .map_err(|message| { SimError::InvalidStateReached(String::from(message))})?;
         
         battle.message_log.extend(&[
@@ -75,6 +74,7 @@ impl BattleSimulator {
             ]
         );
 
+        // TEMP: Will need to be updated when multiple Monsters per battle is implemented.
         let mut choices = choices.as_array();
         ordering::sort_choices_by_activation_order(battle, &mut choices);
 
@@ -85,7 +85,7 @@ impl BattleSimulator {
                     MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, move_uid, target_uid),
                     MoveCategory::Status => Action::use_status_move(battle, move_uid, target_uid),
                 },
-                FullySpecifiedChoice::SwitchOut { switcher_uid, switchee_uid } => {
+                FullySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: switchee_uid } => {
                     Action::perform_switch_out(battle, switcher_uid, switchee_uid)
                 }
             }?;
@@ -134,6 +134,14 @@ impl BattleSimulator {
         Ok(NOTHING)
     }
     
+    /// Fails if the turn limit (`u16::MAX`, i.e. `65535`) is exceeded. It's not expected for this to ever happen.
+    pub(crate) fn increment_turn_number(battle: &mut Battle) -> Result<Nothing, &str> {
+        match battle.turn_number.checked_add(1) {
+            Some(turn_number) => { battle.turn_number = turn_number; Ok(NOTHING)},
+            None => Err("Turn limit (65535) exceeded."),
+        }
+    }
+
     pub(crate) fn switch_out_between_turns(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
         Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)
     }

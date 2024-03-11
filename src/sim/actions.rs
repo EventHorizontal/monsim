@@ -27,7 +27,7 @@ impl Action {
             _move = battle.move_(move_uid).species.name
         ]);
 
-        if EventDispatcher::dispatch_trial_event(battle, attacker_uid, calling_context, &OnTryMove) == Outcome::Failure {
+        if EventDispatcher::dispatch_trial_event(battle, attacker_uid, calling_context, OnTryMove) == Outcome::Failure {
             battle.message_log.push_str("The move failed!");
             return Ok(NOTHING);
         }
@@ -120,7 +120,7 @@ impl Action {
             move_ = battle.move_(move_uid).species.name
         ]);
 
-        if EventDispatcher::dispatch_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), &OnTryMove) == Outcome::Failure {
+        if EventDispatcher::dispatch_trial_event(battle, attacker_uid, MoveUsed::new(move_uid, target_uid), OnTryMove) == Outcome::Failure {
             battle.message_log.push_str("The move failed!");
             return Ok(NOTHING);
         }
@@ -130,7 +130,7 @@ impl Action {
             move_.on_activate(battle, attacker_uid, target_uid);
         }
 
-        EventDispatcher::dispatch_event(battle, attacker_uid, calling_context, &OnStatusMoveUsed, NOTHING, None);
+        EventDispatcher::dispatch_event(battle, attacker_uid, calling_context, OnStatusMoveUsed, NOTHING, None);
 
         Ok(NOTHING)
     }
@@ -147,10 +147,8 @@ impl Action {
 }
 
 impl Effect {
-    /// **SEventDispatcheron** This action can only be triggered by other Actions.
-    ///
     /// Deducts `damage` from HP of target corresponding to `target_uid`.
-    ///EventDispatcher
+    ///
     /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
     pub fn damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
@@ -166,23 +164,21 @@ impl Effect {
     pub fn activate_ability(battle: &mut Battle, ability_holder_uid: MonsterUID) -> Outcome {
         let calling_context = AbilityUsed::new(ability_holder_uid);
 
-        if EventDispatcher::dispatch_trial_event(battle, ability_holder_uid, calling_context, &OnTryActivateAbility) == Outcome::Success {
+        if EventDispatcher::dispatch_trial_event(battle, ability_holder_uid, calling_context, OnTryActivateAbility) == Outcome::Success {
             let ability = *battle.ability(ability_holder_uid);
             ability.on_activate(battle, ability_holder_uid);
-            EventDispatcher::dispatch_event(battle, ability_holder_uid, calling_context, &OnAbilityActivated, NOTHING, None);
+            EventDispatcher::dispatch_event(battle, ability_holder_uid, calling_context, OnAbilityActivated, NOTHING, None);
             Outcome::Success
         } else {
             Outcome::Failure
         }
     }
 
-    /// **Secondary Action** This action can only be triggered by other Actions.
-    ///
     /// Resolves raising the `stat` stat of the monster corresponding to `monster_uid` by `number_of_stages`. The stat cannot be HP.
     ///
     /// Returns a `bool` indicating whether the stat raising succeeded.
     pub fn raise_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-        if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, &OnTryRaiseStat) == Outcome::Success {
+        if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, OnTryRaiseStat) == Outcome::Success {
             let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.raise_stat(stat, number_of_stages);
 
             battle.message_log.push(format![
@@ -206,7 +202,7 @@ impl Effect {
     ///
     /// Returns a `bool` indicating whether the stat lowering succeeded.
     pub fn lower_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-        if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, &OnTryLowerStat) == Outcome::Success {
+        if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, OnTryLowerStat) == Outcome::Success {
             let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.lower_stat(stat, number_of_stages);
 
             battle.message_log.push(format![

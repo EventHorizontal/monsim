@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, Battle, Nothing, Outcome, Percent};
-use broadcast_contexts::*;
+use contexts::*;
 use event_setup_macro::event_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,7 +46,7 @@ bitflags::bitflags! {
     }
 }
 
-pub mod broadcast_contexts {
+pub mod contexts {
     use crate::sim::{MonsterUID, MoveUID};
 
     #[derive(Debug, Clone, Copy)]
@@ -140,7 +140,7 @@ impl EventDispatcher {
         battle: &mut Battle,
         broadcaster_uid: MonsterUID,
         calling_context: C,
-        event: &dyn InBattleEvent<EventReturnType = Outcome, ContextType = C>,
+        event: impl InBattleEvent<EventReturnType = Outcome, ContextType = C>,
     ) -> Outcome {
         Self::dispatch_event(battle, broadcaster_uid, calling_context, event, Outcome::Success, Some(Outcome::Failure))
     }
@@ -152,7 +152,7 @@ impl EventDispatcher {
         battle: &mut Battle,
         broadcaster_uid: MonsterUID,
         calling_context: C,
-        event: &dyn InBattleEvent<EventReturnType = R, ContextType = C>,
+        event: impl InBattleEvent<EventReturnType = R, ContextType = C>,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
@@ -215,7 +215,7 @@ impl EventDispatcher {
 
     fn handlers_for_event<R: Copy, C: Copy>(
         event_handler_deck_instances: Vec<OwnedEventHandlerDeck>,
-        event: &(dyn InBattleEvent<EventReturnType = R, ContextType = C>),
+        event: impl InBattleEvent<EventReturnType = R, ContextType = C>,
     ) -> Vec<OwnedEventHandler<R, C>> {
         event_handler_deck_instances
             .iter()
@@ -250,7 +250,7 @@ impl EventHandlerDeck {
 impl OwnedEventHandlerDeck {
     fn handler_for_event<R: Copy, C: Copy>(
         &self,
-        event: &dyn InBattleEvent<EventReturnType = R, ContextType = C>,
+        event: impl InBattleEvent<EventReturnType = R, ContextType = C>,
     ) -> Option<OwnedEventHandler<R, C>> {
         let event_handler = event.corresponding_handler(&self.event_handler_deck);
         event_handler.map(|event_handler| OwnedEventHandler {
@@ -323,7 +323,7 @@ mod tests {
 
             let event_handler_deck_instances = test_battle.event_handler_deck_instances();
             use crate::sim::event_dex::OnTryMove;
-            let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, &OnTryMove);
+            let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, OnTryMove);
 
             crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_handler_instances, &mut |it| it.activation_order);
 
@@ -426,7 +426,7 @@ mod tests {
             let event_handler_deck_instances = test_battle.event_handler_deck_instances();
             use crate::sim::event_dex::OnTryMove;
 
-            let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, &OnTryMove);
+            let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, OnTryMove);
 
             crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_handler_instances, &mut |it| it.activation_order);
 

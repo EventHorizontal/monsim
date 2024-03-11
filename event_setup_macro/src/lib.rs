@@ -133,7 +133,7 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
             #fields_for_constant
         };
 
-        #second_pub_keyword #trait_keyword #trait_name {
+        #second_pub_keyword #trait_keyword #trait_name: Clone + Copy {
             type EventReturnType: Sized + Clone + Copy;
             type ContextType: Sized + Clone + Copy;
 

@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-        Ability, AbilitySpecies, EventHandlerDeck, ElementalType, EventFilteringOptions, EventHandler, MoveUsed, SecondaryAction,
+        Ability, AbilitySpecies, EventHandlerDeck, ElementalType, EventFilteringOptions, EventHandler, MoveUsed, Effect,
         utils::{Outcome, not},
 };
 
@@ -17,7 +17,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
                             let current_move = battle.move_(move_uid);
                             let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
                             if is_current_move_fire_type {
-                                let activation_succeeded = SecondaryAction::activate_ability(battle, target_uid);
+                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
                                 return not!(activation_succeeded);
                             }
                 Outcome::Success
@@ -43,7 +43,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
                             let current_move = battle.move_(move_uid);
                             let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Water);
                             if is_current_move_fire_type {
-                                let activation_succeeded = SecondaryAction::activate_ability(battle, target_uid);
+                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
                                 return not!(activation_succeeded);
                             }
                 Outcome::Success

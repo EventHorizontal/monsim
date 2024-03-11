@@ -5,7 +5,7 @@ use monsim_utils::not;
 use super::{ability::AbilitySpecies, ElementalType};
 use crate::{
     source_code_location,
-    sim::{event::broadcast_contexts::MoveUsed, EventHandlerDeck, EventFilteringOptions, EventHandler, Outcome, SecondaryAction},
+    sim::{event::broadcast_contexts::MoveUsed, EventHandlerDeck, EventFilteringOptions, EventHandler, Outcome, Effect},
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -17,7 +17,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
                             let current_move = battle.move_(move_uid);
                             let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Fire);
                             if is_current_move_fire_type {
-                                let activation_succeeded = SecondaryAction::activate_ability(battle, target_uid);
+                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
                                 return not!(activation_succeeded);
                             }
                 Outcome::Success
@@ -43,7 +43,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
                             let current_move = battle.move_(move_uid);
                             let is_current_move_fire_type = (current_move.species.elemental_type == ElementalType::Water);
                             if is_current_move_fire_type {
-                                let activation_succeeded = SecondaryAction::activate_ability(battle, target_uid);
+                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
                                 return not!(activation_succeeded);
                             }
                 Outcome::Success

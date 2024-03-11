@@ -9,7 +9,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, ChoicesForTurn, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamID, EMPTY_LINE};
 
-pub type AppResult<S> = Result<S, Box<dyn Error>>;
+pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)]
@@ -41,7 +41,7 @@ pub enum InputMode {
 }
 
 /// The main function for the application
-pub fn run(mut battle: Battle) -> AppResult<Nothing> {
+pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
     let (sender, receiver) = mpsc::channel();
     spawn_input_capturing_thread(sender);
     
@@ -244,7 +244,7 @@ fn update_from_input(
 
 type TuiTerminal = Terminal<CrosstermBackend<Stdout>>;
 
-fn acquire_terminal() -> AppResult<TuiTerminal> {
+fn acquire_terminal() -> TuiResult<TuiTerminal> {
     // Raw mode allows us to avoid requiring enter presses to get input
     enable_raw_mode().expect("Enabling raw mode should always work.");
     
@@ -285,7 +285,7 @@ fn spawn_input_capturing_thread(sender: mpsc::Sender<TuiEvent<KeyEvent>>) {
     });
 }
 
-fn get_pressed_key(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<Option<KeyCode>> {
+fn get_pressed_key(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> TuiResult<Option<KeyCode>> {
     Ok(match receiver.recv()? {
         TuiEvent::Input(key_event) => {
             // Reminder: Linux does not have the Release and Repeat Flags enabled by default
@@ -296,7 +296,7 @@ fn get_pressed_key(receiver: &mpsc::Receiver<TuiEvent<KeyEvent>>) -> AppResult<O
     })
 }
 
-fn release_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> AppResult<Nothing> {
+fn release_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> TuiResult<Nothing> {
     disable_raw_mode()?;
     execute!(std::io::stdout(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;

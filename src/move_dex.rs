@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{Battle, MonsterUID, ElementalType, EventFilteringOptions, MoveCategory, MoveSpecies, SecondaryAction, Stat};
+use monsim::sim::{Battle, MonsterUID, ElementalType, EventFilteringOptions, MoveCategory, MoveSpecies, Effect, Stat};
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -50,7 +50,7 @@ pub const Growl: MoveSpecies = MoveSpecies {
     base_power: 0,
     base_accuracy: 100,
     on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
-        _ = SecondaryAction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
+        _ = Effect::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),
     ..MoveSpecies::default()
 };

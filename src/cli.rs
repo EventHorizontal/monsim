@@ -2,7 +2,7 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, Team, NOTHING};
 
-use crate::{app::AppResult, sim::{AvailableChoices, AvailableChoicesForTeam, Battle, BattleSimulator, ChoicesForTurn, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
+use crate::{tui::TuiResult, sim::{AvailableChoices, AvailableChoicesForTeam, Battle, BattleSimulator, ChoicesForTurn, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
 
 enum TurnStage {
     ChooseActions(AvailableChoices),
@@ -10,7 +10,7 @@ enum TurnStage {
     BattleEnded,
 }
 
-pub fn run(mut battle: Battle) -> AppResult<Nothing> {
+pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
     let mut turn_stage = TurnStage::ChooseActions(battle.available_actions());
 
     // We lock stdout so that we don't have to acquire the lock every time with `println!`
@@ -21,14 +21,13 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
             TurnStage::ChooseActions(available_choices) => {
 
                 let active_monsters = battle.active_monster_uids();
-                let (ally_team_active_monster_uid, opponent_team_active_monster_uid) = active_monsters.unwrap();
 
                 // Check if any of the active monsters has fainted and needs to switched out
-                for active_monster_uid in [**ally_team_active_monster_uid, **opponent_team_active_monster_uid] {
-                    if battle.monster(active_monster_uid).is_fainted {
-                        if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = available_choices[active_monster_uid.team_id].switch_out_choice() {
+                for active_monster in active_monsters {
+                    if battle.monster(active_monster).is_fainted {
+                        if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, possible_switchee_uids, .. }) = available_choices[active_monster.team_id].switch_out_choice() {
                             let switchee_names = possible_switchee_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
-                            let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster_uid).name());
+                            let _ = writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster).name());
                             for (index, switchee_name) in switchee_names {
                                 let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
                             }
@@ -118,12 +117,12 @@ pub fn run(mut battle: Battle) -> AppResult<Nothing> {
     Ok(NOTHING)
 }
 
-fn write_empty_line(locked_stdout: &mut StdoutLock<'_>) -> AppResult<Nothing> {
+fn write_empty_line(locked_stdout: &mut StdoutLock<'_>) -> TuiResult<Nothing> {
     writeln!(locked_stdout, "")?;
     Ok(NOTHING)
 }
 
-fn input_as_usize(locked_stdout: &mut StdoutLock, options_count: usize) -> AppResult<usize> {
+fn input_as_usize(locked_stdout: &mut StdoutLock, options_count: usize) -> TuiResult<usize> {
     
     loop {
         let mut input = String::new();
@@ -151,7 +150,7 @@ fn input_as_usize(locked_stdout: &mut StdoutLock, options_count: usize) -> AppRe
     }
 }
 
-fn display_choices(available_actions_for_team: &AvailableChoicesForTeam, locked_stdout: &mut StdoutLock, last_turn_action: bool) -> AppResult<Nothing> {
+fn display_choices(available_actions_for_team: &AvailableChoicesForTeam, locked_stdout: &mut StdoutLock, last_turn_action: bool) -> TuiResult<Nothing> {
     for (index, action) in available_actions_for_team.as_vec().into_iter().enumerate() {
         match action {
             PartiallySpecifiedChoice::Move { display_text, .. } => { 
@@ -179,7 +178,7 @@ enum UIChoice<T> {
     Repeat(PerTeam<FullySpecifiedChoice>),
 }
 
-fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> AppResult<UIChoice<Team<FullySpecifiedChoice>>> 
+fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> TuiResult<UIChoice<Team<FullySpecifiedChoice>>> 
 {
 
     let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );

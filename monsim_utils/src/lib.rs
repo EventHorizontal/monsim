@@ -1,5 +1,7 @@
 use std::ops::{Add, Deref, DerefMut, Mul, Not, Sub};
 
+use max_size_vec::MaxSizeVec;
+
 /// Type alias for readability of parentheses
 pub type Nothing = ();
 /// Type alias for readability of parentheses
@@ -211,6 +213,18 @@ impl<T: Clone> Ally<T> {
     }
 }
 
+impl<T> AsRef<T> for Ally<T> {
+    fn as_ref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T> AsMut<T> for Ally<T> {
+    fn as_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// A type that can be deferenced to get data marked as belonging to the Opponent Team
 pub struct Opponent<T>(pub T);
@@ -239,6 +253,19 @@ impl<T: Clone> Opponent<T> {
     pub fn map<U, F>(&self, f: F) -> Opponent<U> where F: FnOnce(T) -> U {
         let item = f(self.0.clone());
         Opponent(item)
+    }
+}
+
+
+impl<T> AsRef<T> for Opponent<T> {
+    fn as_ref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T> AsMut<T> for Opponent<T> {
+    fn as_mut(&mut self) -> &mut T {
+        &mut self.0
     }
 }
 
@@ -289,3 +316,8 @@ impl<T: Clone> Team<T> {
     }
 }
 
+pub fn max_size_vec_from<T, const N: usize>(iterator: impl IntoIterator<Item = T>) -> MaxSizeVec<T, N> {
+    let mut out = MaxSizeVec::new();
+    iterator.into_iter().for_each(|move_| { out.push(move_)});
+    out
+}

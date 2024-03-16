@@ -7,9 +7,17 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Launch",
+            "name": "Launch-Windows",
             "program": "${workspaceFolder}/target/debug/monsim_tui.exe",
-            "args": [],
+            "args": ["--features \"debug\""],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch-Linux",
+            "program": "${workspaceFolder}/target/debug/monsim_tui",
+            "args": ["--features \"debug\""],
             "cwd": "${workspaceFolder}"
         },
     ]

@@ -1,480 +1,212 @@
-#[cfg(test)]
+#[cfg(all(test, feature = "debug"))]
 mod main {
-    use battle_context_macro::battle_context;
+    use battle_builder_macro::build_battle;
 
-    use crate::BattleContext;
-
-    #[test]
-    fn test_bcontext_macro() {
-        let test_bcontext = battle_context!(
-            {
-                AllyTeam {
-                    mon Torchic "Ruby" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
-                    },
-                    mon Torchic "Sapphire" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
-                    },
-                    mon Torchic "Emerald" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
-                    },
-                },
-                OpponentTeam {
-                    mon Torchic "Cheerio" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
-                    },
-                }
-            }
-        );
-        assert_eq!(
-            test_bcontext,
-            BattleContext::new(
-                crate::game_mechanics::BattlerTeam::new(vec![
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Ally,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_1,
-                        },
-                        true,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Ruby",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
-                    )),
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Ally,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_2,
-                        },
-                        false,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Sapphire",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
-                    )),
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Ally,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_3,
-                        },
-                        false,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Emerald",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
-                    )),
-                ],),
-                crate::game_mechanics::BattlerTeam::new(vec![
-                    (crate::game_mechanics::Battler::new(
-                        crate::game_mechanics::BattlerUID {
-                            team_id: crate::game_mechanics::TeamID::Opponent,
-                            battler_number: crate::game_mechanics::monster::BattlerNumber::_1,
-                        },
-                        true,
-                        crate::game_mechanics::monster::Monster::new(
-                            crate::game_mechanics::monster_dex::Torchic,
-                            "Cheerio",
-                        ),
-                        crate::game_mechanics::move_::MoveSet::new(vec![
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Scratch,
-                            )),
-                            (crate::game_mechanics::move_::Move::new(
-                                crate::game_mechanics::move_dex::Ember,
-                            )),
-                        ],),
-                        crate::game_mechanics::ability::Ability::new(
-                            crate::game_mechanics::ability_dex::FlashFire,
-                        ),
-                    ))
-                ],),
-            ),
-        );
-    }
-}
-
-#[cfg(test)]
-mod bcontext {
-
-    use battle_context_macro::battle_context;
-
-    use crate::{
-        prng::{self, Prng},
-        Battle, BattleContext, BattlerNumber, BattlerUID, EventHandlerFilters,
-        EventHandlerInstance, InBattleEvent, TeamID,
+    use crate::sim::*;
+    use crate::sim::{
+        test_ability_dex::FlashFire,
+        battle::Battle,
+        test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+        test_move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
+        Ability, Monster, Move,
     };
 
     #[test]
-    fn test_priority_sorting_deterministic() {
-        let mut result = [Vec::new(), Vec::new()];
-        for i in 0..=1 {
-            let test_bcontext = battle_context!(
-                {
-                    AllyTeam {
-                        mon Torchic "Ruby" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Mudkip "Sapphire" {
-                            mov Tackle,
-                            mov Bubble,
-                            abl FlashFire,
-                        },
-                        mon Treecko "Emerald" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                    },
-                    OpponentTeam {
-                        mon Drifblim {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                    }
-                }
-            );
-
-            let mut prng = Prng::new(prng::seed_from_time_now());
-
-            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
-            use crate::event::event_dex::OnTryMove;
-            let mut event_handler_instances = event_handler_set_instances
-                .iter()
-                .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) = OnTryMove
-                        .corresponding_handler(&event_handler_set_instance.event_handler_set)
-                    {
-                        Some(EventHandlerInstance {
-                            event_name: OnTryMove.name(),
-                            event_handler: handler,
-                            owner_uid: event_handler_set_instance.owner_uid,
-                            activation_order: event_handler_set_instance.activation_order,
-                            filters: EventHandlerFilters::default(),
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            Battle::priority_sort::<EventHandlerInstance<bool>>(
-                &mut prng,
-                &mut event_handler_instances,
-                &mut |it| it.activation_order,
-            );
-
-            result[i] = event_handler_instances
-                .into_iter()
-                .map(|event_handler_instance| {
-                    test_bcontext
-                        .monster(event_handler_instance.owner_uid)
-                        .nickname
-                })
-                .collect::<Vec<_>>();
-        }
-
-        assert_eq!(result[0], result[1]);
-        assert_eq!(result[0][0], "Drifblim");
-        assert_eq!(result[0][1], "Emerald");
-        assert_eq!(result[0][2], "Ruby");
-        assert_eq!(result[0][3], "Sapphire");
-    }
-
-    #[test]
-    fn test_event_filtering_for_event_sources() {
-        let test_battle_context = battle_context!(
+    fn test_build_battle_macro() {
+        extern crate self as monsim;
+        let test_battle = build_battle!(
             {
-                AllyTeam {
-                    mon Torchic "Ruby" {
-                        mov Ember,
-                        mov Scratch,
-                        abl FlashFire,
+                Allies: MonsterTeam {
+                    Torchic: Monster = "Ruby" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
                     },
-                    mon Mudkip "Sapphire" {
-                        mov Tackle,
-                        mov Bubble,
-                        abl FlashFire,
+                    Mudkip: Monster = "Sapphire" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
+                    },
+                    Treecko: Monster = "Emerald" {
+                        Bubble: Move,
+                        Scratch: Move,
+                        FlashFire: Ability,
                     },
                 },
-                OpponentTeam {
-                    mon Treecko "Emerald" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
+                Opponents: MonsterTeam {
+                    Drifblim: Monster {
+                        Tackle: Move,
+                        Growl: Move,
+                        FlashFire: Ability,
                     },
                 }
             }
         );
-
-        let passed_filter = test_battle_context.filter_event_handlers(
-            BattlerUID {
-                team_id: TeamID::Ally,
-                battler_number: BattlerNumber::_1,
-            },
-            BattlerUID {
-                team_id: TeamID::Opponent,
-                battler_number: BattlerNumber::_1,
-            },
-            EventHandlerFilters::default(),
+        assert_eq!(test_battle, 
+            Battle::new(
+                PerTeam::new(
+                    Ally(MonsterTeam::new(vec![
+                        (Monster::new(
+                            MonsterUID {
+                                team_uid: TeamUID::Allies,
+                                monster_number: MonsterNumber::from(0usize),
+                            },
+                            test_monster_dex::Torchic, 
+                            Some("Ruby"),
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
+                        )),
+                        (Monster::new(
+                            MonsterUID {
+                                team_uid: TeamUID::Allies,
+                                monster_number: MonsterNumber::from(1usize),
+                            },
+                            test_monster_dex::Mudkip, 
+                            Some("Sapphire"),
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
+                        )),
+                        (Monster::new(
+                            MonsterUID {
+                                team_uid: TeamUID::Allies,
+                                monster_number: MonsterNumber::from(2usize),
+                            },
+                            test_monster_dex::Treecko, 
+                            Some("Emerald"),
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
+                        )),
+                    ], TeamUID::Allies)),
+                    Opponent(MonsterTeam::new(vec![
+                        (Monster::new(
+                            MonsterUID {
+                                team_uid: TeamUID::Opponents,
+                                monster_number: MonsterNumber::from(0usize),
+                            },
+                            test_monster_dex::Drifblim, 
+                            None,
+                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
+                            ability::Ability::new(test_ability_dex::FlashFire),
+                        )),
+                    ], TeamUID::Opponents)),
+                )
+            )
         );
-        assert!(passed_filter);
-    }
-
-    #[test]
-    fn test_priority_sorting_with_speed_ties() {
-        let mut result = [Vec::new(), Vec::new()];
-        for i in 0..=1 {
-            let test_bcontext = battle_context!(
-                {
-                    AllyTeam {
-                        mon Torchic "A" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "B" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "C" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "D" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "E" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Mudkip "F" {
-                            mov Tackle,
-                            mov Bubble,
-                            abl FlashFire,
-                        }
-                    },
-                    OpponentTeam {
-                        mon Drifblim "G" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "H" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "I" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "J" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "K" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                        mon Torchic "L" {
-                            mov Scratch,
-                            mov Ember,
-                            abl FlashFire,
-                        },
-                    }
-                }
-            );
-            let mut prng = Prng::new(i as u64);
-
-            let event_handler_set_instances = test_bcontext.event_handler_set_instances();
-            use crate::event::event_dex::OnTryMove;
-            let mut event_handler_instances = event_handler_set_instances
-                .iter()
-                .filter_map(|event_handler_set_instance| {
-                    if let Some(handler) = OnTryMove
-                        .corresponding_handler(&event_handler_set_instance.event_handler_set)
-                    {
-                        Some(EventHandlerInstance {
-                            event_name: OnTryMove.name(),
-                            event_handler: handler,
-                            owner_uid: event_handler_set_instance.owner_uid,
-                            activation_order: event_handler_set_instance.activation_order,
-                            filters: EventHandlerFilters::default(),
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            Battle::priority_sort::<EventHandlerInstance<bool>>(
-                &mut prng,
-                &mut event_handler_instances,
-                &mut |it| it.activation_order,
-            );
-
-            result[i] = event_handler_instances
-                .into_iter()
-                .map(|event_handler_instance| {
-                    test_bcontext
-                        .monster(event_handler_instance.owner_uid)
-                        .nickname
-                })
-                .collect::<Vec<_>>();
-        }
-
-        // Check that the two runs are not equal, there is an infinitesimal chance they won't be, but the probability is negligible.
-        assert_ne!(result[0], result[1]);
-        // Check that Drifblim is indeed the in the front.
-        assert_eq!(result[0][0], "G");
-        // Check that the Torchics are all in the middle.
-        for name in ["A", "B", "C", "D", "E", "H", "I", "J", "K", "L"].iter() {
-            assert!(result[0].contains(name));
-        }
-        //Check that the Mudkip is last.
-        assert_eq!(result[0][11], "F");
-    }
-
-    #[test]
-    fn test_display_battle_context() {
-        let test_bcontext = battle_context!(
-            {
-                AllyTeam {
-                    mon Torchic "Ruby" {
-                        mov Ember,
-                        mov Scratch,
-                        abl FlashFire,
-                    },
-                    mon Mudkip "Sapphire" {
-                        mov Tackle,
-                        mov Bubble,
-                        abl FlashFire,
-                    },
-                    mon Treecko "Emerald" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
-                    },
-                },
-                OpponentTeam {
-                    mon Drifloon "Cheerio" {
-                        mov Scratch,
-                        mov Ember,
-                        abl FlashFire,
-                    },
-                }
-            }
-        );
-        println!("{}", test_bcontext);
-        assert_eq!(format!["{}", test_bcontext], String::from("Ally Team\n\t├── Ruby the Torchic (Ally_1) [HP: 152/152]\n\t│\t│\n\t│\t├── type Fire/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Ember\n\t│\t└── mov Scratch\n\t│\t\n\t├── Sapphire the Mudkip (Ally_2) [HP: 157/157]\n\t│\t│\n\t│\t├── type Water/None \n\t│\t├── abl Flash Fire\n\t│\t├── mov Tackle\n\t│\t└── mov Bubble\n\t│\t\n\t└── Emerald the Treecko (Ally_3) [HP: 147/147]\n\t\t│\n\t\t├── type Grass/None \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\nOpponent Team\n\t└── Cheerio the Drifloon (Opponent_1) [HP: 197/197]\n\t\t│\n\t\t├── type Ghost/Flying \n\t\t├── abl Flash Fire\n\t\t├── mov Scratch\n\t\t└── mov Ember\n\t\t\n"))
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "debug"))]
+mod battle {
+    use battle_builder_macro::build_battle;
+
+    #[test]
+    fn test_display_battle() {
+        extern crate self as monsim;
+        use crate::sim::*;
+        use crate::sim::{
+            test_ability_dex::FlashFire,
+            test_monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
+            test_move_dex::{Bubble, Ember, Scratch, Tackle},
+        };
+        let test_battle = build_battle!(
+            {
+                Allies: MonsterTeam {
+                    Torchic: Monster = "Ruby" {
+                        Ember: Move,
+                        Scratch: Move,
+                        FlashFire: Ability,
+                    },
+                    Mudkip: Monster {
+                        Tackle: Move,
+                        Bubble: Move,
+                        FlashFire: Ability,
+                    },
+                    Treecko: Monster = "Emerald" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
+                    },
+                },
+                Opponents: MonsterTeam {
+                    Drifloon: Monster = "Cheerio" {
+                        Scratch: Move,
+                        Ember: Move,
+                        FlashFire: Ability,
+                    },
+                }
+            }
+        );
+        println!("{}", test_battle);
+        assert_eq!(
+            format!["{}", test_battle],
+            String::from(
+                "Ally Team
+\t├── Ruby the Torchic (Allies_1) [HP: 152/152]
+\t│\t│
+\t│\t├──    type: Fire
+\t│\t├── ability: Flash Fire
+\t│\t├──    move: Ember
+\t│\t└──    move: Scratch
+\t│\t
+\t├── Mudkip (Allies_2) [HP: 157/157]
+\t│\t│
+\t│\t├──    type: Water
+\t│\t├── ability: Flash Fire
+\t│\t├──    move: Tackle
+\t│\t└──    move: Bubble
+\t│\t
+\t└── Emerald the Treecko (Allies_3) [HP: 147/147]
+\t \t│
+\t \t├──    type: Grass
+\t \t├── ability: Flash Fire
+\t \t├──    move: Scratch
+\t \t└──    move: Ember
+\t \t
+Opponent Team
+\t└── Cheerio the Drifloon (Opponents_1) [HP: 197/197]
+\t \t│
+\t \t├──    type: Ghost/Flying
+\t \t├── ability: Flash Fire
+\t \t├──    move: Scratch
+\t \t└──    move: Ember
+\t \t
+"
+            )
+        )
+    }
+}
+
+#[cfg(all(test, feature = "debug"))]
 mod event {
-    use crate::{event_dex::OnTryMove, BattlerUID, EventHandlerInstance, InBattleEvent};
 
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler() {
-        use crate::game_mechanics::ability_dex::FlashFire;
-        let event_handler = FlashFire.event_handlers.on_try_move.unwrap();
+        use crate::sim::game_mechanics::test_ability_dex::FlashFire;
+        let event_handler = FlashFire.event_handler_deck.on_try_move.unwrap();
         println!("{:?}", event_handler);
     }
 
     #[test]
     #[cfg(feature = "debug")]
-    fn test_print_event_handler_set() {
-        use crate::ability_dex::FlashFire;
-        println!("{:#?}", FlashFire.event_handlers);
-    }
-
-    #[test]
-    #[cfg(feature = "debug")]
-    fn test_print_event_handler_instance() {
-        use crate::ability_dex::FlashFire;
-        let event_handler_instance = EventHandlerInstance {
-            event_name: OnTryMove.name(),
-            event_handler: FlashFire.event_handlers.on_try_move.unwrap(),
-            owner_uid: BattlerUID {
-                team_id: crate::TeamID::Ally,
-                battler_number: crate::BattlerNumber::_1,
-            },
-            activation_order: crate::ActivationOrder {
-                priority: 1,
-                speed: 99,
-                order: 0,
-            },
-            filters: crate::EventHandlerFilters::default(),
-        };
-        println!("{:#?}", event_handler_instance);
+    fn test_print_event_handler_deck() {
+        use crate::sim::test_ability_dex::FlashFire;
+        println!("{:#?}", FlashFire.event_handler_deck);
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "debug"))]
 mod prng {
     use std::time;
 
-    use crate::prng::*;
+    use crate::sim::prng::*;
 
     #[test]
     fn test_prng_percentage_chance() {
         let mut lcrng = Prng::new(seed_from_time_now());
         let mut dist = [0u64; 100];
         for _ in 0..=10_000_000 {
-            let n = lcrng.generate_number_in_range(0..=99) as usize;
+            let n = lcrng.generate_u16_in_range(0..=99) as usize;
             dist[n] += 1;
         }
         let avg_deviation = dist
@@ -484,47 +216,55 @@ mod prng {
             .expect("We should always get some average value.")
             / 100.0;
         let avg_deviation = f32::floor(avg_deviation * 100_000.0) / 100_000.0;
-        println!(
-            "LCRNG has {:?}% average deviation (threshold is at 0.005%)",
-            avg_deviation
-        );
+        println!("LCRNG has {:?}% average deviation (threshold is at 0.005%)", avg_deviation);
         assert!(avg_deviation < 5.0e-3);
     }
 
     #[test]
-    fn test_prng_idempotence() {
+    fn test_if_prng_is_deterministic_for_specific_seed() {
         let seed = seed_from_time_now();
         let mut lcrng_1 = Prng::new(seed);
         let mut lcrng_2 = Prng::new(seed);
         for i in 0..10_000 {
-            let generated_number_1 = lcrng_1.generate_number_in_range(0..=u16::MAX - 1);
-            let generated_number_2 = lcrng_2.generate_number_in_range(0..=u16::MAX - 1);
+            let generated_number_1 = lcrng_1.generate_u16_in_range(0..=u16::MAX - 1);
+            let generated_number_2 = lcrng_2.generate_u16_in_range(0..=u16::MAX - 1);
             assert_eq!(generated_number_1, generated_number_2, "iteration {}", i);
         }
     }
 
     #[test]
     fn test_prng_chance() {
-        let mut lcrng = Prng::new(
-            time::SystemTime::now()
-                .duration_since(time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-        );
+        let mut lcrng = Prng::new(time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs());
 
         let mut success = 0.0;
         for _ in 0..=10_000_000 {
-            if lcrng._chance(33, 100) {
+            if lcrng.chance(33, 100) {
                 success += 1.0;
             }
         }
         let avg_probability_deviation = (((success / 10_000_000.0) - 0.3333333333) as f64).abs();
-        let avg_probability_deviation =
-            f64::floor(avg_probability_deviation * 100_000.0) / 100_000.0;
-        println!(
-            "Average probability of LCRNG is off by {}% (threshold is at 0.005%)",
-            avg_probability_deviation
-        );
+        let avg_probability_deviation = f64::floor(avg_probability_deviation * 100_000.0) / 100_000.0;
+        println!("Average probability of LCRNG is off by {}% (threshold is at 0.005%)", avg_probability_deviation);
         assert!(avg_probability_deviation < 5.0e-3);
+    }
+}
+
+#[cfg(all(test, feature = "debug"))]
+mod utils {
+    use monsim_utils::{Ally, Team};
+
+    #[test]
+    #[should_panic]
+    fn test_expect_wrong_team() {
+        let item = Ally(10usize);
+        let item = Team::ally(item);
+        (item.map(|i| { i - 1 }).expect_opponent());
+    }
+
+    #[test]
+    fn test_expect_right_team() {
+        let item = Ally(10usize);
+        let item = Team::ally(item);
+        item.map(|i| {i + 1}).expect_ally();
     }
 }

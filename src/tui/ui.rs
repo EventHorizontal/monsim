@@ -1,6 +1,6 @@
 use std::io::Stdout;
 
-use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
+use monsim_utils::{Ally, FLArray, Opponent};
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
 use crate::sim::{AvailableChoicesForTeam, Battle, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID};
@@ -53,11 +53,10 @@ struct MessageLogPanel {
 struct SwitcheePrompt;
 
 impl SwitcheePrompt {
-    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>) -> List<'a> {
+    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: FLArray<MonsterUID, 5>) -> List<'a> {
         let list_items = possible_switchee_uids.into_iter()
-            .flatten()
             .map(|monster_uid| {
-                ListItem::new(battle.monster(monster_uid).full_name())
+                ListItem::new(battle.monster(monster_uid).get().full_name())
             }).collect::<Vec<_>>();
 
         List::new(list_items)
@@ -107,11 +106,11 @@ impl<'a> Ui<'a> {
             active_monster_status_panels: PerTeam::new(
                 Ally(ActiveMonsterStatusPanel {
                     team_name: ALLY_TEAM_NAME,
-                    active_monster_status: battle.active_monsters_on_team(TeamUID::Allies).status_string(),
+                    active_monster_status: battle.active_monsters_on_team(TeamUID::Allies).get().status_string(),
                 }), 
                 Opponent(ActiveMonsterStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
-                    active_monster_status: battle.active_monsters_on_team(TeamUID::Opponents).status_string(),
+                    active_monster_status: battle.active_monsters_on_team(TeamUID::Opponents).get().status_string(),
                     }
                 )),
             choice_selection_menus: PerTeam::new(
@@ -166,7 +165,7 @@ impl<'a> Ui<'a> {
             &mut self.choice_selection_menus[team_uid].choice_list, 
             battle.available_choices()[team_uid]
         );
-        self.active_monster_status_panels[team_uid].active_monster_status = battle.active_monsters_on_team(team_uid).status_string();
+        self.active_monster_status_panels[team_uid].active_monster_status = battle.active_monsters_on_team(team_uid).get().status_string();
         self.team_status_panels[team_uid].team_status = battle.team(team_uid).team_status_string();
     }
 

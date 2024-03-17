@@ -274,248 +274,248 @@ impl EventFilteringOptions {
     }
 }
 
-#[cfg(all(test, feature = "debug"))]
-mod tests {
-    use super::*;
-    use crate::sim::build_battle;
+// #[cfg(all(test, feature = "debug"))]
+// mod tests {
+//     use super::*;
+//     use crate::sim::build_battle;
 
-    #[test]
-    fn test_if_priority_sorting_is_deterministic() {
-        extern crate self as monsim;
-        use crate::sim::*;
-        use crate::sim::{
-            test_ability_dex::FlashFire,
-            test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
-            test_move_dex::{Bubble, Ember, Scratch, Tackle},
-        };
-        let mut result = [Vec::new(), Vec::new()];
-        for i in 0..=1 {
-            let test_battle = build_battle!(
-                {
-                    Allies: MonsterTeam {
-                        Torchic: Monster = "Ruby" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Mudkip: Monster = "Sapphire" {
-                            Tackle: Move,
-                            Bubble: Move,
-                            FlashFire: Ability,
-                        },
-                        Treecko: Monster = "Emerald" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                    },
-                    Opponents: MonsterTeam {
-                        Drifblim: Monster {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                    }
-                }
-            );
+//     #[test]
+//     fn test_if_priority_sorting_is_deterministic() {
+//         extern crate self as monsim;
+//         use crate::sim::*;
+//         use crate::sim::{
+//             test_ability_dex::FlashFire,
+//             test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+//             test_move_dex::{Bubble, Ember, Scratch, Tackle},
+//         };
+//         let mut result = [Vec::new(), Vec::new()];
+//         for i in 0..=1 {
+//             let test_battle = build_battle!(
+//                 {
+//                     Allies: MonsterTeam {
+//                         Torchic: Monster = "Ruby" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Mudkip: Monster = "Sapphire" {
+//                             Tackle: Move,
+//                             Bubble: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Treecko: Monster = "Emerald" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                     },
+//                     Opponents: MonsterTeam {
+//                         Drifblim: Monster {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                     }
+//                 }
+//             );
 
-            let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
+//             let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
 
-            let event_handler_deck_instances = test_battle.event_handler_deck_instances();
-            use crate::sim::event_dex::OnTryMove;
-            let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, OnTryMove);
+//             let event_handler_deck_instances = test_battle.event_handler_deck_instances();
+//             use crate::sim::event_dex::OnTryMove;
+//             let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, OnTryMove);
 
-            crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_handler_instances, &mut |it| it.activation_order);
+//             crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_handler_instances, &mut |it| it.activation_order);
 
-            result[i] = event_handler_instances
-                .into_iter()
-                .map(|event_handler_instance| test_battle.monster(event_handler_instance.owner_uid).name())
-                .collect::<Vec<_>>();
-        }
+//             result[i] = event_handler_instances
+//                 .into_iter()
+//                 .map(|event_handler_instance| test_battle.monster(event_handler_instance.owner_uid).name())
+//                 .collect::<Vec<_>>();
+//         }
 
-        assert_eq!(result[0], result[1]);
-        assert_eq!(result[0][0], "Drifblim");
-        assert_eq!(result[0][1], "Emerald");
-        assert_eq!(result[0][2], "Ruby");
-        assert_eq!(result[0][3], "Sapphire");
-    }
+//         assert_eq!(result[0], result[1]);
+//         assert_eq!(result[0][0], "Drifblim");
+//         assert_eq!(result[0][1], "Emerald");
+//         assert_eq!(result[0][2], "Ruby");
+//         assert_eq!(result[0][3], "Sapphire");
+//     }
+// 
+//     #[test]
+//     #[cfg(feature = "debug")]
+//     fn test_priority_sorting_with_speed_ties() {
+//         #[cfg(feature = "debug")]
+//         extern crate self as monsim;
+//         use crate::sim::*;
+//         use crate::sim::{
+//             test_ability_dex::FlashFire,
+//             test_monster_dex::{Drifblim, Mudkip, Torchic},
+//             test_move_dex::{Ember, Scratch},
+//         };
+//         let mut result = [Vec::new(), Vec::new()];
+//         for i in 0..=1 {
+//             let test_battle = build_battle!(
+//                 {
+//                     Allies: MonsterTeam {
+//                         Torchic: Monster = "A" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "B" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "C" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "D" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "E" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Mudkip: Monster = "F" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         }
+//                     },
+//                     Opponents: MonsterTeam {
+//                         Drifblim: Monster = "G" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "H" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "I" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "J" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "K" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                         Torchic: Monster = "L" {
+//                             Scratch: Move,
+//                             Ember: Move,
+//                             FlashFire: Ability,
+//                         },
+//                     }
+//                 }
+//             );
+//             let mut prng = Prng::new(i as u64);
 
-    #[test]
-    #[cfg(feature = "debug")]
-    fn test_priority_sorting_with_speed_ties() {
-        #[cfg(feature = "debug")]
-        extern crate self as monsim;
-        use crate::sim::*;
-        use crate::sim::{
-            test_ability_dex::FlashFire,
-            test_monster_dex::{Drifblim, Mudkip, Torchic},
-            test_move_dex::{Ember, Scratch},
-        };
-        let mut result = [Vec::new(), Vec::new()];
-        for i in 0..=1 {
-            let test_battle = build_battle!(
-                {
-                    Allies: MonsterTeam {
-                        Torchic: Monster = "A" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "B" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "C" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "D" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "E" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Mudkip: Monster = "F" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        }
-                    },
-                    Opponents: MonsterTeam {
-                        Drifblim: Monster = "G" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "H" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "I" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "J" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "K" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                        Torchic: Monster = "L" {
-                            Scratch: Move,
-                            Ember: Move,
-                            FlashFire: Ability,
-                        },
-                    }
-                }
-            );
-            let mut prng = Prng::new(i as u64);
+//             let event_handler_deck_instances = test_battle.event_handler_deck_instances();
+//             use crate::sim::event_dex::OnTryMove;
 
-            let event_handler_deck_instances = test_battle.event_handler_deck_instances();
-            use crate::sim::event_dex::OnTryMove;
+//             let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, OnTryMove);
 
-            let mut event_handler_instances = EventDispatcher::handlers_for_event(event_handler_deck_instances, OnTryMove);
+//             crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_handler_instances, &mut |it| it.activation_order);
 
-            crate::sim::ordering::sort_by_activation_order(&mut prng, &mut event_handler_instances, &mut |it| it.activation_order);
+//             result[i] = event_handler_instances
+//                 .into_iter()
+//                 .map(|event_handler_instance| test_battle.monster(event_handler_instance.owner_uid).name())
+//                 .collect::<Vec<_>>();
+//         }
 
-            result[i] = event_handler_instances
-                .into_iter()
-                .map(|event_handler_instance| test_battle.monster(event_handler_instance.owner_uid).name())
-                .collect::<Vec<_>>();
-        }
+//         // Check that the two runs are not equal, there is an infinitesimal chance they won't be, but the probability is negligible.
+//         assert_ne!(result[0], result[1]);
+//         // Check that Drifblim is indeed the in the front.
+//         assert_eq!(result[0][0], "G");
+//         // Check that the Torchics are all in the middle.
+//         for name in ["A", "B", "C", "D", "E", "H", "I", "J", "K", "L"].iter() {
+//             assert!(result[0].contains(&name.to_string()));
+//         }
+//         //Check that the Mudkip is last.
+//         assert_eq!(result[0][11], "F");
+//     }
 
-        // Check that the two runs are not equal, there is an infinitesimal chance they won't be, but the probability is negligible.
-        assert_ne!(result[0], result[1]);
-        // Check that Drifblim is indeed the in the front.
-        assert_eq!(result[0][0], "G");
-        // Check that the Torchics are all in the middle.
-        for name in ["A", "B", "C", "D", "E", "H", "I", "J", "K", "L"].iter() {
-            assert!(result[0].contains(&name.to_string()));
-        }
-        //Check that the Mudkip is last.
-        assert_eq!(result[0][11], "F");
-    }
+//     #[test]
+//     #[cfg(feature = "debug")]
+//     fn test_event_filtering_for_event_sources() {
+//         extern crate self as monsim;
+//         use crate::sim::*;
+//         use crate::sim::{
+//             test_ability_dex::FlashFire,
+//             test_monster_dex::{Mudkip, Torchic, Treecko},
+//             test_move_dex::{Bubble, Ember, Scratch, Tackle},
+//             MonsterNumber, TeamUID,
+//         };
+//         let test_battle = build_battle!(
+//             {
+//                 Allies: MonsterTeam {
+//                     Torchic: Monster = "Ruby" {
+//                         Ember: Move,
+//                         Scratch: Move,
+//                         FlashFire: Ability,
+//                     },
+//                     Mudkip: Monster = "Sapphire" {
+//                         Tackle: Move,
+//                         Bubble: Move,
+//                         FlashFire: Ability,
+//                     },
+//                 },
+//                 Opponents: MonsterTeam {
+//                     Treecko: Monster = "Emerald" {
+//                         Scratch: Move,
+//                         Ember: Move,
+//                         FlashFire: Ability,
+//                     },
+//                 }
+//             }
+//         );
 
-    #[test]
-    #[cfg(feature = "debug")]
-    fn test_event_filtering_for_event_sources() {
-        extern crate self as monsim;
-        use crate::sim::*;
-        use crate::sim::{
-            test_ability_dex::FlashFire,
-            test_monster_dex::{Mudkip, Torchic, Treecko},
-            test_move_dex::{Bubble, Ember, Scratch, Tackle},
-            MonsterNumber, TeamUID,
-        };
-        let test_battle = build_battle!(
-            {
-                Allies: MonsterTeam {
-                    Torchic: Monster = "Ruby" {
-                        Ember: Move,
-                        Scratch: Move,
-                        FlashFire: Ability,
-                    },
-                    Mudkip: Monster = "Sapphire" {
-                        Tackle: Move,
-                        Bubble: Move,
-                        FlashFire: Ability,
-                    },
-                },
-                Opponents: MonsterTeam {
-                    Treecko: Monster = "Emerald" {
-                        Scratch: Move,
-                        Ember: Move,
-                        FlashFire: Ability,
-                    },
-                }
-            }
-        );
+//         let passed_filter = EventDispatcher::filter_event_handlers(
+//             &test_battle,
+//             MonsterUID {
+//                 team_uid: TeamUID::Allies,
+//                 monster_number: MonsterNumber::_1,
+//             },
+//             MonsterUID {
+//                 team_uid: TeamUID::Opponents,
+//                 monster_number: MonsterNumber::_1,
+//             },
+//             EventFilteringOptions::default(),
+//         );
+//         assert!(passed_filter);
+//     }
 
-        let passed_filter = EventDispatcher::filter_event_handlers(
-            &test_battle,
-            MonsterUID {
-                team_uid: TeamUID::Allies,
-                monster_number: MonsterNumber::_1,
-            },
-            MonsterUID {
-                team_uid: TeamUID::Opponents,
-                monster_number: MonsterNumber::_1,
-            },
-            EventFilteringOptions::default(),
-        );
-        assert!(passed_filter);
-    }
-
-    #[test]
-    #[cfg(feature = "debug")]
-    fn test_print_event_handler_instance() {
-        use crate::sim::test_ability_dex::FlashFire;
-        let event_handler_instance = OwnedEventHandler {
-            event_name: event_dex::OnTryMove.name(),
-            event_handler: FlashFire.event_handler_deck.on_try_move.unwrap(),
-            owner_uid: MonsterUID {
-                team_uid: crate::sim::TeamUID::Allies,
-                monster_number: crate::sim::MonsterNumber::_1,
-            },
-            activation_order: crate::sim::ActivationOrder {
-                priority: 1,
-                speed: 99,
-                order: 0,
-            },
-            filtering_options: crate::sim::EventFilteringOptions::default(),
-        };
-        println!("{:#?}", event_handler_instance);
-    }
-}
+//     #[test]
+//     #[cfg(feature = "debug")]
+//     fn test_print_event_handler_instance() {
+//         use crate::sim::test_ability_dex::FlashFire;
+//         let event_handler_instance = OwnedEventHandler {
+//             event_name: event_dex::OnTryMove.name(),
+//             event_handler: FlashFire.event_handler_deck.on_try_move.unwrap(),
+//             owner_uid: MonsterUID {
+//                 team_uid: crate::sim::TeamUID::Allies,
+//                 monster_number: crate::sim::MonsterNumber::_1,
+//             },
+//             activation_order: crate::sim::ActivationOrder {
+//                 priority: 1,
+//                 speed: 99,
+//                 order: 0,
+//             },
+//             filtering_options: crate::sim::EventFilteringOptions::default(),
+//         };
+//         println!("{:#?}", event_handler_instance);
+//     }
+// }

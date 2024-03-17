@@ -4,7 +4,7 @@ use ui::Ui;
 use std::{error::Error, io::Stdout, sync::mpsc, thread, time::{Duration, Instant}};
 
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
-use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
+use monsim_utils::{FLArray, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};
@@ -34,7 +34,7 @@ pub enum InputMode {
     SwitcheePrompt {
         is_between_turn_switch: bool,
         switcher_uid: MonsterUID,
-        possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>,
+        possible_switchee_uids: FLArray<MonsterUID, 5>,
         highlight_cursor: usize,
     },
     PostBattle,
@@ -102,15 +102,15 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 // If a Monster has fainted, we need to switch it out
                 let maybe_fainted_active_battler = battle.active_monsters()
                     .into_iter()
-                    .find(|monster| { monster.is_fainted });
+                    .find(|monster| { monster.get().is_fainted });
                 if battle.is_finished {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::PostBattle)));
                 } else if let Some(fainted_battler) = maybe_fainted_active_battler {
                     // FIXME: We cannot handle multiple simultaneous fainted battlers with this logic
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::SwitcheePrompt { 
                         is_between_turn_switch: true,
-                        switcher_uid: fainted_battler.uid,
-                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.uid.team_uid),
+                        switcher_uid: fainted_battler.get().uid,
+                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.get().uid.team_uid),
                         highlight_cursor: 0 
                     })));
                 } else {
@@ -196,12 +196,12 @@ fn update_from_input(
                 },
 
                 KeyCode::Up => {
-                    let list_length = possible_switchee_uids.iter().flatten().count();
+                    let list_length = possible_switchee_uids.into_iter().count();
                     Ui::scroll_up_wrapped(highlight_cursor, list_length);
                     None
                 },
                 KeyCode::Down => { 
-                    let list_length = possible_switchee_uids.iter().flatten().count();
+                    let list_length = possible_switchee_uids.into_iter().count();
                     Ui::scroll_down_wrapped(highlight_cursor, list_length); 
                     None 
                 },

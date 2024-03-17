@@ -1,7 +1,7 @@
 use crate::sim::{event::EventFilteringOptions, Battle, MonsterUID, EventHandlerDeck};
 use core::fmt::Debug;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Ability {
     pub species: AbilitySpecies,
 }
@@ -20,6 +20,12 @@ pub struct AbilitySpecies {
 impl Debug for AbilitySpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "#{:03} {}", self.dex_number, self.name)
+    }
+}
+
+impl Default for AbilitySpecies {
+    fn default() -> Self {
+        ABILITY_DEFAULTS
     }
 }
 

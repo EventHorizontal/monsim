@@ -92,12 +92,12 @@ impl BattleSimulator {
 
             // Check if a Monster fainted this turn
             let maybe_fainted_active_monster = battle.monsters()
-                .find(|monster| battle.monster(monster.uid).is_fainted && battle.is_active_monster(monster.uid));
+                .find(|monster| monster.get().is_fainted && battle.is_active_monster(monster.get().uid));
             
             if let Some(fainted_active_monster) = maybe_fainted_active_monster {
                 
                 battle.message_log.extend(&[
-                    &format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.name()], 
+                    &format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.get().name()], 
                     EMPTY_LINE
                 ]);
                 
@@ -105,11 +105,11 @@ impl BattleSimulator {
                 let are_all_ally_team_monsters_fainted = battle.ally_team()
                     .monsters()
                     .iter()
-                    .all(|monster| { monster.is_fainted });
+                    .all(|monster| { monster.get().is_fainted });
                 let are_all_opponent_team_monsters_fainted = battle.opponent_team()
                     .monsters()
                     .iter()
-                    .all(|monster| { monster.is_fainted });
+                    .all(|monster| { monster.get().is_fainted });
                 
                 if are_all_ally_team_monsters_fainted {
                     battle.is_finished = true;

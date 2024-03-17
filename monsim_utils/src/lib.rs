@@ -1,6 +1,4 @@
-use std::ops::{Add, Deref, DerefMut, Mul, Not, Sub};
-
-use max_size_vec::MaxSizeVec;
+use std::{iter::Flatten, ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Not, Sub}, slice::{Iter, IterMut}};
 
 /// Type alias for readability of parentheses
 pub type Nothing = ();
@@ -161,17 +159,145 @@ macro_rules! collection {
     }};
 }
 
-pub type ArrayOfOptionals<T, const N: usize> = [Option<T>; N];
+/// Short for FrontLoadingArray, it's an array of capacity `CAP` where the elements are guaranteed to be at the beginning. MAY CHANGE IN THE FUTURE but panics if indexed outside of valid elements. 
+/// TODO: Think about returning a result instead? Is there a use case?
+/// 
+/// How this internally works: Makes an array with default members for padding, and keeps track of a cursor that indicates the number of valid elements. 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FLArray<T, const CAP: usize> {
+    elements: [T; CAP],
+    count: usize,
+}
 
-pub fn slice_to_array_of_options<T: Copy, const N: usize>(vec: &[T]) -> ArrayOfOptionals<T, N> {
-    assert!(vec.len() <= N, "Vector must have a length less than or equal to the required array size.");
-    let mut arr = [None; N];
-    let mut idx = 0;
-    for element in vec {
-        arr[idx] = Some(*element);
-        idx += 1;
+impl<T: Clone, const CAP: usize> FLArray<T, CAP> {
+    pub fn new(elements: &[T], padding_element: T) -> Self {
+        let count = elements.len();
+        assert!(count <= CAP, "Error: Attempted to create a FrontLoadedArray with a slice of length {count}, which is greater than the expected size {CAP}");
+        let elements = {
+            let out: [T; CAP] = core::array::from_fn(|i| {
+                // Fill the front of the array with the slice elements
+                if i < count {
+                    elements[i].clone()
+                // Fill the rest of the array with dummy default values.
+                } else {
+                    padding_element.clone()
+                }
+            } );
+            out
+        };
+        
+        Self {
+            elements,
+            count,
+        }
     }
-    arr
+
+    pub fn push(&mut self, item: T) {
+        self.elements[self.count - 1] = item;
+        self.count += 1;
+    }
+
+    /// Fails if the array is full.
+    pub fn try_push(&mut self, item: T) -> Result<(), &'static str> {
+        *self.elements.get_mut(self.count - 1).ok_or("Push failed due to array being full.")? = item;
+        self.count += 1;
+        Ok(NOTHING)
+    }
+
+    pub fn pop(&mut self) -> T {
+        let popped_element = self.elements[self.count - 1].clone();
+        self.count -= 1;
+        popped_element
+    }
+    
+    pub fn map<U, F>(self, mut f: F) -> FLArray<U, CAP> 
+        where F: FnMut(T) -> U + Clone
+    {
+        let items = self.elements.map(|item| {f(item)});
+        FLArray {
+            elements: items,
+            count: self.count
+        }
+    }
+    
+    pub fn iter(&self) -> Iter<T> {
+        self.elements.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        self.elements.iter_mut()
+    }
+
+    pub fn valid_elements(&self) -> usize {
+        self.count
+    }
+}
+
+impl<T, const CAP: usize> Index<usize> for FLArray<T, CAP> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        if index < self.count {
+            &self.elements[index]
+        } else {
+            panic!("FLArray was indexed beyond valid elements.")
+        }
+    }
+}
+
+impl<T: Default, const CAP: usize> Default for FLArray<T, CAP> {
+    fn default() -> Self {
+        let elements = {
+            let out: [T; CAP] = core::array::from_fn(|_| { T::default() });
+            out
+        };
+        Self { elements, count: Default::default() }
+    }
+}
+
+impl<T: Clone + Default, const CAP: usize> FLArray<T, CAP> {
+    pub fn with_default_padding(elements: &[T]) -> Self {
+        let count = elements.len();
+        assert!(count <= CAP, "Error: Attempted to create a FrontLoadedArray with a slice of length {count}, which is greater than the expected size {CAP}");
+        let elements = {
+            let out: [T; CAP] = core::array::from_fn(|i| {
+                // Fill the front of the array with the slice elements
+                if i < count {
+                    elements[i].clone()
+                // Fill the rest of the array with dummy default values.
+                } else {
+                    T::default()
+                }
+            } );
+            out
+        };
+        
+        Self {
+            elements,
+            count,
+        }
+    }
+}
+
+impl<T, const CAP: usize> IndexMut<usize> for FLArray<T, CAP> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        if index < self.count {
+            &mut self.elements[index]
+        } else {
+            panic!("FLArray was indexed beyond valid elements.")
+        }
+    }
+}
+
+/// Iterates over the valid elements.
+impl<T, const CAP: usize> IntoIterator for FLArray<T, CAP>{
+    type Item = T;
+
+    type IntoIter = std::iter::Take<std::array::IntoIter<T, CAP>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.elements.into_iter().take(self.count)
+    }
 }
 
 /// Makes `!` more readable
@@ -308,10 +434,4 @@ impl<T: Clone> Team<T> {
             Team::Opponent(o) => Team::Opponent(o.map(f)),
         }
     }
-}
-
-pub fn max_size_vec_from<T, const N: usize>(iterator: impl IntoIterator<Item = T>) -> MaxSizeVec<T, N> {
-    let mut out = MaxSizeVec::new();
-    iterator.into_iter().for_each(|move_| { out.push(move_)});
-    out
 }

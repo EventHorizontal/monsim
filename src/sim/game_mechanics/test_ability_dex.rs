@@ -28,7 +28,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         ..EventHandlerDeck::default()
     },
     on_activate: |battle, owner_uid| {
-        let owner_name = battle.monster(owner_uid).name();
+        let owner_name = battle.monster(owner_uid).get().name();
         battle.message_log.push(format!["{owner_name}'s Flash Fire activated!"]);
     },
     ..AbilitySpecies::default()
@@ -54,7 +54,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
         ..EventHandlerDeck::default()
     },
     on_activate: |battle, owner_uid| {
-        let owner_name = battle.monster(owner_uid).name();
+        let owner_name = battle.monster(owner_uid).get().name();
         battle.message_log.push(format!["{owner_name}'s Water Absorb activated!"]);
     },
     ..AbilitySpecies::default()

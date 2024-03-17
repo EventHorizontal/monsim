@@ -1,6 +1,5 @@
-use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
-use max_size_vec::MaxSizeVec;
-use monsim_utils::{Ally, Opponent};
+use std::{cell::Cell, fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
+use monsim_utils::{not, Ally, FLArray, Opponent};
 
 use crate::sim::{event::OwnedEventHandlerDeck, MonsterNumber};
 use super::{Monster, MonsterUID, MoveNumber};
@@ -11,11 +10,12 @@ const MAX_BATTLERS_PER_TEAM: usize = 6;
 pub struct MonsterTeam {
     pub id: TeamUID,
     pub active_monster_uid: MonsterUID,
-    monsters: MaxSizeVec<Monster, 6>,
+    monsters: FLArray<Cell<Monster>, 6>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum TeamUID {
+    #[default]
     Allies,
     Opponents,
 }
@@ -147,12 +147,10 @@ pub struct MoveUID {
 }
 
 impl MonsterTeam {
-    pub fn new(monsters: Vec<Monster>, id: TeamUID) -> Self {
-        assert!(monsters.first().is_some(), "There is not a single monster in the team.");
-        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
-        let monsters_iter = monsters.into_iter();
-        let mut monsters = MaxSizeVec::new();
-        monsters_iter.for_each(|monster| {monsters.push(monster)});
+    pub fn new(monsters: &[Monster], id: TeamUID) -> Self {
+        assert!(not!(monsters.is_empty()), "Expected at least 1 monster but none were given.");
+        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM, "Expected at most 6 monsters but {m} were given.", m = monsters.len());
+        let monsters = FLArray::with_default_padding(monsters).map(|monster| { Cell::new(monster) });
         MonsterTeam {
             id,
             active_monster_uid: MonsterUID { team_uid: id, monster_number: MonsterNumber::_1}, 
@@ -160,26 +158,26 @@ impl MonsterTeam {
         }
     }
 
-    pub fn monsters(&self) -> &MaxSizeVec<Monster, 6> {
+    pub fn monsters(&self) -> &FLArray<Cell<Monster>, 6> {
         &self.monsters
     }
 
-    pub fn monsters_mut(&mut self) -> &mut MaxSizeVec<Monster, 6> {
-        &mut self.monsters
-    }
+    // pub fn monsters_mut(&mut self) -> &mut FLArray<Cell<Monster>, 6> {
+    //     &mut self.monsters
+    // }
 
     pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
         let mut out = Vec::new();
-        for monster in self.monsters.iter() {
-            out.append(&mut monster.event_handler_deck_instances())
+        for monster in self.monsters.clone().into_iter() {
+            out.append(&mut monster.get().event_handler_deck_instances())
         }
         out
     }
 
     pub(crate) fn team_status_string(&self) -> String {
         let mut out = String::new();
-        for monster in self.monsters() {
-            out.push_str(&monster.status_string());
+        for monster in self.monsters().clone().into_iter() {
+            out.push_str(&monster.get().status_string());
         }
         out
     }

@@ -23,7 +23,7 @@ impl Action {
 
         battle.message_log.push(format![
             "{attacker} used {_move}",
-            attacker = battle.monster(attacker_uid).name(),
+            attacker = battle.monster(attacker_uid).get().name(),
             _move = battle.move_(move_uid).species.name
         ]);
 
@@ -32,7 +32,7 @@ impl Action {
             return Ok(NOTHING);
         }
 
-        let level = battle.monster(attacker_uid).level;
+        let level = battle.monster(attacker_uid).get().level;
         let move_power = battle.move_(move_uid).base_power();
 
         let attackers_attacking_stat;
@@ -40,12 +40,12 @@ impl Action {
 
         match battle.move_(move_uid).category() {
             MoveCategory::Physical => {
-                attackers_attacking_stat = battle.monster(attacker_uid).stats[Stat::PhysicalAttack];
-                targets_defense_stat = battle.monster(target_uid).stats[Stat::PhysicalDefense];
+                attackers_attacking_stat = battle.monster(attacker_uid).get().stats[Stat::PhysicalAttack];
+                targets_defense_stat = battle.monster(target_uid).get().stats[Stat::PhysicalDefense];
             }
             MoveCategory::Special => {
-                attackers_attacking_stat = battle.monster(attacker_uid).stats[Stat::SpecialAttack];
-                targets_defense_stat = battle.monster(target_uid).stats[Stat::SpecialDefense];
+                attackers_attacking_stat = battle.monster(attacker_uid).get().stats[Stat::SpecialAttack];
+                targets_defense_stat = battle.monster(target_uid).get().stats[Stat::SpecialDefense];
             }
             MoveCategory::Status => unreachable!("The damaging_move function is not expected to receive status moves."),
         }
@@ -55,12 +55,12 @@ impl Action {
 
         let stab_multiplier = {
             let move_type = battle.move_(move_uid).species.type_;
-            if battle.monster(attacker_uid).is_type(move_type) { Percent(125) } else { Percent(100) }
+            if battle.monster(attacker_uid).get().is_type(move_type) { Percent(125) } else { Percent(100) }
         };
 
         let move_type = battle.move_(move_uid).species.type_;
-        let target_primary_type = battle.monster(target_uid).species.primary_type;
-        let target_secondary_type = battle.monster(target_uid).species.secondary_type;
+        let target_primary_type = battle.monster(target_uid).get().species.primary_type;
+        let target_secondary_type = battle.monster(target_uid).get().species.secondary_type;
 
         let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
             matchup!(move_type against target_primary_type / target_secondary_type)
@@ -100,11 +100,11 @@ impl Action {
             }
         };
         battle.message_log.push(format!["It was {type_effectiveness}!"]);
-        battle.message_log.push(format!["{target} took {damage} damage!", target = battle.monster(target_uid).name(),]);
+        battle.message_log.push(format!["{target} took {damage} damage!", target = battle.monster(target_uid).get().name(),]);
         battle.message_log.push(format![
             "{target} has {num_hp} health left.",
-            target = battle.monster(target_uid).name(),
-            num_hp = battle.monster(target_uid).current_health
+            target = battle.monster(target_uid).get().name(),
+            num_hp = battle.monster(target_uid).get().current_health
         ]);
 
         Ok(NOTHING)
@@ -116,7 +116,7 @@ impl Action {
 
         battle.message_log.push(format![
             "{attacker} used {move_}",
-            attacker = battle.monster(attacker_uid).name(),
+            attacker = battle.monster(attacker_uid).get().name(),
             move_ = battle.move_(move_uid).species.name
         ]);
 
@@ -139,8 +139,8 @@ impl Action {
         battle.team_mut(active_monster_uid.team_uid).active_monster_uid = benched_monster_uid;
         battle.message_log.push(format![
             "{active_monster} switched out! Go {benched_monster}!", 
-            active_monster = battle.monster(active_monster_uid).name(),
-            benched_monster = battle.monster(benched_monster_uid).name()
+            active_monster = battle.monster(active_monster_uid).get().name(),
+            benched_monster = battle.monster(benched_monster_uid).get().name()
         ]);
         Ok(NOTHING)
     }
@@ -152,12 +152,14 @@ impl Effect {
     /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
     pub fn deal_damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
-        battle.monster_mut(target_uid).current_health = battle.monster(target_uid).current_health.saturating_sub(damage);
-        if battle.monster(target_uid).current_health == 0 { battle.monster_mut(target_uid).is_fainted = true; };
+        battle.monster(target_uid).set( {
+            let mut target_monster = battle.monster(target_uid).get();
+            target_monster.current_health = target_monster.current_health.saturating_sub(damage);
+            if target_monster.current_health == 0 { target_monster.is_fainted = true; };
+            target_monster
+        });
     }
 
-    /// **Secondary Action** This action can only be triggered by other Actions.
-    ///
     /// Resolves activation of any ability.
     ///
     /// Returns a `Outcome` indicating whether the ability succeeded.
@@ -179,18 +181,24 @@ impl Effect {
     /// Returns a `bool` indicating whether the stat raising succeeded.
     pub fn raise_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
         if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, OnTryRaiseStat) == Outcome::Success {
-            let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.raise_stat(stat, number_of_stages);
+            let effective_stages;
+            
+            battle.monster(monster_uid).set({
+                let mut monster = battle.monster(monster_uid).get();
+                effective_stages = monster.stat_modifiers.raise_stat(stat, number_of_stages);
+                monster
+            });
 
             battle.message_log.push(format![
                 "{monster}\'s {stat} was raised by {stages} stage(s)!",
-                monster = battle.monster(monster_uid).name(),
+                monster = battle.monster(monster_uid).get().name(),
                 stat = stat,
                 stages = effective_stages
             ]);
 
             Outcome::Success
         } else {
-            battle.message_log.push(format!["{monster}'s stats were not raised.", monster = battle.monster(monster_uid).name()]);
+            battle.message_log.push(format!["{monster}'s stats were not raised.", monster = battle.monster(monster_uid).get().name()]);
 
             Outcome::Failure
         }
@@ -203,18 +211,24 @@ impl Effect {
     /// Returns a `bool` indicating whether the stat lowering succeeded.
     pub fn lower_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
         if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, OnTryLowerStat) == Outcome::Success {
-            let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.lower_stat(stat, number_of_stages);
+            let effective_stages;
+            
+            battle.monster(monster_uid).set({
+                let mut monster = battle.monster(monster_uid).get();
+                effective_stages = monster.stat_modifiers.lower_stat(stat, number_of_stages);
+                monster
+            });
 
             battle.message_log.push(format![
                 "{monster}\'s {stat} was lowered by {stages} stage(s)!",
-                monster = battle.monster(monster_uid).name(),
+                monster = battle.monster(monster_uid).get().name(),
                 stat = stat,
                 stages = effective_stages
             ]);
 
             Outcome::Success
         } else {
-            battle.message_log.push(format!["{monster}'s stats were not lowered.", monster = battle.monster(monster_uid).name()]);
+            battle.message_log.push(format!["{monster}'s stats were not lowered.", monster = battle.monster(monster_uid).get().name()]);
 
             Outcome::Failure
         }

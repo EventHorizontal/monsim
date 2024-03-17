@@ -2,9 +2,9 @@ use crate::sim::{
     event::{EventHandlerDeck, EventFilteringOptions},
     Battle, MonsterUID, Type,
 };
-use core::{fmt::Debug, slice::Iter};
+use core::fmt::Debug;
 use std::ops::Index;
-use max_size_vec::MaxSizeVec;
+use monsim_utils::{not, FLArray};
 
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {
@@ -50,6 +50,12 @@ impl PartialEq for MoveSpecies {
     }
 }
 
+impl Default for MoveSpecies {
+    fn default() -> Self {
+        MOVE_DEFAULTS
+    }
+}
+
 impl MoveSpecies {
     pub const fn default() -> Self {
         MOVE_DEFAULTS
@@ -58,7 +64,7 @@ impl MoveSpecies {
 
 impl Eq for MoveSpecies {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Move {
     pub species: MoveSpecies,
 }
@@ -101,9 +107,9 @@ pub enum MoveCategory {
 
 const MAX_MOVES_PER_MOVESET: usize = 4;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct MoveSet {
-    moves: MaxSizeVec<Move, 4>,
+    moves: FLArray<Move, 4>,
 }
 
 impl Index<usize> for MoveSet {
@@ -120,29 +126,24 @@ impl Index<usize> for MoveSet {
 }
 
 impl MoveSet {
-    pub fn new(moves: Vec<Move>) -> Self {
-        assert!(moves.first().is_some(), "There is no first move.");
-        assert!(moves.len() <= MAX_MOVES_PER_MOVESET);
-        let moves_iter = moves.into_iter();
-        let mut moves = MaxSizeVec::new();
-        moves_iter.for_each(|move_| { moves.push(move_)});
+    pub fn new(moves: &[Move]) -> Self {
+        let number_of_moves = moves.len();
+        assert!(not![moves.is_empty()], "Expected one Move, but found zero.");
+        assert!(number_of_moves <= MAX_MOVES_PER_MOVESET, "Expected at most {MAX_MOVES_PER_MOVESET} but found {number_of_moves} moves.");
+        let moves = FLArray::with_default_padding(moves);
         MoveSet { moves }
     }
 
-    pub fn moves(&self) -> Iter<Move> {
-        self.moves.iter()
+    pub fn moves(&self) -> impl Iterator<Item = Move> {
+        self.moves.into_iter()
     }
 
     pub fn move_(&self, id: MoveNumber) -> &Move {
-        self.moves
-            .get(id as usize)
-            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
+        &self.moves[id as usize]
     }
 
     pub fn move_mut(&mut self, id: MoveNumber) -> &mut Move {
-        self.moves
-            .get_mut(id as usize)
-            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
+        &mut self.moves[id as usize]
     }
 }
 

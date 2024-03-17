@@ -1,6 +1,6 @@
 mod message_log;
 
-use utils::{not, Ally, ArrayOfOptionals, Opponent};
+use utils::{not, Ally, FLArray, Opponent};
 
 use crate::sim::{
         Ability, FullySpecifiedChoice, ActivationOrder, AvailableChoices, Monster,
@@ -8,21 +8,22 @@ use crate::sim::{
         utils,
 };
 
-use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
+use std::{cell::Cell, fmt::Display, slice::{Iter, IterMut}};
 
 use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
 
-type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
-type MutableMonsterIterator<'a> = Chain<IterMut<'a, Monster>, IterMut<'a, Monster>>;
-
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
+    pub prng: Prng,
+    // Misc state
     pub is_finished: bool,
     pub turn_number: u16,
-    pub prng: Prng,
-    teams: PerTeam<MonsterTeam>,
+    // Mechanics
+    monsters: FLArray<Cell<Monster>, 12>,
+    moves: FLArray<Cell<Move>, 48>,
+    abilities: FLArray<Cell<Ability>, 12>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
 }
@@ -40,33 +41,35 @@ impl Battle {
 
     // Monsters -----------------
 
-    pub fn monsters(&self) -> MonsterIterator {
+    pub fn monsters(&self) -> impl Iterator<Item = &Cell<Monster>> {
         let (ally_team, opponent_team) = self.teams.unwrap_ref();
-        ally_team.monsters().iter().chain(opponent_team.monsters())
+        ally_team.monsters().iter().chain(opponent_team.monsters().iter())
     }
 
-    pub fn monsters_mut(&mut self) -> MutableMonsterIterator {
-        let (ally_team, opponent_team) = self.teams.unwrap_mut();
-        ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
-    }
+    // pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Cell<Monster>> {
+    //     todo!()
+    //     // let (ally_team, opponent_team) = self.teams.unwrap_mut();
+    //     // ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
+    // }
 
-    pub fn monster(&self, monster_uid: MonsterUID) -> &Monster {
+    pub fn monster(&self, monster_uid: MonsterUID) -> Option<&Cell<Monster>> {
         let team = self.team(monster_uid.team_uid);
-        team.monsters()
-            .get(monster_uid.monster_number as usize)
-            .expect("Only valid MonsterUIDs are expected to be passed to this")
+        team.monsters()[monster_uid.monster_number as usize]
+            .as_ref()
     }
 
-    pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
-        let team = self.team_mut(monster_uid.team_uid);
-        team.monsters_mut()
-            .get_mut(monster_uid.monster_number as usize)
-            .expect("Only valid MonsterUIDs are expected to be passed to this")
-    }
+    // pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
+    //     let team = self.team_mut(monster_uid.team_uid);
+    //     team.monsters_mut()
+    //         .get_mut(monster_uid.monster_number as usize)
+    //         .expect("Only valid MonsterUIDs are expected to be passed to this")
+    // }
 
-    pub fn active_monsters(&self) -> PerTeam<&Monster> {
-        let ally_team_active_monster = Ally(self.monster(self.ally_team().active_monster_uid));
-        let opponent_team_active_monster = Opponent(self.monster(self.opponent_team().active_monster_uid));
+    pub fn active_monsters(&self) -> PerTeam<&Cell<Monster>> {
+        let ally_team_active_monster = Ally(self.monster(self.ally_team().active_monster_uid)
+            .expect("Expected ally team to have an active monster."));
+        let opponent_team_active_monster = Opponent(self.monster(self.opponent_team().active_monster_uid)
+            .expect("Expected opponent team to have an active monster."));
         PerTeam::new(
             ally_team_active_monster,
             opponent_team_active_monster,
@@ -74,12 +77,12 @@ impl Battle {
     }
 
     pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
-        self.active_monsters().map(|monster| { monster.uid })
+        self.active_monsters().map(|monster| { monster.get().uid })
     }
 
     /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
-    pub fn active_monsters_on_team(&self, team_uid: TeamUID) -> &Monster {
-        self.monster(self.teams[team_uid].active_monster_uid)
+    pub fn active_monsters_on_team(&self, team_uid: TeamUID) -> &Cell<Monster> {
+        self.monster(self.teams[team_uid].active_monster_uid).unwrap()
     }
 
     pub fn is_active_monster(&self, monster_uid: MonsterUID) -> bool {
@@ -90,28 +93,30 @@ impl Battle {
 
     pub fn ability(&self, owner_uid: MonsterUID) -> &Ability {
         &self.monster(owner_uid)
+            .get()
             .ability
     }
 
-    pub fn ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
-        &mut self
-            .monster_mut(owner_uid)
-            .ability
-    }
+    // pub fn ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
+    //     &mut self
+    //         .monster_mut(owner_uid)
+    //         .ability
+    // }
 
     // Moves -----------------
 
     pub fn move_(&self, move_uid: MoveUID) -> &Move {
         self.monster(move_uid.owner_uid)
+            .get()
             .moveset
             .move_(move_uid.move_number)
     }
 
-    pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
-        self.monster_mut(move_uid.owner_uid)
-            .moveset
-            .move_mut(move_uid.move_number)
-    }
+    // pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
+    //     self.monster_mut(move_uid.owner_uid)
+    //         .moveset
+    //         .move_mut(move_uid.move_number)
+    // }
 
     // Teams -----------------
 
@@ -140,11 +145,11 @@ impl Battle {
     }
 
     pub fn is_on_ally_team(&self, uid: MonsterUID) -> bool {
-        self.ally_team().monsters().iter().any(|it| it.uid == uid)
+        self.ally_team().monsters().iter().any(|it| it.get().uid == uid)
     }
 
     pub fn is_on_opponent_team(&self, uid: MonsterUID) -> bool {
-        self.opponent_team().monsters().iter().any(|it| it.uid == uid)
+        self.opponent_team().monsters().iter().any(|it| it.get().uid == uid)
     }
 
     pub fn are_opponents(&self, owner_uid: MonsterUID, event_caller_uid: MonsterUID) -> bool {
@@ -179,12 +184,12 @@ impl Battle {
         match choice {
             FullySpecifiedChoice::Move { move_uid, target_uid: _ } => ActivationOrder {
                 priority: self.move_(move_uid).species.priority,
-                speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
+                speed: self.monster(move_uid.owner_uid).get().stats[Stat::Speed],
                 order: 0, //TODO: Think about how to restrict order to be mutually exclusive
             },
             FullySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: _ } => ActivationOrder { 
                 priority: 8, 
-                speed: self.monster(switcher_uid).stats[Stat::Speed], 
+                speed: self.monster(switcher_uid).get().stats[Stat::Speed], 
                 order: 0
             }
         }
@@ -204,22 +209,22 @@ impl Battle {
         
         let active_monster_on_team = self.active_monsters_on_team(team_uid);
         
-        let moves = active_monster_on_team.move_uids();
+        let moves = active_monster_on_team.get().move_uids();
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
             let partially_specified_choice = PartiallySpecifiedChoice::Move { 
                 move_uid,
-                target_uid: self.active_monsters_on_team(team_uid.other()).uid,
+                target_uid: self.active_monsters_on_team(team_uid.other()).get().uid,
                 display_text: self.move_(move_uid).species.name 
             };
             move_actions.push(partially_specified_choice);
         }
 
         let candidate_switchee_uids = self.valid_switchees_by_uid(team_uid);
-        let any_valid_switchees = not!(candidate_switchee_uids.iter().flatten().count() == 0 );
+        let any_valid_switchees = not!(candidate_switchee_uids.iter().count() == 0 );
         let switch_action = if any_valid_switchees {
             Some(PartiallySpecifiedChoice::SwitchOut { 
-                switcher_uid: active_monster_on_team.uid, 
+                switcher_uid: active_monster_on_team.get().uid, 
                 candidate_switchee_uids,
                 display_text: "Switch Out",
             })
@@ -234,19 +239,21 @@ impl Battle {
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn valid_switchees_by_uid(&self, team_uid: TeamUID) -> ArrayOfOptionals<MonsterUID, 5> {
+    pub(crate) fn valid_switchees_by_uid(&self, team_uid: TeamUID) -> FLArray<MonsterUID, 5> {
         let mut number_of_switchees = 0;
-        let mut switchees = [None; 5];
-        for monster in self.team(team_uid).monsters().iter() {
-            let is_active_monster_for_team = monster.uid == self.teams[team_uid].active_monster_uid;
-            let is_valid_switch_partner = not!(self.monster(monster.uid).is_fainted) && not!(is_active_monster_for_team);
-            if is_valid_switch_partner {
-                switchees[number_of_switchees] = Some(monster.uid);
-                number_of_switchees += 1;
-                assert!(number_of_switchees < 6);
-            }
-        }
-        switchees
+        let switchees = self.team(team_uid)
+            .monsters()
+            .iter()
+            .filter_map(|monster| {
+                let is_active_monster_for_team = monster.get().uid == self.teams[team_uid].active_monster_uid;
+                let is_valid_switch_partner = not!(monster.get().is_fainted) && not!(is_active_monster_for_team);
+                if is_valid_switch_partner {
+                    Some(monster.get().uid)
+                } else {
+                    None
+                }
+            }).collect::<Vec<_>>();
+        FLArray::new(&switchees)
     }
 }
 
@@ -280,12 +287,12 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
             ("\t \t", "└── ")
         };
         output_string.push_str(&("\t".to_owned() + suffix_str));
-        output_string.push_str(&monster.status_string());
+        output_string.push_str(&monster.get().status_string());
         output_string.push_str(&(prefix_str.to_owned() + "│\n"));
         output_string.push_str(&(prefix_str.to_owned() + "├── "));
 
-        let primary_type = monster.species.primary_type;
-        let secondary_type = monster.species.secondary_type;
+        let primary_type = monster.get().species.primary_type;
+        let secondary_type = monster.get().species.secondary_type;
         let type_string = if let Some(secondary_type) = secondary_type {
             format!["   type: {:?}/{:?}\n", primary_type, secondary_type]
         } else {
@@ -294,10 +301,10 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
         output_string.push_str(&type_string);
 
         output_string.push_str(&(prefix_str.to_owned() + "├── "));
-        output_string.push_str(format!["ability: {}\n", monster.ability.species.name].as_str());
+        output_string.push_str(format!["ability: {}\n", monster.get().ability.species.name].as_str());
 
-        let number_of_moves = monster.moveset.moves().count();
-        for (j, move_) in monster.moveset.moves().enumerate() {
+        let number_of_moves = monster.get().moveset.moves().count();
+        for (j, move_) in monster.get().moveset.moves().enumerate() {
             let is_not_last_move = j < number_of_moves - 1;
             if is_not_last_move {
                 output_string.push_str(&(prefix_str.to_owned() + "├── "));

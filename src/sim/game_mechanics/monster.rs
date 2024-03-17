@@ -1,14 +1,13 @@
 use core::{fmt::Debug, panic};
 use std::{
-    fmt::{Display, Formatter},
-    ops::{Index, IndexMut},
+    fmt::{Display, Formatter}, ops::{Index, IndexMut}
 };
 
 use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
 
 use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventHandlerDeck, Type, EventFilteringOptions};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Monster {
     pub uid: MonsterUID,
     nickname: Option<&'static str>,
@@ -34,14 +33,15 @@ pub struct MonsterSpecies {
     pub event_handler_deck: EventHandlerDeck,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct MonsterUID {
     pub team_uid: TeamUID,
     pub monster_number: MonsterNumber,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum MonsterNumber {
+    #[default]
     _1,
     _2,
     _3,
@@ -114,6 +114,12 @@ const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
     base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
     event_handler_deck: EventHandlerDeck::default(),
 };
+
+impl Default for MonsterSpecies {
+    fn default() -> Self {
+        MONSTER_DEFAULTS
+    }
+}
 
 impl MonsterSpecies {
     pub const fn default() -> Self {
@@ -335,7 +341,7 @@ pub struct StatSet {
     spe: u16,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct StatModifierSet {
     att: i8,
     def: i8,
@@ -344,7 +350,7 @@ pub struct StatModifierSet {
     spe: i8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MonsterNature {
     /// Neutral (+-Attack)
     Hardy,
@@ -369,6 +375,7 @@ pub enum MonsterNature {
     Lax, // - Special Defense
 
     /// Neutral (+-Speed)
+    #[default]
     Serious,
     /// +Speed, -Attack
     Timid,
@@ -431,6 +438,19 @@ impl Index<Stat> for StatSet {
             Stat::SpecialAttack => &self.spa,
             Stat::SpecialDefense => &self.spd,
             Stat::Speed => &self.spe,
+        }
+    }
+}
+
+impl Default for StatSet {
+    fn default() -> Self {
+        Self {
+            hp: 100,
+            att: 100,
+            def: 100,
+            spa: 100,
+            spd: 100,
+            spe: 100,
         }
     }
 }

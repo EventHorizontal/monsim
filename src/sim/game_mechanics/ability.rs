@@ -64,4 +64,10 @@ impl Ability {
     pub fn event_handler_deck(&self) -> EventHandlerDeck {
         self.species.event_handler_deck
     }
+    
+    pub(crate) const fn placeholder() -> Ability {
+        Self {
+            species: AbilitySpecies::default(),
+        }
+    }
 }

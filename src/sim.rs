@@ -135,7 +135,7 @@ impl BattleSimulator {
     }
     
     /// Fails if the turn limit (`u16::MAX`, i.e. `65535`) is exceeded. It's not expected for this to ever happen.
-    pub(crate) fn increment_turn_number(battle: &mut Battle) -> Result<Nothing, &str> {
+    pub(crate) fn increment_turn_number<'a>(battle: &'a mut Battle) -> Result<Nothing, &'a str> {
         match battle.turn_number.checked_add(1) {
             Some(turn_number) => { battle.turn_number = turn_number; Ok(NOTHING)},
             None => Err("Turn limit (65535) exceeded."),

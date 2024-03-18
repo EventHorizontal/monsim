@@ -24,13 +24,13 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 for active_monster_uid in battle.active_monster_uids() {
                     if battle.monster(active_monster_uid).get().is_fainted {
                         if let Some(PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids, .. }) = available_choices[active_monster_uid.team_uid].switch_out_choice() {
-                            let switchee_names = candidate_switchee_uids.into_iter().map(|uid| battle.monster(uid).get().full_name()).enumerate();
+                            let switchee_names = candidate_switchee_uids.iter().map(|uid| battle.monster(*uid).get().full_name()).enumerate();
                             writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster_uid).get().name())?;
                             for (index, switchee_name) in switchee_names {
                                 writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name)?;
                             }
                             let chosen_switchee_index = input_as_usize(&mut locked_stdout, candidate_switchee_uids.iter().count()).unwrap();
-                            let chosen_switchee_uid = candidate_switchee_uids[chosen_switchee_index].unwrap();
+                            let chosen_switchee_uid = candidate_switchee_uids[chosen_switchee_index];
                             BattleSimulator::switch_out_between_turns(&mut battle, switcher_uid, chosen_switchee_uid)?;
                             last_turn_chosen_actions = None;
                         } else {
@@ -178,7 +178,12 @@ enum UIChoice<T> {
     Repeat(PerTeam<FullySpecifiedChoice>),
 }
 
-fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> TuiResult<UIChoice<Team<FullySpecifiedChoice>>> 
+fn translate_input_to_choices(
+    battle: &Battle, 
+    available_choices_for_team: Team<AvailableChoicesForTeam>, 
+    locked_stdout: &mut StdoutLock, 
+    last_turn_action: Option<PerTeam<FullySpecifiedChoice>>
+) -> TuiResult<UIChoice<Team<FullySpecifiedChoice>>> 
 {
 
     let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );
@@ -198,19 +203,19 @@ fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<
         return Ok(UIChoice::Quit);
     }
 
-    let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[chosen_action_index].unwrap());
+    let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions.get_by_index(chosen_action_index));
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
             PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => FullySpecifiedChoice::Move { move_uid, target_uid },
             
             PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: possible_switchee_uids, .. } => {
-                let switchee_names = possible_switchee_uids.into_iter().map(|uid| battle.monster(uid).get().full_name()).enumerate();
+                let switchee_names = possible_switchee_uids.iter().map(|uid| battle.monster(*uid).get().full_name()).enumerate();
                 let _ = writeln!(locked_stdout, "Choose a monster to switch with");
                 for (index, switchee_name) in switchee_names {
                     let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
                 }
                 let chosen_switchee_index = input_as_usize(locked_stdout, possible_switchee_uids.iter().count()).unwrap();
-                let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index].unwrap();
+                let chosen_switchee_uid = possible_switchee_uids[chosen_switchee_index];
                 FullySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: chosen_switchee_uid }
             },
         }

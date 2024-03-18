@@ -1,4 +1,4 @@
-use std::{iter::Flatten, ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Not, Sub}, slice::{Iter, IterMut}};
+use std::{ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Not, Sub}, slice::{Iter, IterMut}};
 
 /// Type alias for readability of parentheses
 pub type Nothing = ();
@@ -231,6 +231,15 @@ impl<T: Clone, const CAP: usize> FLArray<T, CAP> {
     pub fn valid_elements(&self) -> usize {
         self.count
     }
+    
+    pub fn extend(&mut self, new_elements: &[T]) {
+        let number_of_new_elements = new_elements.len();
+        assert!(self.count + number_of_new_elements <= CAP, "FLArray has {} elements and cannot be extended by {} more elements.", self.count, number_of_new_elements);
+
+        for element in new_elements.into_iter() {
+            self.push(element.clone());
+        }
+    }
 }
 
 impl<T, const CAP: usize> Index<usize> for FLArray<T, CAP> {
@@ -276,6 +285,13 @@ impl<T: Clone + Default, const CAP: usize> FLArray<T, CAP> {
             elements,
             count,
         }
+    }
+}
+
+impl<T: Copy + Clone + Default, const CAP: usize> FLArray<T, CAP> {
+    pub const fn placeholder(placeholder_element: T) -> Self {
+        let elements = [placeholder_element; CAP];
+        FLArray { elements, count: 1 }
     }
 }
 
@@ -329,9 +345,9 @@ impl<T> DerefMut for Ally<T> {
 impl<T> Ally<T> {
 }
 
-impl<T: Clone> Ally<T> {
-    pub fn map<U, F>(&self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
-        let item = f(self.0.clone());
+impl<T> Ally<T> {
+    pub fn map<U, F>(self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
+        let item = f(self.0);
         Ally(item)
     }
 }
@@ -369,9 +385,9 @@ impl<T> DerefMut for Opponent<T> {
 impl<T> Opponent<T> {
 }
 
-impl<T: Clone> Opponent<T> {
-    pub fn map<U, F>(&self, f: F) -> Opponent<U> where F: FnOnce(T) -> U {
-        let item = f(self.0.clone());
+impl<T> Opponent<T> {
+    pub fn map<U, F>(self, f: F) -> Opponent<U> where F: FnOnce(T) -> U {
+        let item = f(self.0);
         Opponent(item)
     }
 }
@@ -425,8 +441,8 @@ impl<T> Team<T> {
     }
 }
 
-impl<T: Clone> Team<T> {
-    pub fn map<U, F>(&self, f: F) -> Team<U> 
+impl<T> Team<T> {
+    pub fn map<U, F>(self, f: F) -> Team<U> 
         where F: FnOnce(T) -> U
     {
         match self {
@@ -435,3 +451,23 @@ impl<T: Clone> Team<T> {
         }
     }
 }
+
+impl<T: Clone> Deref for Team<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Team::Ally(a) => &a,
+            Team::Opponent(o) => &o,
+        }
+    }
+}
+
+// impl<T: Clone> DerefMut for Team<T> {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         match self {
+//             Team::Ally(mut a) => &mut a,
+//             Team::Opponent(mut o) => &mut o,
+//         }
+//     }
+// }

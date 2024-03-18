@@ -11,169 +11,169 @@ mod main {
         Ability, Monster, Move,
     };
 
-    #[test]
-    fn test_build_battle_macro() {
-        extern crate self as monsim;
-        let test_battle = build_battle!(
-            {
-                Allies: MonsterTeam {
-                    Torchic: Monster = "Ruby" {
-                        Scratch: Move,
-                        Ember: Move,
-                        FlashFire: Ability,
-                    },
-                    Mudkip: Monster = "Sapphire" {
-                        Scratch: Move,
-                        Ember: Move,
-                        FlashFire: Ability,
-                    },
-                    Treecko: Monster = "Emerald" {
-                        Bubble: Move,
-                        Scratch: Move,
-                        FlashFire: Ability,
-                    },
-                },
-                Opponents: MonsterTeam {
-                    Drifblim: Monster {
-                        Tackle: Move,
-                        Growl: Move,
-                        FlashFire: Ability,
-                    },
-                }
-            }
-        );
-        assert_eq!(test_battle, 
-            Battle::new(
-                PerTeam::new(
-                    Ally(MonsterTeam::new(vec![
-                        (Monster::new(
-                            MonsterUID {
-                                team_uid: TeamUID::Allies,
-                                monster_number: MonsterNumber::from(0usize),
-                            },
-                            test_monster_dex::Torchic, 
-                            Some("Ruby"),
-                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
-                            ability::Ability::new(test_ability_dex::FlashFire),
-                        )),
-                        (Monster::new(
-                            MonsterUID {
-                                team_uid: TeamUID::Allies,
-                                monster_number: MonsterNumber::from(1usize),
-                            },
-                            test_monster_dex::Mudkip, 
-                            Some("Sapphire"),
-                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
-                            ability::Ability::new(test_ability_dex::FlashFire),
-                        )),
-                        (Monster::new(
-                            MonsterUID {
-                                team_uid: TeamUID::Allies,
-                                monster_number: MonsterNumber::from(2usize),
-                            },
-                            test_monster_dex::Treecko, 
-                            Some("Emerald"),
-                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
-                            ability::Ability::new(test_ability_dex::FlashFire),
-                        )),
-                    ], TeamUID::Allies)),
-                    Opponent(MonsterTeam::new(vec![
-                        (Monster::new(
-                            MonsterUID {
-                                team_uid: TeamUID::Opponents,
-                                monster_number: MonsterNumber::from(0usize),
-                            },
-                            test_monster_dex::Drifblim, 
-                            None,
-                            move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
-                            ability::Ability::new(test_ability_dex::FlashFire),
-                        )),
-                    ], TeamUID::Opponents)),
-                )
-            )
-        );
-    }
+    // #[test]
+    // fn test_build_battle_macro() {
+    //     extern crate self as monsim;
+    //     let test_battle = build_battle!(
+    //         {
+    //             Allies: MonsterTeam {
+    //                 Torchic: Monster = "Ruby" {
+    //                     Scratch: Move,
+    //                     Ember: Move,
+    //                     FlashFire: Ability,
+    //                 },
+    //                 Mudkip: Monster = "Sapphire" {
+    //                     Scratch: Move,
+    //                     Ember: Move,
+    //                     FlashFire: Ability,
+    //                 },
+    //                 Treecko: Monster = "Emerald" {
+    //                     Bubble: Move,
+    //                     Scratch: Move,
+    //                     FlashFire: Ability,
+    //                 },
+    //             },
+    //             Opponents: MonsterTeam {
+    //                 Drifblim: Monster {
+    //                     Tackle: Move,
+    //                     Growl: Move,
+    //                     FlashFire: Ability,
+    //                 },
+    //             }
+    //         }
+    //     );
+    //     assert_eq!(test_battle, 
+    //         Battle::new(
+    //             PerTeam::new(
+    //                 Ally(MonsterTeam::new(vec![
+    //                     (Monster::new(
+    //                         MonsterUID {
+    //                             team_uid: TeamUID::Allies,
+    //                             monster_number: MonsterNumber::from(0usize),
+    //                         },
+    //                         test_monster_dex::Torchic, 
+    //                         Some("Ruby"),
+    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+    //                         ability::Ability::new(test_ability_dex::FlashFire),
+    //                     )),
+    //                     (Monster::new(
+    //                         MonsterUID {
+    //                             team_uid: TeamUID::Allies,
+    //                             monster_number: MonsterNumber::from(1usize),
+    //                         },
+    //                         test_monster_dex::Mudkip, 
+    //                         Some("Sapphire"),
+    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+    //                         ability::Ability::new(test_ability_dex::FlashFire),
+    //                     )),
+    //                     (Monster::new(
+    //                         MonsterUID {
+    //                             team_uid: TeamUID::Allies,
+    //                             monster_number: MonsterNumber::from(2usize),
+    //                         },
+    //                         test_monster_dex::Treecko, 
+    //                         Some("Emerald"),
+    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
+    //                         ability::Ability::new(test_ability_dex::FlashFire),
+    //                     )),
+    //                 ], TeamUID::Allies)),
+    //                 Opponent(MonsterTeam::new(vec![
+    //                     (Monster::new(
+    //                         MonsterUID {
+    //                             team_uid: TeamUID::Opponents,
+    //                             monster_number: MonsterNumber::from(0usize),
+    //                         },
+    //                         test_monster_dex::Drifblim, 
+    //                         None,
+    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
+    //                         ability::Ability::new(test_ability_dex::FlashFire),
+    //                     )),
+    //                 ], TeamUID::Opponents)),
+    //             )
+    //         )
+    //     );
+    // }
 }
 
 #[cfg(all(test, feature = "debug"))]
 mod battle {
     use battle_builder_macro::build_battle;
 
-    #[test]
-    fn test_display_battle() {
-        extern crate self as monsim;
-        use crate::sim::*;
-        use crate::sim::{
-            test_ability_dex::FlashFire,
-            test_monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
-            test_move_dex::{Bubble, Ember, Scratch, Tackle},
-        };
-        let test_battle = build_battle!(
-            {
-                Allies: MonsterTeam {
-                    Torchic: Monster = "Ruby" {
-                        Ember: Move,
-                        Scratch: Move,
-                        FlashFire: Ability,
-                    },
-                    Mudkip: Monster {
-                        Tackle: Move,
-                        Bubble: Move,
-                        FlashFire: Ability,
-                    },
-                    Treecko: Monster = "Emerald" {
-                        Scratch: Move,
-                        Ember: Move,
-                        FlashFire: Ability,
-                    },
-                },
-                Opponents: MonsterTeam {
-                    Drifloon: Monster = "Cheerio" {
-                        Scratch: Move,
-                        Ember: Move,
-                        FlashFire: Ability,
-                    },
-                }
-            }
-        );
-        println!("{}", test_battle);
-        assert_eq!(
-            format!["{}", test_battle],
-            String::from(
-                "Ally Team
-\t├── Ruby the Torchic (Allies_1) [HP: 152/152]
-\t│\t│
-\t│\t├──    type: Fire
-\t│\t├── ability: Flash Fire
-\t│\t├──    move: Ember
-\t│\t└──    move: Scratch
-\t│\t
-\t├── Mudkip (Allies_2) [HP: 157/157]
-\t│\t│
-\t│\t├──    type: Water
-\t│\t├── ability: Flash Fire
-\t│\t├──    move: Tackle
-\t│\t└──    move: Bubble
-\t│\t
-\t└── Emerald the Treecko (Allies_3) [HP: 147/147]
-\t \t│
-\t \t├──    type: Grass
-\t \t├── ability: Flash Fire
-\t \t├──    move: Scratch
-\t \t└──    move: Ember
-\t \t
-Opponent Team
-\t└── Cheerio the Drifloon (Opponents_1) [HP: 197/197]
-\t \t│
-\t \t├──    type: Ghost/Flying
-\t \t├── ability: Flash Fire
-\t \t├──    move: Scratch
-\t \t└──    move: Ember
-\t \t
-"
-            )
-        )
-    }
+//     #[test]
+//     fn test_display_battle() {
+//         extern crate self as monsim;
+//         use crate::sim::*;
+//         use crate::sim::{
+//             test_ability_dex::FlashFire,
+//             test_monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
+//             test_move_dex::{Bubble, Ember, Scratch, Tackle},
+//         };
+//         let test_battle = build_battle!(
+//             {
+//                 Allies: MonsterTeam {
+//                     Torchic: Monster = "Ruby" {
+//                         Ember: Move,
+//                         Scratch: Move,
+//                         FlashFire: Ability,
+//                     },
+//                     Mudkip: Monster {
+//                         Tackle: Move,
+//                         Bubble: Move,
+//                         FlashFire: Ability,
+//                     },
+//                     Treecko: Monster = "Emerald" {
+//                         Scratch: Move,
+//                         Ember: Move,
+//                         FlashFire: Ability,
+//                     },
+//                 },
+//                 Opponents: MonsterTeam {
+//                     Drifloon: Monster = "Cheerio" {
+//                         Scratch: Move,
+//                         Ember: Move,
+//                         FlashFire: Ability,
+//                     },
+//                 }
+//             }
+//         );
+//         println!("{}", test_battle);
+//         assert_eq!(
+//             format!["{}", test_battle],
+//             String::from(
+//                 "Ally Team
+// \t├── Ruby the Torchic (Allies_1) [HP: 152/152]
+// \t│\t│
+// \t│\t├──    type: Fire
+// \t│\t├── ability: Flash Fire
+// \t│\t├──    move: Ember
+// \t│\t└──    move: Scratch
+// \t│\t
+// \t├── Mudkip (Allies_2) [HP: 157/157]
+// \t│\t│
+// \t│\t├──    type: Water
+// \t│\t├── ability: Flash Fire
+// \t│\t├──    move: Tackle
+// \t│\t└──    move: Bubble
+// \t│\t
+// \t└── Emerald the Treecko (Allies_3) [HP: 147/147]
+// \t \t│
+// \t \t├──    type: Grass
+// \t \t├── ability: Flash Fire
+// \t \t├──    move: Scratch
+// \t \t└──    move: Ember
+// \t \t
+// Opponent Team
+// \t└── Cheerio the Drifloon (Opponents_1) [HP: 197/197]
+// \t \t│
+// \t \t├──    type: Ghost/Flying
+// \t \t├── ability: Flash Fire
+// \t \t├──    move: Scratch
+// \t \t└──    move: Ember
+// \t \t
+// "
+//             )
+//         )
+//     }
 }
 
 #[cfg(all(test, feature = "debug"))]

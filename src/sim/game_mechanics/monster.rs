@@ -7,7 +7,7 @@ use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
 
 use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventHandlerDeck, Type, EventFilteringOptions};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Monster {
     pub uid: MonsterUID,
     nickname: Option<&'static str>,
@@ -169,6 +169,14 @@ impl Display for Monster {
     }
 }
 
+impl PartialEq for Monster {
+    fn eq(&self, other: &Self) -> bool {
+        self.uid == other.uid 
+    }
+}
+
+impl Eq for Monster {}
+
 impl Monster {
     pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
         let level = 50;
@@ -215,6 +223,23 @@ impl Monster {
                 spd: 0,
                 spe: 0,
             },
+        }
+    }
+
+    pub(crate) const fn placeholder() -> Self {
+        Self {
+            uid: ALLY_1,
+            nickname: None,
+            level: 0,
+            max_health: 0,
+            nature: MonsterNature::Serious,
+            stats: StatSet::new(0, 0, 0, 0, 0, 0),
+            stat_modifiers: StatModifierSet::new(0, 0, 0, 0, 0),
+            is_fainted: false,
+            current_health: 0,
+            species: MonsterSpecies::default(),
+            moveset: MoveSet::placeholder(),
+            ability: Ability::placeholder(),
         }
     }
 

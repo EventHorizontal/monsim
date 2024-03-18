@@ -53,7 +53,7 @@ struct MessageLogPanel {
 struct SwitcheePrompt;
 
 impl SwitcheePrompt {
-    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: FLArray<MonsterUID, 5>) -> List<'a> {
+    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: Vec<MonsterUID>) -> List<'a> {
         let list_items = possible_switchee_uids.into_iter()
             .map(|monster_uid| {
                 ListItem::new(battle.monster(monster_uid).get().full_name())
@@ -88,14 +88,14 @@ impl<'a> Ui<'a> {
         let available_choices = battle.available_choices();
 
         let mut ally_team_choice_list = Vec::with_capacity(MAX_CHOICES);
-        let ally_team_available_choices = available_choices[TeamUID::Allies];
+        let ally_team_available_choices = available_choices[TeamUID::Allies].clone();
         Self::choice_list_from_available_choices_for_team(
             &mut ally_team_choice_list, 
             ally_team_available_choices
         );
         
         let mut opponent_team_choice_list = Vec::with_capacity(MAX_CHOICES);
-        let opponent_team_available_choices = available_choices[TeamUID::Opponents];
+        let opponent_team_available_choices = available_choices[TeamUID::Opponents].clone();
         Self::choice_list_from_available_choices_for_team(
             &mut opponent_team_choice_list,
             opponent_team_available_choices
@@ -104,15 +104,16 @@ impl<'a> Ui<'a> {
         Self {
             currently_selected_panel: SelectablePanelID::MessageLog,
             active_monster_status_panels: PerTeam::new(
-                Ally(ActiveMonsterStatusPanel {
-                    team_name: ALLY_TEAM_NAME,
-                    active_monster_status: battle.active_monsters_on_team(TeamUID::Allies).get().status_string(),
-                }), 
-                Opponent(ActiveMonsterStatusPanel {
-                    team_name: OPPONENT_TEAM_NAME,
-                    active_monster_status: battle.active_monsters_on_team(TeamUID::Opponents).get().status_string(),
-                    }
-                )),
+                battle.ally_team().map(|team| 
+                    ActiveMonsterStatusPanel {
+                        team_name: ALLY_TEAM_NAME,
+                        active_monster_status: battle.monster(team.active_monster_uid).get().status_string(),
+                    }),
+                battle.opponent_team().map(|team| 
+                    ActiveMonsterStatusPanel {
+                        team_name: OPPONENT_TEAM_NAME,
+                        active_monster_status: battle.monster(team.active_monster_uid).get().status_string(),
+                    })),
             choice_selection_menus: PerTeam::new(
                     Ally(ChoiceSelectionMenu { 
                         team_name: ALLY_TEAM_NAME, 
@@ -163,9 +164,10 @@ impl<'a> Ui<'a> {
         
         Self::choice_list_from_available_choices_for_team(
             &mut self.choice_selection_menus[team_uid].choice_list, 
-            battle.available_choices()[team_uid]
+            battle.available_choices()[team_uid].clone()
         );
-        self.active_monster_status_panels[team_uid].active_monster_status = battle.active_monsters_on_team(team_uid).get().status_string();
+        let active_monster_uid = battle.team(team_uid).active_monster_uid;
+        self.active_monster_status_panels[team_uid].active_monster_status = battle.monster(active_monster_uid).get().status_string();
         self.team_status_panels[team_uid].team_status = battle.team(team_uid).team_status_string();
     }
 
@@ -196,7 +198,7 @@ impl<'a> Ui<'a> {
                 possible_switchee_uids,
                 highlight_cursor,
                 ..
-            }) = *current_app_state {
+            }) = current_app_state.clone() {
                 let switchee_prompt_widget = SwitcheePrompt::as_renderable_widget(battle, possible_switchee_uids);
                 let middle_third_chunks = Layout::default()
                 .direction(Direction::Vertical)

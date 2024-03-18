@@ -1,6 +1,6 @@
 mod message_log;
 
-use utils::{not, Ally, FLArray, Opponent};
+use utils::{not, Ally, FLArray, Opponent, Team};
 
 use crate::sim::{
         Ability, FullySpecifiedChoice, ActivationOrder, AvailableChoices, Monster,
@@ -8,9 +8,9 @@ use crate::sim::{
         utils,
 };
 
-use std::{cell::Cell, fmt::Display, slice::{Iter, IterMut}};
+use std::{cell::Cell, fmt::Display};
 
-use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamUID};
+use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamUID, ALLY_1, OPPONENT_1};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
@@ -24,17 +24,35 @@ pub struct Battle {
     monsters: FLArray<Cell<Monster>, 12>,
     moves: FLArray<Cell<Move>, 48>,
     abilities: FLArray<Cell<Ability>, 12>,
+
+    teams: PerTeam<MonsterTeam>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
 }
 
 impl Battle {
-    pub fn new(teams: PerTeam<MonsterTeam>) -> Self {
+    pub fn new(ally_monsters: Vec<Cell<Monster>>, opponent_monsters: Vec<Cell<Monster>>, moves: Vec<Cell<Move>>, abilities: Vec<Cell<Ability>>) -> Self {
+        
+        let monsters = {
+            let mut monsters = FLArray::with_default_padding(&ally_monsters);
+            monsters.extend(&opponent_monsters);
+            monsters
+        };
+
         Self {
+            prng: Prng::new(prng::seed_from_time_now()),
             is_finished: false,
             turn_number: 0,
-            prng: Prng::new(prng::seed_from_time_now()),
-            teams,
+
+            monsters,
+            moves: FLArray::with_default_padding(&moves),
+            abilities: FLArray::with_default_padding(&abilities),
+
+            teams: PerTeam::new(
+                    Ally(MonsterTeam::new(&ally_monsters.iter().map(|monster| {monster.get().uid}).collect::<Vec<_>>(), TeamUID::Allies)),
+                    Opponent(MonsterTeam::new(&opponent_monsters.iter().map(|monster| {monster.get().uid}).collect::<Vec<_>>(), TeamUID::Opponents)),
+                ),
+
             message_log: MessageLog::new(),
         }
     }
@@ -42,34 +60,16 @@ impl Battle {
     // Monsters -----------------
 
     pub fn monsters(&self) -> impl Iterator<Item = &Cell<Monster>> {
-        let (ally_team, opponent_team) = self.teams.unwrap_ref();
-        ally_team.monsters().iter().chain(opponent_team.monsters().iter())
+        self.monsters.iter()
     }
 
-    // pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Cell<Monster>> {
-    //     todo!()
-    //     // let (ally_team, opponent_team) = self.teams.unwrap_mut();
-    //     // ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
-    // }
-
-    pub fn monster(&self, monster_uid: MonsterUID) -> Option<&Cell<Monster>> {
-        let team = self.team(monster_uid.team_uid);
-        team.monsters()[monster_uid.monster_number as usize]
-            .as_ref()
+    pub fn monster(&self, monster_uid: MonsterUID) -> &Cell<Monster> {
+        &self.monsters[monster_uid.monster_number as usize]
     }
-
-    // pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
-    //     let team = self.team_mut(monster_uid.team_uid);
-    //     team.monsters_mut()
-    //         .get_mut(monster_uid.monster_number as usize)
-    //         .expect("Only valid MonsterUIDs are expected to be passed to this")
-    // }
 
     pub fn active_monsters(&self) -> PerTeam<&Cell<Monster>> {
-        let ally_team_active_monster = Ally(self.monster(self.ally_team().active_monster_uid)
-            .expect("Expected ally team to have an active monster."));
-        let opponent_team_active_monster = Opponent(self.monster(self.opponent_team().active_monster_uid)
-            .expect("Expected opponent team to have an active monster."));
+        let ally_team_active_monster = self.ally_team().map(|team| { self.monster(team.active_monster_uid) });
+        let opponent_team_active_monster = self.opponent_team().map(|team| { self.monster(team.active_monster_uid) });
         PerTeam::new(
             ally_team_active_monster,
             opponent_team_active_monster,
@@ -78,11 +78,6 @@ impl Battle {
 
     pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
         self.active_monsters().map(|monster| { monster.get().uid })
-    }
-
-    /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
-    pub fn active_monsters_on_team(&self, team_uid: TeamUID) -> &Cell<Monster> {
-        self.monster(self.teams[team_uid].active_monster_uid).unwrap()
     }
 
     pub fn is_active_monster(&self, monster_uid: MonsterUID) -> bool {
@@ -97,12 +92,6 @@ impl Battle {
             .ability
     }
 
-    // pub fn ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
-    //     &mut self
-    //         .monster_mut(owner_uid)
-    //         .ability
-    // }
-
     // Moves -----------------
 
     pub fn move_(&self, move_uid: MoveUID) -> &Move {
@@ -112,36 +101,28 @@ impl Battle {
             .move_(move_uid.move_number)
     }
 
-    // pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
-    //     self.monster_mut(move_uid.owner_uid)
-    //         .moveset
-    //         .move_mut(move_uid.move_number)
-    // }
-
     // Teams -----------------
 
-    pub fn team(&self, team_uid: TeamUID) -> &MonsterTeam {
-        & self.teams[team_uid]
+    pub fn team(&self, team_uid: TeamUID) -> Team<&MonsterTeam> {
+        match team_uid {
+            TeamUID::Allies => Team::Ally(self.teams.ally_ref()),
+            TeamUID::Opponents => Team::Opponent(self.teams.opponent_ref()),
+        }
     }
 
-    pub fn team_mut(&mut self, team_uid: TeamUID) -> &mut MonsterTeam {
-        &mut self.teams[team_uid]
+    pub fn team_mut(&mut self, team_uid: TeamUID) -> Team<&mut MonsterTeam> {
+        match team_uid {
+            TeamUID::Allies => Team::Ally(self.teams.ally_mut()),
+            TeamUID::Opponents => Team::Opponent(self.teams.opponent_mut()),
+        }
     }
 
     pub fn ally_team(&self) -> Ally<&MonsterTeam> {
         self.teams.ally_ref()
     }
 
-    pub fn ally_team_mut(&mut self) -> Ally<&mut MonsterTeam> {
-        self.teams.ally_mut()
-    }
-
     pub fn opponent_team(&self) -> Opponent<&MonsterTeam> {
         self.teams.opponent_ref()
-    }
-
-    pub fn opponent_team_mut(&mut self) -> Opponent<&mut MonsterTeam> {
-        self.teams.opponent_mut()
     }
 
     pub fn is_on_ally_team(&self, uid: MonsterUID) -> bool {
@@ -207,14 +188,19 @@ impl Battle {
 
     fn available_choices_for_team(&self, team_uid: TeamUID) -> AvailableChoicesForTeam {
         
-        let active_monster_on_team = self.active_monsters_on_team(team_uid);
+        let active_monster_for_team = self.team(team_uid).map(|team| { 
+            self.monster(team.active_monster_uid) 
+        });
+        let active_monster_for_other_team = self.team(team_uid.other()).map(|team| { 
+            self.monster(team.active_monster_uid) 
+        });
         
-        let moves = active_monster_on_team.get().move_uids();
+        let moves = active_monster_for_team.get().move_uids();
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
             let partially_specified_choice = PartiallySpecifiedChoice::Move { 
                 move_uid,
-                target_uid: self.active_monsters_on_team(team_uid.other()).get().uid,
+                target_uid: active_monster_for_other_team.get().uid,
                 display_text: self.move_(move_uid).species.name 
             };
             move_actions.push(partially_specified_choice);
@@ -224,7 +210,7 @@ impl Battle {
         let any_valid_switchees = not!(candidate_switchee_uids.iter().count() == 0 );
         let switch_action = if any_valid_switchees {
             Some(PartiallySpecifiedChoice::SwitchOut { 
-                switcher_uid: active_monster_on_team.get().uid, 
+                switcher_uid: active_monster_for_team.get().uid, 
                 candidate_switchee_uids,
                 display_text: "Switch Out",
             })
@@ -239,9 +225,8 @@ impl Battle {
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn valid_switchees_by_uid(&self, team_uid: TeamUID) -> FLArray<MonsterUID, 5> {
-        let mut number_of_switchees = 0;
-        let switchees = self.team(team_uid)
+    pub(crate) fn valid_switchees_by_uid(&self, team_uid: TeamUID) -> Vec<MonsterUID> {
+        let candidate_switchees = self.team(team_uid)
             .monsters()
             .iter()
             .filter_map(|monster| {
@@ -253,11 +238,11 @@ impl Battle {
                     None
                 }
             }).collect::<Vec<_>>();
-        FLArray::new(&switchees)
+        candidate_switchees
     }
 }
 
-impl<'a> Display for Battle {
+impl Display for Battle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 

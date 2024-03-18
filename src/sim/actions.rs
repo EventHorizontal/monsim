@@ -136,7 +136,9 @@ impl Action {
     }
 
     pub fn perform_switch_out(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
-        battle.team_mut(active_monster_uid.team_uid).active_monster_uid = benched_monster_uid;
+        battle.team_mut(active_monster_uid.team_uid).map(|team| { 
+            team.active_monster_uid = benched_monster_uid;
+        });
         battle.message_log.push(format![
             "{active_monster} switched out! Go {benched_monster}!", 
             active_monster = battle.monster(active_monster_uid).get().name(),

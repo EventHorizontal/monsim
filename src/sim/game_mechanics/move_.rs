@@ -1,9 +1,8 @@
 use crate::sim::{
-    event::{EventHandlerDeck, EventFilteringOptions},
-    Battle, MonsterUID, Type,
+    event::{EventFilteringOptions, EventHandlerDeck}, Battle, MonsterSpecies, MonsterUID, Type
 };
 use core::fmt::Debug;
-use std::ops::Index;
+use std::{default, ops::Index};
 use monsim_utils::{not, FLArray};
 
 #[derive(Clone, Copy)]
@@ -96,6 +95,12 @@ impl Move {
     pub fn is_type(&self, type_: Type) -> bool {
         self.species.type_ == type_
     }
+    
+    const fn placeholder() -> Self {
+        Self {
+            species: MoveSpecies::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -145,10 +150,17 @@ impl MoveSet {
     pub fn move_mut(&mut self, id: MoveNumber) -> &mut Move {
         &mut self.moves[id as usize]
     }
+    
+    pub(crate) const fn placeholder() -> MoveSet {
+        Self {
+            moves: FLArray::placeholder(Move::placeholder()),
+        }
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum MoveNumber {
+    #[default]
     _1,
     _2,
     _3,

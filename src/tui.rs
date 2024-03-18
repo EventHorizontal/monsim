@@ -27,14 +27,14 @@ impl AppState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(clippy::large_enum_variant)]
 pub enum InputMode {
     MidBattle(AvailableChoices),
     SwitcheePrompt {
         is_between_turn_switch: bool,
         switcher_uid: MonsterUID,
-        possible_switchee_uids: FLArray<MonsterUID, 5>,
+        possible_switchee_uids: Vec<MonsterUID>,
         highlight_cursor: usize,
     },
     PostBattle,
@@ -110,7 +110,7 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::SwitcheePrompt { 
                         is_between_turn_switch: true,
                         switcher_uid: fainted_battler.get().uid,
-                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.get().uid.team_uid),
+                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.get().uid.team_uid).clone(),
                         highlight_cursor: 0 
                     })));
                 } else {
@@ -206,24 +206,21 @@ fn update_from_input(
                     None 
                 },
                 KeyCode::Enter => {
-                    if let Some(switchee_uid) = possible_switchee_uids[*highlight_cursor] {
-                        // HACK: cleaner/more systematic way to do this?
-                        if *is_between_turn_switch {
-                            let _ = BattleSimulator::switch_out_between_turns(battle, *switcher_uid, switchee_uid);
-                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid);
-                            // HACK: This fixes the issue of targetting the previous fainted foe until we have a more robust targetting system
-                            ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid.other());
-                            ui.update_team_status_panels(battle);
-                            ui.update_message_log(battle.message_log.len());
+                    let switchee_uid = possible_switchee_uids[*highlight_cursor];
+                    // HACK: cleaner/more systematic way to do this?
+                    if *is_between_turn_switch {
+                        let _ = BattleSimulator::switch_out_between_turns(battle, *switcher_uid, switchee_uid);
+                        ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid);
+                        // HACK: This fixes the issue of targetting the previous fainted foe until we have a more robust targetting system
+                        ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid.other());
+                        ui.update_team_status_panels(battle);
+                        ui.update_message_log(battle.message_log.len());
 
-                            *choices_for_turn = PerTeam::both(None);
-                        } else {
-                            choices_for_turn[switcher_uid.team_uid] = Some(FullySpecifiedChoice::SwitchOut { switcher_uid: *switcher_uid, candidate_switchee_uids: switchee_uid });
-                        }
-                        Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
+                        *choices_for_turn = PerTeam::both(None);
                     } else {
-                        None
+                        choices_for_turn[switcher_uid.team_uid] = Some(FullySpecifiedChoice::SwitchOut { switcher_uid: *switcher_uid, candidate_switchee_uids: switchee_uid });
                     }
+                    Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
                 }
                 _ => None
             }

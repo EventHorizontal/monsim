@@ -10,7 +10,7 @@ const MAX_BATTLERS_PER_TEAM: usize = 6;
 pub struct MonsterTeam {
     pub id: TeamUID,
     pub active_monster_uid: MonsterUID,
-    monsters: FLArray<Cell<Monster>, 6>,
+    monsters: FLArray<MonsterUID, 6>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -140,31 +140,29 @@ impl Display for TeamUID {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct MoveUID {
     pub owner_uid: MonsterUID,
     pub move_number: MoveNumber,
 }
 
 impl MonsterTeam {
-    pub fn new(monsters: &[Monster], id: TeamUID) -> Self {
+    pub fn new(monsters: &[MonsterUID], id: TeamUID) -> Self {
+        let number_of_monsters = monsters.len();
         assert!(not!(monsters.is_empty()), "Expected at least 1 monster but none were given.");
-        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM, "Expected at most 6 monsters but {m} were given.", m = monsters.len());
-        let monsters = FLArray::with_default_padding(monsters).map(|monster| { Cell::new(monster) });
+        assert!(number_of_monsters <= MAX_BATTLERS_PER_TEAM, "Expected at most 6 monsters but {number_of_monsters} were given.");
+        let monsters = FLArray::with_default_padding(monsters);
         MonsterTeam {
             id,
-            active_monster_uid: MonsterUID { team_uid: id, monster_number: MonsterNumber::_1}, 
-            monsters 
+            active_monster_uid: MonsterUID { team_uid: id, monster_number: MonsterNumber::_1},
+            // First monster is the default active monster TODO: multi-monster battle.
+            monsters, 
         }
     }
 
-    pub fn monsters(&self) -> &FLArray<Cell<Monster>, 6> {
+    pub fn monsters(&self) -> &FLArray<MonsterUID, 6> {
         &self.monsters
     }
-
-    // pub fn monsters_mut(&mut self) -> &mut FLArray<Cell<Monster>, 6> {
-    //     &mut self.monsters
-    // }
 
     pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
         let mut out = Vec::new();

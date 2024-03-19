@@ -3,7 +3,7 @@ use crate::sim::{
 };
 use core::fmt::Debug;
 use std::{default, ops::Index};
-use monsim_utils::{not, FLArray};
+use monsim_utils::{not, MaxSizedVec};
 
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {
@@ -114,7 +114,7 @@ const MAX_MOVES_PER_MOVESET: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct MoveSet {
-    moves: FLArray<Move, 4>,
+    moves: MaxSizedVec<Move, 4>,
 }
 
 impl Index<usize> for MoveSet {
@@ -135,7 +135,7 @@ impl MoveSet {
         let number_of_moves = moves.len();
         assert!(not![moves.is_empty()], "Expected one Move, but found zero.");
         assert!(number_of_moves <= MAX_MOVES_PER_MOVESET, "Expected at most {MAX_MOVES_PER_MOVESET} but found {number_of_moves} moves.");
-        let moves = FLArray::with_default_padding(moves);
+        let moves = MaxSizedVec::from_slice_with_default_padding(moves);
         MoveSet { moves }
     }
 
@@ -153,7 +153,7 @@ impl MoveSet {
     
     pub(crate) const fn placeholder() -> MoveSet {
         Self {
-            moves: FLArray::placeholder(Move::placeholder()),
+            moves: MaxSizedVec::placeholder(Move::placeholder()),
         }
     }
 }

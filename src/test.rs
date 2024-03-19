@@ -8,7 +8,7 @@ mod main {
         battle::Battle,
         test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
         test_move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
-        Ability, Monster, Move,
+        AbilityInternal, MonsterInternal, Move,
     };
 
     // #[test]

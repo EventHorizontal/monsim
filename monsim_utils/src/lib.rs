@@ -1,4 +1,4 @@
-use std::{ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Not, Sub}, slice::{Iter, IterMut}};
+use std::{collections::VecDeque, ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Not, Sub}, slice::{Iter, IterMut}};
 
 /// Type alias for readability of parentheses
 pub type Nothing = ();
@@ -159,18 +159,17 @@ macro_rules! collection {
     }};
 }
 
-/// Short for FrontLoadingArray, it's an array of capacity `CAP` where the elements are guaranteed to be at the beginning. MAY CHANGE IN THE FUTURE but panics if indexed outside of valid elements. 
-/// TODO: Think about returning a result instead? Is there a use case?
+/// It's an array-backed vector (importantly for our use case it implements Copy) of capacity `CAP` where the elements are guaranteed to be at the beginning. _This may change in the future_ but panics if indexed outside of valid elements. It is meant for use cases with up to ~100 elements. 
 /// 
 /// How this internally works: Makes an array with default members for padding, and keeps track of a cursor that indicates the number of valid elements. 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FLArray<T, const CAP: usize> {
+pub struct MaxSizedVec<T, const CAP: usize> {
     elements: [T; CAP],
     count: usize,
 }
 
-impl<T: Clone, const CAP: usize> FLArray<T, CAP> {
-    pub fn new(elements: &[T], padding_element: T) -> Self {
+impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
+    pub fn from_slice(elements: &[T], padding_element: T) -> Self {
         let count = elements.len();
         assert!(count <= CAP, "Error: Attempted to create a FrontLoadedArray with a slice of length {count}, which is greater than the expected size {CAP}");
         let elements = {
@@ -210,11 +209,11 @@ impl<T: Clone, const CAP: usize> FLArray<T, CAP> {
         popped_element
     }
     
-    pub fn map<U, F>(self, mut f: F) -> FLArray<U, CAP> 
+    pub fn map<U, F>(self, mut f: F) -> MaxSizedVec<U, CAP> 
         where F: FnMut(T) -> U + Clone
     {
         let items = self.elements.map(|item| {f(item)});
-        FLArray {
+        MaxSizedVec {
             elements: items,
             count: self.count
         }
@@ -228,7 +227,7 @@ impl<T: Clone, const CAP: usize> FLArray<T, CAP> {
         self.elements.iter_mut()
     }
 
-    pub fn valid_elements(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.count
     }
     
@@ -240,9 +239,14 @@ impl<T: Clone, const CAP: usize> FLArray<T, CAP> {
             self.push(element.clone());
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
+    }
+    
 }
 
-impl<T, const CAP: usize> Index<usize> for FLArray<T, CAP> {
+impl<T, const CAP: usize> Index<usize> for MaxSizedVec<T, CAP> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -254,7 +258,7 @@ impl<T, const CAP: usize> Index<usize> for FLArray<T, CAP> {
     }
 }
 
-impl<T: Default, const CAP: usize> Default for FLArray<T, CAP> {
+impl<T: Default, const CAP: usize> Default for MaxSizedVec<T, CAP> {
     fn default() -> Self {
         let elements = {
             let out: [T; CAP] = core::array::from_fn(|_| { T::default() });
@@ -264,10 +268,11 @@ impl<T: Default, const CAP: usize> Default for FLArray<T, CAP> {
     }
 }
 
-impl<T: Clone + Default, const CAP: usize> FLArray<T, CAP> {
-    pub fn with_default_padding(elements: &[T]) -> Self {
+impl<T: Clone + Default, const CAP: usize> MaxSizedVec<T, CAP> {
+    /// Produces a MaxSizedVec using the types `Default::default()` value for the placeholder values, cloning the input.
+    pub fn from_slice_with_default_padding(elements: &[T]) -> Self {
         let count = elements.len();
-        assert!(count <= CAP, "Error: Attempted to create a FrontLoadedArray with a slice of length {count}, which is greater than the expected size {CAP}");
+        assert!(count <= CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
         let elements = {
             let out: [T; CAP] = core::array::from_fn(|i| {
                 // Fill the front of the array with the slice elements
@@ -286,16 +291,40 @@ impl<T: Clone + Default, const CAP: usize> FLArray<T, CAP> {
             count,
         }
     }
-}
 
-impl<T: Copy + Clone + Default, const CAP: usize> FLArray<T, CAP> {
-    pub const fn placeholder(placeholder_element: T) -> Self {
-        let elements = [placeholder_element; CAP];
-        FLArray { elements, count: 1 }
+    /// Produces a MaxSizedVec using the types `Default::default()` value for the placeholder values, consuming the input.
+    pub fn from_vec_with_default_padding(mut elements: Vec<T>) -> Self {
+        let count = elements.len();
+        assert!(count <= CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
+        elements.reverse();
+        let elements = {
+            let out: [T; CAP] = core::array::from_fn(|i| {
+                // Fill the front of the array with the slice elements
+                if i < count {
+                    elements.pop().expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`")
+                // Fill the rest of the array with dummy default values.
+                } else {
+                    T::default()
+                }
+            } );
+            out
+        };
+        
+        Self {
+            elements,
+            count,
+        }
     }
 }
 
-impl<T, const CAP: usize> IndexMut<usize> for FLArray<T, CAP> {
+impl<T: Copy + Clone + Default, const CAP: usize> MaxSizedVec<T, CAP> {
+    pub const fn placeholder(placeholder_element: T) -> Self {
+        let elements = [placeholder_element; CAP];
+        MaxSizedVec { elements, count: 1 }
+    }
+}
+
+impl<T, const CAP: usize> IndexMut<usize> for MaxSizedVec<T, CAP> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         if index < self.count {
             &mut self.elements[index]
@@ -306,7 +335,7 @@ impl<T, const CAP: usize> IndexMut<usize> for FLArray<T, CAP> {
 }
 
 /// Iterates over the valid elements.
-impl<T, const CAP: usize> IntoIterator for FLArray<T, CAP>{
+impl<T, const CAP: usize> IntoIterator for MaxSizedVec<T, CAP>{
     type Item = T;
 
     type IntoIter = std::iter::Take<std::array::IntoIter<T, CAP>>;
@@ -343,9 +372,6 @@ impl<T> DerefMut for Ally<T> {
 }
 
 impl<T> Ally<T> {
-}
-
-impl<T> Ally<T> {
     pub fn map<U, F>(self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
         let item = f(self.0);
         Ally(item)
@@ -361,6 +387,18 @@ impl<T> AsRef<T> for Ally<T> {
 impl<T> AsMut<T> for Ally<T> {
     fn as_mut(&mut self) -> &mut T {
         &mut self.0
+    }
+}
+
+impl<T> Into<Team<T>> for Ally<T> {
+    fn into(self) -> Team<T> {
+        Team::Ally(self)
+    }
+}
+
+impl<T> Ally<T> {
+    pub fn unwrap(self) -> T {
+        self.0
     }
 }
 
@@ -383,6 +421,9 @@ impl<T> DerefMut for Opponent<T> {
 }
 
 impl<T> Opponent<T> {
+    pub fn unwrap(self) -> T {
+        self.0
+    }
 }
 
 impl<T> Opponent<T> {
@@ -402,6 +443,12 @@ impl<T> AsRef<T> for Opponent<T> {
 impl<T> AsMut<T> for Opponent<T> {
     fn as_mut(&mut self) -> &mut T {
         &mut self.0
+    }
+}
+
+impl<T> Into<Team<T>> for Opponent<T> {
+    fn into(self) -> Team<T> {
+        Team::Opponent(self)
     }
 }
 

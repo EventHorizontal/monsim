@@ -169,7 +169,7 @@ impl Effect {
         let calling_context = AbilityUsed::new(ability_holder_uid);
 
         if EventDispatcher::dispatch_trial_event(battle, ability_holder_uid, calling_context, OnTryActivateAbility) == Outcome::Success {
-            let ability = *battle.ability(ability_holder_uid);
+            let ability = *battle.ability_internal(ability_holder_uid);
             ability.on_activate(battle, ability_holder_uid);
             EventDispatcher::dispatch_event(battle, ability_holder_uid, calling_context, OnAbilityActivated, NOTHING, None);
             Outcome::Success

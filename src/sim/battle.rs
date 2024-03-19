@@ -1,128 +1,100 @@
 mod message_log;
 
-use utils::{not, Ally, FLArray, Opponent, Team};
+use utils::{not, Ally, MaxSizedVec, Opponent, Team};
 
 use crate::sim::{
-        Ability, FullySpecifiedChoice, ActivationOrder, AvailableChoices, Monster,
-        MonsterTeam, MonsterUID, Move, MoveUID, Stat, AvailableChoicesForTeam,
+        AbilityInternal, FullySpecifiedChoice, ActivationOrder, AvailableChoices, MonsterInternal,
+        MonsterTeamInternal, MonsterUID, Move, MoveUID, Stat, AvailableChoicesForTeam,
         utils,
 };
 
 use std::{cell::Cell, fmt::Display};
 
-use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamUID, ALLY_1, OPPONENT_1};
+use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, Ability, Monster, MonsterTeam, MoveSet, PartiallySpecifiedChoice, PerTeam, TeamUID, ALLY_1, OPPONENT_1};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
+    // Sub-objects
     pub prng: Prng,
-    // Misc state
+    pub message_log: MessageLog,
+    // Data
     pub is_finished: bool,
     pub turn_number: u16,
     // Mechanics
-    monsters: FLArray<Cell<Monster>, 12>,
-    moves: FLArray<Cell<Move>, 48>,
-    abilities: FLArray<Cell<Ability>, 12>,
+    active_monsters: PerTeam<Cell<MonsterUID>>,
+    monsters: PerTeam<MaxSizedVec<Cell<MonsterInternal>, 6>>,
+    abilities: MaxSizedVec<Cell<AbilityInternal>,12>,
 
-    teams: PerTeam<MonsterTeam>,
+    teams: PerTeam<MonsterTeamInternal>,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
-    pub message_log: MessageLog,
 }
 
 impl Battle {
-    pub fn new(ally_monsters: Vec<Cell<Monster>>, opponent_monsters: Vec<Cell<Monster>>, moves: Vec<Cell<Move>>, abilities: Vec<Cell<Ability>>) -> Self {
+    
+    pub fn new(
+        ally_monsters: Vec<Cell<MonsterInternal>>, 
+        opponent_monsters: Vec<Cell<MonsterInternal>>, 
+        moves: Vec<Cell<Move>>, 
+        abilities: Vec<Cell<AbilityInternal>>
+    ) -> Self {
         
-        let monsters = {
-            let mut monsters = FLArray::with_default_padding(&ally_monsters);
-            monsters.extend(&opponent_monsters);
-            monsters
-        };
+        let ally_monster_uids = ally_monsters.iter()
+            .map(|monster| { monster.get().uid })
+            .collect::<Vec<_>>();
+
+        let opponent_monster_uids = opponent_monsters.iter()
+            .map(|monster| { monster.get().uid })
+            .collect::<Vec<_>>();
 
         Self {
             prng: Prng::new(prng::seed_from_time_now()),
+            message_log: MessageLog::new(),
+            
             is_finished: false,
             turn_number: 0,
 
-            monsters,
-            moves: FLArray::with_default_padding(&moves),
-            abilities: FLArray::with_default_padding(&abilities),
-
+            active_monsters: PerTeam::new(Ally(Cell::new(ALLY_1)), Opponent(Cell::new(OPPONENT_1))),
+            monsters: PerTeam::new(
+                Ally(MaxSizedVec::from_vec_with_default_padding(ally_monsters)), 
+                Opponent(MaxSizedVec::from_vec_with_default_padding(opponent_monsters))
+            ),
+            abilities: MaxSizedVec::from_vec_with_default_padding(abilities),
             teams: PerTeam::new(
-                    Ally(MonsterTeam::new(&ally_monsters.iter().map(|monster| {monster.get().uid}).collect::<Vec<_>>(), TeamUID::Allies)),
-                    Opponent(MonsterTeam::new(&opponent_monsters.iter().map(|monster| {monster.get().uid}).collect::<Vec<_>>(), TeamUID::Opponents)),
+                    Ally(MonsterTeamInternal::new(MaxSizedVec::from_vec_with_default_padding(ally_monster_uids), TeamUID::Allies)),
+                    Opponent(MonsterTeamInternal::new(MaxSizedVec::from_vec_with_default_padding(opponent_monster_uids), TeamUID::Opponents)),
                 ),
-
-            message_log: MessageLog::new(),
         }
     }
 
-    // Monsters -----------------
-
-    pub fn monsters(&self) -> impl Iterator<Item = &Cell<Monster>> {
-        self.monsters.iter()
-    }
-
-    pub fn monster(&self, monster_uid: MonsterUID) -> &Cell<Monster> {
-        &self.monsters[monster_uid.monster_number as usize]
-    }
-
-    pub fn active_monsters(&self) -> PerTeam<&Cell<Monster>> {
-        let ally_team_active_monster = self.ally_team().map(|team| { self.monster(team.active_monster_uid) });
-        let opponent_team_active_monster = self.opponent_team().map(|team| { self.monster(team.active_monster_uid) });
-        PerTeam::new(
-            ally_team_active_monster,
-            opponent_team_active_monster,
-        )
-    }
-
-    pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
-        self.active_monsters().map(|monster| { monster.get().uid })
-    }
-
-    pub fn is_active_monster(&self, monster_uid: MonsterUID) -> bool {
-        self.teams[monster_uid.team_uid].active_monster_uid == monster_uid
-    }
-
-    // Abilities -----------------
-
-    pub fn ability(&self, owner_uid: MonsterUID) -> &Ability {
-        &self.monster(owner_uid)
-            .get()
-            .ability
-    }
-
-    // Moves -----------------
-
-    pub fn move_(&self, move_uid: MoveUID) -> &Move {
-        self.monster(move_uid.owner_uid)
-            .get()
-            .moveset
-            .move_(move_uid.move_number)
-    }
-
-    // Teams -----------------
-
-    pub fn team(&self, team_uid: TeamUID) -> Team<&MonsterTeam> {
+    /* #region Teams ##################################################################### */
+    pub fn team(&self, team_uid: TeamUID) -> Team<MonsterTeam> {
         match team_uid {
-            TeamUID::Allies => Team::Ally(self.teams.ally_ref()),
-            TeamUID::Opponents => Team::Opponent(self.teams.opponent_ref()),
+            TeamUID::Allies => self.monsters.ally_ref().map(|monsters| {
+                    MonsterTeam::new(self.active_monsters.ally_ref().unwrap(), monsters, TeamUID::Allies)
+                }).into(),
+            TeamUID::Opponents => self.monsters.opponent_ref().map(|monsters| {
+                    MonsterTeam::new(self.active_monsters.opponent_ref().unwrap(), monsters, TeamUID::Opponents)
+                }).into(),
         }
     }
 
-    pub fn team_mut(&mut self, team_uid: TeamUID) -> Team<&mut MonsterTeam> {
+    pub fn team_mut(&mut self, team_uid: TeamUID) -> Team<&mut MonsterTeamInternal> {
         match team_uid {
             TeamUID::Allies => Team::Ally(self.teams.ally_mut()),
             TeamUID::Opponents => Team::Opponent(self.teams.opponent_mut()),
         }
     }
 
-    pub fn ally_team(&self) -> Ally<&MonsterTeam> {
-        self.teams.ally_ref()
+    pub fn ally_team(&self) -> Ally<MonsterTeam> {
+        self.team(TeamUID::Allies)
+            .expect_ally()
     }
 
-    pub fn opponent_team(&self) -> Opponent<&MonsterTeam> {
-        self.teams.opponent_ref()
+    pub fn opponent_team(&self) -> Opponent<MonsterTeam> {
+        self.team(TeamUID::Opponents)
+            .expect_opponent()
     }
 
     pub fn is_on_ally_team(&self, uid: MonsterUID) -> bool {
@@ -151,6 +123,68 @@ impl Battle {
             || (self.is_on_opponent_team(event_caller_uid) && self.is_on_opponent_team(owner_uid))
     }
 
+    /* #endregion ########################################################################## */
+    /* #region Ability ##################################################################### */
+
+    fn ability(&self, owner_uid: MonsterUID) -> Ability {
+        Ability::new(
+            &self.abilities
+                .iter()
+                .find(|ability| { ability.get().owner_uid == owner_uid })
+                .expect("Expected the MonsterUID given to be pre-checked.")
+        )
+    }
+
+    /* #endregion ########################################################################## */
+    /* #region Moves # ##################################################################### */
+
+    pub fn moveset(&self, owner_uid: MonsterUID) -> MoveSet {
+        
+    }
+
+    pub fn move_(&self, move_uid: MoveUID) -> &Move {
+        self.monster(move_uid.owner_uid)
+            .get()
+            .moveset
+            .move_(move_uid.move_number)
+    }
+    
+    /* #endregion ########################################################################## */
+    /* #region Monster ##################################################################### */
+
+    pub fn monsters(&self) -> impl Iterator<Item = Monster> {
+        let ally_monsters = self.monsters.ally_ref();
+        let opponent_monsters = self.monsters.opponent_ref();
+        ally_monsters.iter().chain(opponent_monsters.iter()).map(|monster| {
+            let monster_uid = monster.get().uid;
+            Monster::new(monster, self.moveset(monster_uid), self.ability(monster_uid))
+        })
+    }
+
+    pub fn monster(&self, monster_uid: MonsterUID) -> Monster {
+        self.monsters()
+            .find(|monster| { monster.get().uid == monster_uid })
+            .expect("Expected the MonsterUID given to be pre-checked.")
+    }
+
+    pub fn active_monsters(&self) -> PerTeam<&Cell<MonsterInternal>> {
+        self.active_monsters.map(|monster_uid| {
+            self.monster(monster_uid.get())
+        })
+    }
+
+    #[deprecated]
+    pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
+        self.active_monsters().map(|monster| { monster.get().uid })
+    }
+
+    pub fn is_active_monster(&self, monster: &Cell<MonsterInternal>) -> bool {
+        let monster = monster.get();
+        self.teams[monster.uid.team_uid].active_monster_uid == monster.uid
+    }
+
+    /* #endregion ########################################################################## */
+    
     pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().event_handler_deck_instances());
@@ -262,7 +296,7 @@ impl Display for Battle {
     }
 }
 
-fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: &MonsterTeam, number_of_monsters: usize) {
+fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: &MonsterTeamInternal, number_of_monsters: usize) {
     output_string.push_str(team_name);
     for (i, monster) in team.monsters().iter().enumerate() {
         let is_not_last_monster = i < number_of_monsters - 1;

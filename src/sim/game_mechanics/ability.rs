@@ -1,10 +1,26 @@
 use crate::sim::{event::EventFilteringOptions, Battle, MonsterUID, EventHandlerDeck};
 use core::fmt::Debug;
+use std::cell::Cell;
+
+pub struct Ability<'a> {
+    ability: &'a Cell<AbilityInternal>
+}
+
+impl<'a> Ability<'a> {
+    pub fn new(ability: &Cell<AbilityInternal>) -> Self {
+        Self {
+            ability
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Ability {
+pub(crate) struct AbilityInternal {
+    pub owner_uid: AbilityUID,
     pub species: AbilitySpecies,
 }
+
+pub type AbilityUID = MonsterUID;
 
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {
@@ -52,9 +68,12 @@ impl AbilitySpecies {
 
 impl Eq for AbilitySpecies {}
 
-impl Ability {
-    pub fn new(species: AbilitySpecies) -> Self {
-        Ability { species }
+impl AbilityInternal {
+    pub fn new(owner_uid: AbilityUID, species: AbilitySpecies) -> Self {
+        Self {
+            owner_uid, 
+            species, 
+        }
     }
 
     pub fn on_activate(&self, battle: &mut Battle, owner_uid: MonsterUID) {
@@ -65,8 +84,9 @@ impl Ability {
         self.species.event_handler_deck
     }
     
-    pub(crate) const fn placeholder() -> Ability {
+    pub(crate) const fn placeholder() -> AbilityInternal {
         Self {
+            owner_uid: MonsterUID::default(),
             species: AbilitySpecies::default(),
         }
     }

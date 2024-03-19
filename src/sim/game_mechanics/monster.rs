@@ -1,14 +1,30 @@
 use core::{fmt::Debug, panic};
 use std::{
-    fmt::{Display, Formatter}, ops::{Index, IndexMut}
+    cell::Cell, fmt::{Display, Formatter}, ops::{Index, IndexMut}
 };
 
-use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
+use super::{AbilityInternal, MoveNumber, MoveSet, MoveUID, TeamUID };
 
-use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventHandlerDeck, Type, EventFilteringOptions};
+use crate::sim::{event::OwnedEventHandlerDeck, Ability, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type};
+
+pub struct Monster<'a> {
+    monster: &'a Cell<MonsterInternal>,    
+    moveset: MoveSet,
+    ability: Ability<'a>,
+}
+
+impl<'a> Monster<'a> {
+    pub(crate) fn new(monster: &Cell<MonsterInternal>, moveset: MoveSet, ability: Ability) -> Self {
+        Self {
+            monster,
+            moveset,
+            ability,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Monster {
+pub(crate) struct MonsterInternal {
     pub uid: MonsterUID,
     nickname: Option<&'static str>,
     pub level: u16,
@@ -19,9 +35,8 @@ pub struct Monster {
     pub is_fainted: bool,
     pub current_health: u16,
     pub species: MonsterSpecies,
-    pub moveset: MoveSet,
-    pub ability: Ability,
 }
+
 
 #[derive(Clone, Copy)]
 pub struct MonsterSpecies {
@@ -127,7 +142,7 @@ impl MonsterSpecies {
     }
 }
 
-impl Display for Monster {
+impl Display for MonsterInternal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
         if let Some(nickname) = self.nickname {
@@ -169,16 +184,16 @@ impl Display for Monster {
     }
 }
 
-impl PartialEq for Monster {
+impl PartialEq for MonsterInternal {
     fn eq(&self, other: &Self) -> bool {
         self.uid == other.uid 
     }
 }
 
-impl Eq for Monster {}
+impl Eq for MonsterInternal {}
 
-impl Monster {
-    pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
+impl MonsterInternal {
+    pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: AbilityInternal) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
@@ -197,7 +212,7 @@ impl Monster {
             out
         };
         
-        Monster {
+        MonsterInternal {
             uid,
             nickname,
             level,
@@ -239,7 +254,7 @@ impl Monster {
             current_health: 0,
             species: MonsterSpecies::default(),
             moveset: MoveSet::placeholder(),
-            ability: Ability::placeholder(),
+            ability: AbilityInternal::placeholder(),
         }
     }
 

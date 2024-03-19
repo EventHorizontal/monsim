@@ -4,7 +4,7 @@ use ui::Ui;
 use std::{error::Error, io::Stdout, sync::mpsc, thread, time::{Duration, Instant}};
 
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
-use monsim_utils::{FLArray, Nothing, NOTHING};
+use monsim_utils::{MaxSizedVec, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};

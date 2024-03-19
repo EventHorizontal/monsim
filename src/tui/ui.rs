@@ -1,6 +1,6 @@
 use std::io::Stdout;
 
-use monsim_utils::{Ally, FLArray, Opponent};
+use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
 use crate::sim::{AvailableChoicesForTeam, Battle, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID};

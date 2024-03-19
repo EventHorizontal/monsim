@@ -1,6 +1,6 @@
 use std::ops::{Index, Range};
 
-use monsim_utils::{Ally, FLArray, Opponent};
+use monsim_utils::{Ally, MaxSizedVec, Opponent};
 
 use super::{game_mechanics::{MonsterUID, MoveUID}, TeamUID};
 
@@ -54,7 +54,7 @@ impl AvailableChoices {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AvailableChoicesForTeam {
     // All the Some variants should be in the beginning.
-    moves: FLArray<PartiallySpecifiedChoice, 4>,
+    moves: MaxSizedVec<PartiallySpecifiedChoice, 4>,
     switch_out: Option<PartiallySpecifiedChoice>,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
@@ -62,7 +62,7 @@ pub struct AvailableChoicesForTeam {
 
 impl AvailableChoicesForTeam {
     pub fn new(moves_vec: &[PartiallySpecifiedChoice], switch_out: Option<PartiallySpecifiedChoice>) -> Self {
-        let moves = FLArray::with_default_padding(&moves_vec);
+        let moves = MaxSizedVec::from_slice_with_default_padding(&moves_vec);
         Self {
             moves,
             switch_out,
@@ -111,7 +111,7 @@ impl AvailableChoicesForTeam {
     }
     
     pub(crate) fn count(&self) -> usize {
-        let mut count = self.moves.valid_elements();
+        let mut count = self.moves.len();
         if self.switch_out.is_some() { count += 1; }
         count
     }

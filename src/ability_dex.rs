@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::sim::{
-        Ability, AbilitySpecies, EventHandlerDeck, Type, EventFilteringOptions, EventHandler, MoveUsed, Effect,
+        AbilityInternal, AbilitySpecies, EventHandlerDeck, Type, EventFilteringOptions, EventHandler, MoveUsed, Effect,
         utils::{Outcome, not},
 };
 

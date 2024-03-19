@@ -11,35 +11,35 @@ use utils::Nothing;
 fn main() -> TuiResult<Nothing> {
     let battle = build_battle!(
         {
-            Allies: MonsterTeam {
+            Allies: MonsterTeamInternal {
                 Torchic: Monster = "Ruby" {
                     Ember: Move,
                     Scratch: Move,
                     Growl: Move,
                     Bubble: Move,
-                    FlashFire: Ability,
+                    FlashFire: AbilityInternal,
                 },
                 Mudkip: Monster = "Sapphire" {
                     Tackle: Move,
                     Bubble: Move,
-                    WaterAbsorb: Ability,
+                    WaterAbsorb: AbilityInternal,
                 },
                 Treecko: Monster = "Emerald" {
                     Scratch: Move,
                     Ember: Move,
-                    WaterAbsorb: Ability,
+                    WaterAbsorb: AbilityInternal,
                 },
             },
-            Opponents: MonsterTeam {
+            Opponents: MonsterTeamInternal {
                 Drifloon: Monster {
                     Scratch: Move,
                     Ember: Move,
-                    FlashFire: Ability,
+                    FlashFire: AbilityInternal,
                 },
                 Mudkip: Monster = "Aquamarine" {
                     Scratch: Move,
                     Bubble: Move,
-                    WaterAbsorb: Ability
+                    WaterAbsorb: AbilityInternal
                 }
             }
         }

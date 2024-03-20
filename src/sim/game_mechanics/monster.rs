@@ -3,28 +3,114 @@ use std::{
     cell::Cell, fmt::{Display, Formatter}, ops::{Index, IndexMut}
 };
 
-use super::{AbilityInternal, MoveNumber, MoveSet, MoveUID, TeamUID };
+use monsim_utils::MaxSizedVec;
 
-use crate::sim::{event::OwnedEventHandlerDeck, Ability, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type};
+use super::{AbilityData, MoveNumber, MoveSet, MoveUID, TeamUID };
 
+use crate::sim::{event::OwnedEventHandlerDeck, Ability, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Move, Type};
+
+#[derive(Debug, Clone, Copy)]
 pub struct Monster<'a> {
-    monster: &'a Cell<MonsterInternal>,    
-    moveset: MoveSet,
+    monster_data: &'a Cell<MonsterData>,    
+    moveset: MaxSizedVec<Move<'a>, 4>,
     ability: Ability<'a>,
 }
 
+impl<'a> PartialEq for Monster<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.uid() == other.uid()
+    }
+}
+
+impl<'a> Eq for Monster<'a> {}
+
 impl<'a> Monster<'a> {
-    pub(crate) fn new(monster: &Cell<MonsterInternal>, moveset: MoveSet, ability: Ability) -> Self {
+    pub(crate) fn new(monster: &Cell<MonsterData>, moveset: MaxSizedVec<Move<'a>, 4>, ability: Ability) -> Self {
         Self {
-            monster,
+            monster_data: monster,
             moveset,
             ability,
         }
     }
+
+    pub fn stat(&self, which_stat: Stat) -> u16 {
+        self.data().stats[which_stat]
+    }
+    
+    pub fn species(&self) -> MonsterSpecies {
+        self.data().species
+    }
+
+    pub fn full_name(&self) -> String {
+        let species_name = &self.species().name;
+        if let Some(nickname) = self.nickname() {
+            format!["{} the {}", nickname, species_name]
+        } else {
+            species_name.to_string()
+        }
+    }
+
+    pub fn nickname(&self) -> Option<&str> {
+        self.data().nickname
+    }
+
+    pub fn current_health(&self) -> u16 {
+        self.data().current_health
+    }
+
+    pub fn max_health(&self) -> u16 {
+        self.data().max_health
+    }
+
+    pub fn is_fainted(&self) -> bool {
+        self.data().is_fainted
+    }
+
+    pub fn type_(&self) -> (Type, Option<Type>) {
+        let monster_species = self.data().species;
+        (monster_species.primary_type, monster_species.secondary_type)
+    }
+
+    pub fn is_type(&self, test_type_: Type) -> bool {
+        self.species().primary_type == test_type_ || self.species().secondary_type == Some(test_type_)
+    }
+    
+    pub fn ability(&self) -> Ability {
+        self.ability
+    }
+
+    pub fn moveset(&self) -> MaxSizedVec<Move, 4> {
+        self.moveset
+    }
+
+    pub fn team(&self) -> TeamUID {
+        self.uid().team_uid
+    }
+    
+    pub(crate) fn data(&self) -> MonsterData {
+        self.monster_data.get()
+    }
+
+    pub(crate) fn uid(&self) -> MonsterUID {
+        self.data().uid
+    }
+
+    pub(crate) fn is(&self, monster_uid: MonsterUID) -> bool {
+        self.uid() == monster_uid
+    }
+    
+    pub(crate) fn status_string(&self) -> String {
+        let mut out = String::new();
+        out.push_str(&format![
+            "{} ({}) [HP: {}/{}]\n",
+            self.full_name(), self.uid(), self.current_health(), self.max_health()
+        ]);
+        out
+    } 
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct MonsterInternal {
+pub(crate) struct MonsterData {
     pub uid: MonsterUID,
     nickname: Option<&'static str>,
     pub level: u16,
@@ -142,58 +228,60 @@ impl MonsterSpecies {
     }
 }
 
-impl Display for MonsterInternal {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut out = String::new();
-        if let Some(nickname) = self.nickname {
-            out.push_str(
-                format![
-                    "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    nickname, self.species.name, self.uid, self.current_health, self.max_health
-                ]
-                .as_str(),
-            );
-        } else {
-            out.push_str(
-                format![
-                    "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.species.name, self.uid, self.current_health, self.max_health
-                ]
-                .as_str(),
-            );
-        }
+// TODO: Move this impl to Battle, because MonsterData no longer has enough information to print itself out.
 
-        let number_of_effects = self.moveset.moves().count();
+// impl Display for MonsterData {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         let mut out = String::new();
+//         if let Some(nickname) = self.nickname {
+//             out.push_str(
+//                 format![
+//                     "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
+//                     nickname, self.species.name, self.uid, self.current_health, self.max_health
+//                 ]
+//                 .as_str(),
+//             );
+//         } else {
+//             out.push_str(
+//                 format![
+//                     "{} ({}) [HP: {}/{}]\n\t│\t│\n",
+//                     self.species.name, self.uid, self.current_health, self.max_health
+//                 ]
+//                 .as_str(),
+//             );
+//         }
 
-        out.push_str("\t│\t├── ");
-        out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, self.species.secondary_type].as_str());
+//         let number_of_effects = self.moveset.moves().count();
 
-        out.push_str("\t│\t├── ");
-        out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
+//         out.push_str("\t│\t├── ");
+//         out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, self.species.secondary_type].as_str());
 
-        for (i, move_) in self.moveset.moves().enumerate() {
-            if i < number_of_effects - 1 {
-                out.push_str("\t│\t├── ");
-            } else {
-                out.push_str("\t│\t└── ");
-            }
-            out.push_str(format!["mov {}\n", move_.species.name].as_str());
-        }
+//         out.push_str("\t│\t├── ");
+//         out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
 
-        write!(f, "{}", out)
-    }
-}
+//         for (i, move_) in self.moveset.moves().enumerate() {
+//             if i < number_of_effects - 1 {
+//                 out.push_str("\t│\t├── ");
+//             } else {
+//                 out.push_str("\t│\t└── ");
+//             }
+//             out.push_str(format!["mov {}\n", move_.species.name].as_str());
+//         }
 
-impl PartialEq for MonsterInternal {
+//         write!(f, "{}", out)
+//     }
+// }
+
+impl PartialEq for MonsterData {
     fn eq(&self, other: &Self) -> bool {
         self.uid == other.uid 
     }
 }
 
-impl Eq for MonsterInternal {}
+impl Eq for MonsterData {}
 
-impl MonsterInternal {
-    pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: AbilityInternal) -> Self {
+impl MonsterData {
+    pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: AbilityData) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
@@ -212,7 +300,7 @@ impl MonsterInternal {
             out
         };
         
-        MonsterInternal {
+        MonsterData {
             uid,
             nickname,
             level,
@@ -221,8 +309,6 @@ impl MonsterInternal {
             current_health: health_stat,
             is_fainted: false,
             species,
-            moveset,
-            ability,
             stats: StatSet {
                 hp: health_stat,
                 att: get_non_hp_stat(Stat::PhysicalAttack),
@@ -253,97 +339,7 @@ impl MonsterInternal {
             is_fainted: false,
             current_health: 0,
             species: MonsterSpecies::default(),
-            moveset: MoveSet::placeholder(),
-            ability: AbilityInternal::placeholder(),
         }
-    }
-
-    pub fn name(&self) -> String {
-        if let Some(nickname) = self.nickname {
-            nickname.to_owned()
-        } else {
-            self.species.name.to_owned()
-        }
-    }
-
-    pub fn full_name(&self) -> String {
-        if let Some(nickname) = self.nickname {
-            format!["{} the {}", nickname, self.species.name]
-        } else {
-            self.species.name.to_string()
-        }
-    }
-
-    pub fn is_type(&self, test_type_: Type) -> bool {
-        self.species.primary_type == test_type_ || self.species.secondary_type == Some(test_type_)
-    }
-
-    pub fn ability_event_handler_deck_instance(&self) -> OwnedEventHandlerDeck {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: self.ability.species.order,
-        };
-        OwnedEventHandlerDeck {
-            event_handler_deck: self.ability.event_handler_deck(),
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        }
-    }
-
-    pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<OwnedEventHandlerDeck> {
-        self.moveset
-            .moves()
-            .map(|it| OwnedEventHandlerDeck {
-                event_handler_deck: it.species.event_handler_deck,
-                owner_uid: uid,
-                activation_order: ActivationOrder {
-                    priority: it.species.priority,
-                    speed: self.stats[Stat::Speed],
-                    order: 0,
-                },
-                filtering_options: EventFilteringOptions::default(),
-            })
-            .collect::<Vec<_>>()
-    }
-
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: 0,
-        };
-        let monster_event_handler_deck_instance = OwnedEventHandlerDeck {
-            event_handler_deck: self.species.event_handler_deck,
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        };
-        let mut out = vec![monster_event_handler_deck_instance];
-        out.append(&mut self.moveset_event_handler_deck_instances(self.uid));
-        out.push(self.ability_event_handler_deck_instance());
-        out
-    }
-
-    pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
-        self.moveset
-            .moves()
-            .enumerate()
-            .map(|(idx, _)| MoveUID {
-                owner_uid: self.uid,
-                move_number: MoveNumber::from(idx),
-            })
-            .collect()
-    }
-
-    pub fn status_string(&self) -> String {
-        let mut out = String::new();
-        out.push_str(&format![
-            "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.uid, self.current_health, self.max_health
-        ]);
-        out
     }
 }
 

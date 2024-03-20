@@ -1,6 +1,6 @@
 use std::io::{self, StdoutLock, Write};
 
-use monsim_utils::{Nothing, Team, NOTHING};
+use monsim_utils::{Nothing, TeamAffil, NOTHING};
 
 use crate::{tui::TuiResult, sim::{AvailableChoices, AvailableChoicesForTeam, Battle, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
 
@@ -58,7 +58,7 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&ally_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
-                let ally_team_fully_specified_action = match translate_input_to_choices(&battle, Team::ally(ally_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
+                let ally_team_fully_specified_action = match translate_input_to_choices(&battle, TeamAffil::ally(ally_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
                     UIChoice::Quit => {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
@@ -75,7 +75,7 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&opponent_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
-                let opponent_team_fully_specified_action = match translate_input_to_choices(&battle, Team::opponent(opponent_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
+                let opponent_team_fully_specified_action = match translate_input_to_choices(&battle, TeamAffil::opponent(opponent_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
                     UIChoice::Quit => {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
@@ -180,10 +180,10 @@ enum UIChoice<T> {
 
 fn translate_input_to_choices(
     battle: &Battle, 
-    available_choices_for_team: Team<AvailableChoicesForTeam>, 
+    available_choices_for_team: TeamAffil<AvailableChoicesForTeam>, 
     locked_stdout: &mut StdoutLock, 
     last_turn_action: Option<PerTeam<FullySpecifiedChoice>>
-) -> TuiResult<UIChoice<Team<FullySpecifiedChoice>>> 
+) -> TuiResult<UIChoice<TeamAffil<FullySpecifiedChoice>>> 
 {
 
     let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );

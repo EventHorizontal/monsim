@@ -13,7 +13,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     name: "Flash Fire",
     event_handler_deck: EventHandlerDeck {
         on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { attacker_uid, move_uid, target_uid}, _relay| {
+            callback: |battle, MoveUsed { attacker: attacker_uid, move_uid, target: target_uid}, _relay| {
                             let current_move = battle.move_(move_uid);
                             let is_current_move_fire_type = (current_move.species.type_ == Type::Fire);
                             if is_current_move_fire_type {
@@ -39,7 +39,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     name: "Water Absorb",
     event_handler_deck: EventHandlerDeck {
         on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { attacker_uid, move_uid, target_uid}, _relay| {
+            callback: |battle, MoveUsed { attacker: attacker_uid, move_uid, target: target_uid}, _relay| {
                             let current_move = battle.move_(move_uid);
                             let is_current_move_fire_type = (current_move.species.type_ == Type::Water);
                             if is_current_move_fire_type {

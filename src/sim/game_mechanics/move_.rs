@@ -1,9 +1,45 @@
 use crate::sim::{
-    event::{EventFilteringOptions, EventHandlerDeck}, Battle, MonsterSpecies, MonsterUID, Type
+    event::{EventFilteringOptions, EventHandlerDeck}, Battle, MonsterUID, MoveUID, Type, ALLY_5
 };
 use core::fmt::Debug;
-use std::{default, ops::Index};
+use std::{cell::Cell, ops::Index};
 use monsim_utils::{not, MaxSizedVec};
+
+#[derive(Debug, Clone, Copy)]
+pub struct Move<'a> {
+    uid: MoveUID,
+    move_data: &'a Cell<MoveData>
+}
+
+impl<'a> PartialEq for Move<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.uid() == other.uid()
+    }
+}
+
+impl<'a> Eq for Move<'a> {}
+
+
+impl<'a> Move<'a> {
+    pub(crate) fn new(uid: MoveUID, data: &Cell<MoveData>) -> Self {
+        Self {
+            uid,
+            move_data: data,
+        }
+    }
+    
+    pub fn species(&self) -> MoveSpecies {
+        self.data_copy().species
+    }
+    
+    pub(crate) fn data_copy(&self) -> MoveData {
+        self.move_data.get()
+    }
+
+    pub(crate) fn uid(&self) -> MoveUID {
+        self.data_copy().uid
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {
@@ -64,13 +100,17 @@ impl MoveSpecies {
 impl Eq for MoveSpecies {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Move {
+pub struct MoveData {
+    pub uid: MoveUID,
     pub species: MoveSpecies,
 }
 
-impl Move {
-    pub fn new(species: MoveSpecies) -> Self {
-        Move { species }
+impl MoveData {
+    pub(crate) fn new(uid: MoveUID, species: MoveSpecies) -> Self {
+        MoveData { 
+            uid,
+            species, 
+        }
     }
 
     pub fn category(&self) -> MoveCategory {
@@ -98,6 +138,7 @@ impl Move {
     
     const fn placeholder() -> Self {
         Self {
+            uid: MoveUID { owner_uid: ALLY_5, move_number: MoveNumber::_4 },
             species: MoveSpecies::default(),
         }
     }
@@ -114,11 +155,11 @@ const MAX_MOVES_PER_MOVESET: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct MoveSet {
-    moves: MaxSizedVec<Move, 4>,
+    moves: MaxSizedVec<MoveData, 4>,
 }
 
 impl Index<usize> for MoveSet {
-    type Output = Move;
+    type Output = MoveData;
 
     fn index(&self, index: usize) -> &Self::Output {
         assert!(
@@ -131,7 +172,7 @@ impl Index<usize> for MoveSet {
 }
 
 impl MoveSet {
-    pub fn new(moves: &[Move]) -> Self {
+    pub fn new(moves: &[MoveData]) -> Self {
         let number_of_moves = moves.len();
         assert!(not![moves.is_empty()], "Expected one Move, but found zero.");
         assert!(number_of_moves <= MAX_MOVES_PER_MOVESET, "Expected at most {MAX_MOVES_PER_MOVESET} but found {number_of_moves} moves.");
@@ -139,21 +180,21 @@ impl MoveSet {
         MoveSet { moves }
     }
 
-    pub fn moves(&self) -> impl Iterator<Item = Move> {
+    pub fn moves(&self) -> impl Iterator<Item = MoveData> {
         self.moves.into_iter()
     }
 
-    pub fn move_(&self, id: MoveNumber) -> &Move {
+    pub fn move_(&self, id: MoveNumber) -> &MoveData {
         &self.moves[id as usize]
     }
 
-    pub fn move_mut(&mut self, id: MoveNumber) -> &mut Move {
+    pub fn move_mut(&mut self, id: MoveNumber) -> &mut MoveData {
         &mut self.moves[id as usize]
     }
     
     pub(crate) const fn placeholder() -> MoveSet {
         Self {
-            moves: MaxSizedVec::placeholder(Move::placeholder()),
+            moves: MaxSizedVec::placeholder(MoveData::placeholder()),
         }
     }
 }

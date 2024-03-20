@@ -4,6 +4,8 @@ use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order,
 use contexts::*;
 use event_setup_macro::event_setup;
 
+use super::Monster;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventDispatcher;
 
@@ -47,34 +49,34 @@ bitflags::bitflags! {
 }
 
 pub mod contexts {
-    use crate::sim::{MonsterUID, MoveUID};
+    use crate::sim::{Monster, MonsterUID, Move};
 
     #[derive(Debug, Clone, Copy)]
-    pub struct MoveUsed {
-        pub attacker_uid: MonsterUID,
-        pub move_uid: MoveUID,
-        pub target_uid: MonsterUID,
+    pub struct MoveUsed<'a> {
+        pub attacker: Monster<'a>,
+        pub move_: Move<'a>,
+        pub target: Monster<'a>,
     }
 
     #[derive(Debug, Clone, Copy)]
-    pub struct AbilityUsed {
-        pub ability_holder_uid: MonsterUID,
+    pub struct AbilityUsed<'a> {
+        pub ability_owner: Monster<'a>,
     }
 
-    impl MoveUsed {
-        pub fn new(move_uid: MoveUID, target_uid: MonsterUID) -> Self {
+    impl<'a> MoveUsed<'a> {
+        pub fn new(attacker: Monster, move_: Move, target: Monster) -> Self {
             Self {
-                attacker_uid: move_uid.owner_uid,
-                move_uid,
-                target_uid,
+                attacker,
+                move_,
+                target,
             }
         }
     }
 
-    impl AbilityUsed {
-        pub fn new(ability_user_uid: MonsterUID) -> Self {
+    impl<'a> AbilityUsed<'a> {
+        pub fn new(ability_owner: Monster) -> Self {
             Self {
-                ability_holder_uid: ability_user_uid,
+                ability_owner,
             }
         }
     }
@@ -156,7 +158,7 @@ impl EventDispatcher {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let mut event_handler_instances = Self::handlers_for_event(battle.event_handler_deck_instances(), event);
+        let mut event_handler_instances = Self::handlers_for_event(battle.event_handler_decks(), event);
 
         if event_handler_instances.is_empty() {
             return default;
@@ -189,26 +191,26 @@ impl EventDispatcher {
 
     fn filter_event_handlers(
         battle: &Battle,
-        broadcaster_uid: MonsterUID,
-        owner_uid: MonsterUID,
+        event_caller: Monster,
+        handler_owner: Monster,
         filter_options: EventFilteringOptions,
     ) -> bool {
         let bitmask = {
             let mut bitmask = 0b0000;
-            if broadcaster_uid == owner_uid {
+            if event_caller == handler_owner {
                 bitmask |= TargetFlags::SELF.bits()
             } // 0x01
-            if battle.are_allies(owner_uid, broadcaster_uid) {
+            if battle.are_allies(handler_owner, event_caller) {
                 bitmask |= TargetFlags::ALLIES.bits()
             } // 0x02
-            if battle.are_opponents(owner_uid, broadcaster_uid) {
+            if battle.are_opponents(handler_owner, event_caller) {
                 bitmask |= TargetFlags::OPPONENTS.bits()
             } //0x04
               // TODO: When the Environment is implemented, add the environment to the bitmask. (0x08)
             bitmask
         };
         let event_source_filter_passed = filter_options.event_source.bits() == bitmask;
-        let is_active_passed = battle.is_active_monster(owner_uid);
+        let is_active_passed = battle.is_active_monster(handler_owner);
 
         event_source_filter_passed && is_active_passed
     }

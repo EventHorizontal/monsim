@@ -1,22 +1,50 @@
-use crate::sim::{event::EventFilteringOptions, Battle, MonsterUID, EventHandlerDeck};
+use crate::sim::{event::{EventFilteringOptions, OwnedEventHandlerDeck}, ActivationOrder, Battle, EventHandlerDeck, MonsterUID};
 use core::fmt::Debug;
 use std::cell::Cell;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Ability<'a> {
-    ability: &'a Cell<AbilityInternal>
+    uid: AbilityUID,
+    ability_data: &'a Cell<AbilityData>
 }
 
+impl<'a> PartialEq for Ability<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.uid() == other.uid()
+    }
+}
+
+impl<'a> Eq for Ability<'a> {}
+
+
 impl<'a> Ability<'a> {
-    pub fn new(ability: &Cell<AbilityInternal>) -> Self {
+    pub fn new(uid: AbilityUID, ability_data: &Cell<AbilityData>) -> Self {
         Self {
-            ability
+            uid,
+            ability_data
         }
+    }
+    
+    pub fn species(&self) -> AbilitySpecies {
+        self.data().species
+    }
+    
+    pub(crate) fn data(&self) -> AbilityData {
+        self.ability_data.get()
+    }
+
+    pub(crate) fn uid(&self) -> AbilityUID {
+        self.data().uid
+    }
+
+    pub(crate) fn event_handler_deck(&self) -> EventHandlerDeck {
+        self.data().event_handler_deck()
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub(crate) struct AbilityInternal {
-    pub owner_uid: AbilityUID,
+pub(crate) struct AbilityData {
+    pub uid: AbilityUID,
     pub species: AbilitySpecies,
 }
 
@@ -68,10 +96,10 @@ impl AbilitySpecies {
 
 impl Eq for AbilitySpecies {}
 
-impl AbilityInternal {
+impl AbilityData {
     pub fn new(owner_uid: AbilityUID, species: AbilitySpecies) -> Self {
         Self {
-            owner_uid, 
+            uid: owner_uid, 
             species, 
         }
     }
@@ -84,9 +112,9 @@ impl AbilityInternal {
         self.species.event_handler_deck
     }
     
-    pub(crate) const fn placeholder() -> AbilityInternal {
+    pub(crate) const fn placeholder() -> AbilityData {
         Self {
-            owner_uid: MonsterUID::default(),
+            uid: MonsterUID::default(),
             species: AbilitySpecies::default(),
         }
     }

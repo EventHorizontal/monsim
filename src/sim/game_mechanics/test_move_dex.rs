@@ -5,7 +5,7 @@ use super::{
     Type,
 };
 use crate::sim::{
-    Effect, event::EventFilteringOptions, Battle, MonsterUID, Move, Stat
+    Effect, event::EventFilteringOptions, Battle, MonsterUID, MoveData, Stat
 };
 
 pub const Tackle: MoveSpecies = MoveSpecies {

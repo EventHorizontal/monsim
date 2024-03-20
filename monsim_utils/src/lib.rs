@@ -191,6 +191,29 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
         }
     }
 
+    pub fn from_vec(mut elements: Vec<T>, padding_element: T) -> Self {
+        let count = elements.len();
+        assert!(count <= CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
+        elements.reverse();
+        let elements = {
+            let out: [T; CAP] = core::array::from_fn(|i| {
+                // Fill the front of the array with the slice elements
+                if i < count {
+                    elements.pop().expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`")
+                // Fill the rest of the array with dummy default values.
+                } else {
+                    padding_element.clone()
+                }
+            } );
+            out
+        };
+        
+        Self {
+            elements,
+            count,
+        }
+    }
+
     pub fn push(&mut self, item: T) {
         self.elements[self.count - 1] = item;
         self.count += 1;
@@ -390,9 +413,9 @@ impl<T> AsMut<T> for Ally<T> {
     }
 }
 
-impl<T> Into<Team<T>> for Ally<T> {
-    fn into(self) -> Team<T> {
-        Team::Ally(self)
+impl<T> Into<TeamAffil<T>> for Ally<T> {
+    fn into(self) -> TeamAffil<T> {
+        TeamAffil::Ally(self)
     }
 }
 
@@ -446,18 +469,18 @@ impl<T> AsMut<T> for Opponent<T> {
     }
 }
 
-impl<T> Into<Team<T>> for Opponent<T> {
-    fn into(self) -> Team<T> {
-        Team::Opponent(self)
+impl<T> Into<TeamAffil<T>> for Opponent<T> {
+    fn into(self) -> TeamAffil<T> {
+        TeamAffil::Opponent(self)
     }
 }
 
-pub enum Team<T> {
+pub enum TeamAffil<T> {
     Ally(Ally<T>),
     Opponent(Opponent<T>)
 }
 
-impl<T> Team<T> {
+impl<T> TeamAffil<T> {
     pub fn ally(item: Ally<T>) -> Self {
         Self::Ally(item)
     }
@@ -468,44 +491,44 @@ impl<T> Team<T> {
     
     pub fn apply<U, F>(&self, f: F) -> U where F: FnOnce(&T) -> U {
         match self {
-            Team::Ally(a) => f(&**a),
-            Team::Opponent(o) => f(&**o),
+            TeamAffil::Ally(a) => f(&**a),
+            TeamAffil::Opponent(o) => f(&**o),
         }
     }
 
     pub fn expect_ally(self) -> Ally<T> {
         match self {
-            Team::Ally(a) => a,
-            Team::Opponent(_) => panic!(),
+            TeamAffil::Ally(a) => a,
+            TeamAffil::Opponent(_) => panic!(),
         }
     }
 
     pub fn expect_opponent(self) -> Opponent<T> {
         match self {
-            Team::Ally(_) => panic!(),
-            Team::Opponent(o) => o,
+            TeamAffil::Ally(_) => panic!(),
+            TeamAffil::Opponent(o) => o,
         }
     }
 }
 
-impl<T> Team<T> {
-    pub fn map<U, F>(self, f: F) -> Team<U> 
+impl<T> TeamAffil<T> {
+    pub fn map<U, F>(self, f: F) -> TeamAffil<U> 
         where F: FnOnce(T) -> U
     {
         match self {
-            Team::Ally(a) => Team::Ally(a.map(f)),
-            Team::Opponent(o) => Team::Opponent(o.map(f)),
+            TeamAffil::Ally(a) => TeamAffil::Ally(a.map(f)),
+            TeamAffil::Opponent(o) => TeamAffil::Opponent(o.map(f)),
         }
     }
 }
 
-impl<T: Clone> Deref for Team<T> {
+impl<T: Clone> Deref for TeamAffil<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
         match self {
-            Team::Ally(a) => &a,
-            Team::Opponent(o) => &o,
+            TeamAffil::Ally(a) => &a,
+            TeamAffil::Opponent(o) => &o,
         }
     }
 }

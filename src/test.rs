@@ -8,7 +8,7 @@ mod main {
         battle::Battle,
         test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
         test_move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
-        AbilityInternal, MonsterInternal, Move,
+        AbilityData, MonsterData, MoveData,
     };
 
     // #[test]
@@ -251,20 +251,20 @@ mod prng {
 
 #[cfg(all(test, feature = "debug"))]
 mod utils {
-    use monsim_utils::{Ally, Team};
+    use monsim_utils::{Ally, TeamAffil};
 
     #[test]
     #[should_panic]
     fn test_expect_wrong_team() {
         let item = Ally(10usize);
-        let item = Team::ally(item);
+        let item = TeamAffil::ally(item);
         (item.map(|i| { i - 1 }).expect_opponent());
     }
 
     #[test]
     fn test_expect_right_team() {
         let item = Ally(10usize);
-        let item = Team::ally(item);
+        let item = TeamAffil::ally(item);
         item.map(|i| {i + 1}).expect_ally();
     }
 }

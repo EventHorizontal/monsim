@@ -1,20 +1,20 @@
 use std::{cell::Cell, fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 
-use crate::sim::{event::OwnedEventHandlerDeck, MonsterNumber};
-use super::{MonsterInternal, MonsterUID, MoveNumber};
+use crate::sim::{Monster, MonsterNumber};
+use super::{MonsterData, MonsterUID, MoveNumber};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct MonsterTeam<'a> {
     id: TeamUID,
     active_monster: &'a Cell<MonsterUID>,
-    monsters: &'a MaxSizedVec<Cell<MonsterInternal>, 6>
+    monsters: MaxSizedVec<Monster<'a>, 6>
 }
 
 impl<'a> MonsterTeam<'a> {
-    pub fn new(active_monster: &Cell<MonsterUID>, monsters: &MaxSizedVec<Cell<MonsterInternal>, 6>, id: TeamUID) -> Self {
+    pub fn new(active_monster: &Cell<MonsterUID>, monsters: MaxSizedVec<Monster, 6>, id: TeamUID) -> Self {
         let number_of_monsters = monsters.len();
         assert!(not!(monsters.is_empty()), "Expected at least 1 monster but none were given.");
         assert!(number_of_monsters <= MAX_BATTLERS_PER_TEAM, "Expected at most 6 monsters but {number_of_monsters} were given.");
@@ -26,32 +26,24 @@ impl<'a> MonsterTeam<'a> {
         }
     }
 
-    pub fn monsters(&self) -> &MaxSizedVec<Cell<MonsterInternal>, 6> {
+    pub fn monsters(&self) -> &MaxSizedVec<Monster, 6> {
         &self.monsters
     }
 
-    pub fn active_monster(&self) -> &Cell<MonsterInternal> {
-        self.monsters.iter()
-            .find(|monster| { monster.get().uid == self.active_monster.get() })
+    pub fn active_monster(&self) -> Monster {
+        *self.monsters.iter()
+            .find(|monster| { monster.is(self.active_monster.get()) })
             .expect("Expected the active monster to be a valid Monster within the team.")
     }
 
-    pub fn set_active_monster(&self, to_which_monster: &Cell<MonsterInternal>) {
+    pub fn set_active_monster(&self, to_which_monster: &Cell<MonsterData>) {
         self.active_monster.set(to_which_monster.get().uid)
-    }
-
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let mut out = Vec::new();
-        for monster in self.monsters.clone().into_iter() {
-            out.append(&mut monster.get().event_handler_deck_instances())
-        }
-        out
     }
 
     pub(crate) fn team_status_string(&self) -> String {
         let mut out = String::new();
         for monster in self.monsters().clone().into_iter() {
-            out.push_str(&monster.get().status_string());
+            out.push_str(&monster.status_string());
         }
         out
     }

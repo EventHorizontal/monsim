@@ -1,68 +1,41 @@
-use std::ops::{Index, Range};
+use std::ops::Range;
 
-use monsim_utils::{Ally, MaxSizedVec, Opponent};
+use monsim_utils::MaxSizedVec;
 
-use super::{game_mechanics::{MonsterUID, MoveUID}, TeamUID};
+use super::{MonsterRef, MoveRef};
 
 
 /// An action choice before certain details can be established, most often the target.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PartiallySpecifiedChoice {
+pub enum PartiallySpecifiedChoice<'a> {
     /// TODO: This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
-    Move{ move_uid: MoveUID, target_uid: MonsterUID, display_text: &'static str},
+    Move{ attacker: MonsterRef<'a>, move_: MoveRef<'a>, target: MonsterRef<'a>, display_text: &'static str},
     /// A switch out action before we know which monster to switch with.
-    SwitchOut { switcher_uid: MonsterUID, candidate_switchee_uids: Vec<MonsterUID>, display_text: &'static str },
-}
-
-impl Default for PartiallySpecifiedChoice {
-    fn default() -> Self {
-        PartiallySpecifiedChoice::Move { move_uid: MoveUID::default(), target_uid: MonsterUID::default(), display_text: "" }
-    }
+    SwitchOut { active_monster: MonsterRef<'a>, switchable_benched_monsters: Vec<MonsterRef<'a>>, display_text: &'static str },
 }
 
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FullySpecifiedChoice {
-    Move { move_uid: MoveUID, target_uid: MonsterUID },
-    SwitchOut { switcher_uid: MonsterUID, candidate_switchee_uids: MonsterUID },
+pub enum FullySpecifiedChoice<'a> {
+    Move { attacker: MonsterRef<'a>, move_: MoveRef<'a>, target: MonsterRef<'a> },
+    SwitchOut { active_monster: MonsterRef<'a>, benched_monster: MonsterRef<'a> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AvailableChoices {
-    pub ally_team_available_choices: AvailableChoicesForTeam,
-    pub opponent_team_available_choices: AvailableChoicesForTeam,
-}
-
-impl Index<TeamUID> for AvailableChoices {
-    type Output = AvailableChoicesForTeam;
-
-    fn index(&self, index: TeamUID) -> &Self::Output {
-        match index {
-            TeamUID::Allies => &self.ally_team_available_choices,
-            TeamUID::Opponents => &self.opponent_team_available_choices,
-        }
-    }
-}
-
-impl AvailableChoices {
-    pub(crate) fn unwrap(self) -> (Ally<AvailableChoicesForTeam>, Opponent<AvailableChoicesForTeam>) {
-        (Ally(self.ally_team_available_choices), Opponent(self.opponent_team_available_choices))
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AvailableChoicesForTeam {
+pub struct AvailableChoicesForTeam<'a> {
     // All the Some variants should be in the beginning.
-    moves: MaxSizedVec<PartiallySpecifiedChoice, 4>,
-    switch_out: Option<PartiallySpecifiedChoice>,
+    moves: MaxSizedVec<PartiallySpecifiedChoice<'a>, 4>,
+    switch_out: Option<PartiallySpecifiedChoice<'a>>,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
 }
 
-impl AvailableChoicesForTeam {
-    pub fn new(moves_vec: &[PartiallySpecifiedChoice], switch_out: Option<PartiallySpecifiedChoice>) -> Self {
-        let moves = MaxSizedVec::from_slice_with_default_padding(&moves_vec);
+impl<'a> AvailableChoicesForTeam<'a> {
+    pub fn new(
+        moves_vec: Vec<PartiallySpecifiedChoice<'a>>, 
+        switch_out: Option<PartiallySpecifiedChoice<'a>>, 
+    ) -> Self {
+        let moves = MaxSizedVec::from_vec(moves_vec);
         Self {
             moves,
             switch_out,
@@ -70,23 +43,23 @@ impl AvailableChoicesForTeam {
         }
     }
 
-    fn move_count(&self) -> usize {
+    fn move_choice_count(&self) -> usize {
         self.moves.iter().count()
     }
     
     pub fn move_choice_indices(&self) -> Range<usize> {
-        0..self.move_count()
+        0..self.move_choice_count()
     }
 
-    pub fn switch_out_choice(&self) -> Option<PartiallySpecifiedChoice> {
+    pub fn switch_out_choice(&'a self) -> Option<PartiallySpecifiedChoice> {
         self.switch_out.clone()
     }
 
     pub fn switch_out_choice_index(&self) -> Option<usize> {
-        self.switch_out.as_ref().map(|_| self.move_count() )
+        self.switch_out.as_ref().map(|_| self.move_choice_count() )
     }
 
-    pub(crate) fn as_vec(&self) -> Vec<PartiallySpecifiedChoice> {
+    pub(crate) fn as_vec(&'a self) -> Vec<PartiallySpecifiedChoice> {
         [
             Some(self.moves[0].clone()),
             Some(self.moves[1].clone()),
@@ -100,10 +73,10 @@ impl AvailableChoicesForTeam {
     }
 
     /// panicks if there is no `PartiallySpecifiedAction` at the given index.
-    pub(crate) fn get_by_index(&self, index: usize) -> PartiallySpecifiedChoice {
-        if index < self.move_count() {
+    pub(crate) fn get_by_index(&'a self, index: usize) -> PartiallySpecifiedChoice {
+        if index < self.move_choice_count() {
             self.moves[index].clone()
-        } else if index == self.move_count() && self.switch_out.is_some() {
+        } else if index == self.move_choice_count() && self.switch_out.is_some() {
             self.switch_out.clone().unwrap()
         } else {
             panic!("Index out of bounds for AvailableActionsForTeam.")
@@ -116,31 +89,3 @@ impl AvailableChoicesForTeam {
         count
     }
 }
-
-// impl Index<usize> for AvailableChoicesForTeam {
-//     type Output = PartiallySpecifiedChoice;
-    
-//     fn index(&self, index: usize) -> &Self::Output {
-//         let move_count = self.moves.into_iter().count();
-//         if index < move_count {
-//             &self.moves[index]
-//         } else if index == move_count && self.switch_out.is_some() {
-//             &self.switch_out
-//         } else {
-//             unreachable!()
-//         }
-//     }
-// }
-
-// impl IndexMut<usize> for AvailableChoicesForTeam {
-//     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-//         let move_count = self.moves.into_iter().count();
-//         if index < move_count {
-//             &mut self.moves[index]
-//         } else if index == move_count && self.switch_out.is_some() {
-//             &mut self.switch_out
-//         } else {
-//             unreachable!()
-//         }
-//     }
-// }

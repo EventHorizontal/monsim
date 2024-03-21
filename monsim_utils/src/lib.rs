@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Not, Sub}, slice::{Iter, IterMut}};
+use std::{cell::Cell, collections::VecDeque, ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Not, Sub}, slice::{Iter, IterMut}};
 
 /// Type alias for readability of parentheses
 pub type Nothing = ();
@@ -20,6 +20,15 @@ impl From<bool> for Outcome {
     }
 }
 
+impl From<Outcome> for bool {
+    fn from(value: Outcome) -> Self {
+        match value {
+            Outcome::Success => true,
+            Outcome::Failure => false,
+        }
+    }
+}
+
 impl Not for Outcome {
     type Output = Outcome;
 
@@ -28,6 +37,16 @@ impl Not for Outcome {
             Outcome::Success => Outcome::Failure,
             Outcome::Failure => Outcome::Success,
         }
+    }
+}
+
+impl Outcome {
+    pub fn succeeded(self) -> bool {
+        self.into()
+    }
+
+    pub fn failed(self) -> bool {
+        not!(self.succeeded())
     }
 }
 
@@ -169,9 +188,12 @@ pub struct MaxSizedVec<T, const CAP: usize> {
 }
 
 impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
-    pub fn from_slice(elements: &[T], padding_element: T) -> Self {
+    pub fn from_slice(elements: &[T]) -> Self {
         let count = elements.len();
         assert!(count <= CAP, "Error: Attempted to create a FrontLoadedArray with a slice of length {count}, which is greater than the expected size {CAP}");
+
+        let placeholder = elements.first().expect("Expected a non-empty vector but vector is empty.").clone();
+
         let elements = {
             let out: [T; CAP] = core::array::from_fn(|i| {
                 // Fill the front of the array with the slice elements
@@ -179,7 +201,7 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
                     elements[i].clone()
                 // Fill the rest of the array with dummy default values.
                 } else {
-                    padding_element.clone()
+                    placeholder.clone()
                 }
             } );
             out
@@ -191,10 +213,13 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
         }
     }
 
-    pub fn from_vec(mut elements: Vec<T>, padding_element: T) -> Self {
+    pub fn from_vec(mut elements: Vec<T>) -> Self {
         let count = elements.len();
         assert!(count <= CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
         elements.reverse();
+
+        let placeholder = elements.first().expect("Expected a non-empty vector but vector is empty.").clone();
+
         let elements = {
             let out: [T; CAP] = core::array::from_fn(|i| {
                 // Fill the front of the array with the slice elements
@@ -202,7 +227,7 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
                     elements.pop().expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`")
                 // Fill the rest of the array with dummy default values.
                 } else {
-                    padding_element.clone()
+                    placeholder.clone()
                 }
             } );
             out
@@ -288,55 +313,6 @@ impl<T: Default, const CAP: usize> Default for MaxSizedVec<T, CAP> {
             out
         };
         Self { elements, count: Default::default() }
-    }
-}
-
-impl<T: Clone + Default, const CAP: usize> MaxSizedVec<T, CAP> {
-    /// Produces a MaxSizedVec using the types `Default::default()` value for the placeholder values, cloning the input.
-    pub fn from_slice_with_default_padding(elements: &[T]) -> Self {
-        let count = elements.len();
-        assert!(count <= CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
-        let elements = {
-            let out: [T; CAP] = core::array::from_fn(|i| {
-                // Fill the front of the array with the slice elements
-                if i < count {
-                    elements[i].clone()
-                // Fill the rest of the array with dummy default values.
-                } else {
-                    T::default()
-                }
-            } );
-            out
-        };
-        
-        Self {
-            elements,
-            count,
-        }
-    }
-
-    /// Produces a MaxSizedVec using the types `Default::default()` value for the placeholder values, consuming the input.
-    pub fn from_vec_with_default_padding(mut elements: Vec<T>) -> Self {
-        let count = elements.len();
-        assert!(count <= CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
-        elements.reverse();
-        let elements = {
-            let out: [T; CAP] = core::array::from_fn(|i| {
-                // Fill the front of the array with the slice elements
-                if i < count {
-                    elements.pop().expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`")
-                // Fill the rest of the array with dummy default values.
-                } else {
-                    T::default()
-                }
-            } );
-            out
-        };
-        
-        Self {
-            elements,
-            count,
-        }
     }
 }
 
@@ -509,6 +485,13 @@ impl<T> TeamAffil<T> {
             TeamAffil::Opponent(o) => o,
         }
     }
+    
+    pub fn unwrap(self) -> T {
+        match self {
+            TeamAffil::Ally(a) => a.0,
+            TeamAffil::Opponent(o) => o.0,
+        }
+    }
 }
 
 impl<T> TeamAffil<T> {
@@ -533,11 +516,28 @@ impl<T: Clone> Deref for TeamAffil<T> {
     }
 }
 
-// impl<T: Clone> DerefMut for Team<T> {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         match self {
-//             Team::Ally(mut a) => &mut a,
-//             Team::Opponent(mut o) => &mut o,
-//         }
-//     }
-// }
+pub trait ModifyCell<T: Copy> {
+    fn modify<F>(&self, f: F) where F: FnOnce(&mut T);
+    fn modify_and_return<F>(&self, f: F) -> T 
+        where F: FnOnce(&mut T);
+}
+
+impl<T: Copy> ModifyCell<T> for Cell<T> {
+    fn modify<F>(&self, f: F) 
+        where F: FnOnce(&mut T) 
+    {
+        let mut value = self.get();
+        f(&mut value);
+        self.set(value);
+    }
+
+    /// Modifies the inner value and then returns the new value
+    fn modify_and_return<F>(&self, f: F) -> T 
+        where F: FnOnce(&mut T) 
+    {
+        let mut value = self.get();
+        f(&mut value);
+        self.set(value);
+        value
+    }
+}

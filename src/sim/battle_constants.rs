@@ -7,24 +7,13 @@ pub const SUPER_EFFECTIVE: Percent = Percent(200);
 
 pub const EMPTY_LINE: &str = "";
 
-/// Usage:
-/// 
-/// ```ignore
-/// matchup!(Type1 against Type2);
-/// matchup!(Type1 against Type2 / Type3);
-/// ```
-/// which returns the `Percent` modifier for using a `Type1` type attack on a pure `Type2` type monster or a `Type2/Type3` dual-type monster.
-#[macro_export]
-macro_rules! matchup {
-    ($x: ident against $y:ident / $z:ident) => {
-        type_matchup($x, $y) * type_matchup($x, $z)
-    };
-    ($x: ident against $y:ident) => {
-        type_matchup($x, $y)
-    };
+pub fn type_matchup_dual(move_type: Type, (primary_type, maybe_secondary_type): (Type, Option<Type>)) -> Percent {
+    type_matchup_single(move_type, primary_type) * {
+        maybe_secondary_type.map_or(EFFECTIVE, |secondary_type| { type_matchup_single(move_type, secondary_type) })
+    }
 }
 
-pub const fn type_matchup(move_type: Type, target_type: Type) -> Percent {
+pub const fn type_matchup_single(move_type: Type, target_type: Type) -> Percent {
     match (move_type, target_type) {
         (Type::Bug, Type::Bug) => EFFECTIVE,
         (Type::Bug, Type::Dark) => SUPER_EFFECTIVE,

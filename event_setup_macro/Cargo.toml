@@ -12,3 +12,4 @@ proc-macro = true
 syn = {version = "1.0.95"}
 quote =  "1.0.18"
 proc-macro2 = "1.0.39"
+convert_case = "0.6.0"

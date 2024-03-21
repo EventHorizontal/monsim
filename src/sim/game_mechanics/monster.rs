@@ -1,48 +1,61 @@
 use core::{fmt::Debug, panic};
 use std::{
-    cell::Cell, fmt::{Display, Formatter}, ops::{Index, IndexMut}
+    cell::Cell, fmt::{Display, Formatter}, ops::{Deref, Index, IndexMut}
 };
 
-use monsim_utils::MaxSizedVec;
+use battle_builder_macro::returns;
+use monsim_utils::{MaxSizedVec, ModifyCell};
 
-use super::{AbilityData, MoveNumber, MoveSet, MoveUID, TeamUID };
+use super::TeamUID;
 
-use crate::sim::{event::OwnedEventHandlerDeck, Ability, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Move, Type};
+use crate::sim::{AbilityRef, EventHandlerDeck, MoveRef, Type};
 
 #[derive(Debug, Clone, Copy)]
-pub struct Monster<'a> {
-    monster_data: &'a Cell<MonsterData>,    
-    moveset: MaxSizedVec<Move<'a>, 4>,
-    ability: Ability<'a>,
+pub struct MonsterRef<'a> {
+    monster_data: &'a Monster,    
+    moveset: MaxSizedVec<MoveRef<'a>, 4>,
+    ability: AbilityRef<'a>,
 }
 
-impl<'a> PartialEq for Monster<'a> {
+impl<'a> PartialEq for MonsterRef<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.uid() == other.uid()
     }
 }
 
-impl<'a> Eq for Monster<'a> {}
+impl<'a> Eq for MonsterRef<'a> {}
 
-impl<'a> Monster<'a> {
-    pub(crate) fn new(monster: &Cell<MonsterData>, moveset: MaxSizedVec<Move<'a>, 4>, ability: Ability) -> Self {
+impl<'a> Deref for MonsterRef<'a> {
+    type Target = Monster;
+
+    fn deref(&self) -> &Self::Target {
+        self.monster_data
+    }
+}
+
+impl<'a> MonsterRef<'a> {
+    pub(crate) fn new(monster_data: &'a Monster, moveset: MaxSizedVec<MoveRef<'a>, 4>, ability: AbilityRef<'a>) -> Self {
         Self {
-            monster_data: monster,
+            monster_data,
             moveset,
             ability,
         }
     }
 
-    pub fn stat(&self, which_stat: Stat) -> u16 {
-        self.data().stats[which_stat]
-    }
-    
-    pub fn species(&self) -> MonsterSpecies {
-        self.data().species
+    pub(crate) fn data_ref(&self) -> &Monster {
+        self.monster_data
     }
 
-    pub fn full_name(&self) -> String {
-        let species_name = &self.species().name;
+    pub fn stat(&self, which_stat: Stat) -> u16 {
+        self.data_ref().stats.get()[which_stat]
+    }
+    
+    pub fn species(&self) -> &Cell<MonsterSpecies> {
+        &self.data_ref().species
+    }
+
+    pub  fn full_name(&self) -> String {
+        let species_name = self.species().get().name;
         if let Some(nickname) = self.nickname() {
             format!["{} the {}", nickname, species_name]
         } else {
@@ -50,36 +63,27 @@ impl<'a> Monster<'a> {
         }
     }
 
-    pub fn nickname(&self) -> Option<&str> {
-        self.data().nickname
+    pub fn nickname(&self) -> Option<&'static str> {
+        self.nickname.get()
     }
 
-    pub fn current_health(&self) -> u16 {
-        self.data().current_health
-    }
-
-    pub fn max_health(&self) -> u16 {
-        self.data().max_health
-    }
-
-    pub fn is_fainted(&self) -> bool {
-        self.data().is_fainted
+    pub fn name(&self) -> &'static str {
+        if let Some(nickname) = self.nickname() {
+            nickname
+        } else {
+            self.species().get().name
+        }
     }
 
     pub fn type_(&self) -> (Type, Option<Type>) {
-        let monster_species = self.data().species;
-        (monster_species.primary_type, monster_species.secondary_type)
-    }
-
-    pub fn is_type(&self, test_type_: Type) -> bool {
-        self.species().primary_type == test_type_ || self.species().secondary_type == Some(test_type_)
+        (self.primary_type.get(), self.secondary_type.get())
     }
     
-    pub fn ability(&self) -> Ability {
+    pub fn ability(&self) -> AbilityRef {
         self.ability
     }
 
-    pub fn moveset(&self) -> MaxSizedVec<Move, 4> {
+    pub fn moveset(&self) -> MaxSizedVec<MoveRef, 4> {
         self.moveset
     }
 
@@ -87,12 +91,8 @@ impl<'a> Monster<'a> {
         self.uid().team_uid
     }
     
-    pub(crate) fn data(&self) -> MonsterData {
-        self.monster_data.get()
-    }
-
     pub(crate) fn uid(&self) -> MonsterUID {
-        self.data().uid
+        self.uid
     }
 
     pub(crate) fn is(&self, monster_uid: MonsterUID) -> bool {
@@ -103,24 +103,34 @@ impl<'a> Monster<'a> {
         let mut out = String::new();
         out.push_str(&format![
             "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.uid(), self.current_health(), self.max_health()
+            self.full_name(), self.uid(), self.current_health.get(), self.max_health.get()
         ]);
         out
-    } 
+    }
+    
+    /// Returns the actual remaining HP of the monster
+    #[must_use]
+    pub(crate) fn decrease_hp(&self, damage: u16) -> returns!(remaining_hp: u16) {
+        self.current_health.modify_and_return(|current_health| {
+            *current_health = current_health.saturating_sub(damage);
+        })
+    }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct MonsterData {
+#[derive(Debug, Clone, Default)]
+pub(crate) struct Monster {
     pub uid: MonsterUID,
-    nickname: Option<&'static str>,
-    pub level: u16,
-    pub max_health: u16,
-    pub nature: MonsterNature,
-    pub stats: StatSet,
-    pub stat_modifiers: StatModifierSet,
-    pub is_fainted: bool,
-    pub current_health: u16,
-    pub species: MonsterSpecies,
+    nickname: Cell<Option<&'static str>>,
+    pub level: Cell<u16>,
+    pub primary_type: Cell<Type>,
+    pub secondary_type: Cell<Option<Type>>,
+    pub nature: Cell<MonsterNature>,
+    pub stats: Cell<StatSet>,
+    pub stat_modifiers: Cell<StatModifierSet>,
+    pub is_fainted: Cell<bool>,
+    pub current_health: Cell<u16>,
+    pub max_health: Cell<u16>,
+    pub species: Cell<MonsterSpecies>,
 }
 
 
@@ -213,7 +223,7 @@ const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Normal,
     secondary_type: None,
     base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handler_deck: EventHandlerDeck::default(),
+    event_handler_deck: EventHandlerDeck::const_default(),
 };
 
 impl Default for MonsterSpecies {
@@ -223,7 +233,7 @@ impl Default for MonsterSpecies {
 }
 
 impl MonsterSpecies {
-    pub const fn default() -> Self {
+    pub const fn const_default() -> Self {
         MONSTER_DEFAULTS
     }
 }
@@ -272,16 +282,20 @@ impl MonsterSpecies {
 //     }
 // }
 
-impl PartialEq for MonsterData {
+impl PartialEq for Monster {
     fn eq(&self, other: &Self) -> bool {
         self.uid == other.uid 
     }
 }
 
-impl Eq for MonsterData {}
+impl Eq for Monster {}
 
-impl MonsterData {
-    pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: AbilityData) -> Self {
+impl Monster {
+    pub fn new(
+        uid: MonsterUID, 
+        species: MonsterSpecies, 
+        nickname: Option<&'static str>, 
+    ) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
@@ -300,46 +314,57 @@ impl MonsterData {
             out
         };
         
-        MonsterData {
+        Monster {
             uid,
-            nickname,
-            level,
-            max_health: health_stat,
-            nature,
-            current_health: health_stat,
-            is_fainted: false,
-            species,
-            stats: StatSet {
+            nickname: Cell::new(nickname),
+            level: Cell::new(level),
+            max_health: Cell::new(health_stat),
+            nature: Cell::new(nature),
+            current_health: Cell::new(health_stat),
+            is_fainted: Cell::new(false),
+            species: Cell::new(species),
+            stats: Cell::new(StatSet {
                 hp: health_stat,
                 att: get_non_hp_stat(Stat::PhysicalAttack),
                 def: get_non_hp_stat(Stat::PhysicalDefense),
                 spa: get_non_hp_stat(Stat::SpecialAttack),
                 spd: get_non_hp_stat(Stat::SpecialDefense),
                 spe: get_non_hp_stat(Stat::Speed),
-            },
-            stat_modifiers: StatModifierSet {
+            }),
+            stat_modifiers: Cell::new(StatModifierSet {
                 att: 0,
                 def: 0,
                 spa: 0,
                 spd: 0,
                 spe: 0,
-            },
+            }),
+            primary_type: Cell::new(species.primary_type),
+            secondary_type: Cell::new(species.secondary_type),
         }
     }
 
-    pub(crate) const fn placeholder() -> Self {
-        Self {
-            uid: ALLY_1,
-            nickname: None,
-            level: 0,
-            max_health: 0,
-            nature: MonsterNature::Serious,
-            stats: StatSet::new(0, 0, 0, 0, 0, 0),
-            stat_modifiers: StatModifierSet::new(0, 0, 0, 0, 0),
-            is_fainted: false,
-            current_health: 0,
-            species: MonsterSpecies::default(),
-        }
+    pub fn is_type(&self, test_type_: Type) -> bool {
+        self.species.get().primary_type == test_type_ || self.species.get().secondary_type == Some(test_type_)
+    }
+
+    pub fn raise_stat(&self, stat: Stat, number_of_stages: u8) -> u8 {
+        let mut effective_stages = 0;
+        self.stat_modifiers.modify(|stat_modifiers| { 
+            effective_stages = stat_modifiers.raise_stat(stat, number_of_stages);
+        });
+        effective_stages
+    } 
+    
+    pub fn lower_stat(&self, stat: Stat, number_of_stages: u8) -> u8 {
+        let mut effective_stages = 0;
+        self.stat_modifiers.modify(|stat_modifiers| { 
+            effective_stages = stat_modifiers.lower_stat(stat, number_of_stages);
+        });
+        effective_stages
+    } 
+
+    pub fn event_handler_deck(&self) -> EventHandlerDeck {
+        self.species.get().event_handler_deck
     }
 }
 

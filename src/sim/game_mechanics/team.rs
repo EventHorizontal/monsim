@@ -1,8 +1,8 @@
 use std::{cell::Cell, fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 
-use crate::sim::{Monster, MonsterNumber};
-use super::{MonsterData, MonsterUID, MoveNumber};
+use crate::sim::{MonsterRef, MonsterNumber};
+use super::{Monster, MonsterUID, MoveNumber};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
@@ -10,11 +10,11 @@ const MAX_BATTLERS_PER_TEAM: usize = 6;
 pub struct MonsterTeam<'a> {
     id: TeamUID,
     active_monster: &'a Cell<MonsterUID>,
-    monsters: MaxSizedVec<Monster<'a>, 6>
+    monsters: MaxSizedVec<MonsterRef<'a>, 6>
 }
 
 impl<'a> MonsterTeam<'a> {
-    pub fn new(active_monster: &Cell<MonsterUID>, monsters: MaxSizedVec<Monster, 6>, id: TeamUID) -> Self {
+    pub fn new(active_monster: &'a Cell<MonsterUID>, monsters: MaxSizedVec<MonsterRef<'a>, 6>, id: TeamUID) -> Self {
         let number_of_monsters = monsters.len();
         assert!(not!(monsters.is_empty()), "Expected at least 1 monster but none were given.");
         assert!(number_of_monsters <= MAX_BATTLERS_PER_TEAM, "Expected at most 6 monsters but {number_of_monsters} were given.");
@@ -26,21 +26,21 @@ impl<'a> MonsterTeam<'a> {
         }
     }
 
-    pub fn monsters(&self) -> &MaxSizedVec<Monster, 6> {
+    pub fn monsters(&'a self) -> &MaxSizedVec<MonsterRef, 6> {
         &self.monsters
     }
 
-    pub fn active_monster(&self) -> Monster {
+    pub fn active_monster(&self) -> MonsterRef {
         *self.monsters.iter()
             .find(|monster| { monster.is(self.active_monster.get()) })
             .expect("Expected the active monster to be a valid Monster within the team.")
     }
 
-    pub fn set_active_monster(&self, to_which_monster: &Cell<MonsterData>) {
-        self.active_monster.set(to_which_monster.get().uid)
+    pub fn set_active_monster(&self, to_which_monster: MonsterRef) {
+        self.active_monster.set(to_which_monster.uid)
     }
 
-    pub(crate) fn team_status_string(&self) -> String {
+    pub(crate) fn status_string(&'a self) -> String {
         let mut out = String::new();
         for monster in self.monsters().clone().into_iter() {
             out.push_str(&monster.status_string());
@@ -155,11 +155,11 @@ impl<T: Clone> PerTeam<T> {
         [(*self.ally_team_item).clone(), (*self.opponent_team_item).clone()]
     }
 
-    pub fn map<U: Clone, F>(self, f: F) -> PerTeam<U>
+    pub fn map<U: Clone, F>(&self, f: F) -> PerTeam<U>
     where
         F: Fn(T) -> U,
     {
-        PerTeam::new(self.ally_team_item.map(&f), self.opponent_team_item.map(f))
+        PerTeam::new(self.ally_team_item.clone().map(&f), self.opponent_team_item.clone().map(f))
     }
 }
 

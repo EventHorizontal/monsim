@@ -1,15 +1,19 @@
 
-pub mod tui;
+// pub mod tui;
 pub mod cli;
 #[cfg(feature = "debug")]
 pub mod debug;
 pub mod sim;
 mod test;
 
-use tui::TuiResult;
+use std::error::Error;
+
+// use tui::TuiResult;
 use monsim_utils::Nothing;
 use sim::Battle;
 
-pub fn run(battle: Battle) -> TuiResult<Nothing> {
+pub(crate) type MonsimResult<T> = Result<T, Box<dyn Error>>;
+
+pub fn run(battle: Battle) -> MonsimResult<Nothing> {
     cli::run(battle)
 }

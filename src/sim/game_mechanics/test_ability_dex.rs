@@ -12,50 +12,53 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
     event_handler_deck: EventHandlerDeck {
-        on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { attacker: attacker_uid, move_uid, target: target_uid}, _relay| {
-                            let current_move = battle.move_(move_uid);
-                            let is_current_move_fire_type = (current_move.species.type_ == Type::Fire);
-                            if is_current_move_fire_type {
-                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
-                                return not!(activation_succeeded);
-                            }
-                Outcome::Success
+        on_try_move: Some(|battle, MoveUsed { attacker, move_, target }, _relay| {
+                // If the move is fire type, we activate the ability. If the ability activation succeeds, then the move fails.
+                if move_.is_type(Type::Fire) {
+                    let ability_succeeded = Effect::activate_ability(battle, target);
+                    let move_succeeded = not!(ability_succeeded);
+                    move_succeeded
+                } else {
+                    // If the move is _not_ fire type, the move always succeeds.
+                    Outcome::Success
+                }
             },
-            #[cfg(feature = "debug")]
-            debugging_information: source_code_location!(),
-        }),
-        ..EventHandlerDeck::default()
+        ),
+        ..EventHandlerDeck::const_default()
     },
-    on_activate: |battle, owner_uid| {
-        let owner_name = battle.monster(owner_uid).get().name();
-        battle.message_log.push(format!["{owner_name}'s Flash Fire activated!"]);
+    on_activate: |battle, owner| {
+        battle.message_log.push(format![
+            "{owner_name}'s Flash Fire activated!",
+            owner_name = owner.name()
+        ]);
     },
-    ..AbilitySpecies::default()
+    ..AbilitySpecies::const_default()
 };
 
 pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     dex_number: 002,
     name: "Water Absorb",
     event_handler_deck: EventHandlerDeck {
-        on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { attacker: attacker_uid, move_uid, target: target_uid}, _relay| {
-                            let current_move = battle.move_(move_uid);
-                            let is_current_move_fire_type = (current_move.species.type_ == Type::Water);
-                            if is_current_move_fire_type {
-                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
-                                return not!(activation_succeeded);
-                            }
-                Outcome::Success
+        on_try_move: Some(|battle, MoveUsed { attacker, move_, target }, _relay| {
+                // If the move is water type, we activate the ability. If the ability activation succeeds, then the move fails.
+                if move_.is_type(Type::Water) {
+                    let ability_succeeded = Effect::activate_ability(battle, target);
+                    let move_succeeded = not!(ability_succeeded);
+                    move_succeeded
+                } else {
+                    // If the move is _not_ water type, the move always succeeds.
+                    Outcome::Success
+                }
             },
-            #[cfg(feature = "debug")]
-            debugging_information: source_code_location!(),
-        }),
-        ..EventHandlerDeck::default()
+        ),
+        ..EventHandlerDeck::const_default()
     },
-    on_activate: |battle, owner_uid| {
-        let owner_name = battle.monster(owner_uid).get().name();
-        battle.message_log.push(format!["{owner_name}'s Water Absorb activated!"]);
+    on_activate: |battle, owner| {
+        battle.message_log.push(format![
+            "{owner_name}'s Water Absorb activated!",
+            owner_name = owner.name()
+        ]);
     },
-    ..AbilitySpecies::default()
+    ..AbilitySpecies::const_default()
 };
+

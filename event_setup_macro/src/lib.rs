@@ -1,12 +1,13 @@
+use convert_case::{Case::Pascal, Casing};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
-use quote::quote;
-use syn::{braced, parse::{Parse, ParseStream}, parse_macro_input, Attribute, ExprMatch, ExprTuple, Pat, Token};
+use quote::{quote, ToTokens};
+use syn::{braced, parse::{Parse, ParseStream}, parse_macro_input, Attribute, ExprMatch, ExprTuple, Generics, Pat, Token, Type, TypePath};
 
-/// Generates the struct `EventResponder`, the default constant and the `InBattleEvent` trait plus implementations for each event, when given a list of event identifiers.
+/// Generates the struct `CollectionType`, the default constant and the `TraitName` trait plus implementations for each event, when given a list of event identifiers.
 /// The syntax for this is as follows
 /// ```
-/// pub struct EventResponder {
+/// pub struct <CollectionType> {
 /// match event {
 ///         /// Possible documentation for event_1
 ///         #[context(<ContextType>)]
@@ -17,32 +18,32 @@ use syn::{braced, parse::{Parse, ParseStream}, parse_macro_input, Attribute, Exp
 ///         event_name_n => <EventReturnType>,
 ///     }
 /// }
-/// pub const DEFAULT_RESPONDER;
-/// pub trait InBattleEvent;  
+/// pub const CONSTANT_NAME;
+/// pub trait TraitName;  
 /// ```
 #[proc_macro]
 pub fn event_setup(input: TokenStream) -> TokenStream {
     
     let event_handler_type = quote!(EventHandler);
     
-    let expr_ehd: ExprEventHandlerDeck = parse_macro_input!(input);
-    
-    let doc_comment = expr_ehd.doc_comment;
-    let first_pub_keyword = expr_ehd.first_pub_keyword;
-    let struct_keyword = expr_ehd.struct_keyword;
-    let struct_name = expr_ehd.struct_name;
-    let match_expr = expr_ehd.match_expr;
-    let const_keyword = expr_ehd.const_keyword;
-    let default_handler_constant_name = expr_ehd.default_handler_constant_name;
-    let default_handler_value = expr_ehd.default_handler_value;
-    let second_pub_keyword = expr_ehd.second_pub_keyword;
-    let trait_keyword = expr_ehd.trait_keyword;
-    let trait_name = expr_ehd.trait_name;
+    let ExprEventHandlerDeck { 
+        doc_comment, 
+        first_pub_keyword, 
+        struct_keyword, 
+        struct_name, 
+        maybe_lifetime_annotation, 
+        match_expr, 
+        const_keyword, 
+        default_handler_constant_name, 
+        default_handler_value, 
+        second_pub_keyword, 
+        trait_keyword, 
+        trait_name 
+    }: ExprEventHandlerDeck = parse_macro_input!(input);
 
-    let mut fields = quote!();
+    let mut fields_for_struct = quote!();
     let mut fields_for_constant = quote!();
     let mut events = quote!();
-    let mut macro_fields = quote!();
 
     for expression in match_expr.arms {
         let mut comments = quote!();
@@ -55,15 +56,16 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
                     #attr
                 );
             } else if attribute_name == "context" {
-                let type_token = attr.parse_args::<ExprTuple>();
-                match type_token {
-                    Ok(type_token) => maybe_context_type = Some(quote!(#type_token)),
+                let expr_tuple_result = attr.parse_args::<ExprTuple>();
+                match expr_tuple_result {
+                    Ok(expr_tuple) => { maybe_context_type = Some(quote!(#expr_tuple))},
                     Err(_) => {
-                        let type_token = attr.parse_args::<Ident>().expect("Context must be a type or `None`");
-                        if type_token.to_string() == "None" {
-                            maybe_context_type = Some(quote!(()));
-                        } else {
-                            maybe_context_type = Some(quote!(#type_token));
+                        let type_parse_result = attr.parse_args::<Type>();
+                        match type_parse_result {
+                            Ok(type_ident) => {
+                                maybe_context_type = Some(quote!(#type_ident))
+                            },
+                            Err(_) => panic!("The context must be a valid type."),
                         }
                     },
                 }
@@ -71,7 +73,7 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
                 panic!("Only doc comment and `context` attributes are allowed in this macro.")
             }
         }
-        let context_type = match maybe_context_type {
+        let event_context_type = match maybe_context_type {
             Some(tokens) => tokens,
             None => panic!("A context must be specified for each field."),
         };
@@ -82,16 +84,17 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
             Pat::Ident( ref pat_ident) => pat_ident.clone(),
             _ => panic!("Error: Expected handler_ident to be an identifier."),
         };
-        let trait_name_string_in_pascal_case = to_pascal_case(pat_ident.clone().ident.to_string());
-        let event_trait_literal = Literal::string(&trait_name_string_in_pascal_case);
-        let event_name_ident_in_pascal_case = Ident::new(
+        
+        let trait_name_string_in_pascal_case = pat_ident.clone().ident.to_string().to_case(Pascal);
+        let trait_name_as_string_literal = Literal::string(&trait_name_string_in_pascal_case);
+        let pascal_case_event_ident = Ident::new(
             &trait_name_string_in_pascal_case,
             pat_ident.ident.span(),
         );
-            fields = quote!( 
-                #fields
+            fields_for_struct = quote!( 
+                #fields_for_struct
                 #comments
-                pub #handler_ident: Option<#event_handler_type<#handler_return_type, #context_type>>,
+                pub #handler_ident: Option<for<'b> fn(&'b mut Battle<'b>, #event_context_type<'b>, #handler_return_type) -> #handler_return_type>,
             );
             fields_for_constant = quote!(
                 #fields_for_constant
@@ -101,57 +104,45 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
                 #events
 
                 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-                pub struct #event_name_ident_in_pascal_case;
+                pub struct #pascal_case_event_ident;
 
-                impl #trait_name for #event_name_ident_in_pascal_case {
+                impl<'a> #trait_name<'a> for #pascal_case_event_ident {
                     type EventReturnType = #handler_return_type;
-                    type ContextType = #context_type;
-                    fn corresponding_handler(&self, event_handler_deck: &#struct_name) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>> {
+                    type EventContext = #event_context_type<'a>;
+                    fn corresponding_handler(&self, event_handler_deck: &#struct_name) -> Option<for<'b> fn(&'b mut Battle<'b>, #event_context_type<'b>, #handler_return_type) -> #handler_return_type> {
                         event_handler_deck.#handler_ident
                     }
         
                     fn name(&self) -> &'static str {
-                        #event_trait_literal
+                        #trait_name_as_string_literal
                     }
                 }
             );
-
-            macro_fields = quote!(
-                #macro_fields
-                (stringify![#event_name_ident_in_pascal_case]) => { #handler_ident }
-            )
     }
+
+    let maybe_lifetime_annotation = maybe_lifetime_annotation.map_or(quote!(), |lifetime_annotation| {quote!(#lifetime_annotation)});
 
     let output_token_stream = quote!(
         #doc_comment
         #[derive(Debug, Clone, Copy)]
         #first_pub_keyword #struct_keyword #struct_name {
-            #fields
+            #fields_for_struct
         }
 
         #const_keyword #default_handler_constant_name: #struct_name = #struct_name {
             #fields_for_constant
         };
 
-        #second_pub_keyword #trait_keyword #trait_name: Clone + Copy {
+        #second_pub_keyword #trait_keyword #trait_name<'a>: Clone + Copy {
             type EventReturnType: Sized + Clone + Copy;
-            type ContextType: Sized + Clone + Copy;
+            type EventContext: Sized + Clone + Copy;
 
             fn corresponding_handler(
                 &self,
                 event_handler_deck: &#struct_name,
-            ) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>>;
+            ) -> Option<for<'b> fn(&'b mut Battle<'b>, Self::EventContext, Self::EventReturnType) -> Self::EventReturnType>;
 
             fn name(&self) -> &'static str;
-        }
-
-        #[macro_export]
-        macro_rules! corresponding_handler {
-            ($x: expr) => {
-                match stringify![$x] {
-                    #macro_fields
-                }
-            }            
         }
 
         pub mod event_dex {
@@ -163,33 +154,18 @@ pub fn event_setup(input: TokenStream) -> TokenStream {
     output_token_stream.into()
 }
 
-fn to_pascal_case(input_string: String) -> String {
-    let mut output_string = String::new();
-    let mut previous_char = None;
-    for char in input_string.chars() {
-        if let Some(previous_char) = previous_char {
-            if previous_char == '_' {
-                output_string.push(char.to_ascii_uppercase());
-            } else {
-                output_string.push(char);
-            }
-        } else {
-            output_string.push(char.to_ascii_uppercase());
-        }
-        previous_char = Some(char);
-    }
-    output_string.replace("_", "")
-}
-
 struct ExprEventHandlerDeck {
     doc_comment: Attribute,
     first_pub_keyword: Token![pub],
     struct_keyword: Token![struct],
     struct_name: Ident,
+    maybe_lifetime_annotation: Option<Generics>,
     match_expr: ExprMatch,
+    
     const_keyword: Token![const],
     default_handler_constant_name: Ident,
     default_handler_value: Ident,
+    
     second_pub_keyword: Token![pub],
     trait_keyword: Token![trait],
     trait_name: Ident,
@@ -201,6 +177,7 @@ impl Parse for ExprEventHandlerDeck {
         let first_pub_keyword: Token![pub] = input.parse()?;
         let struct_keyword: Token![struct] = input.parse()?;
         let struct_name: Ident = input.parse()?;
+        let maybe_lifetime_annotation: Option<Generics> = input.parse().ok();
         let content;
          _ = braced!(content in input);
         let match_expr: ExprMatch = content.parse()?;
@@ -219,14 +196,21 @@ impl Parse for ExprEventHandlerDeck {
                 first_pub_keyword,
                 struct_keyword,
                 struct_name,
+                maybe_lifetime_annotation,
                 match_expr,
-                default_handler_constant_name,
+                
                 const_keyword,
                 default_handler_value,
+                default_handler_constant_name,
+                
                 second_pub_keyword,
                 trait_keyword,
                 trait_name,
             }
         )
     }
+}
+
+struct ExprContext {
+    context_type: TokenStream
 }

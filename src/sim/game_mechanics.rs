@@ -14,7 +14,7 @@ pub use monster::*;
 pub use move_::*;
 pub use team::*;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub enum Type {
     Bug,
     Dark,
@@ -28,6 +28,7 @@ pub enum Type {
     Grass,
     Ground,
     Ice,
+    #[default]
     Normal,
     Poison,
     Psychic,

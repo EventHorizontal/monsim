@@ -3,7 +3,7 @@ mod syntax;
 use syntax::{ExprBattle, ExprMonsterTeam, GameMechanicType, path_to_ident};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::parse_macro_input;
+use syn::{parse_macro_input, ExprType};
 
 /// This macro parses the following custom syntax:
 /// ```
@@ -118,5 +118,12 @@ fn monster_team_to_tokens<'a>(
     }
 
     quote!(vec![#comma_separated_monsters])
+}
+
+#[proc_macro]
+pub fn returns(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as ExprType);
+    let type_ = input.ty;
+    quote!(#type_).into()
 }
 

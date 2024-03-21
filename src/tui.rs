@@ -7,7 +7,7 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{MaxSizedVec, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};
+use crate::sim::{Battle, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};
 
 pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 
@@ -15,7 +15,7 @@ pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 #[allow(clippy::large_enum_variant)]
 enum AppState {
     AcceptingInput(InputMode),
-    Simulating(PerTeam<FullySpecifiedChoice>),
+    Simulating(PerTeam<FullySpecifiedChoice<'a>>),
     Terminating,
 }
 
@@ -33,7 +33,7 @@ pub enum InputMode {
     MidBattle(AvailableChoices),
     SwitcheePrompt {
         is_between_turn_switch: bool,
-        switcher_uid: MonsterUID,
+        active_monster: MonsterUID,
         possible_switchee_uids: Vec<MonsterUID>,
         highlight_cursor: usize,
     },
@@ -109,8 +109,8 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
                     // FIXME: We cannot handle multiple simultaneous fainted battlers with this logic
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::SwitcheePrompt { 
                         is_between_turn_switch: true,
-                        switcher_uid: fainted_battler.get().uid,
-                        possible_switchee_uids: battle.valid_switchees_by_uid(fainted_battler.get().uid.team_uid).clone(),
+                        active_monster: fainted_battler.get().uid,
+                        possible_switchee_uids: battle.switchable_benched_monsters(fainted_battler.get().uid.team_uid).clone(),
                         highlight_cursor: 0 
                     })));
                 } else {
@@ -153,15 +153,15 @@ fn update_from_input(
                         let available_choices_for_team = available_choices[team_uid];
                         let selected_choice = available_choices_for_team.get_by_index(selected_menu_item_index);
                         match selected_choice {
-                            PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => {
-                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { move_uid, target_uid })
+                            PartiallySpecifiedChoice::Move { move_: move_uid, target: target_uid, .. } => {
+                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { move_: move_uid, target: target_uid })
                             },
-                            PartiallySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: possible_switchee_uids, .. } => {
-                                // Update the switchee list when the switch option is selected.
+                            PartiallySpecifiedChoice::SwitchOut { active_monster: active_monster, switchable_benched_monsters: candidate_benched_monsters, .. } => {
+                                // Update the benched_monster list when the switch option is selected.
                                 return Some(AppState::AcceptingInput(InputMode::SwitcheePrompt {
                                     is_between_turn_switch: false,
-                                    switcher_uid,
-                                    possible_switchee_uids,
+                                    active_monster,
+                                    possible_switchee_uids: candidate_benched_monsters,
                                     highlight_cursor: 0,
                                 }));
                             },
@@ -189,7 +189,7 @@ fn update_from_input(
             }
         },
 
-        InputMode::SwitcheePrompt { is_between_turn_switch, switcher_uid, possible_switchee_uids, highlight_cursor} => {
+        InputMode::SwitcheePrompt { is_between_turn_switch, active_monster, possible_switchee_uids, highlight_cursor} => {
             match pressed_key {
                 KeyCode::Esc => {
                     Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
@@ -206,19 +206,19 @@ fn update_from_input(
                     None 
                 },
                 KeyCode::Enter => {
-                    let switchee_uid = possible_switchee_uids[*highlight_cursor];
+                    let benched_monster = possible_switchee_uids[*highlight_cursor];
                     // HACK: cleaner/more systematic way to do this?
                     if *is_between_turn_switch {
-                        let _ = BattleSimulator::switch_out_between_turns(battle, *switcher_uid, switchee_uid);
-                        ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid);
+                        let _ = BattleSimulator::switch_out_between_turns(battle, *active_monster, benched_monster);
+                        ui.clear_choice_menu_selection_for_team(active_monster.team_uid);
                         // HACK: This fixes the issue of targetting the previous fainted foe until we have a more robust targetting system
-                        ui.clear_choice_menu_selection_for_team(switcher_uid.team_uid.other());
+                        ui.clear_choice_menu_selection_for_team(active_monster.team_uid.other());
                         ui.update_team_status_panels(battle);
                         ui.update_message_log(battle.message_log.len());
 
                         *choices_for_turn = PerTeam::both(None);
                     } else {
-                        choices_for_turn[switcher_uid.team_uid] = Some(FullySpecifiedChoice::SwitchOut { switcher_uid: *switcher_uid, candidate_switchee_uids: switchee_uid });
+                        choices_for_turn[active_monster.team_uid] = Some(FullySpecifiedChoice::SwitchOut { active_monster: *active_monster, benched_monster: benched_monster });
                     }
                     Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
                 }

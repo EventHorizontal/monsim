@@ -3,7 +3,6 @@ pub mod battle;
 pub mod battle_constants;
 pub mod choice;
 pub mod game_mechanics;
-pub mod prng;
 
 mod event;
 mod ordering;
@@ -20,11 +19,8 @@ pub use event::{
 };
 pub use game_mechanics::*;
 pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent, Ally, Opponent};
-pub(crate) use utils::{not, NOTHING, Nothing}; // For internal use
-
-use prng::Prng;
-
-type TurnResult = Result<(), SimError>;
+pub(crate) use utils::{not, NOTHING, Nothing};
+type SimResult = Result<(), SimError>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
@@ -59,7 +55,7 @@ pub struct BattleSimulator;
 
 impl BattleSimulator {
 
-    pub fn simulate_turn(battle: &mut Battle, choices: PerTeam<FullySpecifiedChoice>) -> TurnResult {
+    pub fn simulate_turn(battle: &mut Battle, choices: PerTeam<FullySpecifiedChoice>) -> SimResult {
         
         assert!(not!(battle.is_finished), "The simulator cannot be called on a finished battle.");
 
@@ -81,23 +77,23 @@ impl BattleSimulator {
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
-                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, move_uid, target_uid),
-                    MoveCategory::Status => Action::use_status_move(battle, move_uid, target_uid),
+                FullySpecifiedChoice::Move { attacker, move_, target } => match move_.category.get() {
+                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, attacker, move_, target),
+                    MoveCategory::Status => Action::use_status_move(battle, attacker, move_, target),
                 },
-                FullySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: switchee_uid } => {
-                    Action::perform_switch_out(battle, switcher_uid, switchee_uid)
+                FullySpecifiedChoice::SwitchOut { active_monster, benched_monster } => {
+                    Action::perform_switch_out(battle, active_monster, benched_monster)
                 }
             }?;
 
             // Check if a Monster fainted this turn
             let maybe_fainted_active_monster = battle.monsters()
-                .find(|monster| monster.get().is_fainted && battle.is_active_monster(monster.get().uid));
+                .find(|monster| monster.is_fainted.get() && battle.is_active_monster(*monster));
             
             if let Some(fainted_active_monster) = maybe_fainted_active_monster {
                 
                 battle.message_log.extend(&[
-                    &format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.get().name()], 
+                    &format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.name()], 
                     EMPTY_LINE
                 ]);
                 
@@ -105,11 +101,11 @@ impl BattleSimulator {
                 let are_all_ally_team_monsters_fainted = battle.ally_team()
                     .monsters()
                     .iter()
-                    .all(|monster| { monster.get().is_fainted });
+                    .all(|monster| { monster.is_fainted.get() });
                 let are_all_opponent_team_monsters_fainted = battle.opponent_team()
                     .monsters()
                     .iter()
-                    .all(|monster| { monster.get().is_fainted });
+                    .all(|monster| { monster.is_fainted.get() });
                 
                 if are_all_ally_team_monsters_fainted {
                     battle.is_finished = true;
@@ -142,7 +138,7 @@ impl BattleSimulator {
         }
     }
 
-    pub(crate) fn switch_out_between_turns(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
-        Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)
+    pub(crate) fn switch_out_between_turns(battle: &Battle, active_monster: MonsterRef, benched_monster: MonsterRef) -> SimResult {
+        Action::perform_switch_out(battle, active_monster, benched_monster)
     }
 }

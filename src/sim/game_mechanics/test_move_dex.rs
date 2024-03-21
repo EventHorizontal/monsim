@@ -5,7 +5,7 @@ use super::{
     Type,
 };
 use crate::sim::{
-    Effect, event::EventFilteringOptions, Battle, MonsterUID, MoveData, Stat
+    event::EventFilteringOptions, Battle, Effect, MonsterRef, MonsterUID, Move, Stat
 };
 
 pub const Tackle: MoveSpecies = MoveSpecies {
@@ -55,8 +55,8 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    on_activate: Some(|battle: &mut Battle, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
-        _ = Effect::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
+    on_activate: Some(|battle: &mut Battle, attacker: MonsterRef, target: MonsterRef| {
+        _ = Effect::lower_stat(battle, target, Stat::PhysicalAttack, 1);
     }),
     ..MoveSpecies::default()
 };

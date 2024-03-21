@@ -1,43 +1,35 @@
 use crate::sim::{
-    event::{EventFilteringOptions, EventHandlerDeck}, Battle, MonsterUID, MoveUID, Type, ALLY_5
+    event::{EventFilteringOptions, EventHandlerDeck}, Battle, MonsterRef, MoveUID, Type
 };
 use core::fmt::Debug;
-use std::{cell::Cell, ops::Index};
-use monsim_utils::{not, MaxSizedVec};
+use std::{cell::Cell, ops::Deref};
 
 #[derive(Debug, Clone, Copy)]
-pub struct Move<'a> {
-    uid: MoveUID,
-    move_data: &'a Cell<MoveData>
+pub struct MoveRef<'a> {
+    move_data: &'a Move
 }
 
-impl<'a> PartialEq for Move<'a> {
+impl<'a> PartialEq for MoveRef<'a> {
     fn eq(&self, other: &Self) -> bool {
-        self.uid() == other.uid()
+        self.uid == other.uid
     }
 }
 
-impl<'a> Eq for Move<'a> {}
+impl<'a> Eq for MoveRef<'a> {}
 
+impl<'a> Deref for MoveRef<'a> {
+    type Target = Move;
 
-impl<'a> Move<'a> {
-    pub(crate) fn new(uid: MoveUID, data: &Cell<MoveData>) -> Self {
+    fn deref(&self) -> &Self::Target {
+        self.move_data
+    }
+}
+
+impl<'a> MoveRef<'a> {
+    pub(crate) fn new(move_data: &'a Move) -> Self {
         Self {
-            uid,
-            move_data: data,
+            move_data,
         }
-    }
-    
-    pub fn species(&self) -> MoveSpecies {
-        self.data_copy().species
-    }
-    
-    pub(crate) fn data_copy(&self) -> MoveData {
-        self.move_data.get()
-    }
-
-    pub(crate) fn uid(&self) -> MoveUID {
-        self.data_copy().uid
     }
 }
 
@@ -49,11 +41,55 @@ pub struct MoveSpecies {
     pub category: MoveCategory,
     pub base_power: u16,
     pub base_accuracy: u16,
-    pub priority: u16,
+    pub priority: i8,
     pub event_handler_deck: EventHandlerDeck,
     pub event_handler_deck_filtering_options: EventFilteringOptions,
     /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
-    pub on_activate: Option<fn(&mut Battle, MonsterUID, MonsterUID)>,
+    pub on_activate: Option<for<'a> fn(&'a mut Battle, MonsterRef<'a>, MonsterRef<'a>)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Move {
+    pub(crate) uid: MoveUID,
+    pub type_: Cell<Type>,
+    pub base_power: Cell<u16>,
+    pub category: Cell<MoveCategory>,
+    pub base_accuracy: Cell<u16>,
+    pub priority: Cell<i8>,
+    species: Cell<MoveSpecies>,
+}
+
+impl Move {
+    pub(crate) fn new(uid: MoveUID, species: MoveSpecies) -> Self {
+        Move { 
+            uid,
+            species: Cell::new(species),
+            type_: Cell::new(species.type_),
+            base_power: Cell::new(species.base_power),
+            category: Cell::new(species.category),
+            priority: Cell::new(species.priority),
+            base_accuracy: Cell::new(species.base_accuracy), 
+        }
+    }
+
+    pub(crate) fn on_activate(&self, battle: &mut Battle, owner: MonsterRef, target: MonsterRef) {
+        let on_activate_logic = self.species.get().on_activate;
+        if let Some(on_activate_logic) = on_activate_logic {
+            on_activate_logic(battle, owner, target);
+        }
+    }
+
+    pub fn name(&self) -> &'static str {
+        self.species.get().name
+    }
+    
+    pub fn is_type(&self, type_: Type) -> bool {
+        self.species.get().type_ == type_
+    }
+
+    pub fn event_handler_deck(&self) -> EventHandlerDeck {
+        self.species.get().event_handler_deck
+    }
 }
 
 const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
@@ -64,7 +100,7 @@ const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     base_power: 50,
     base_accuracy: 100,
     priority: 0,
-    event_handler_deck: EventHandlerDeck::default(),
+    event_handler_deck: EventHandlerDeck::const_default(),
     event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
@@ -100,104 +136,14 @@ impl MoveSpecies {
 impl Eq for MoveSpecies {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct MoveData {
-    pub uid: MoveUID,
-    pub species: MoveSpecies,
-}
-
-impl MoveData {
-    pub(crate) fn new(uid: MoveUID, species: MoveSpecies) -> Self {
-        MoveData { 
-            uid,
-            species, 
-        }
-    }
-
-    pub fn category(&self) -> MoveCategory {
-        self.species.category
-    }
-
-    pub fn base_power(&self) -> u16 {
-        self.species.base_power
-    }
-
-    pub fn base_accuracy(&self) -> u16 {
-        self.species.base_accuracy
-    }
-
-    pub(crate) fn on_activate(&self, battle: &mut Battle, owner_uid: MonsterUID, target_uid: MonsterUID) {
-        let on_activate_logic = self.species.on_activate;
-        if let Some(on_activate_logic) = on_activate_logic {
-            on_activate_logic(battle, owner_uid, target_uid);
-        }
-    }
-    
-    pub fn is_type(&self, type_: Type) -> bool {
-        self.species.type_ == type_
-    }
-    
-    const fn placeholder() -> Self {
-        Self {
-            uid: MoveUID { owner_uid: ALLY_5, move_number: MoveNumber::_4 },
-            species: MoveSpecies::default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MoveCategory {
+    #[default]
     Physical,
     Special,
     Status,
 }
 
 const MAX_MOVES_PER_MOVESET: usize = 4;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct MoveSet {
-    moves: MaxSizedVec<MoveData, 4>,
-}
-
-impl Index<usize> for MoveSet {
-    type Output = MoveData;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        assert!(
-            index < MAX_MOVES_PER_MOVESET,
-            "MoveSet can only be indexed with 0-3. The index passed was {}",
-            index
-        );
-        &self.moves[index]
-    }
-}
-
-impl MoveSet {
-    pub fn new(moves: &[MoveData]) -> Self {
-        let number_of_moves = moves.len();
-        assert!(not![moves.is_empty()], "Expected one Move, but found zero.");
-        assert!(number_of_moves <= MAX_MOVES_PER_MOVESET, "Expected at most {MAX_MOVES_PER_MOVESET} but found {number_of_moves} moves.");
-        let moves = MaxSizedVec::from_slice_with_default_padding(moves);
-        MoveSet { moves }
-    }
-
-    pub fn moves(&self) -> impl Iterator<Item = MoveData> {
-        self.moves.into_iter()
-    }
-
-    pub fn move_(&self, id: MoveNumber) -> &MoveData {
-        &self.moves[id as usize]
-    }
-
-    pub fn move_mut(&mut self, id: MoveNumber) -> &mut MoveData {
-        &mut self.moves[id as usize]
-    }
-    
-    pub(crate) const fn placeholder() -> MoveSet {
-        Self {
-            moves: MaxSizedVec::placeholder(MoveData::placeholder()),
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum MoveNumber {

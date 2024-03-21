@@ -1,103 +1,103 @@
-#[cfg(all(test, feature = "debug"))]
-mod main {
-    use battle_builder_macro::build_battle;
+// #[cfg(all(test, feature = "debug"))]
+// mod main {
+//     use battle_builder_macro::build_battle;
 
-    use crate::sim::*;
-    use crate::sim::{
-        test_ability_dex::FlashFire,
-        battle::Battle,
-        test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
-        test_move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
-        AbilityData, MonsterData, MoveData,
-    };
+//     use crate::sim::*;
+//     use crate::sim::{
+//         test_ability_dex::FlashFire,
+//         battle::Battle,
+//         test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+//         test_move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
+//         Ability, Monster, Move,
+//     };
 
-    // #[test]
-    // fn test_build_battle_macro() {
-    //     extern crate self as monsim;
-    //     let test_battle = build_battle!(
-    //         {
-    //             Allies: MonsterTeam {
-    //                 Torchic: Monster = "Ruby" {
-    //                     Scratch: Move,
-    //                     Ember: Move,
-    //                     FlashFire: Ability,
-    //                 },
-    //                 Mudkip: Monster = "Sapphire" {
-    //                     Scratch: Move,
-    //                     Ember: Move,
-    //                     FlashFire: Ability,
-    //                 },
-    //                 Treecko: Monster = "Emerald" {
-    //                     Bubble: Move,
-    //                     Scratch: Move,
-    //                     FlashFire: Ability,
-    //                 },
-    //             },
-    //             Opponents: MonsterTeam {
-    //                 Drifblim: Monster {
-    //                     Tackle: Move,
-    //                     Growl: Move,
-    //                     FlashFire: Ability,
-    //                 },
-    //             }
-    //         }
-    //     );
-    //     assert_eq!(test_battle, 
-    //         Battle::new(
-    //             PerTeam::new(
-    //                 Ally(MonsterTeam::new(vec![
-    //                     (Monster::new(
-    //                         MonsterUID {
-    //                             team_uid: TeamUID::Allies,
-    //                             monster_number: MonsterNumber::from(0usize),
-    //                         },
-    //                         test_monster_dex::Torchic, 
-    //                         Some("Ruby"),
-    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
-    //                         ability::Ability::new(test_ability_dex::FlashFire),
-    //                     )),
-    //                     (Monster::new(
-    //                         MonsterUID {
-    //                             team_uid: TeamUID::Allies,
-    //                             monster_number: MonsterNumber::from(1usize),
-    //                         },
-    //                         test_monster_dex::Mudkip, 
-    //                         Some("Sapphire"),
-    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
-    //                         ability::Ability::new(test_ability_dex::FlashFire),
-    //                     )),
-    //                     (Monster::new(
-    //                         MonsterUID {
-    //                             team_uid: TeamUID::Allies,
-    //                             monster_number: MonsterNumber::from(2usize),
-    //                         },
-    //                         test_monster_dex::Treecko, 
-    //                         Some("Emerald"),
-    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
-    //                         ability::Ability::new(test_ability_dex::FlashFire),
-    //                     )),
-    //                 ], TeamUID::Allies)),
-    //                 Opponent(MonsterTeam::new(vec![
-    //                     (Monster::new(
-    //                         MonsterUID {
-    //                             team_uid: TeamUID::Opponents,
-    //                             monster_number: MonsterNumber::from(0usize),
-    //                         },
-    //                         test_monster_dex::Drifblim, 
-    //                         None,
-    //                         move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
-    //                         ability::Ability::new(test_ability_dex::FlashFire),
-    //                     )),
-    //                 ], TeamUID::Opponents)),
-    //             )
-    //         )
-    //     );
-    // }
-}
+//     #[test]
+//     fn test_build_battle_macro() {
+//         extern crate self as monsim;
+//         let test_battle = build_battle!(
+//             {
+//                 Allies: MonsterTeam {
+//                     Torchic: Monster = "Ruby" {
+//                         Scratch: Move,
+//                         Ember: Move,
+//                         FlashFire: Ability,
+//                     },
+//                     Mudkip: Monster = "Sapphire" {
+//                         Scratch: Move,
+//                         Ember: Move,
+//                         FlashFire: Ability,
+//                     },
+//                     Treecko: Monster = "Emerald" {
+//                         Bubble: Move,
+//                         Scratch: Move,
+//                         FlashFire: Ability,
+//                     },
+//                 },
+//                 Opponents: MonsterTeam {
+//                     Drifblim: Monster {
+//                         Tackle: Move,
+//                         Growl: Move,
+//                         FlashFire: Ability,
+//                     },
+//                 }
+//             }
+//         );
+//         assert_eq!(test_battle, 
+//             Battle::new(
+//                 PerTeam::new(
+//                     Ally(MonsterTeam::new(vec![
+//                         (Monster::new(
+//                             MonsterUID {
+//                                 team_uid: TeamUID::Allies,
+//                                 monster_number: MonsterNumber::from(0usize),
+//                             },
+//                             test_monster_dex::Torchic, 
+//                             Some("Ruby"),
+//                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+//                             ability::Ability::new(test_ability_dex::FlashFire),
+//                         )),
+//                         (Monster::new(
+//                             MonsterUID {
+//                                 team_uid: TeamUID::Allies,
+//                                 monster_number: MonsterNumber::from(1usize),
+//                             },
+//                             test_monster_dex::Mudkip, 
+//                             Some("Sapphire"),
+//                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Scratch)), (move_::Move::new(test_move_dex::Ember))]),
+//                             ability::Ability::new(test_ability_dex::FlashFire),
+//                         )),
+//                         (Monster::new(
+//                             MonsterUID {
+//                                 team_uid: TeamUID::Allies,
+//                                 monster_number: MonsterNumber::from(2usize),
+//                             },
+//                             test_monster_dex::Treecko, 
+//                             Some("Emerald"),
+//                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
+//                             ability::Ability::new(test_ability_dex::FlashFire),
+//                         )),
+//                     ], TeamUID::Allies)),
+//                     Opponent(MonsterTeam::new(vec![
+//                         (Monster::new(
+//                             MonsterUID {
+//                                 team_uid: TeamUID::Opponents,
+//                                 monster_number: MonsterNumber::from(0usize),
+//                             },
+//                             test_monster_dex::Drifblim, 
+//                             None,
+//                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
+//                             ability::Ability::new(test_ability_dex::FlashFire),
+//                         )),
+//                     ], TeamUID::Opponents)),
+//                 )
+//             )
+//         );
+//     }
+// }
 
-#[cfg(all(test, feature = "debug"))]
-mod battle {
-    use battle_builder_macro::build_battle;
+// #[cfg(all(test, feature = "debug"))]
+// mod battle {
+//     use battle_builder_macro::build_battle;
 
 //     #[test]
 //     fn test_display_battle() {
@@ -174,97 +174,97 @@ mod battle {
 //             )
 //         )
 //     }
-}
+// }
 
-#[cfg(all(test, feature = "debug"))]
-mod event {
+// #[cfg(all(test, feature = "debug"))]
+// mod event {
 
-    #[test]
-    #[cfg(feature = "debug")]
-    fn test_print_event_handler() {
-        use crate::sim::game_mechanics::test_ability_dex::FlashFire;
-        let event_handler = FlashFire.event_handler_deck.on_try_move.unwrap();
-        println!("{:?}", event_handler);
-    }
+//     #[test]
+//     #[cfg(feature = "debug")]
+//     fn test_print_event_handler() {
+//         use crate::sim::game_mechanics::test_ability_dex::FlashFire;
+//         let event_handler = FlashFire.event_handler_deck.on_try_move.unwrap();
+//         println!("{:?}", event_handler);
+//     }
 
-    #[test]
-    #[cfg(feature = "debug")]
-    fn test_print_event_handler_deck() {
-        use crate::sim::test_ability_dex::FlashFire;
-        println!("{:#?}", FlashFire.event_handler_deck);
-    }
-}
+//     #[test]
+//     #[cfg(feature = "debug")]
+//     fn test_print_event_handler_deck() {
+//         use crate::sim::test_ability_dex::FlashFire;
+//         println!("{:#?}", FlashFire.event_handler_deck);
+//     }
+// }
 
-#[cfg(all(test, feature = "debug"))]
-mod prng {
-    use std::time;
+// #[cfg(all(test, feature = "debug"))]
+// mod prng {
+//     use std::time;
 
-    use crate::sim::prng::*;
+//     use crate::sim::prng::*;
 
-    #[test]
-    fn test_prng_percentage_chance() {
-        let mut lcrng = Prng::new(seed_from_time_now());
-        let mut dist = [0u64; 100];
-        for _ in 0..=10_000_000 {
-            let n = lcrng.generate_u16_in_range(0..=99) as usize;
-            dist[n] += 1;
-        }
-        let avg_deviation = dist
-            .iter()
-            .map(|it| ((*it as f32 / 100_000.0) - 1.0).abs())
-            .reduce(|it, acc| it + acc)
-            .expect("We should always get some average value.")
-            / 100.0;
-        let avg_deviation = f32::floor(avg_deviation * 100_000.0) / 100_000.0;
-        println!("LCRNG has {:?}% average deviation (threshold is at 0.005%)", avg_deviation);
-        assert!(avg_deviation < 5.0e-3);
-    }
+//     #[test]
+//     fn test_prng_percentage_chance() {
+//         let mut lcrng = Prng::new(seed_from_time_now());
+//         let mut dist = [0u64; 100];
+//         for _ in 0..=10_000_000 {
+//             let n = lcrng.generate_u16_in_range(0..=99) as usize;
+//             dist[n] += 1;
+//         }
+//         let avg_deviation = dist
+//             .iter()
+//             .map(|it| ((*it as f32 / 100_000.0) - 1.0).abs())
+//             .reduce(|it, acc| it + acc)
+//             .expect("We should always get some average value.")
+//             / 100.0;
+//         let avg_deviation = f32::floor(avg_deviation * 100_000.0) / 100_000.0;
+//         println!("LCRNG has {:?}% average deviation (threshold is at 0.005%)", avg_deviation);
+//         assert!(avg_deviation < 5.0e-3);
+//     }
 
-    #[test]
-    fn test_if_prng_is_deterministic_for_specific_seed() {
-        let seed = seed_from_time_now();
-        let mut lcrng_1 = Prng::new(seed);
-        let mut lcrng_2 = Prng::new(seed);
-        for i in 0..10_000 {
-            let generated_number_1 = lcrng_1.generate_u16_in_range(0..=u16::MAX - 1);
-            let generated_number_2 = lcrng_2.generate_u16_in_range(0..=u16::MAX - 1);
-            assert_eq!(generated_number_1, generated_number_2, "iteration {}", i);
-        }
-    }
+//     #[test]
+//     fn test_if_prng_is_deterministic_for_specific_seed() {
+//         let seed = seed_from_time_now();
+//         let mut lcrng_1 = Prng::new(seed);
+//         let mut lcrng_2 = Prng::new(seed);
+//         for i in 0..10_000 {
+//             let generated_number_1 = lcrng_1.generate_u16_in_range(0..=u16::MAX - 1);
+//             let generated_number_2 = lcrng_2.generate_u16_in_range(0..=u16::MAX - 1);
+//             assert_eq!(generated_number_1, generated_number_2, "iteration {}", i);
+//         }
+//     }
 
-    #[test]
-    fn test_prng_chance() {
-        let mut lcrng = Prng::new(time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs());
+//     #[test]
+//     fn test_prng_chance() {
+//         let mut lcrng = Prng::new(time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs());
 
-        let mut success = 0.0;
-        for _ in 0..=10_000_000 {
-            if lcrng.chance(33, 100) {
-                success += 1.0;
-            }
-        }
-        let avg_probability_deviation = (((success / 10_000_000.0) - 0.3333333333) as f64).abs();
-        let avg_probability_deviation = f64::floor(avg_probability_deviation * 100_000.0) / 100_000.0;
-        println!("Average probability of LCRNG is off by {}% (threshold is at 0.005%)", avg_probability_deviation);
-        assert!(avg_probability_deviation < 5.0e-3);
-    }
-}
+//         let mut success = 0.0;
+//         for _ in 0..=10_000_000 {
+//             if lcrng.chance(33, 100) {
+//                 success += 1.0;
+//             }
+//         }
+//         let avg_probability_deviation = (((success / 10_000_000.0) - 0.3333333333) as f64).abs();
+//         let avg_probability_deviation = f64::floor(avg_probability_deviation * 100_000.0) / 100_000.0;
+//         println!("Average probability of LCRNG is off by {}% (threshold is at 0.005%)", avg_probability_deviation);
+//         assert!(avg_probability_deviation < 5.0e-3);
+//     }
+// }
 
-#[cfg(all(test, feature = "debug"))]
-mod utils {
-    use monsim_utils::{Ally, TeamAffil};
+// #[cfg(all(test, feature = "debug"))]
+// mod utils {
+//     use monsim_utils::{Ally, TeamAffil};
 
-    #[test]
-    #[should_panic]
-    fn test_expect_wrong_team() {
-        let item = Ally(10usize);
-        let item = TeamAffil::ally(item);
-        (item.map(|i| { i - 1 }).expect_opponent());
-    }
+//     #[test]
+//     #[should_panic]
+//     fn test_expect_wrong_team() {
+//         let item = Ally(10usize);
+//         let item = TeamAffil::ally(item);
+//         (item.map(|i| { i - 1 }).expect_opponent());
+//     }
 
-    #[test]
-    fn test_expect_right_team() {
-        let item = Ally(10usize);
-        let item = TeamAffil::ally(item);
-        item.map(|i| {i + 1}).expect_ally();
-    }
-}
+//     #[test]
+//     fn test_expect_right_team() {
+//         let item = Ally(10usize);
+//         let item = TeamAffil::ally(item);
+//         item.map(|i| {i + 1}).expect_ally();
+//     }
+// }

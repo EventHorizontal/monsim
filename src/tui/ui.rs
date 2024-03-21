@@ -63,7 +63,7 @@ impl SwitcheePrompt {
             .block(
                 Block::default()
                     .title(
-                        Span::styled("Switchee?", Style::default().fg(Color::Yellow))
+                        Span::styled("benched_monster?", Style::default().fg(Color::Yellow))
                     )
                     .borders(Borders::ALL),
             )
@@ -211,7 +211,7 @@ impl<'a> Ui<'a> {
                     .split(chunks[1]);
                 let mut switchee_prompt_list_state = new_list_state(highlight_cursor);
                 
-                //Render the message log and switchee prompt
+                //Render the message log and benched_monster prompt
                 frame.render_stateful_widget(switchee_prompt_widget, middle_third_chunks[0], &mut switchee_prompt_list_state);
                 frame.render_widget(message_log_widget, middle_third_chunks[1]);
             } else {

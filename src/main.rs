@@ -6,7 +6,7 @@ mod move_dex;
 use ability_dex::{FlashFire, WaterAbsorb};
 use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
 use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
-use utils::Nothing;
+use monsim_utils::Nothing;
 
 fn main() -> MonsimResult<Nothing> {
     let battle = battle_state!(

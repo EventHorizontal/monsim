@@ -1,9 +1,9 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::sim::{
-        Ability, AbilitySpecies, EventHandlerDeck, Type, EventFilteringOptions, EventHandler, MoveUsed, Effect,
-        utils::{Outcome, not},
-};
+use monsim_utils::{not, Outcome};
+use monsim::{sim::{
+        Ability, AbilitySpecies, Effect, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveUsed, Type
+}};
 
 #[cfg(feature = "debug")]
 use monsim::source_code_location;

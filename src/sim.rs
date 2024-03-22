@@ -19,8 +19,8 @@ pub use event::{
     contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, InBattleEvent, TargetFlags,
 };
 pub use game_mechanics::*;
-pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent, Ally, Opponent};
-pub(crate) use utils::{not, NOTHING, Nothing}; // For internal use
+pub use monsim_utils::{Outcome, Percent, ClampedPercent};
+pub(crate) use monsim_utils::{not, NOTHING, Nothing}; // For internal use
 
 type SimResult = Result<(), SimError>;
 

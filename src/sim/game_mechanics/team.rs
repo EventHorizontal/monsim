@@ -95,19 +95,19 @@ impl<T> PerTeam<T> {
     }
 
     pub fn ally_ref(&self) -> Ally<&T> {
-        Ally(&self.ally_team_item)
+        Ally::new(&self.ally_team_item)
     }
 
     pub fn ally_mut(&mut self) -> Ally<&mut T> {
-        Ally(&mut self.ally_team_item)
+        Ally::new(&mut self.ally_team_item)
     }
 
     pub fn opponent_ref(&self) -> Opponent<&T> {
-        Opponent(&self.opponent_team_item)
+        Opponent::new(&self.opponent_team_item)
     }
 
     pub fn opponent_mut(&mut self) -> Opponent<&mut T> {
-        Opponent(&mut self.opponent_team_item)
+        Opponent::new(&mut self.opponent_team_item)
     }
 
     pub fn map_consume<U, F>(self, f: F) -> PerTeam<U>
@@ -137,15 +137,15 @@ impl<T: Clone> PerTeam<Option<T>> {
     pub fn to_option_pair(self) -> (Option<Ally<T>>, Option<Opponent<T>>) {
         let (ally_team_item, opponent_team_item) = self.unwrap();
         let (ally_team_item, opponent_team_item) = ((*ally_team_item).clone(), (*opponent_team_item).clone());
-        (ally_team_item.map(|item| { Ally(item) }), opponent_team_item.map(|item| { Opponent(item) }))
+        (ally_team_item.map(|item| { Ally::new(item) }), opponent_team_item.map(|item| { Opponent::new(item) }))
     }
 }
 
 impl<T: Clone> PerTeam<T> {
     pub(crate) fn both(item: T) -> Self {
         Self {
-            ally_team_item: Ally(item.clone()),
-            opponent_team_item: Opponent(item),
+            ally_team_item: Ally::new(item.clone()),
+            opponent_team_item: Opponent::new(item),
         }
     }
 

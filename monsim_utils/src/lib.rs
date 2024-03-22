@@ -402,7 +402,7 @@ macro_rules! not {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// A type that can be deferenced to get data marked as belonging to the Ally Team
-pub struct Ally<T>(pub T);
+pub struct Ally<T>(T);
 
 impl<T> Deref for Ally<T> {
     type Target = T;
@@ -437,6 +437,10 @@ impl<T> Into<TeamAffl<T>> for Ally<T> {
 }
 
 impl<T> Ally<T> {
+    pub fn new(item: T) -> Self {
+        Self(item)
+    }
+
     pub fn unwrap(self) -> T {
         self.0
     }
@@ -456,7 +460,7 @@ impl<T: Clone> Ally<T> {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// A type that can be deferenced to get data marked as belonging to the Opponent Team
-pub struct Opponent<T>(pub T);
+pub struct Opponent<T>(T);
 
 impl<T> Deref for Opponent<T> {
     type Target = T;
@@ -491,6 +495,10 @@ impl<T> Into<TeamAffl<T>> for Opponent<T> {
 }
 
 impl<T> Opponent<T> {
+    pub fn new(item: T) -> Self {
+        Self(item)
+    }
+
     pub fn unwrap(self) -> T {
         self.0
     }

@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use syntax::{path_to_ident, ExprBattle, ExprEventHandlerDeck, ExprMechanicAccessor, ExprMonsterTeam, GameMechanicType};
 use proc_macro2::{Ident, Literal, TokenStream as TokenStream2};
 use quote::quote;
-use syn::{parse_macro_input, ExprTuple, ExprType, Pat};
+use syn::{parse_macro_input, ExprTuple, Pat};
 
 // BattleState generation macro ------
 
@@ -57,8 +57,8 @@ pub fn battle_state(input: TokenStream) -> TokenStream {
     let output = quote!(
         { 
             monsim::sim::BattleState::new(
-                monsim::sim::PerTeam::new(monsim::sim::Ally(#ally_team_type::new(#ally_monsters_vec, TeamUID::Allies)),
-                monsim::sim::Opponent(#opponent_team_type::new(#opponent_monsters_vec, TeamUID::Opponents)))
+                #ally_team_type::new(#ally_monsters_vec, TeamUID::Allies),
+                #opponent_team_type::new(#opponent_monsters_vec, TeamUID::Opponents)
             )
         }
     );

@@ -104,24 +104,24 @@ impl<'a> Ui<'a> {
         Self {
             currently_selected_panel: SelectablePanelID::MessageLog,
             active_monster_status_panels: PerTeam::new(
-                Ally(ActiveMonsterStatusPanel {
+                Ally::new(ActiveMonsterStatusPanel {
                     team_name: ALLY_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamUID::Allies).status_string(),
                 }), 
-                Opponent(ActiveMonsterStatusPanel {
+                Opponent::new(ActiveMonsterStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamUID::Opponents).status_string(),
                     }
                 )),
             choice_selection_menus: PerTeam::new(
-                    Ally(ChoiceSelectionMenu { 
+                    Ally::new(ChoiceSelectionMenu { 
                         team_name: ALLY_TEAM_NAME, 
                         selectable_panel_id: SelectablePanelID::AllyTeamChoiceSelectionMenu,
                         choice_list: ally_team_choice_list,
                         list_state: new_list_state(0),
                         selection_cursor: None,
                     }),
-                    Opponent(ChoiceSelectionMenu { 
+                    Opponent::new(ChoiceSelectionMenu { 
                         team_name: OPPONENT_TEAM_NAME,
                         selectable_panel_id: SelectablePanelID::OpponentTeamChoiceSelectionMenu,
                         choice_list: opponent_team_choice_list,
@@ -130,11 +130,11 @@ impl<'a> Ui<'a> {
                     }),
                 ),
             team_status_panels: PerTeam::new(
-                Ally(TeamStatusPanel {
+                Ally::new(TeamStatusPanel {
                     team_name: ALLY_TEAM_NAME,
                     team_status: battle.ally_team().team_status_string(),
                 }),
-                Opponent(TeamStatusPanel {
+                Opponent::new(TeamStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     team_status: battle.opponent_team().team_status_string(),
                 }), 

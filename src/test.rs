@@ -44,8 +44,7 @@ mod main {
         );
         assert_eq!(test_battle, 
             BattleState::new(
-                PerTeam::new(
-                    Ally(MonsterTeam::new(vec![
+                    MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
                                 team_uid: TeamUID::Allies,
@@ -76,8 +75,8 @@ mod main {
                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Bubble)), (move_::Move::new(test_move_dex::Scratch))]),
                             ability::Ability::new(test_ability_dex::FlashFire),
                         )),
-                    ], TeamUID::Allies)),
-                    Opponent(MonsterTeam::new(vec![
+                    ], TeamUID::Allies),
+                    MonsterTeam::new(vec![
                         (Monster::new(
                             MonsterUID {
                                 team_uid: TeamUID::Opponents,
@@ -88,8 +87,7 @@ mod main {
                             move_::MoveSet::new(vec![(move_::Move::new(test_move_dex::Tackle)), (move_::Move::new(test_move_dex::Growl))]),
                             ability::Ability::new(test_ability_dex::FlashFire),
                         )),
-                    ], TeamUID::Opponents)),
-                )
+                    ], TeamUID::Opponents),
             )
         );
     }
@@ -253,14 +251,14 @@ mod utils {
     #[test]
     #[should_panic]
     fn test_expect_wrong_team() {
-        let item = Ally(10usize);
+        let item = Ally::new(10usize);
         let item = TeamAffl::ally(item);
         (item.map(|i| { i - 1 }).expect_opponent());
     }
 
     #[test]
     fn test_expect_right_team() {
-        let item = Ally(10usize);
+        let item = Ally::new(10usize);
         let item = TeamAffl::ally(item);
         item.map(|i| {i + 1}).expect_ally();
     }

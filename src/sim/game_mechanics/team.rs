@@ -1,6 +1,5 @@
 use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
-use max_size_vec::MaxSizeVec;
-use monsim_utils::{Ally, Opponent};
+use monsim_utils::{Ally, MaxSizedVec, Opponent};
 
 use crate::sim::{event::OwnedEventHandlerDeck, MonsterNumber};
 use super::{Monster, MonsterUID, MoveNumber};
@@ -11,7 +10,58 @@ const MAX_BATTLERS_PER_TEAM: usize = 6;
 pub struct MonsterTeam {
     pub id: TeamUID,
     pub active_monster_uid: MonsterUID,
-    monsters: MaxSizeVec<Monster, 6>,
+    monsters: MaxSizedVec<Monster, 6>,
+}
+
+impl Index<MonsterNumber> for MonsterTeam {
+    type Output = Monster;
+
+    fn index(&self, index: MonsterNumber) -> &Self::Output {
+        &self.monsters()[index as usize]
+    }
+}
+
+impl IndexMut<MonsterNumber> for MonsterTeam {
+    fn index_mut(&mut self, index: MonsterNumber) -> &mut Self::Output {
+        &mut self.monsters_mut()[index as usize]
+    }
+}
+
+impl MonsterTeam {
+    pub fn new(monsters: Vec<Monster>, id: TeamUID) -> Self {
+        assert!(monsters.first().is_some(), "There is not a single monster in the team.");
+        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
+        let monsters = MaxSizedVec::from_vec(monsters);
+        MonsterTeam {
+            id,
+            active_monster_uid: MonsterUID { team_uid: id, monster_number: MonsterNumber::_1}, 
+            monsters 
+        }
+    }
+
+    pub fn monsters(&self) -> &MaxSizedVec<Monster, 6> {
+        &self.monsters
+    }
+
+    pub fn monsters_mut(&mut self) -> &mut MaxSizedVec<Monster, 6> {
+        &mut self.monsters
+    }
+
+    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
+        let mut out = Vec::new();
+        for monster in self.monsters.iter() {
+            out.append(&mut monster.event_handler_deck_instances())
+        }
+        out
+    }
+
+    pub(crate) fn team_status_string(&self) -> String {
+        let mut out = String::new();
+        for monster in self.monsters().iter() {
+            out.push_str(&monster.status_string());
+        }
+        out
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -153,43 +203,4 @@ impl Display for TeamUID {
 pub struct MoveUID {
     pub owner_uid: MonsterUID,
     pub move_number: MoveNumber,
-}
-
-impl MonsterTeam {
-    pub fn new(monsters: Vec<Monster>, id: TeamUID) -> Self {
-        assert!(monsters.first().is_some(), "There is not a single monster in the team.");
-        assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
-        let monsters_iter = monsters.into_iter();
-        let mut monsters = MaxSizeVec::new();
-        monsters_iter.for_each(|monster| {monsters.push(monster)});
-        MonsterTeam {
-            id,
-            active_monster_uid: MonsterUID { team_uid: id, monster_number: MonsterNumber::_1}, 
-            monsters 
-        }
-    }
-
-    pub fn monsters(&self) -> &MaxSizeVec<Monster, 6> {
-        &self.monsters
-    }
-
-    pub fn monsters_mut(&mut self) -> &mut MaxSizeVec<Monster, 6> {
-        &mut self.monsters
-    }
-
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let mut out = Vec::new();
-        for monster in self.monsters.iter() {
-            out.append(&mut monster.event_handler_deck_instances())
-        }
-        out
-    }
-
-    pub(crate) fn team_status_string(&self) -> String {
-        let mut out = String::new();
-        for monster in self.monsters() {
-            out.push_str(&monster.status_string());
-        }
-        out
-    }
 }

@@ -1,6 +1,6 @@
 use std::io::Stdout;
 
-use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
+use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
 use crate::sim::{AvailableChoicesForTeam, BattleState, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID};
@@ -53,9 +53,8 @@ struct MessageLogPanel {
 struct SwitcheePrompt;
 
 impl SwitcheePrompt {
-    fn as_renderable_widget<'a>(battle: &BattleState, switchable_benched_monster_uids: ArrayOfOptionals<MonsterUID, 5>) -> List<'a> {
+    fn as_renderable_widget<'a>(battle: &BattleState, switchable_benched_monster_uids: MaxSizedVec<MonsterUID, 5>) -> List<'a> {
         let list_items = switchable_benched_monster_uids.into_iter()
-            .flatten()
             .map(|monster_uid| {
                 ListItem::new(battle.monster(monster_uid).full_name())
             }).collect::<Vec<_>>();
@@ -334,7 +333,7 @@ impl<'a> Ui<'a> {
 
     fn choice_list_from_available_choices_for_team(list_to_fill: &mut Vec<ListItem>, available_choices_for_team: AvailableChoicesForTeam) {
         list_to_fill.clear();
-        for choice in available_choices_for_team.as_vec() {
+        for choice in available_choices_for_team.choices().into_iter() {
             match choice {
                 PartiallySpecifiedChoice::Move { display_text, .. } => {
                     list_to_fill.push(ListItem::new(display_text));

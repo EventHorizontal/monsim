@@ -1,7 +1,7 @@
 mod message_log;
 
 use std::fmt::Display;
-use utils::{not, Ally, ArrayOfOptionals, Opponent};
+use utils::{not, Ally, MaxSizedVec, Opponent};
 use crate::sim::{
         utils, Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
 };
@@ -36,7 +36,7 @@ impl BattleState {
 
     pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_ref();
-        ally_team.monsters().iter().chain(opponent_team.monsters())
+        ally_team.monsters().iter().chain(opponent_team.monsters().iter())
     }
 
     pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
@@ -46,16 +46,12 @@ impl BattleState {
 
     pub fn monster(&self, monster_uid: MonsterUID) -> &Monster {
         let team = self.team(monster_uid.team_uid);
-        team.monsters()
-            .get(monster_uid.monster_number as usize)
-            .expect("Only valid MonsterUIDs are expected to be passed to this")
+        &team[monster_uid.monster_number]
     }
 
     pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
         let team = self.team_mut(monster_uid.team_uid);
-        team.monsters_mut()
-            .get_mut(monster_uid.monster_number as usize)
-            .expect("Only valid MonsterUIDs are expected to be passed to this")
+        &mut team[monster_uid.monster_number]
     }
 
     pub fn active_monsters(&self) -> PerTeam<&Monster> {
@@ -199,8 +195,8 @@ impl BattleState {
 
         // Switch choice
         let switchable_benched_monster_uids = self.switchable_benched_monster_uids(team_uid);
-        let any_valid_switchees = not!(switchable_benched_monster_uids.iter().flatten().count() == 0 );
-        let switch_action = if any_valid_switchees {
+        let any_switchable_monsters = not!(switchable_benched_monster_uids.is_empty());
+        let switch_action = if any_switchable_monsters {
             Some(PartiallySpecifiedChoice::SwitchOut { 
                 active_monster_uid: active_monster_on_team.uid, 
                 switchable_benched_monster_uids,
@@ -216,29 +212,29 @@ impl BattleState {
         };
 
         AvailableChoicesForTeam::new(
-            &move_actions, 
+            move_actions, 
             switch_action,
         )
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn switchable_benched_monster_uids(&self, team_uid: TeamUID) -> ArrayOfOptionals<MonsterUID, 5> {
+    pub(crate) fn switchable_benched_monster_uids(&self, team_uid: TeamUID) -> MaxSizedVec<MonsterUID, 5> {
         let mut number_of_switchees = 0;
-        let mut switchees = [None; 5];
+        let mut switchable_benched_monsters = Vec::with_capacity(5);
         for monster in self.team(team_uid).monsters().iter() {
             let is_active_monster_for_team = monster.uid == self.teams[team_uid].active_monster_uid;
             let is_valid_switch_partner = not!(self.monster(monster.uid).is_fainted) && not!(is_active_monster_for_team);
             if is_valid_switch_partner {
-                switchees[number_of_switchees] = Some(monster.uid);
+                switchable_benched_monsters.push(monster.uid);
                 number_of_switchees += 1;
                 assert!(number_of_switchees < 6);
             }
         }
-        switchees
+        MaxSizedVec::from_vec(switchable_benched_monsters)
     }
 }
 
-impl<'a> Display for BattleState {
+impl Display for BattleState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 

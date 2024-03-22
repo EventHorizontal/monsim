@@ -1,10 +1,11 @@
+use monsim_utils::MaxSizedVec;
+
 use crate::sim::{
     event::{EventHandlerDeck, EventFilteringOptions},
     BattleState, MonsterUID, Type,
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
-use max_size_vec::MaxSizeVec;
 
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {
@@ -103,7 +104,7 @@ const MAX_MOVES_PER_MOVESET: usize = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MoveSet {
-    moves: MaxSizeVec<Move, 4>,
+    moves: MaxSizedVec<Move, 4>,
 }
 
 impl Index<usize> for MoveSet {
@@ -123,9 +124,7 @@ impl MoveSet {
     pub fn new(moves: Vec<Move>) -> Self {
         assert!(moves.first().is_some(), "There is no first move.");
         assert!(moves.len() <= MAX_MOVES_PER_MOVESET);
-        let moves_iter = moves.into_iter();
-        let mut moves = MaxSizeVec::new();
-        moves_iter.for_each(|move_| { moves.push(move_)});
+        let moves = MaxSizedVec::from_vec(moves);
         MoveSet { moves }
     }
 
@@ -134,15 +133,11 @@ impl MoveSet {
     }
 
     pub fn move_(&self, id: MoveNumber) -> &Move {
-        self.moves
-            .get(id as usize)
-            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
+        &self.moves[id as usize]
     }
 
     pub fn move_mut(&mut self, id: MoveNumber) -> &mut Move {
-        self.moves
-            .get_mut(id as usize)
-            .unwrap_or_else(|| panic!("The move at the {:?} index should exist.", id))
+        &mut self.moves[id as usize]
     }
 }
 

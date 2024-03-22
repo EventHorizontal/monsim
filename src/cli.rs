@@ -23,15 +23,15 @@ pub fn run(mut battle: BattleState) -> TuiResult<Nothing> {
                 // Check if any of the active monsters has fainted and needs to switched out
                 for active_monster_uid in battle.active_monster_uids() {
                     if battle.monster(active_monster_uid).is_fainted {
-                        if let Some(PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, .. }) = available_choices[active_monster_uid.team_uid].switch_out_choice() {
-                            let switchee_names = switchable_benched_monster_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
+                        if let Some(&PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, .. }) = available_choices[active_monster_uid.team_uid].switch_out_choice() {
+                            let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| battle.monster(uid).full_name()).enumerate();
                             writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster_uid).name())?;
-                            for (index, switchee_name) in switchee_names {
-                                writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name)?;
+                            for (index, monster_name) in switchable_benched_monster_names {
+                                writeln!(locked_stdout, "[{}] {}", index + 1, monster_name)?;
                             }
-                            let chosen_switchee_index = input_as_usize(&mut locked_stdout, switchable_benched_monster_uids.iter().flatten().count()).unwrap();
-                            let switchable_benched_monster_uid = switchable_benched_monster_uids[chosen_switchee_index].unwrap();
-                            BattleSimulator::switch_out_between_turns(&mut battle, active_monster_uid, switchable_benched_monster_uid)?;
+                            let switchable_benched_monster_choice_index = input_as_choice_index(&mut locked_stdout, switchable_benched_monster_uids.count()).unwrap();
+                            let chosen_switchable_benched_monster_uid = switchable_benched_monster_uids[switchable_benched_monster_choice_index];
+                            BattleSimulator::switch_out_between_turns(&mut battle, active_monster_uid, chosen_switchable_benched_monster_uid)?;
                             last_turn_chosen_actions = None;
                         } else {
                             turn_stage = TurnStage::BattleEnded;
@@ -122,7 +122,7 @@ fn write_empty_line(locked_stdout: &mut StdoutLock<'_>) -> TuiResult<Nothing> {
     Ok(NOTHING)
 }
 
-fn input_as_usize(locked_stdout: &mut StdoutLock, options_count: usize) -> TuiResult<usize> {
+fn input_as_choice_index(locked_stdout: &mut StdoutLock, options_count: usize) -> TuiResult<usize> {
     
     loop {
         let mut input = String::new();
@@ -151,7 +151,7 @@ fn input_as_usize(locked_stdout: &mut StdoutLock, options_count: usize) -> TuiRe
 }
 
 fn display_choices(available_actions_for_team: &AvailableChoicesForTeam, locked_stdout: &mut StdoutLock, last_turn_action: bool) -> TuiResult<Nothing> {
-    for (index, action) in available_actions_for_team.as_vec().into_iter().enumerate() {
+    for (index, action) in available_actions_for_team.choices().into_iter().enumerate() {
         match action {
             PartiallySpecifiedChoice::Move { display_text, .. } => { 
                 writeln!(locked_stdout, "[{}] Use {}", index + 1,  display_text)?; // This + 1 converts to 1-based counting
@@ -182,9 +182,9 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
 {
 
     let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );
-    let chosen_action_index = input_as_usize(locked_stdout, available_actions_count + 2)?;
+    let choice_index = input_as_choice_index(locked_stdout, available_actions_count + 2)?;
     
-    let is_repeat_selected = chosen_action_index == available_actions_count;
+    let is_repeat_selected = choice_index == available_actions_count;
     let mut quit_offset = 0;
     if let Some(last_turn_actions) = last_turn_action {
         if is_repeat_selected {
@@ -193,24 +193,24 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
         quit_offset = 1;
     }
     
-    let is_quit_selected = chosen_action_index == available_actions_count + quit_offset;
+    let is_quit_selected = choice_index == available_actions_count + quit_offset;
     if is_quit_selected {
         return Ok(UIChoice::Quit);
     }
 
-    let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[chosen_action_index].unwrap());
+    let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[choice_index]);
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
             PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order },
             
             PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
-                let switchee_names = switchable_benched_monster_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
-                let _ = writeln!(locked_stdout, "Choose a monster to switch with");
-                for (index, switchee_name) in switchee_names {
+                let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| battle.monster(uid).full_name()).enumerate();
+                let _ = writeln!(locked_stdout, "Choose a benched monster to switch in");
+                for (index, switchee_name) in switchable_benched_monster_names {
                     let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
                 }
-                let chosen_switchee_index = input_as_usize(locked_stdout, switchable_benched_monster_uids.iter().flatten().count()).unwrap();
-                let benched_monster_uid = switchable_benched_monster_uids[chosen_switchee_index].unwrap();
+                let chosen_switchable_benched_monster_choice_index = input_as_choice_index(locked_stdout, switchable_benched_monster_uids.iter().len()).unwrap();
+                let benched_monster_uid = switchable_benched_monster_uids[chosen_switchable_benched_monster_choice_index];
                 FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, activation_order }
             },
         }

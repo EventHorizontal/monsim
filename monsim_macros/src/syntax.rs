@@ -5,7 +5,7 @@ pub use accessor_macro_syntax::*;
 mod battle_state_macro_syntax {
     use proc_macro2::{Ident, Literal};
     use syn::{braced, parse::{Parse, ParseStream}, punctuated::Punctuated, token::Comma, Error, Result, ExprPath, Token,};
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub struct ExprBattle {
         pub ally_expr_monster_team: ExprMonsterTeam,
         pub opponent_expr_monster_team: ExprMonsterTeam,
@@ -48,7 +48,7 @@ mod battle_state_macro_syntax {
         }
     }
     
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub struct ExprMonsterTeam {
         pub team_path: ExprPath,
         pub team_type: ExprPath,
@@ -86,10 +86,10 @@ mod battle_state_macro_syntax {
         }
     }
     
-    fn parse_braced_comma_separated_list<T: Parse>(input: ParseStream) -> Result<Punctuated<T, Token![,]>> {
+    fn parse_braced_comma_separated_list<T: Parse>(input: ParseStream) -> Result<Punctuated<T, Comma>> {
         let content;
         braced!(content in input);
-        content.parse_terminated::<T, Token![,]>(T::parse)
+        content.parse_terminated(T::parse, Comma)
     }
     
     fn is_expected_type(expected_keyword_name: &str, keyword: &Ident) -> bool {
@@ -100,7 +100,7 @@ mod battle_state_macro_syntax {
     
     // Syntax:
     // let <MonsterName>: <PathToMonsterType> = <Nickname> { <GameMechanicExpression>, ... }
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub struct ExprMonster {
         pub monster_instance_path: ExprPath,
         pub monster_type_path: ExprPath,
@@ -224,7 +224,7 @@ mod battle_state_macro_syntax {
     // <AbilityName>: <PathToAbilityType>
     // <ItemName>: <PathToItemType>
     
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub struct ExprGameMechanic {
         pub game_mechanic_instance_path: ExprPath,
         pub game_mechanic_type_path: ExprPath,

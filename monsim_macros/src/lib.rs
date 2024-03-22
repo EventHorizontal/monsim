@@ -207,7 +207,7 @@ pub fn generate_events(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
         let mut comments = quote!();
         let mut maybe_context_type = None;
         for attr in expression.attrs {
-            let attribute_name = attr.path.get_ident().expect("There should be an ident").to_string();
+            let attribute_name = attr.path().get_ident().expect("There should be an ident").to_string();
             if attribute_name == "doc" {
                 comments = quote!(
                     #comments

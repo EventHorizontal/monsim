@@ -6,11 +6,12 @@ pub mod sim;
 mod test;
 
 use std::error::Error;
-
 pub use sim::*;
+pub use tui::run as run_tui;
+pub use cli::run as run_cli;
 
 pub type MonsimResult<S> = Result<S, Box<dyn Error>>;
 
 pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
-    cli::run(battle)
+    run_cli(battle)
 }

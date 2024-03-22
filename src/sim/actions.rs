@@ -111,7 +111,7 @@ impl Action {
         Ok(NOTHING)
     }
 
-    pub fn use_status_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
+    pub fn use_status_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> SimResult {
         let attacker_uid = move_uid.owner_uid;
         let calling_context = MoveUsed::new(move_uid, target_uid);
 
@@ -136,7 +136,7 @@ impl Action {
         Ok(NOTHING)
     }
 
-    pub fn perform_switch_out(battle: &mut BattleState, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
+    pub fn perform_switch_out(battle: &mut BattleState, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> SimResult {
         battle.team_mut(active_monster_uid.team_uid).active_monster_uid = benched_monster_uid;
         battle.message_log.push(format![
             "{active_monster} switched out! Go {benched_monster}!", 

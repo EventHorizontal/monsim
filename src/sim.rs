@@ -22,7 +22,7 @@ pub use game_mechanics::*;
 pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent, Ally, Opponent};
 pub(crate) use utils::{not, NOTHING, Nothing}; // For internal use
 
-type TurnResult = Result<(), SimError>;
+type SimResult = Result<(), SimError>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
@@ -57,7 +57,7 @@ pub struct BattleSimulator;
 
 impl BattleSimulator {
 
-    pub fn simulate_turn(battle: &mut BattleState, choices: PerTeam<FullySpecifiedChoice>) -> TurnResult {
+    pub fn simulate_turn(battle: &mut BattleState, choices: PerTeam<FullySpecifiedChoice>) -> SimResult {
         
         assert!(not!(battle.is_finished), "The simulator cannot be called on a finished battle.");
 
@@ -144,7 +144,7 @@ impl BattleSimulator {
         }
     }
 
-    pub(crate) fn switch_out_between_turns(battle: &mut BattleState, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
+    pub(crate) fn switch_out_between_turns(battle: &mut BattleState, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> SimResult {
         Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)
     }
 }

@@ -1,18 +1,12 @@
 mod message_log;
 
+use std::fmt::Display;
 use utils::{not, Ally, ArrayOfOptionals, Opponent};
-
 use crate::sim::{
         utils, Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
 };
-
-use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
-
 use super::{event::OwnedEventHandlerDeck, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
-
-type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
-type MutableMonsterIterator<'a> = Chain<IterMut<'a, Monster>, IterMut<'a, Monster>>;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,12 +34,12 @@ impl BattleState {
 
     // Monsters -----------------
 
-    pub fn monsters(&self) -> MonsterIterator {
+    pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_ref();
         ally_team.monsters().iter().chain(opponent_team.monsters())
     }
 
-    pub fn monsters_mut(&mut self) -> MutableMonsterIterator {
+    pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_mut();
         ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
     }

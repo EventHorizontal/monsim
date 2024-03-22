@@ -1,8 +1,7 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent};
+use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent, generate_events};
 use contexts::*;
-use event_setup_macro::event_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventDispatcher;
@@ -80,7 +79,7 @@ pub mod contexts {
     }
 }
 
-event_setup![
+generate_events![
     /// A "deck" is meant to be a collection with 0-1 of each "card".
     pub struct EventHandlerDeck {
         match event {

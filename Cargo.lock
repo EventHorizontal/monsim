@@ -130,15 +130,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "event_setup_macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "iana-time-zone"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -221,7 +212,6 @@ dependencies = [
  "chrono",
  "const_format",
  "crossterm 0.26.0",
- "event_setup_macro",
  "max_size_vec",
  "monsim_macros",
  "monsim_utils",

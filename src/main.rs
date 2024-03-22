@@ -1,4 +1,4 @@
-use monsim::{tui::TuiResult, sim::*};
+use monsim::*;
 mod ability_dex;
 mod monster_dex;
 mod move_dex;
@@ -8,8 +8,8 @@ use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
 use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
 use utils::Nothing;
 
-fn main() -> TuiResult<Nothing> {
-    let battle = build_battle!(
+fn main() -> MonsimResult<Nothing> {
+    let battle = battle_state!(
         {
             Allies: MonsterTeam {
                 Torchic: Monster = "Ruby" {

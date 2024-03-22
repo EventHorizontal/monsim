@@ -1,9 +1,9 @@
 mod actions;
 pub mod battle;
 pub mod battle_constants;
-pub mod choice;
+pub(crate) mod choice;
 pub mod game_mechanics;
-pub mod prng;
+pub(crate) mod prng;
 
 mod event;
 mod ordering;

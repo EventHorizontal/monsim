@@ -1,9 +1,12 @@
 mod syntax;
 
-use syntax::{ExprBattle, ExprMonsterTeam, GameMechanicType, path_to_ident};
-use proc_macro2::TokenStream;
+use proc_macro::TokenStream;
+use syntax::{path_to_ident, ExprBattle, ExprEventHandlerDeck, ExprMonsterTeam, GameMechanicType};
+use proc_macro2::{Ident, Literal};
 use quote::quote;
-use syn::{parse_macro_input, ExprType};
+use syn::{parse_macro_input, ExprTuple, ExprType, Pat};
+
+// BattleState generation macro ------
 
 /// This macro parses the following custom syntax:
 /// ```
@@ -28,9 +31,9 @@ use syn::{parse_macro_input, ExprType};
 ///     }
 /// }
 /// ```
-/// and produces a `battle::Battle`.
+/// and produces a `battle::BattleState`.
 #[proc_macro]
-pub fn battle_state(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn battle_state(input: TokenStream) -> TokenStream {
     // Parse the expression ________________________________________________________________
     let context_expr = parse_macro_input!(input as ExprBattle);
 
@@ -66,7 +69,7 @@ pub fn battle_state(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 fn monster_team_to_tokens<'a>(
     expr_monster_team: ExprMonsterTeam
-) -> TokenStream {
+) -> proc_macro2::TokenStream {
     let team_name_ident = expr_monster_team.team_path;
     let sim_ident = quote!(monsim::sim);
     let move_mod = quote!(#sim_ident::move_);
@@ -118,6 +121,187 @@ fn monster_team_to_tokens<'a>(
     }
 
     quote!(vec![#comma_separated_monsters])
+}
+
+// Event system macros ------
+
+// Generates the struct `CollectionType`, the default constant and the `TraitName` trait plus 
+/// implementations for each event, when given a list of event identifiers. The syntax for this 
+/// is as follows
+/// ```
+/// pub struct CollectionType {
+/// match event {
+///         /// Possible documentation for event_1
+///         #[context(<ContextType>)]
+///         event_name_1 => <EventReturnType>,
+///         ...
+///         /// Possible documentation for event_n
+///         #[context(<ContextType>)]
+///         event_name_n => <EventReturnType>,
+///     }
+/// }
+/// pub const CONSTANT_NAME;
+/// pub trait TraitName;  
+/// ```
+#[proc_macro]
+pub fn generate_events(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    
+    let event_handler_type = quote!(EventHandler);
+    
+    let ExprEventHandlerDeck { 
+        doc_comment, 
+        first_pub_keyword, 
+        struct_keyword, 
+        struct_name, 
+        match_expr, 
+        const_keyword, 
+        default_handler_constant_name, 
+        default_handler_value, 
+        second_pub_keyword, 
+        trait_keyword, 
+        trait_name 
+    }: ExprEventHandlerDeck = parse_macro_input!(input);
+
+    let mut fields = quote!();
+    let mut fields_for_constant = quote!();
+    let mut events = quote!();
+    let mut macro_fields = quote!();
+
+    for expression in match_expr.arms {
+        let mut comments = quote!();
+        let mut maybe_context_type = None;
+        for attr in expression.attrs {
+            let attribute_name = attr.path.get_ident().expect("There should be an ident").to_string();
+            if attribute_name == "doc" {
+                comments = quote!(
+                    #comments
+                    #attr
+                );
+            } else if attribute_name == "context" {
+                let type_token = attr.parse_args::<ExprTuple>();
+                match type_token {
+                    Ok(type_token) => maybe_context_type = Some(quote!(#type_token)),
+                    Err(_) => {
+                        let type_token = attr.parse_args::<Ident>().expect("Context must be a type or `None`");
+                        if type_token.to_string() == "None" {
+                            maybe_context_type = Some(quote!(()));
+                        } else {
+                            maybe_context_type = Some(quote!(#type_token));
+                        }
+                    },
+                }
+            } else {
+                panic!("Only doc comment and `context` attributes are allowed in this macro.")
+            }
+        }
+        let context_type = match maybe_context_type {
+            Some(tokens) => tokens,
+            None => panic!("A context must be specified for each field."),
+        };
+        let handler_ident = expression.pat;
+        let handler_return_type = *expression.body;
+        
+        let pat_ident = match handler_ident {
+            Pat::Ident( ref pat_ident) => pat_ident.clone(),
+            _ => panic!("Error: Expected handler_ident to be an identifier."),
+        };
+        let trait_name_string_in_pascal_case = to_pascal_case(pat_ident.clone().ident.to_string());
+        let event_trait_literal = Literal::string(&trait_name_string_in_pascal_case);
+        let event_name_ident_in_pascal_case = Ident::new(
+            &trait_name_string_in_pascal_case,
+            pat_ident.ident.span(),
+        );
+            fields = quote!( 
+                #fields
+                #comments
+                pub #handler_ident: Option<#event_handler_type<#handler_return_type, #context_type>>,
+            );
+            fields_for_constant = quote!(
+                #fields_for_constant
+                #handler_ident: #default_handler_value,
+            );
+            events = quote!(
+                #events
+
+                #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+                pub struct #event_name_ident_in_pascal_case;
+
+                impl #trait_name for #event_name_ident_in_pascal_case {
+                    type EventReturnType = #handler_return_type;
+                    type ContextType = #context_type;
+                    fn corresponding_handler(&self, event_handler_deck: &#struct_name) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>> {
+                        event_handler_deck.#handler_ident
+                    }
+        
+                    fn name(&self) -> &'static str {
+                        #event_trait_literal
+                    }
+                }
+            );
+
+            macro_fields = quote!(
+                #macro_fields
+                (stringify![#event_name_ident_in_pascal_case]) => { #handler_ident }
+            )
+    }
+
+    let output_token_stream = quote!(
+        #doc_comment
+        #[derive(Debug, Clone, Copy)]
+        #first_pub_keyword #struct_keyword #struct_name {
+            #fields
+        }
+
+        #const_keyword #default_handler_constant_name: #struct_name = #struct_name {
+            #fields_for_constant
+        };
+
+        #second_pub_keyword #trait_keyword #trait_name: Clone + Copy {
+            type EventReturnType: Sized + Clone + Copy;
+            type ContextType: Sized + Clone + Copy;
+
+            fn corresponding_handler(
+                &self,
+                event_handler_deck: &#struct_name,
+            ) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>>;
+
+            fn name(&self) -> &'static str;
+        }
+
+        #[macro_export]
+        macro_rules! corresponding_handler {
+            ($x: expr) => {
+                match stringify![$x] {
+                    #macro_fields
+                }
+            }            
+        }
+
+        pub mod event_dex {
+            use super::*;
+
+            #events
+        }
+    );
+    output_token_stream.into()
+}
+
+fn to_pascal_case(input_string: String) -> String {
+    let mut output_string = String::new();
+    let mut previous_char = None;
+    for char in input_string.chars() {
+        if let Some(previous_char) = previous_char {
+            if previous_char == '_' {
+                output_string.push(char.to_ascii_uppercase());
+            } else {
+                output_string.push(char);
+            }
+        } else {
+            output_string.push(char.to_ascii_uppercase());
+        }
+        previous_char = Some(char);
+    }
+    output_string.replace("_", "")
 }
 
 /// A small macro that allows one to annotate a type. Meant to be used for ambiguous returns.

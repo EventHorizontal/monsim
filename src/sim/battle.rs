@@ -18,7 +18,7 @@ type MutableMonsterIterator<'a> = Chain<IterMut<'a, Monster>, IterMut<'a, Monste
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Battle {
+pub struct BattleState {
     pub is_finished: bool,
     pub turn_number: u16,
     pub prng: Prng,
@@ -27,7 +27,7 @@ pub struct Battle {
     pub message_log: MessageLog,
 }
 
-impl Battle {
+impl BattleState {
     pub fn new(teams: PerTeam<MonsterTeam>) -> Self {
         Self {
             is_finished: false,
@@ -250,7 +250,7 @@ impl Battle {
     }
 }
 
-impl<'a> Display for Battle {
+impl<'a> Display for BattleState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 

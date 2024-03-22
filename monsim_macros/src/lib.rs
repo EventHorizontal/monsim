@@ -3,7 +3,7 @@ mod syntax;
 use syntax::{ExprBattle, ExprMonsterTeam, GameMechanicType, path_to_ident};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::parse_macro_input;
+use syn::{parse_macro_input, ExprType};
 
 /// This macro parses the following custom syntax:
 /// ```
@@ -30,7 +30,7 @@ use syn::parse_macro_input;
 /// ```
 /// and produces a `battle::Battle`.
 #[proc_macro]
-pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn battle_state(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the expression ________________________________________________________________
     let context_expr = parse_macro_input!(input as ExprBattle);
 
@@ -53,7 +53,7 @@ pub fn build_battle(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     
     let output = quote!(
         { 
-            monsim::sim::Battle::new(
+            monsim::sim::BattleState::new(
                 monsim::sim::PerTeam::new(monsim::sim::Ally(#ally_team_type::new(#ally_monsters_vec, TeamUID::Allies)),
                 monsim::sim::Opponent(#opponent_team_type::new(#opponent_monsters_vec, TeamUID::Opponents)))
             )
@@ -120,3 +120,10 @@ fn monster_team_to_tokens<'a>(
     quote!(vec![#comma_separated_monsters])
 }
 
+/// A small macro that allows one to annotate a type. Meant to be used for ambiguous returns.
+#[proc_macro]
+pub fn returns(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as ExprType);
+    let type_ = input.ty;
+    quote!(#type_).into()
+}

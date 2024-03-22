@@ -7,7 +7,7 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::sim::{AvailableChoices, Battle, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};
+use crate::sim::{AvailableChoices, BattleState, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};
 
 pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 
@@ -41,7 +41,7 @@ pub enum InputMode {
 }
 
 /// The main function for the application
-pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
+pub fn run(mut battle: BattleState) -> TuiResult<Nothing> {
     let (sender, receiver) = mpsc::channel();
     spawn_input_capturing_thread(sender);
     
@@ -133,7 +133,7 @@ pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
 /// Updates the `Ui` according to the input received and optionally returns a new `AppState` to transition to.
 fn update_from_input(
     ui: &mut Ui,
-    battle: &mut Battle,
+    battle: &mut BattleState,
     current_input_mode: &mut InputMode,
     choices_for_turn: &mut PerTeam<Option<FullySpecifiedChoice>>,
     pressed_key: KeyCode,

@@ -8,8 +8,8 @@ mod test;
 
 use tui::TuiResult;
 use monsim_utils::Nothing;
-use sim::Battle;
+use sim::BattleState;
 
-pub fn run(battle: Battle) -> TuiResult<Nothing> {
+pub fn run(battle: BattleState) -> TuiResult<Nothing> {
     cli::run(battle)
 }

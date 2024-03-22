@@ -1,15 +1,15 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, Battle, Nothing, Outcome, Percent};
+use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent};
 use contexts::*;
 use event_setup_macro::event_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventDispatcher;
 
-type EventCallback<R, C> = fn(&mut Battle, C, R) -> R;
+type EventCallback<R, C> = fn(&mut BattleState, C, R) -> R;
 #[cfg(feature = "debug")]
-type EventCallbackWithLifetime<'a, R, C> = fn(&'a mut Battle, C, R) -> R;
+type EventCallbackWithLifetime<'a, R, C> = fn(&'a mut BattleState, C, R) -> R;
 
 /// `R`: indicates return type
 ///
@@ -137,7 +137,7 @@ pub struct ActivationOrder {
 impl EventDispatcher {
 
     pub fn dispatch_trial_event<C: Copy>(
-        battle: &mut Battle,
+        battle: &mut BattleState,
         broadcaster_uid: MonsterUID,
         calling_context: C,
         event: impl InBattleEvent<EventReturnType = Outcome, ContextType = C>,
@@ -149,7 +149,7 @@ impl EventDispatcher {
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
     pub fn dispatch_event<R: PartialEq + Copy, C: Copy>(
-        battle: &mut Battle,
+        battle: &mut BattleState,
         broadcaster_uid: MonsterUID,
         calling_context: C,
         event: impl InBattleEvent<EventReturnType = R, ContextType = C>,
@@ -188,7 +188,7 @@ impl EventDispatcher {
     }
 
     fn filter_event_handlers(
-        battle: &Battle,
+        battle: &BattleState,
         broadcaster_uid: MonsterUID,
         owner_uid: MonsterUID,
         filter_options: EventFilteringOptions,
@@ -277,7 +277,7 @@ impl EventFilteringOptions {
 #[cfg(all(test, feature = "debug"))]
 mod tests {
     use super::*;
-    use crate::sim::build_battle;
+    use crate::sim::battle_state;
 
     #[test]
     fn test_if_priority_sorting_is_deterministic() {
@@ -290,7 +290,7 @@ mod tests {
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_battle = build_battle!(
+            let test_battle = battle_state!(
                 {
                     Allies: MonsterTeam {
                         Torchic: Monster = "Ruby" {
@@ -353,7 +353,7 @@ mod tests {
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_battle = build_battle!(
+            let test_battle = battle_state!(
                 {
                     Allies: MonsterTeam {
                         Torchic: Monster = "A" {
@@ -459,7 +459,7 @@ mod tests {
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
             MonsterNumber, TeamUID,
         };
-        let test_battle = build_battle!(
+        let test_battle = battle_state!(
             {
                 Allies: MonsterTeam {
                     Torchic: Monster = "Ruby" {

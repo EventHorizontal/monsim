@@ -17,7 +17,7 @@ impl Action {
     ///
     /// Calculates and applies the effects of a damaging move
     /// corresponding to `move_uid` being used on `target_uid`
-    pub fn use_damaging_move(battle: &mut Battle, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
+    pub fn use_damaging_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
         let attacker_uid = move_uid.owner_uid;
         let calling_context = MoveUsed::new(move_uid, target_uid);
 
@@ -110,7 +110,7 @@ impl Action {
         Ok(NOTHING)
     }
 
-    pub fn use_status_move(battle: &mut Battle, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
+    pub fn use_status_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
         let attacker_uid = move_uid.owner_uid;
         let calling_context = MoveUsed::new(move_uid, target_uid);
 
@@ -135,7 +135,7 @@ impl Action {
         Ok(NOTHING)
     }
 
-    pub fn perform_switch_out(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
+    pub fn perform_switch_out(battle: &mut BattleState, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> TurnResult {
         battle.team_mut(active_monster_uid.team_uid).active_monster_uid = benched_monster_uid;
         battle.message_log.push(format![
             "{active_monster} switched out! Go {benched_monster}!", 
@@ -151,7 +151,7 @@ impl Effect {
     ///
     /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
-    pub fn deal_damage(battle: &mut Battle, target_uid: MonsterUID, damage: u16) {
+    pub fn deal_damage(battle: &mut BattleState, target_uid: MonsterUID, damage: u16) {
         battle.monster_mut(target_uid).current_health = battle.monster(target_uid).current_health.saturating_sub(damage);
         if battle.monster(target_uid).current_health == 0 { battle.monster_mut(target_uid).is_fainted = true; };
     }
@@ -161,7 +161,7 @@ impl Effect {
     /// Resolves activation of any ability.
     ///
     /// Returns a `Outcome` indicating whether the ability succeeded.
-    pub fn activate_ability(battle: &mut Battle, ability_holder_uid: MonsterUID) -> Outcome {
+    pub fn activate_ability(battle: &mut BattleState, ability_holder_uid: MonsterUID) -> Outcome {
         let calling_context = AbilityUsed::new(ability_holder_uid);
 
         if EventDispatcher::dispatch_trial_event(battle, ability_holder_uid, calling_context, OnTryActivateAbility) == Outcome::Success {
@@ -177,7 +177,7 @@ impl Effect {
     /// Resolves raising the `stat` stat of the monster corresponding to `monster_uid` by `number_of_stages`. The stat cannot be HP.
     ///
     /// Returns a `bool` indicating whether the stat raising succeeded.
-    pub fn raise_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
+    pub fn raise_stat(battle: &mut BattleState, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
         if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, OnTryRaiseStat) == Outcome::Success {
             let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.raise_stat(stat, number_of_stages);
 
@@ -201,7 +201,7 @@ impl Effect {
     /// Resolves lowering the `stat` stat of the monster corresponding to `monster_uid` by `number_of_stages`. The stat cannot be HP.
     ///
     /// Returns a `bool` indicating whether the stat lowering succeeded.
-    pub fn lower_stat(battle: &mut Battle, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
+    pub fn lower_stat(battle: &mut BattleState, monster_uid: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
         if EventDispatcher::dispatch_trial_event(battle, monster_uid, NOTHING, OnTryLowerStat) == Outcome::Success {
             let effective_stages = battle.monster_mut(monster_uid).stat_modifiers.lower_stat(stat, number_of_stages);
 

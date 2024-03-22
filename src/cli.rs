@@ -2,7 +2,7 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, Team, NOTHING};
 
-use crate::{tui::TuiResult, sim::{AvailableChoices, AvailableChoicesForTeam, Battle, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
+use crate::{tui::TuiResult, sim::{AvailableChoices, AvailableChoicesForTeam, BattleState, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
 
 enum TurnStage {
     ChooseActions(AvailableChoices),
@@ -10,7 +10,7 @@ enum TurnStage {
     BattleEnded,
 }
 
-pub fn run(mut battle: Battle) -> TuiResult<Nothing> {
+pub fn run(mut battle: BattleState) -> TuiResult<Nothing> {
     let mut turn_stage = TurnStage::ChooseActions(battle.available_choices());
 
     // We lock stdout so that we don't have to acquire the lock every time with `println!`
@@ -178,7 +178,7 @@ enum UIChoice<T> {
     Repeat(PerTeam<FullySpecifiedChoice>),
 }
 
-fn translate_input_to_choices(battle: &Battle, available_choices_for_team: Team<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> TuiResult<UIChoice<Team<FullySpecifiedChoice>>> 
+fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: Team<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> TuiResult<UIChoice<Team<FullySpecifiedChoice>>> 
 {
 
     let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );

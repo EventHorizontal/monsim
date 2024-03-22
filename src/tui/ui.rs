@@ -3,7 +3,7 @@ use std::io::Stdout;
 use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
 use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
 
-use crate::sim::{AvailableChoicesForTeam, Battle, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID};
+use crate::sim::{AvailableChoicesForTeam, BattleState, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID};
 
 use super::{AppState, InputMode};
 
@@ -53,7 +53,7 @@ struct MessageLogPanel {
 struct SwitcheePrompt;
 
 impl SwitcheePrompt {
-    fn as_renderable_widget<'a>(battle: &Battle, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>) -> List<'a> {
+    fn as_renderable_widget<'a>(battle: &BattleState, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>) -> List<'a> {
         let list_items = possible_switchee_uids.into_iter()
             .flatten()
             .map(|monster_uid| {
@@ -84,7 +84,7 @@ const OPPONENT_TEAM_NAME: &str = "Opponent";
 const MAX_CHOICES: usize = 8;
 
 impl<'a> Ui<'a> {
-    pub(super) fn new(battle: &Battle) -> Self {
+    pub(super) fn new(battle: &BattleState) -> Self {
      
         let available_choices = battle.available_choices();
 
@@ -155,12 +155,12 @@ impl<'a> Ui<'a> {
         self.snap_message_log_cursor_to_beginning_of_last_message();
     }
 
-    pub(super) fn update_team_status_panels(&mut self, battle: &Battle) {
+    pub(super) fn update_team_status_panels(&mut self, battle: &BattleState) {
         self.update_team_status_panel(TeamUID::Allies, battle);
         self.update_team_status_panel(TeamUID::Opponents, battle);
     }
 
-    fn update_team_status_panel(&mut self, team_uid: TeamUID, battle: &Battle) {
+    fn update_team_status_panel(&mut self, team_uid: TeamUID, battle: &BattleState) {
         
         Self::choice_list_from_available_choices_for_team(
             &mut self.choice_selection_menus[team_uid].choice_list, 
@@ -172,7 +172,7 @@ impl<'a> Ui<'a> {
 
     pub(super) fn render(
         &self, terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, 
-        battle: &Battle,
+        battle: &BattleState,
         current_app_state: &super::AppState,
     ) -> std::io::Result<CompletedFrame<'a>> {
         terminal.draw(|frame| {

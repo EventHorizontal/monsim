@@ -1,20 +1,20 @@
 #[cfg(all(test, feature = "debug"))]
 mod main {
-    use battle_builder_macro::build_battle;
+    use monsim_macros::battle_state;
 
     use crate::sim::*;
     use crate::sim::{
         test_ability_dex::FlashFire,
-        battle::Battle,
+        battle::BattleState,
         test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
         test_move_dex::{Bubble, Ember, Growl, Scratch, Tackle},
         Ability, Monster, Move,
     };
 
     #[test]
-    fn test_build_battle_macro() {
+    fn test_battle_macro() {
         extern crate self as monsim;
-        let test_battle = build_battle!(
+        let test_battle = battle_state!(
             {
                 Allies: MonsterTeam {
                     Torchic: Monster = "Ruby" {
@@ -43,7 +43,7 @@ mod main {
             }
         );
         assert_eq!(test_battle, 
-            Battle::new(
+            BattleState::new(
                 PerTeam::new(
                     Ally(MonsterTeam::new(vec![
                         (Monster::new(
@@ -97,7 +97,7 @@ mod main {
 
 #[cfg(all(test, feature = "debug"))]
 mod battle {
-    use battle_builder_macro::build_battle;
+    use monsim_macros::battle_state;
 
     #[test]
     fn test_display_battle() {
@@ -108,7 +108,7 @@ mod battle {
             test_monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
-        let test_battle = build_battle!(
+        let test_battle = battle_state!(
             {
                 Allies: MonsterTeam {
                     Torchic: Monster = "Ruby" {

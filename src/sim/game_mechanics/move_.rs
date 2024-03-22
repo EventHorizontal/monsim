@@ -1,6 +1,6 @@
 use crate::sim::{
     event::{EventHandlerDeck, EventFilteringOptions},
-    Battle, MonsterUID, Type,
+    BattleState, MonsterUID, Type,
 };
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
@@ -18,7 +18,7 @@ pub struct MoveSpecies {
     pub event_handler_deck: EventHandlerDeck,
     pub event_handler_deck_filtering_options: EventFilteringOptions,
     /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
-    pub on_activate: Option<fn(&mut Battle, MonsterUID, MonsterUID)>,
+    pub on_activate: Option<fn(&mut BattleState, MonsterUID, MonsterUID)>,
 }
 
 const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
@@ -80,7 +80,7 @@ impl Move {
         self.species.base_accuracy
     }
 
-    pub(crate) fn on_activate(&self, battle: &mut Battle, owner_uid: MonsterUID, target_uid: MonsterUID) {
+    pub(crate) fn on_activate(&self, battle: &mut BattleState, owner_uid: MonsterUID, target_uid: MonsterUID) {
         let on_activate_logic = self.species.on_activate;
         if let Some(on_activate_logic) = on_activate_logic {
             on_activate_logic(battle, owner_uid, target_uid);

@@ -1,10 +1,10 @@
 use std::ops::{IndexMut, Index, Range};
 
-use monsim_utils::{Ally, ArrayOfOptionals, Opponent};
+use monsim_utils::ArrayOfOptionals;
 
 use crate::{sim::utils::slice_to_array_of_options, ActivationOrder};
 
-use super::{game_mechanics::{MonsterUID, MoveUID}, TeamUID};
+use super::game_mechanics::{MonsterUID, MoveUID};
 
 
 /// An action choice before certain details can be established, most often the target.

@@ -1,3 +1,4 @@
+#[cfg(features="monsim_tui")]
 pub(crate) mod tui;
 pub(crate) mod cli;
 #[cfg(feature = "debug")]
@@ -7,6 +8,7 @@ mod test;
 
 use std::error::Error;
 pub use sim::*;
+#[cfg(features="monsim_tui")]
 pub use tui::run as run_tui;
 pub use cli::run as run_cli;
 

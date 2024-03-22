@@ -8,7 +8,8 @@ use super::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Action;
 
-/// **Effects** are triggered Actions or by other Effects. This results in a chain reaction that _should_ eventually cease. 
+/// **Effects** are triggered Actions or by other Effects. This results in a chain reaction that _should_ eventually cease.
+/// Effects are _atomic_, that is, you are not supposed to do half of an Effect, this may leave the Battle in an invalid state. 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Effect;
 

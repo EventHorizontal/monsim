@@ -407,7 +407,7 @@ impl<T> Ally<T> {
         self.0
     }
 
-    pub fn map<U, F>(self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
+    pub fn map_consume<U, F>(self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
         let item = f(self.0);
         Ally(item)
     }
@@ -524,7 +524,7 @@ impl<T> TeamAffl<T> {
         where F: FnOnce(T) -> U
     {
         match self {
-            TeamAffl::Ally(a) => TeamAffl::Ally(a.map(f)),
+            TeamAffl::Ally(a) => TeamAffl::Ally(a.map_consume(f)),
             TeamAffl::Opponent(o) => TeamAffl::Opponent(o.map_consume(f)),
         }
     }

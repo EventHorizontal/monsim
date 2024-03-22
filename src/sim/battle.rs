@@ -3,7 +3,7 @@ mod message_log;
 use utils::{not, Ally, ArrayOfOptionals, Opponent};
 
 use crate::sim::{
-        utils, Ability, ActivationOrder, AvailableChoices, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
+        utils, Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
 };
 
 use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
@@ -74,7 +74,7 @@ impl BattleState {
     }
 
     pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
-        self.active_monsters().map(|monster| { monster.uid })
+        self.active_monsters().map_consume(|monster| { monster.uid })
     }
 
     /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
@@ -175,20 +175,17 @@ impl BattleState {
     // Choice -------------------------------------
 
 
-    pub fn available_choices(&self) -> AvailableChoices {
-        let ally_team_available_actions = self.available_choices_for_team(TeamUID::Allies);
-        let opponent_team_available_actions = self.available_choices_for_team(TeamUID::Opponents);
-
-        AvailableChoices {
-            ally_team_available_choices: ally_team_available_actions,
-            opponent_team_available_choices: opponent_team_available_actions,
-        }
+    pub fn available_choices(&self) -> PerTeam<AvailableChoicesForTeam> {
+        self.teams.map_clone(|team| {
+            self.available_choices_for_team(team.id)
+        })
     }
 
     fn available_choices_for_team(&self, team_uid: TeamUID) -> AvailableChoicesForTeam {
         
         let active_monster_on_team = self.active_monsters_on_team(team_uid);
         
+        // Move choices
         let moves = active_monster_on_team.move_uids();
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
@@ -205,6 +202,7 @@ impl BattleState {
             move_actions.push(partially_specified_choice);
         }
 
+        // Switch choice
         let switchable_benched_monster_uids = self.switchable_benched_monster_uids(team_uid);
         let any_valid_switchees = not!(switchable_benched_monster_uids.iter().flatten().count() == 0 );
         let switch_action = if any_valid_switchees {

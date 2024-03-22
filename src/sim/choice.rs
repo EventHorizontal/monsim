@@ -31,31 +31,6 @@ impl FullySpecifiedChoice {
     }
 }
 
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AvailableChoices {
-    pub ally_team_available_choices: AvailableChoicesForTeam,
-    pub opponent_team_available_choices: AvailableChoicesForTeam,
-}
-
-impl Index<TeamUID> for AvailableChoices {
-    type Output = AvailableChoicesForTeam;
-
-    fn index(&self, index: TeamUID) -> &Self::Output {
-        match index {
-            TeamUID::Allies => &self.ally_team_available_choices,
-            TeamUID::Opponents => &self.opponent_team_available_choices,
-        }
-    }
-}
-
-impl AvailableChoices {
-    pub(crate) fn unwrap(&self) -> (Ally<AvailableChoicesForTeam>, Opponent<AvailableChoicesForTeam>) {
-        (Ally(self.ally_team_available_choices), Opponent(self.opponent_team_available_choices))
-    }
-}
-
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableChoicesForTeam {
     // All the Some variants should be in the beginning.

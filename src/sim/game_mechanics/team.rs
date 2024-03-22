@@ -60,6 +60,14 @@ impl<T> PerTeam<T> {
         Opponent(&mut self.opponent_team_item)
     }
 
+    pub fn map_consume<U, F>(self, f: F) -> PerTeam<U>
+    where
+        F: Fn(T) -> U,
+    {
+        let (ally_team_item, opponent_team_item) = self.unwrap();
+        PerTeam::new(ally_team_item.map_consume(&f), opponent_team_item.map_consume(f))
+    }
+
     /// Consumes `self`
     pub fn unwrap(self) -> (Ally<T>, Opponent<T>) {
         (self.ally_team_item, self.opponent_team_item)
@@ -96,11 +104,12 @@ impl<T: Clone> PerTeam<T> {
         [(*self.ally_team_item).clone(), (*self.opponent_team_item).clone()]
     }
 
-    pub fn map<U: Clone, F>(self, f: F) -> PerTeam<U>
+    pub fn map_clone<U, F>(&self, f: F) -> PerTeam<U>
     where
         F: Fn(T) -> U,
     {
-        PerTeam::new(self.ally_team_item.map_clone(&f), self.opponent_team_item.map_consume(f))
+        let (ally_team_item, opponent_team_item) = self.unwrap_ref();
+        PerTeam::new(ally_team_item.map_clone(&f), opponent_team_item.map_clone(f))
     }
 }
 

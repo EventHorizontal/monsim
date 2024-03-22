@@ -7,7 +7,7 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::{sim::{AvailableChoices, BattleSimulator, BattleState, FullySpecifiedChoice, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE}, ActivationOrder};
+use crate::{sim::{BattleSimulator, BattleState, FullySpecifiedChoice, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE}, ActivationOrder, AvailableChoicesForTeam};
 
 pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 
@@ -30,7 +30,7 @@ impl AppState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(clippy::large_enum_variant)]
 pub enum InputMode {
-    MidBattle(AvailableChoices),
+    MidBattle(PerTeam<AvailableChoicesForTeam>),
     SwitcheePrompt {
         is_between_turn_switch: bool,
         active_monster_uid: MonsterUID,

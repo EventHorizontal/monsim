@@ -2,10 +2,10 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, TeamAffl, NOTHING};
 
-use crate::{tui::TuiResult, sim::{AvailableChoices, AvailableChoicesForTeam, BattleState, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
+use crate::{tui::TuiResult, sim::{AvailableChoicesForTeam, BattleState, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
 
 enum TurnStage {
-    ChooseActions(AvailableChoices),
+    ChooseActions(PerTeam<AvailableChoicesForTeam>),
     SimulateTurn(PerTeam<FullySpecifiedChoice>),
     BattleEnded,
 }

@@ -15,7 +15,7 @@ pub const Tackle: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    ..MoveSpecies::default()
+    ..MoveSpecies::const_default()
 };
 
 pub const Scratch: MoveSpecies = MoveSpecies {
@@ -25,7 +25,7 @@ pub const Scratch: MoveSpecies = MoveSpecies {
     category: MoveCategory::Physical,
     base_power: 40,
     base_accuracy: 100,
-    ..MoveSpecies::default()
+    ..MoveSpecies::const_default()
 };
 
 pub const Ember: MoveSpecies = MoveSpecies {
@@ -35,7 +35,7 @@ pub const Ember: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    ..MoveSpecies::default()
+    ..MoveSpecies::const_default()
 };
 
 pub const Bubble: MoveSpecies = MoveSpecies {
@@ -45,7 +45,7 @@ pub const Bubble: MoveSpecies = MoveSpecies {
     category: MoveCategory::Special,
     base_power: 40,
     base_accuracy: 100,
-    ..MoveSpecies::default()
+    ..MoveSpecies::const_default()
 };
 
 pub const Growl: MoveSpecies = MoveSpecies {
@@ -58,5 +58,5 @@ pub const Growl: MoveSpecies = MoveSpecies {
     on_activate: Some(|battle: &mut BattleState, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
         _ = Effect::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
     }),
-    ..MoveSpecies::default()
+    ..MoveSpecies::const_default()
 };

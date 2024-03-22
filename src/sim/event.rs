@@ -241,7 +241,7 @@ impl<'a, R: Copy, C: Copy> Debug for EventHandler<R, C> {
 }
 
 impl EventHandlerDeck {
-    pub const fn default() -> Self {
+    pub const fn const_default() -> Self {
         DEFAULT_DECK
     }
 }

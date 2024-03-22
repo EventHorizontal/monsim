@@ -32,77 +32,6 @@ impl BattleState {
         }
     }
 
-    // Monsters -----------------
-
-    pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
-        let (ally_team, opponent_team) = self.teams.unwrap_ref();
-        ally_team.monsters().iter().chain(opponent_team.monsters().iter())
-    }
-
-    pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
-        let (ally_team, opponent_team) = self.teams.unwrap_mut();
-        ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
-    }
-
-    pub fn monster(&self, monster_uid: MonsterUID) -> &Monster {
-        let team = self.team(monster_uid.team_uid);
-        &team[monster_uid.monster_number]
-    }
-
-    pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
-        let team = self.team_mut(monster_uid.team_uid);
-        &mut team[monster_uid.monster_number]
-    }
-
-    pub fn active_monsters(&self) -> PerTeam<&Monster> {
-        let ally_team_active_monster = Ally(self.monster(self.ally_team().active_monster_uid));
-        let opponent_team_active_monster = Opponent(self.monster(self.opponent_team().active_monster_uid));
-        PerTeam::new(
-            ally_team_active_monster,
-            opponent_team_active_monster,
-        )
-    }
-
-    pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
-        self.active_monsters().map_consume(|monster| { monster.uid })
-    }
-
-    /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
-    pub fn active_monsters_on_team(&self, team_uid: TeamUID) -> &Monster {
-        self.monster(self.teams[team_uid].active_monster_uid)
-    }
-
-    pub fn is_active_monster(&self, monster_uid: MonsterUID) -> bool {
-        self.teams[monster_uid.team_uid].active_monster_uid == monster_uid
-    }
-
-    // Abilities -----------------
-
-    pub fn ability(&self, owner_uid: MonsterUID) -> &Ability {
-        &self.monster(owner_uid)
-            .ability
-    }
-
-    pub fn ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
-        &mut self
-            .monster_mut(owner_uid)
-            .ability
-    }
-
-    // Moves -----------------
-
-    pub fn move_(&self, move_uid: MoveUID) -> &Move {
-        self.monster(move_uid.owner_uid)
-            .moveset
-            .move_(move_uid.move_number)
-    }
-
-    pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
-        self.monster_mut(move_uid.owner_uid)
-            .moveset
-            .move_mut(move_uid.move_number)
-    }
-
     // Teams -----------------
 
     pub fn team(&self, team_uid: TeamUID) -> &MonsterTeam {
@@ -162,8 +91,75 @@ impl BattleState {
         out
     }
 
-    // Choice -------------------------------------
+    // Monsters -----------------
 
+    pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
+        let (ally_team, opponent_team) = self.teams.unwrap_ref();
+        ally_team.monsters().iter().chain(opponent_team.monsters().iter())
+    }
+
+    pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
+        let (ally_team, opponent_team) = self.teams.unwrap_mut();
+        ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
+    }
+
+    pub fn monster(&self, monster_uid: MonsterUID) -> &Monster {
+        let team = self.team(monster_uid.team_uid);
+        &team[monster_uid.monster_number]
+    }
+
+    pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
+        let team = self.team_mut(monster_uid.team_uid);
+        &mut team[monster_uid.monster_number]
+    }
+
+    pub fn active_monsters(&self) -> PerTeam<&Monster> {
+        let ally_team_active_monster = self.ally_team().map_consume(|team| { self.monster(team.active_monster_uid) });
+        let opponent_team_active_monster = self.opponent_team().map_consume(|team| { self.monster(team.active_monster_uid) });
+        PerTeam::new(ally_team_active_monster, opponent_team_active_monster)
+    }
+
+    pub(crate) fn active_monster_uids(&self) -> PerTeam<MonsterUID> {
+        self.active_monsters().map_consume(|monster| { monster.uid })
+    }
+
+    /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
+    pub fn active_monsters_on_team(&self, team_uid: TeamUID) -> &Monster {
+        self.monster(self.teams[team_uid].active_monster_uid)
+    }
+
+    pub fn is_active_monster(&self, monster_uid: MonsterUID) -> bool {
+        self.teams[monster_uid.team_uid].active_monster_uid == monster_uid
+    }
+
+    // Abilities -----------------
+
+    pub fn ability(&self, owner_uid: MonsterUID) -> &Ability {
+        &self.monster(owner_uid)
+            .ability
+    }
+
+    pub fn ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
+        &mut self
+            .monster_mut(owner_uid)
+            .ability
+    }
+
+    // Moves -----------------
+
+    pub fn move_(&self, move_uid: MoveUID) -> &Move {
+        self.monster(move_uid.owner_uid)
+            .moveset
+            .move_(move_uid.move_number)
+    }
+
+    pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
+        self.monster_mut(move_uid.owner_uid)
+            .moveset
+            .move_mut(move_uid.move_number)
+    }
+
+    // Choice -------------------------------------
 
     pub fn available_choices(&self) -> PerTeam<AvailableChoicesForTeam> {
         self.teams.map_clone(|team| {
@@ -217,6 +213,9 @@ impl BattleState {
         )
     }
 
+    // TODO: Once we have multitargeting/multiple active monsters, if one monster has selected
+    // to switch out with a particular benched monster, that benched monster will need to be excluded.
+    // Perhaps the ui will take care of that though?
     /// Returns an array of options where all the `Some` variants are at the beginning.
     pub(crate) fn switchable_benched_monster_uids(&self, team_uid: TeamUID) -> MaxSizedVec<MonsterUID, 5> {
         let mut number_of_switchees = 0;

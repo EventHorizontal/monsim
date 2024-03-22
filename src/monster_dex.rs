@@ -8,7 +8,7 @@ pub const Treecko: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Grass,
     secondary_type: None,
     base_stats: StatSet::new(40, 45, 35, 65, 55, 70),
-    ..MonsterSpecies::default()
+    ..MonsterSpecies::const_default()
 };
 
 pub const Torchic: MonsterSpecies = MonsterSpecies {
@@ -17,7 +17,7 @@ pub const Torchic: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Fire,
     secondary_type: None,
     base_stats: StatSet::new(45, 60, 40, 70, 50, 45),
-    ..MonsterSpecies::default()
+    ..MonsterSpecies::const_default()
 };
 
 pub const Mudkip: MonsterSpecies = MonsterSpecies {
@@ -26,7 +26,7 @@ pub const Mudkip: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Water,
     secondary_type: None,
     base_stats: StatSet::new(50, 70, 50, 50, 50, 40),
-    ..MonsterSpecies::default()
+    ..MonsterSpecies::const_default()
 };
 
 pub const Drifloon: MonsterSpecies = MonsterSpecies {
@@ -35,7 +35,7 @@ pub const Drifloon: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Ghost,
     secondary_type: Some(Type::Flying),
     base_stats: StatSet::new(90, 50, 34, 60, 44, 70),
-    ..MonsterSpecies::default()
+    ..MonsterSpecies::const_default()
 };
 
 pub const Drifblim: MonsterSpecies = MonsterSpecies {
@@ -44,5 +44,5 @@ pub const Drifblim: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Ghost,
     secondary_type: Some(Type::Flying),
     base_stats: StatSet::new(150, 80, 44, 90, 54, 80),
-    ..MonsterSpecies::default()
+    ..MonsterSpecies::const_default()
 };

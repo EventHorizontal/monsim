@@ -25,13 +25,13 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             #[cfg(feature = "debug")]
             debugging_information: source_code_location!(),
         }),
-        ..EventHandlerDeck::default()
+        ..EventHandlerDeck::const_default()
     },
     on_activate: |battle, owner_uid| {
         let owner_name = battle.monster(owner_uid).name();
         battle.message_log.push(format!["{owner_name}'s Flash Fire activated!"]);
     },
-    ..AbilitySpecies::default()
+    ..AbilitySpecies::const_default()
 };
 
 pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
@@ -51,11 +51,11 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
             #[cfg(feature = "debug")]
             debugging_information: source_code_location!(),
         }),
-        ..EventHandlerDeck::default()
+        ..EventHandlerDeck::const_default()
     },
     on_activate: |battle, owner_uid| {
         let owner_name = battle.monster(owner_uid).name();
         battle.message_log.push(format!["{owner_name}'s Water Absorb activated!"]);
     },
-    ..AbilitySpecies::default()
+    ..AbilitySpecies::const_default()
 };

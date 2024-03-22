@@ -30,7 +30,7 @@ const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     base_power: 50,
     base_accuracy: 100,
     priority: 0,
-    event_handler_deck: EventHandlerDeck::default(),
+    event_handler_deck: EventHandlerDeck::const_default(),
     event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
@@ -52,7 +52,7 @@ impl PartialEq for MoveSpecies {
 }
 
 impl MoveSpecies {
-    pub const fn default() -> Self {
+    pub const fn const_default() -> Self {
         MOVE_DEFAULTS
     }
 }

@@ -18,7 +18,7 @@ impl Action {
     ///
     /// Calculates and applies the effects of a damaging move
     /// corresponding to `move_uid` being used on `target_uid`
-    pub fn use_damaging_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> TurnResult {
+    pub fn use_damaging_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> SimResult {
         let attacker_uid = move_uid.owner_uid;
         let calling_context = MoveUsed::new(move_uid, target_uid);
 
@@ -51,7 +51,7 @@ impl Action {
             MoveCategory::Status => unreachable!("The damaging_move function is not expected to receive status moves."),
         }
 
-        let random_multiplier = battle.prng.generate_u16_in_range(85..=100);
+        let random_multiplier = battle.prng.generate_random_u16_in_range(85..=100);
         let random_multiplier = ClampedPercent::from(random_multiplier);
 
         let stab_multiplier = {

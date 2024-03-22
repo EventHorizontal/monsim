@@ -74,16 +74,20 @@ impl BattleSimulator {
 
         // TEMP: Will need to be updated when multiple Monsters per battle is implemented.
         let mut choices = choices.as_array();
-        ordering::sort_choices_by_activation_order(battle, &mut choices);
+        ordering::sort_by_activation_order(
+            &mut battle.prng, 
+            &mut choices, 
+            &mut |choice| { choice.activation_order() }
+        );
 
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { move_uid, target_uid } => match battle.move_(move_uid).category() {
+                FullySpecifiedChoice::Move { move_uid, target_uid, .. } => match battle.move_(move_uid).category() {
                     MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, move_uid, target_uid),
                     MoveCategory::Status => Action::use_status_move(battle, move_uid, target_uid),
                 },
-                FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid } => {
+                FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, .. } => {
                     Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)
                 }
             }?;

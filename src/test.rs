@@ -197,16 +197,14 @@ mod event {
 
 #[cfg(all(test, feature = "debug"))]
 mod prng {
-    use std::time;
-
     use crate::sim::prng::*;
 
     #[test]
     fn test_prng_percentage_chance() {
-        let mut lcrng = Prng::new(seed_from_time_now());
+        let mut prng = Prng::from_current_time();
         let mut dist = [0u64; 100];
         for _ in 0..=10_000_000 {
-            let n = lcrng.generate_u16_in_range(0..=99) as usize;
+            let n = prng.generate_random_u16_in_range(0..=99) as usize;
             dist[n] += 1;
         }
         let avg_deviation = dist
@@ -222,23 +220,22 @@ mod prng {
 
     #[test]
     fn test_if_prng_is_deterministic_for_specific_seed() {
-        let seed = seed_from_time_now();
-        let mut lcrng_1 = Prng::new(seed);
-        let mut lcrng_2 = Prng::new(seed);
+        let mut prng1 = Prng::from_current_time();
+        let mut prng2 = prng1;
         for i in 0..10_000 {
-            let generated_number_1 = lcrng_1.generate_u16_in_range(0..=u16::MAX - 1);
-            let generated_number_2 = lcrng_2.generate_u16_in_range(0..=u16::MAX - 1);
+            let generated_number_1 = prng1.generate_random_u16_in_range(0..=u16::MAX - 1);
+            let generated_number_2 = prng2.generate_random_u16_in_range(0..=u16::MAX - 1);
             assert_eq!(generated_number_1, generated_number_2, "iteration {}", i);
         }
     }
 
     #[test]
     fn test_prng_chance() {
-        let mut lcrng = Prng::new(time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs());
+        let mut prng = Prng::from_current_time();
 
         let mut success = 0.0;
         for _ in 0..=10_000_000 {
-            if lcrng.chance(33, 100) {
+            if prng.chance(33, 100) {
                 success += 1.0;
             }
         }

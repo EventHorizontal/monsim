@@ -7,7 +7,7 @@ use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, 
 use monsim_utils::{ArrayOfOptionals, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::sim::{AvailableChoices, BattleState, BattleSimulator, MonsterUID, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE};
+use crate::{sim::{AvailableChoices, BattleSimulator, BattleState, FullySpecifiedChoice, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE}, ActivationOrder};
 
 pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 
@@ -35,6 +35,7 @@ pub enum InputMode {
         is_between_turn_switch: bool,
         active_monster_uid: MonsterUID,
         switchable_benched_monster_uids: ArrayOfOptionals<MonsterUID, 5>,
+        activation_order: ActivationOrder,
         highlight_cursor: usize,
     },
     PostBattle,
@@ -106,11 +107,16 @@ pub fn run(mut battle: BattleState) -> TuiResult<Nothing> {
                 if battle.is_finished {
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::PostBattle)));
                 } else if let Some(fainted_battler) = maybe_fainted_active_battler {
+                    // HACK: Quickly cobbled together a way to get the ActivationOrder here, but not sure
+                    // if this is guaranteed to give the right one, especially if there are 
+                    // multiple monsters.
+                    let activation_order = { if let FullySpecifiedChoice::SwitchOut { activation_order, .. } = choices[fainted_battler.uid.team_uid] { activation_order } else { unreachable!() } };
                     // FIXME: We cannot handle multiple simultaneous fainted battlers with this logic
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::SwitcheePrompt { 
                         is_between_turn_switch: true,
                         active_monster_uid: fainted_battler.uid,
                         switchable_benched_monster_uids: battle.switchable_benched_monster_uids(fainted_battler.uid.team_uid),
+                        activation_order,
                         highlight_cursor: 0 
                     })));
                 } else {
@@ -153,15 +159,16 @@ fn update_from_input(
                         let available_choices_for_team = available_choices[team_uid];
                         let selected_choice = available_choices_for_team.get_by_index(selected_menu_item_index);
                         match selected_choice {
-                            PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => {
-                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { move_uid, target_uid })
+                            PartiallySpecifiedChoice::Move { move_uid, target_uid, activation_order, .. } => {
+                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { move_uid, target_uid, activation_order })
                             },
-                            PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, .. } => {
+                            PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
                                 // Update the switchee list when the switch option is selected.
                                 return Some(AppState::AcceptingInput(InputMode::SwitcheePrompt {
                                     is_between_turn_switch: false,
                                     active_monster_uid,
                                     switchable_benched_monster_uids,
+                                    activation_order,
                                     highlight_cursor: 0,
                                 }));
                             },
@@ -189,7 +196,7 @@ fn update_from_input(
             }
         },
 
-        InputMode::SwitcheePrompt { is_between_turn_switch, active_monster_uid, switchable_benched_monster_uids, highlight_cursor} => {
+        InputMode::SwitcheePrompt { is_between_turn_switch, active_monster_uid, switchable_benched_monster_uids, highlight_cursor, activation_order} => {
             match pressed_key {
                 KeyCode::Esc => {
                     Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
@@ -218,7 +225,7 @@ fn update_from_input(
 
                             *choices_for_turn = PerTeam::both(None);
                         } else {
-                            choices_for_turn[active_monster_uid.team_uid] = Some(FullySpecifiedChoice::SwitchOut { active_monster_uid: *active_monster_uid, benched_monster_uid });
+                            choices_for_turn[active_monster_uid.team_uid] = Some(FullySpecifiedChoice::SwitchOut { active_monster_uid: *active_monster_uid, benched_monster_uid, activation_order: *activation_order });
                         }
                         Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
                     } else {

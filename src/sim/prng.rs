@@ -9,15 +9,19 @@ pub struct Prng {
     current_seed: u64,
 }
 
-pub fn seed_from_time_now() -> u64 {
-    time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs()
-}
-
 const A: u64 = 0x5D588B656C078965;
 const C: u64 = 0x00269EC3;
 
 impl Prng {
     pub(crate) fn new(start_seed: u64) -> Self {
+        Self {
+            start_seed,
+            current_seed: start_seed,
+        }
+    }
+
+    pub(crate) fn from_current_time() -> Self {
+        let start_seed = Self::seed_from_current_time();
         Self {
             start_seed,
             current_seed: start_seed,
@@ -32,7 +36,7 @@ impl Prng {
     }
 
     /// Returns each u16 in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
-    pub(crate) fn generate_u16_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
+    pub(crate) fn generate_random_u16_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
         let start = range.next().expect("The range given to generate_number_in_range must have a first element.");
         let end = range
             .next_back()
@@ -50,6 +54,10 @@ impl Prng {
     // TEMP: Unsure whether this will find use. Either this comment or the function will be removed in the future.
     pub fn chance(&mut self, num: u16, denom: u16) -> bool {
         assert!(denom != 0);
-        self.generate_u16_in_range(1..=denom) <= num
+        self.generate_random_u16_in_range(1..=denom) <= num
+    }
+
+    fn seed_from_current_time() -> u64 {
+        time::SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs()
     }
 }

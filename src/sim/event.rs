@@ -317,7 +317,7 @@ mod tests {
                 }
             );
 
-            let mut prng = Prng::new(crate::sim::prng::seed_from_time_now());
+            let mut prng = Prng::from_current_time();
 
             let event_handler_deck_instances = test_battle.event_handler_deck_instances();
             use crate::sim::event_dex::OnTryMove;

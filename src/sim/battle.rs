@@ -3,14 +3,12 @@ mod message_log;
 use utils::{not, Ally, ArrayOfOptionals, Opponent};
 
 use crate::sim::{
-        Ability, FullySpecifiedChoice, ActivationOrder, AvailableChoices, Monster,
-        MonsterTeam, MonsterUID, Move, MoveUID, Stat, AvailableChoicesForTeam,
-        utils,
+        utils, Ability, ActivationOrder, AvailableChoices, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
 };
 
 use std::{fmt::Display, iter::Chain, slice::{Iter, IterMut}};
 
-use super::{event::OwnedEventHandlerDeck, prng::{self, Prng}, PartiallySpecifiedChoice, PerTeam, TeamUID};
+use super::{event::OwnedEventHandlerDeck, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
 
 type MonsterIterator<'a> = Chain<Iter<'a, Monster>, Iter<'a, Monster>>;
@@ -19,20 +17,22 @@ type MutableMonsterIterator<'a> = Chain<IterMut<'a, Monster>, IterMut<'a, Monste
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattleState {
-    pub is_finished: bool,
+
+    pub(crate) prng: Prng,
     pub turn_number: u16,
-    pub prng: Prng,
-    teams: PerTeam<MonsterTeam>,
+    pub is_finished: bool,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
+    
+    teams: PerTeam<MonsterTeam>,
 }
 
 impl BattleState {
     pub fn new(teams: PerTeam<MonsterTeam>) -> Self {
         Self {
+            prng: Prng::from_current_time(),
             is_finished: false,
             turn_number: 0,
-            prng: Prng::new(prng::seed_from_time_now()),
             teams,
             message_log: MessageLog::new(),
         }
@@ -174,21 +174,6 @@ impl BattleState {
 
     // Choice -------------------------------------
 
-    /// Given an action choice, computes its activation order. This is handled by `Battle` because the order is context sensitive.
-    pub(crate) fn choice_activation_order(&self, choice: FullySpecifiedChoice) -> ActivationOrder {
-        match choice {
-            FullySpecifiedChoice::Move { move_uid, target_uid: _ } => ActivationOrder {
-                priority: self.move_(move_uid).species.priority,
-                speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
-                order: 0, //TODO: Think about how to restrict order to be mutually exclusive
-            },
-            FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid: _ } => ActivationOrder { 
-                priority: 8, 
-                speed: self.monster(active_monster_uid).stats[Stat::Speed], 
-                order: 0
-            }
-        }
-    }
 
     pub fn available_choices(&self) -> AvailableChoices {
         let ally_team_available_actions = self.available_choices_for_team(TeamUID::Allies);
@@ -210,6 +195,11 @@ impl BattleState {
             let partially_specified_choice = PartiallySpecifiedChoice::Move { 
                 move_uid,
                 target_uid: self.active_monsters_on_team(team_uid.other()).uid,
+                activation_order: ActivationOrder {
+                    priority: self.move_(move_uid).species.priority,
+                    speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
+                    order: 0, //TODO: Think about how to restrict order to be mutually exclusive
+                },
                 display_text: self.move_(move_uid).species.name 
             };
             move_actions.push(partially_specified_choice);
@@ -221,6 +211,11 @@ impl BattleState {
             Some(PartiallySpecifiedChoice::SwitchOut { 
                 active_monster_uid: active_monster_on_team.uid, 
                 switchable_benched_monster_uids,
+                activation_order: ActivationOrder { 
+                    priority: 8, 
+                    speed: self.monster(active_monster_on_team.uid).stats[Stat::Speed], 
+                    order: 0
+                },
                 display_text: "Switch Out",
             })
         } else {

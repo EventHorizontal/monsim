@@ -201,9 +201,9 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
     let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[chosen_action_index].unwrap());
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
-            PartiallySpecifiedChoice::Move { move_uid, target_uid, .. } => FullySpecifiedChoice::Move { move_uid, target_uid },
+            PartiallySpecifiedChoice::Move { move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { move_uid, target_uid, activation_order },
             
-            PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, .. } => {
+            PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
                 let switchee_names = switchable_benched_monster_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();
                 let _ = writeln!(locked_stdout, "Choose a monster to switch with");
                 for (index, switchee_name) in switchee_names {
@@ -211,7 +211,7 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
                 }
                 let chosen_switchee_index = input_as_usize(locked_stdout, switchable_benched_monster_uids.iter().flatten().count()).unwrap();
                 let benched_monster_uid = switchable_benched_monster_uids[chosen_switchee_index].unwrap();
-                FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid }
+                FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, activation_order }
             },
         }
     });

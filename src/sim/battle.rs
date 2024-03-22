@@ -190,6 +190,7 @@ impl BattleState {
         let mut move_actions = Vec::with_capacity(4);
         for move_uid in moves {
             let partially_specified_choice = PartiallySpecifiedChoice::Move { 
+                attacker_uid: move_uid.owner_uid,
                 move_uid,
                 target_uid: self.active_monsters_on_team(team_uid.other()).uid,
                 activation_order: ActivationOrder {

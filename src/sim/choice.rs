@@ -11,7 +11,7 @@ use super::game_mechanics::{MonsterUID, MoveUID};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartiallySpecifiedChoice {
     /// TODO: This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
-    Move{ move_uid: MoveUID, target_uid: MonsterUID, activation_order: ActivationOrder, display_text: &'static str},
+    Move{ attacker_uid: MonsterUID, move_uid: MoveUID, target_uid: MonsterUID, activation_order: ActivationOrder, display_text: &'static str},
     /// A switch out action before we know which monster to switch with.
     SwitchOut { active_monster_uid: MonsterUID, switchable_benched_monster_uids: ArrayOfOptionals<MonsterUID, 5>, activation_order: ActivationOrder, display_text: &'static str },
 }
@@ -19,7 +19,7 @@ pub enum PartiallySpecifiedChoice {
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedChoice {
-    Move { move_uid: MoveUID, target_uid: MonsterUID, activation_order: ActivationOrder },
+    Move { attacker_uid: MonsterUID, move_uid: MoveUID, target_uid: MonsterUID, activation_order: ActivationOrder },
     SwitchOut { active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID, activation_order: ActivationOrder },
 }
 impl FullySpecifiedChoice {

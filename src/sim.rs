@@ -83,9 +83,9 @@ impl BattleSimulator {
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { move_uid, target_uid, .. } => match battle.move_(move_uid).category() {
-                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, move_uid, target_uid),
-                    MoveCategory::Status => Action::use_status_move(battle, move_uid, target_uid),
+                FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, .. } => match battle.move_(move_uid).category() {
+                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, attacker_uid, move_uid, target_uid),
+                    MoveCategory::Status => Action::use_status_move(battle, attacker_uid, move_uid, target_uid),
                 },
                 FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, .. } => {
                     Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)

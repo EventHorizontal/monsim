@@ -159,8 +159,8 @@ fn update_from_input(
                         let available_choices_for_team = available_choices[team_uid];
                         let selected_choice = available_choices_for_team.get_by_index(selected_menu_item_index);
                         match selected_choice {
-                            PartiallySpecifiedChoice::Move { move_uid, target_uid, activation_order, .. } => {
-                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { move_uid, target_uid, activation_order })
+                            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => {
+                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order })
                             },
                             PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
                                 // Update the switchee list when the switch option is selected.

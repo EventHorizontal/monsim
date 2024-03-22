@@ -18,8 +18,7 @@ impl Action {
     ///
     /// Calculates and applies the effects of a damaging move
     /// corresponding to `move_uid` being used on `target_uid`
-    pub fn use_damaging_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> SimResult {
-        let attacker_uid = move_uid.owner_uid;
+    pub fn use_damaging_move(battle: &mut BattleState, attacker_uid: MonsterUID, move_uid: MoveUID, target_uid: MonsterUID) -> SimResult {
         let calling_context = MoveUsed::new(move_uid, target_uid);
 
         battle.message_log.push(format![
@@ -111,8 +110,7 @@ impl Action {
         Ok(NOTHING)
     }
 
-    pub fn use_status_move(battle: &mut BattleState, move_uid: MoveUID, target_uid: MonsterUID) -> SimResult {
-        let attacker_uid = move_uid.owner_uid;
+    pub fn use_status_move(battle: &mut BattleState, attacker_uid: MonsterUID, move_uid: MoveUID, target_uid: MonsterUID) -> SimResult {
         let calling_context = MoveUsed::new(move_uid, target_uid);
 
         battle.message_log.push(format![

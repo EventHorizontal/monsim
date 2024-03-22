@@ -201,7 +201,7 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
     let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[chosen_action_index].unwrap());
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
-            PartiallySpecifiedChoice::Move { move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { move_uid, target_uid, activation_order },
+            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order },
             
             PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
                 let switchee_names = switchable_benched_monster_uids.into_iter().flatten().map(|uid| battle.monster(uid).full_name()).enumerate();

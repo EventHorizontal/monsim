@@ -83,8 +83,8 @@ impl BattleSimulator {
                     MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, move_uid, target_uid),
                     MoveCategory::Status => Action::use_status_move(battle, move_uid, target_uid),
                 },
-                FullySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: switchee_uid } => {
-                    Action::perform_switch_out(battle, switcher_uid, switchee_uid)
+                FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid } => {
+                    Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)
                 }
             }?;
 

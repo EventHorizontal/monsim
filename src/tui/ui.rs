@@ -53,8 +53,8 @@ struct MessageLogPanel {
 struct SwitcheePrompt;
 
 impl SwitcheePrompt {
-    fn as_renderable_widget<'a>(battle: &BattleState, possible_switchee_uids: ArrayOfOptionals<MonsterUID, 5>) -> List<'a> {
-        let list_items = possible_switchee_uids.into_iter()
+    fn as_renderable_widget<'a>(battle: &BattleState, switchable_benched_monster_uids: ArrayOfOptionals<MonsterUID, 5>) -> List<'a> {
+        let list_items = switchable_benched_monster_uids.into_iter()
             .flatten()
             .map(|monster_uid| {
                 ListItem::new(battle.monster(monster_uid).full_name())
@@ -194,11 +194,11 @@ impl<'a> Ui<'a> {
             let message_log_widget = self.message_log_panel.as_renderable_widget(&battle.message_log.as_vec(), self.currently_selected_panel == SelectablePanelID::MessageLog);
             // If we are on the SwitcheePrompt, then show the SwitcheePrompt widget
             if let AppState::AcceptingInput(InputMode::SwitcheePrompt {
-                possible_switchee_uids,
+                switchable_benched_monster_uids,
                 highlight_cursor,
                 ..
             }) = *current_app_state {
-                let switchee_prompt_widget = SwitcheePrompt::as_renderable_widget(battle, possible_switchee_uids);
+                let switchee_prompt_widget = SwitcheePrompt::as_renderable_widget(battle, switchable_benched_monster_uids);
                 let middle_third_chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(

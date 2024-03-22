@@ -182,9 +182,9 @@ impl BattleState {
                 speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
                 order: 0, //TODO: Think about how to restrict order to be mutually exclusive
             },
-            FullySpecifiedChoice::SwitchOut { switcher_uid, candidate_switchee_uids: _ } => ActivationOrder { 
+            FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid: _ } => ActivationOrder { 
                 priority: 8, 
-                speed: self.monster(switcher_uid).stats[Stat::Speed], 
+                speed: self.monster(active_monster_uid).stats[Stat::Speed], 
                 order: 0
             }
         }
@@ -215,12 +215,12 @@ impl BattleState {
             move_actions.push(partially_specified_choice);
         }
 
-        let candidate_switchee_uids = self.valid_switchees_by_uid(team_uid);
-        let any_valid_switchees = not!(candidate_switchee_uids.iter().flatten().count() == 0 );
+        let switchable_benched_monster_uids = self.switchable_benched_monster_uids(team_uid);
+        let any_valid_switchees = not!(switchable_benched_monster_uids.iter().flatten().count() == 0 );
         let switch_action = if any_valid_switchees {
             Some(PartiallySpecifiedChoice::SwitchOut { 
-                switcher_uid: active_monster_on_team.uid, 
-                candidate_switchee_uids,
+                active_monster_uid: active_monster_on_team.uid, 
+                switchable_benched_monster_uids,
                 display_text: "Switch Out",
             })
         } else {
@@ -234,7 +234,7 @@ impl BattleState {
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn valid_switchees_by_uid(&self, team_uid: TeamUID) -> ArrayOfOptionals<MonsterUID, 5> {
+    pub(crate) fn switchable_benched_monster_uids(&self, team_uid: TeamUID) -> ArrayOfOptionals<MonsterUID, 5> {
         let mut number_of_switchees = 0;
         let mut switchees = [None; 5];
         for monster in self.team(team_uid).monsters().iter() {

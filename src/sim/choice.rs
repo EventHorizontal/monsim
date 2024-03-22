@@ -13,14 +13,14 @@ pub enum PartiallySpecifiedChoice {
     /// TODO: This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
     Move{ move_uid: MoveUID, target_uid: MonsterUID, display_text: &'static str},
     /// A switch out action before we know which monster to switch with.
-    SwitchOut { switcher_uid: MonsterUID, candidate_switchee_uids: ArrayOfOptionals<MonsterUID, 5>, display_text: &'static str },
+    SwitchOut { active_monster_uid: MonsterUID, switchable_benched_monster_uids: ArrayOfOptionals<MonsterUID, 5>, display_text: &'static str },
 }
 
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedChoice {
     Move { move_uid: MoveUID, target_uid: MonsterUID },
-    SwitchOut { switcher_uid: MonsterUID, candidate_switchee_uids: MonsterUID },
+    SwitchOut { active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID },
 }
 
 

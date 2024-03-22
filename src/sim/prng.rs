@@ -13,6 +13,7 @@ const A: u64 = 0x5D588B656C078965;
 const C: u64 = 0x00269EC3;
 
 impl Prng {
+    #[cfg(test)]
     pub(crate) fn new(start_seed: u64) -> Self {
         Self {
             start_seed,
@@ -26,13 +27,6 @@ impl Prng {
             start_seed,
             current_seed: start_seed,
         }
-    }
-
-    /// Uses the formula `x_{n+1} = (A * x_n) + C` where `A = 0x5D588B656C078965` and
-    /// C = 0x00269EC3.
-    fn next(&mut self) -> u64 {
-        self.current_seed = self.current_seed.wrapping_mul(A).wrapping_add(C);
-        self.current_seed
     }
 
     /// Returns each u16 in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
@@ -51,7 +45,14 @@ impl Prng {
         ((random_number as f64 / MAX as f64) * range) as u16 + start
     }
 
-    // TEMP: Unsure whether this will find use. Either this comment or the function will be removed in the future.
+    /// Uses the formula `x_{n+1} = (A * x_n) + C` where `A = 0x5D588B656C078965` and
+    /// C = 0x00269EC3.
+    fn next(&mut self) -> u64 {
+        self.current_seed = self.current_seed.wrapping_mul(A).wrapping_add(C);
+        self.current_seed
+    }
+
+    #[cfg(test)]
     pub fn chance(&mut self, num: u16, denom: u16) -> bool {
         assert!(denom != 0);
         self.generate_random_u16_in_range(1..=denom) <= num

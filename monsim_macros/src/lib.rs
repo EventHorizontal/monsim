@@ -1,8 +1,8 @@
 mod syntax;
 
 use proc_macro::TokenStream;
-use syntax::{path_to_ident, ExprBattle, ExprEventHandlerDeck, ExprMonsterTeam, GameMechanicType};
-use proc_macro2::{Ident, Literal};
+use syntax::{path_to_ident, ExprBattle, ExprEventHandlerDeck, ExprMechanicAccessor, ExprMonsterTeam, GameMechanicType};
+use proc_macro2::{Ident, Literal, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{parse_macro_input, ExprTuple, ExprType, Pat};
 
@@ -69,7 +69,7 @@ pub fn battle_state(input: TokenStream) -> TokenStream {
 
 fn monster_team_to_tokens<'a>(
     expr_monster_team: ExprMonsterTeam
-) -> proc_macro2::TokenStream {
+) -> TokenStream2 {
     let team_name_ident = expr_monster_team.team_path;
     let sim_ident = quote!(monsim::sim);
     let move_mod = quote!(#sim_ident::move_);
@@ -121,6 +121,42 @@ fn monster_team_to_tokens<'a>(
     }
 
     quote!(vec![#comma_separated_monsters])
+}
+
+/// Shorthand for retrieving a `Monster` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
+#[proc_macro]
+pub fn monster(input: TokenStream) -> TokenStream {
+    construct_accessor(input, quote!(monster))
+}
+
+/// Shorthand for retrieving a `Move` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
+#[proc_macro]
+pub fn move_(input: TokenStream) -> TokenStream {
+    construct_accessor(input, quote!(move_))
+}
+
+/// Shorthand for retrieving an `Ability` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
+#[proc_macro]
+pub fn ability(input: TokenStream) -> TokenStream {
+    construct_accessor(input, quote!(ability))
+}
+
+fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenStream {
+    let ExprMechanicAccessor { is_mut, ident } = parse_macro_input!(input as ExprMechanicAccessor);
+    let span = ident.span();
+    if is_mut {
+        // add "_mut" to the accessor
+        let mut accessor = accessor_name.to_string();
+        if accessor.ends_with("_") {
+            accessor.push_str("mut");
+        } else {
+            accessor.push_str("_mut");
+        }
+        let suffixed_accessor = Ident::new(accessor.as_str(), span);
+        quote!(battle.#suffixed_accessor(#ident)).into()
+    } else {
+        quote!(battle.#accessor_name(#ident)).into()
+    }
 }
 
 // Event system macros ------
@@ -302,12 +338,4 @@ fn to_pascal_case(input_string: String) -> String {
         previous_char = Some(char);
     }
     output_string.replace("_", "")
-}
-
-/// A small macro that allows one to annotate a type. Meant to be used for ambiguous returns.
-#[proc_macro]
-pub fn returns(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(input as ExprType);
-    let type_ = input.ty;
-    quote!(#type_).into()
 }

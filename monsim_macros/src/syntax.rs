@@ -1,5 +1,6 @@
 pub use battle_state_macro_syntax::*;
 pub use event_system_macro_syntax::*;
+pub use accessor_macro_syntax::*;
 
 mod battle_state_macro_syntax {
     use proc_macro2::{Ident, Literal};
@@ -279,6 +280,27 @@ mod battle_state_macro_syntax {
             ))), 
         };
         Ok(game_mechanic_type)
+    }
+}
+
+mod accessor_macro_syntax {
+    use syn::{parse::Parse, Token};
+    use proc_macro2::Ident;
+
+    pub struct ExprMechanicAccessor {
+        pub is_mut: bool,
+        pub ident: Ident,
+    }
+    
+    impl Parse for ExprMechanicAccessor {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let is_mut = input.parse::<Token!(mut)>().is_ok();
+            let ident: Ident = input.parse()?;
+            Ok(ExprMechanicAccessor {
+                is_mut,
+                ident,
+            })
+        }
     }
 }
 

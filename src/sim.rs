@@ -22,8 +22,6 @@ pub use game_mechanics::*;
 pub use monsim_utils::{self as utils, Outcome, Percent, ClampedPercent, Ally, Opponent};
 pub(crate) use utils::{not, NOTHING, Nothing}; // For internal use
 
-use prng::Prng;
-
 type TurnResult = Result<(), SimError>;
 
 #[derive(Debug, PartialEq, Eq)]

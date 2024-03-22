@@ -1,4 +1,4 @@
-use crate::sim::{ActivationOrder, Prng};
+use crate::sim::{ActivationOrder, prng::Prng};
 
 use super::{FullySpecifiedChoice, BattleState};
 

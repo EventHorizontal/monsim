@@ -275,8 +275,7 @@ impl EventFilteringOptions {
 
 #[cfg(all(test, feature = "debug"))]
 mod tests {
-    use super::*;
-    use crate::sim::battle_state;
+    use crate::{sim::battle_state, prng::Prng};
 
     #[test]
     fn test_if_priority_sorting_is_deterministic() {
@@ -500,9 +499,9 @@ mod tests {
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler_instance() {
-        use crate::sim::test_ability_dex::FlashFire;
+        use crate::sim::{test_ability_dex::FlashFire, event::OwnedEventHandler, event_dex::OnTryMove, MonsterUID, InBattleEvent};
         let event_handler_instance = OwnedEventHandler {
-            event_name: event_dex::OnTryMove.name(),
+            event_name: OnTryMove.name(),
             event_handler: FlashFire.event_handler_deck.on_try_move.unwrap(),
             owner_uid: MonsterUID {
                 team_uid: crate::sim::TeamUID::Allies,

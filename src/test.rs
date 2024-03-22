@@ -251,20 +251,20 @@ mod prng {
 
 #[cfg(all(test, feature = "debug"))]
 mod utils {
-    use monsim_utils::{Ally, Team};
+    use monsim_utils::{Ally, TeamAffl};
 
     #[test]
     #[should_panic]
     fn test_expect_wrong_team() {
         let item = Ally(10usize);
-        let item = Team::ally(item);
+        let item = TeamAffl::ally(item);
         (item.map(|i| { i - 1 }).expect_opponent());
     }
 
     #[test]
     fn test_expect_right_team() {
         let item = Ally(10usize);
-        let item = Team::ally(item);
+        let item = TeamAffl::ally(item);
         item.map(|i| {i + 1}).expect_ally();
     }
 }

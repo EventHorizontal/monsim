@@ -100,7 +100,7 @@ impl<T: Clone> PerTeam<T> {
     where
         F: Fn(T) -> U,
     {
-        PerTeam::new(self.ally_team_item.map(&f), self.opponent_team_item.map(f))
+        PerTeam::new(self.ally_team_item.map_clone(&f), self.opponent_team_item.map_consume(f))
     }
 }
 

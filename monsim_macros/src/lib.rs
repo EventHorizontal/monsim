@@ -92,12 +92,12 @@ fn monster_team_to_tokens<'a>(
                     let move_type_path = game_mechanic_expr.game_mechanic_type_path.clone();
                     // Add to the moves array
                     moves_vec_delimited = quote!(
-                        #moves_vec_delimited #move_type_path::new(#move_ident),
+                        #moves_vec_delimited #move_type_path::new(&#move_ident),
                     );
                 },
                 GameMechanicType::Ability => {
                     let ability_ident = path_to_ident(&game_mechanic_expr.game_mechanic_instance_path);
-                    ability_species = quote!(#ability_ident);
+                    ability_species = quote!(&#ability_ident);
                     ability_type_path = Some(game_mechanic_expr.game_mechanic_type_path.clone());
                 },
                 GameMechanicType::Item => todo!("Items have not been implemented yet in the engine."),
@@ -112,7 +112,7 @@ fn monster_team_to_tokens<'a>(
             #comma_separated_monsters 
             #sim_ident::Monster::new(
                 #sim_ident::MonsterUID { team_uid: #sim_ident::TeamUID::#team_name_ident, monster_number: #sim_ident::#monster_number },
-                #monster_species, 
+                &#monster_species, 
                 #monster_nickname,
                 #move_mod::MoveSet::new(#moves_vec_delimited),
                 #ability_type_path::new(#ability_species),

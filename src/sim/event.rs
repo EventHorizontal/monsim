@@ -120,7 +120,7 @@ generate_events![
 
 #[derive(Debug, Clone, Copy)]
 pub struct OwnedEventHandlerDeck {
-    pub event_handler_deck: EventHandlerDeck,
+    pub event_handler_deck: &'static EventHandlerDeck,
     pub owner_uid: MonsterUID,
     pub activation_order: ActivationOrder,
     pub filtering_options: EventFilteringOptions,

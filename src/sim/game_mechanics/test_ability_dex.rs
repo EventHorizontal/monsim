@@ -11,7 +11,7 @@ use crate::{
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
     dex_number: 001,
     name: "Flash Fire",
-    event_handler_deck: EventHandlerDeck {
+    event_handler_deck: &EventHandlerDeck {
         on_try_move: Some(EventHandler {
             callback: |battle, MoveUsed { attacker_uid, move_uid, target_uid}, _relay| {
                             let current_move = battle.move_(move_uid);
@@ -37,7 +37,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
 pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     dex_number: 002,
     name: "Water Absorb",
-    event_handler_deck: EventHandlerDeck {
+    event_handler_deck: &EventHandlerDeck {
         on_try_move: Some(EventHandler {
             callback: |battle, MoveUsed { attacker_uid, move_uid, target_uid}, _relay| {
                             let current_move = battle.move_(move_uid);

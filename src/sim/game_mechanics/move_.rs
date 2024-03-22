@@ -16,7 +16,7 @@ pub struct MoveSpecies {
     pub base_power: u16,
     pub base_accuracy: u16,
     pub priority: u16,
-    pub event_handler_deck: EventHandlerDeck,
+    pub event_handler_deck: &'static EventHandlerDeck,
     pub event_handler_deck_filtering_options: EventFilteringOptions,
     /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
     pub on_activate: Option<fn(&mut BattleState, MonsterUID, MonsterUID)>,
@@ -30,7 +30,7 @@ const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     base_power: 50,
     base_accuracy: 100,
     priority: 0,
-    event_handler_deck: EventHandlerDeck::const_default(),
+    event_handler_deck: &EventHandlerDeck::const_default(),
     event_handler_deck_filtering_options: EventFilteringOptions::default(),
     on_activate: None,
 };
@@ -61,11 +61,11 @@ impl Eq for MoveSpecies {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Move {
-    pub species: MoveSpecies,
+    pub species: &'static MoveSpecies,
 }
 
 impl Move {
-    pub fn new(species: MoveSpecies) -> Self {
+    pub fn new(species: &'static MoveSpecies) -> Self {
         Move { species }
     }
 

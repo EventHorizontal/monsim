@@ -19,7 +19,7 @@ pub struct Monster {
     pub stat_modifiers: StatModifierSet,
     pub is_fainted: bool,
     pub current_health: u16,
-    pub species: MonsterSpecies,
+    pub species: &'static MonsterSpecies,
     pub moveset: MoveSet,
     pub ability: Ability,
 }
@@ -39,7 +39,7 @@ pub struct MonsterSpecies {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
-    pub event_handler_deck: EventHandlerDeck,
+    pub event_handler_deck: &'static EventHandlerDeck,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -120,7 +120,7 @@ const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Normal,
     secondary_type: None,
     base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handler_deck: EventHandlerDeck::const_default(),
+    event_handler_deck: &EventHandlerDeck::const_default(),
 };
 
 impl MonsterSpecies {
@@ -172,7 +172,7 @@ impl Display for Monster {
 }
 
 impl Monster {
-    pub fn new(uid: MonsterUID, species: MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
+    pub fn new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
@@ -258,7 +258,7 @@ impl Monster {
         self.moveset
             .moves()
             .map(|it| OwnedEventHandlerDeck {
-                event_handler_deck: it.species.event_handler_deck,
+                event_handler_deck: &it.species.event_handler_deck,
                 owner_uid: uid,
                 activation_order: ActivationOrder {
                     priority: it.species.priority,

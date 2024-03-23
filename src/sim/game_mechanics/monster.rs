@@ -1,12 +1,8 @@
 use core::{fmt::Debug, panic};
-use std::{
-    fmt::{Display, Formatter},
-    ops::{Index, IndexMut},
-};
+use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 
 use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
-
-use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventHandlerDeck, Type, EventFilteringOptions};
+use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -31,103 +27,6 @@ impl PartialEq for Monster {
 }
 
 impl Eq for Monster {}
-
-#[derive(Clone, Copy)]
-pub struct MonsterSpecies {
-    pub dex_number: u16,
-    pub name: &'static str,
-    pub primary_type: Type,
-    pub secondary_type: Option<Type>,
-    pub base_stats: StatSet,
-    pub event_handler_deck: &'static EventHandlerDeck,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MonsterUID {
-    pub team_uid: TeamUID,
-    pub monster_number: MonsterNumber,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MonsterNumber {
-    _1,
-    _2,
-    _3,
-    _4,
-    _5,
-    _6,
-}
-
-pub const ALLY_1: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
-    monster_number: MonsterNumber::_1,
-};
-pub const ALLY_2: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
-    monster_number: MonsterNumber::_2,
-};
-pub const ALLY_3: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
-    monster_number: MonsterNumber::_3,
-};
-pub const ALLY_4: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
-    monster_number: MonsterNumber::_4,
-};
-pub const ALLY_5: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
-    monster_number: MonsterNumber::_5,
-};
-pub const ALLY_6: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
-    monster_number: MonsterNumber::_6,
-};
-
-pub const OPPONENT_1: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
-    monster_number: MonsterNumber::_1,
-};
-pub const OPPONENT_2: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
-    monster_number: MonsterNumber::_2,
-};
-pub const OPPONENT_3: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
-    monster_number: MonsterNumber::_3,
-};
-pub const OPPONENT_4: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
-    monster_number: MonsterNumber::_4,
-};
-pub const OPPONENT_5: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
-    monster_number: MonsterNumber::_5,
-};
-pub const OPPONENT_6: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
-    monster_number: MonsterNumber::_6,
-};
-
-impl Display for MonsterUID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}{:?}", self.team_uid, self.monster_number)
-    }
-}
-
-const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
-    dex_number: 000,
-    name: "Unnamed",
-    primary_type: Type::Normal,
-    secondary_type: None,
-    base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handler_deck: &EventHandlerDeck::const_default(),
-};
-
-impl MonsterSpecies {
-    pub const fn const_default() -> Self {
-        MONSTER_DEFAULTS
-    }
-}
 
 impl Display for Monster {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -172,7 +71,7 @@ impl Display for Monster {
 }
 
 impl Monster {
-    pub fn new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
+    pub(crate) fn new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
@@ -306,6 +205,103 @@ impl Monster {
             self.full_name(), self.uid, self.current_health, self.max_health
         ]);
         out
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct MonsterSpecies {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub primary_type: Type,
+    pub secondary_type: Option<Type>,
+    pub base_stats: StatSet,
+    pub event_handler_deck: &'static EventHandlerDeck,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MonsterUID {
+    pub team_uid: TeamUID,
+    pub monster_number: MonsterNumber,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MonsterNumber {
+    _1,
+    _2,
+    _3,
+    _4,
+    _5,
+    _6,
+}
+
+pub const ALLY_1: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Allies,
+    monster_number: MonsterNumber::_1,
+};
+pub const ALLY_2: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Allies,
+    monster_number: MonsterNumber::_2,
+};
+pub const ALLY_3: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Allies,
+    monster_number: MonsterNumber::_3,
+};
+pub const ALLY_4: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Allies,
+    monster_number: MonsterNumber::_4,
+};
+pub const ALLY_5: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Allies,
+    monster_number: MonsterNumber::_5,
+};
+pub const ALLY_6: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Allies,
+    monster_number: MonsterNumber::_6,
+};
+
+pub const OPPONENT_1: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Opponents,
+    monster_number: MonsterNumber::_1,
+};
+pub const OPPONENT_2: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Opponents,
+    monster_number: MonsterNumber::_2,
+};
+pub const OPPONENT_3: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Opponents,
+    monster_number: MonsterNumber::_3,
+};
+pub const OPPONENT_4: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Opponents,
+    monster_number: MonsterNumber::_4,
+};
+pub const OPPONENT_5: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Opponents,
+    monster_number: MonsterNumber::_5,
+};
+pub const OPPONENT_6: MonsterUID = MonsterUID {
+    team_uid: TeamUID::Opponents,
+    monster_number: MonsterNumber::_6,
+};
+
+impl Display for MonsterUID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}{:?}", self.team_uid, self.monster_number)
+    }
+}
+
+const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
+    dex_number: 000,
+    name: "Unnamed",
+    primary_type: Type::Normal,
+    secondary_type: None,
+    base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
+    event_handler_deck: &EventHandlerDeck::const_default(),
+};
+
+impl MonsterSpecies {
+    pub const fn const_default() -> Self {
+        MONSTER_DEFAULTS
     }
 }
 

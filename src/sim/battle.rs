@@ -1,10 +1,12 @@
 mod message_log;
+pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use crate::sim::{
         Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
 };
+
 use super::{event::OwnedEventHandlerDeck, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
 
@@ -22,7 +24,8 @@ pub struct BattleState {
 }
 
 impl BattleState {
-    pub fn new(ally_team: MonsterTeam, opponent_team: MonsterTeam) -> Self {
+
+    pub(crate) fn new(ally_team: MonsterTeam, opponent_team: MonsterTeam) -> Self {
         let teams = PerTeam::new(Ally::new(ally_team), Opponent::new(opponent_team));
         Self {
             prng: Prng::from_current_time(),

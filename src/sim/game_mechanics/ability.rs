@@ -1,4 +1,4 @@
-use crate::sim::{event::EventFilteringOptions, BattleState, MonsterUID, EventHandlerDeck};
+use crate::sim::{event::EventFilteringOptions, BattleState, EventHandlerDeck, MonsterUID};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,7 +47,7 @@ impl AbilitySpecies {
 impl Eq for AbilitySpecies {}
 
 impl Ability {
-    pub fn new(species: &'static AbilitySpecies) -> Self {
+    pub(crate) fn new(species: &'static AbilitySpecies) -> Self {
         Ability { species }
     }
 

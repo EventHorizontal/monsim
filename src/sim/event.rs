@@ -126,9 +126,10 @@ pub struct OwnedEventHandlerDeck {
     pub filtering_options: EventFilteringOptions,
 }
 
+// TODO: Move to ordering.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ActivationOrder {
-    pub priority: u16,
+    pub priority: i8,
     pub speed: u16,
     pub order: u16,
 }

@@ -7,66 +7,28 @@ use crate::sim::{
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
 
-#[derive(Clone, Copy)]
-pub struct MoveSpecies {
-    pub dex_number: u16,
-    pub name: &'static str,
-    pub type_: Type,
-    pub category: MoveCategory,
-    pub base_power: u16,
-    pub base_accuracy: u16,
-    pub priority: u16,
-    pub event_handler_deck: &'static EventHandlerDeck,
-    pub event_handler_deck_filtering_options: EventFilteringOptions,
-    /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
-    pub on_activate: Option<fn(&mut BattleState, MonsterUID, MonsterUID)>,
-}
-
-const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
-    dex_number: 000,
-    name: "Unnamed",
-    type_: Type::Normal,
-    category: MoveCategory::Physical,
-    base_power: 50,
-    base_accuracy: 100,
-    priority: 0,
-    event_handler_deck: &EventHandlerDeck::const_default(),
-    event_handler_deck_filtering_options: EventFilteringOptions::default(),
-    on_activate: None,
-};
-
-impl Debug for MoveSpecies {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "#{:03} {},\n\t type: {:?},\n\t base accuracy: {}",
-            self.dex_number, self.name, self.type_, self.base_accuracy
-        )
-    }
-}
-
-impl PartialEq for MoveSpecies {
-    fn eq(&self, other: &Self) -> bool {
-        self.dex_number == other.dex_number
-    }
-}
-
-impl MoveSpecies {
-    pub const fn const_default() -> Self {
-        MOVE_DEFAULTS
-    }
-}
-
-impl Eq for MoveSpecies {}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Move {
-    pub species: &'static MoveSpecies,
+    pub(crate) species: &'static MoveSpecies,
+    pub(crate) base_accuracy: u16,
+    pub(crate) base_power: u16,
+    pub(crate) category: MoveCategory,
+    pub(crate) power_points: u8,
+    pub(crate) priority: i8, 
+    pub(crate) type_: Type,
 }
 
 impl Move {
     pub fn new(species: &'static MoveSpecies) -> Self {
-        Move { species }
+        Self { 
+            species,
+            base_accuracy: species.base_accuracy,
+            base_power: species.base_power,
+            category: species.category,
+            power_points: species.max_power_points,
+            priority: species.priority,
+            type_: species.type_, 
+        }
     }
 
     pub fn category(&self) -> MoveCategory {
@@ -92,6 +54,64 @@ impl Move {
         self.species.type_ == type_
     }
 }
+
+#[derive(Clone, Copy)]
+pub struct MoveSpecies {
+    pub dex_number: u16,
+    pub name: &'static str,
+    
+    /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
+    pub on_activate: Option<fn(&mut BattleState, MonsterUID, MonsterUID)>,
+    pub base_accuracy: u16,
+    pub base_power: u16,
+    pub category: MoveCategory,
+    pub max_power_points: u8,
+    pub priority: i8,
+    pub type_: Type,
+    
+    pub event_handler_deck: &'static EventHandlerDeck,
+    pub event_handler_deck_filtering_options: EventFilteringOptions,
+}
+
+const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
+    dex_number: 000,
+    name: "Unnamed",
+    
+    on_activate: None,
+    base_power: 50,
+    base_accuracy: 100,
+    category: MoveCategory::Physical,
+    max_power_points: u8::MAX,
+    priority: 0,
+    type_: Type::Normal,
+
+    event_handler_deck: &EventHandlerDeck::const_default(),
+    event_handler_deck_filtering_options: EventFilteringOptions::default(),
+};
+
+impl Debug for MoveSpecies {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "#{:03} {},\n\t type: {:?},\n\t base accuracy: {}",
+            self.dex_number, self.name, self.type_, self.base_accuracy
+        )
+    }
+}
+
+impl PartialEq for MoveSpecies {
+    fn eq(&self, other: &Self) -> bool {
+        self.dex_number == other.dex_number
+    }
+}
+
+impl MoveSpecies {
+    pub const fn const_default() -> Self {
+        MOVE_DEFAULTS
+    }
+}
+
+impl Eq for MoveSpecies {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MoveCategory {

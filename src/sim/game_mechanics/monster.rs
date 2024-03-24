@@ -1,13 +1,15 @@
 use core::{fmt::Debug, panic};
 use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 
+use monsim_utils::MaxSizedVec;
+
 use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
-use crate::sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type};
+use crate::{sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Move};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
     pub uid: MonsterUID,
-    nickname: Option<&'static str>,
+    pub(crate) nickname: Option<&'static str>,
     pub level: u16,
     pub max_health: u16,
     pub nature: MonsterNature,
@@ -16,7 +18,7 @@ pub struct Monster {
     pub is_fainted: bool,
     pub current_health: u16,
     pub species: &'static MonsterSpecies,
-    pub moveset: MoveSet,
+    pub moveset: MaxSizedVec<Move, 4>,
     pub ability: Ability,
 }
 
@@ -49,7 +51,7 @@ impl Display for Monster {
             );
         }
 
-        let number_of_effects = self.moveset.moves().count();
+        let number_of_effects = self.moveset.count();
 
         out.push_str("\t│\t├── ");
         out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, self.species.secondary_type].as_str());
@@ -57,7 +59,7 @@ impl Display for Monster {
         out.push_str("\t│\t├── ");
         out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
 
-        for (i, move_) in self.moveset.moves().enumerate() {
+        for (i, move_) in self.moveset.into_iter().enumerate() {
             if i < number_of_effects - 1 {
                 out.push_str("\t│\t├── ");
             } else {
@@ -71,7 +73,7 @@ impl Display for Monster {
 }
 
 impl Monster {
-    pub(crate) fn new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MoveSet, ability: Ability) -> Self {
+    pub(crate) fn new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MaxSizedVec<Move, 4>, ability: Ability) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
@@ -155,7 +157,7 @@ impl Monster {
 
     pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<OwnedEventHandlerDeck> {
         self.moveset
-            .moves()
+            .iter()
             .map(|it| OwnedEventHandlerDeck {
                 event_handler_deck: &it.species.event_handler_deck,
                 owner_uid: uid,
@@ -189,7 +191,7 @@ impl Monster {
 
     pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
         self.moveset
-            .moves()
+            .iter()
             .enumerate()
             .map(|(idx, _)| MoveUID {
                 owner_uid: self.uid,
@@ -339,7 +341,7 @@ pub struct StatSet {
     spe: u16,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct StatModifierSet {
     att: i8,
     def: i8,

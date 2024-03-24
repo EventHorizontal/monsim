@@ -152,15 +152,13 @@ impl BattleState {
     // Moves -----------------
 
     pub fn move_(&self, move_uid: MoveUID) -> &Move {
-        self.monster(move_uid.owner_uid)
-            .moveset
-            .move_(move_uid.move_number)
+        &self.monster(move_uid.owner_uid)
+            .moveset[move_uid.move_number as usize]
     }
 
     pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
-        self.monster_mut(move_uid.owner_uid)
-            .moveset
-            .move_mut(move_uid.move_number)
+        &mut self.monster_mut(move_uid.owner_uid)
+            .moveset[move_uid.move_number as usize]
     }
 
     // Choice -------------------------------------
@@ -283,8 +281,8 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
         output_string.push_str(&(prefix_str.to_owned() + "├── "));
         output_string.push_str(format!["ability: {}\n", monster.ability.species.name].as_str());
 
-        let number_of_moves = monster.moveset.moves().count();
-        for (j, move_) in monster.moveset.moves().enumerate() {
+        let number_of_moves = monster.moveset.count();
+        for (j, move_) in monster.moveset.into_iter().enumerate() {
             let is_not_last_move = j < number_of_moves - 1;
             if is_not_last_move {
                 output_string.push_str(&(prefix_str.to_owned() + "├── "));

@@ -1,6 +1,6 @@
 use monsim_utils::MaxSizedVec;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, BattleState, Monster, Move};
+use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, BattleState, Monster, Move, Stat, ALLY_3};
 
 // TODO: Some basic state validation will be done now, but later 
 // on I want to extend that to more stuff, such as validating that 
@@ -9,8 +9,8 @@ use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, Monste
 // combination of things they provided is not allowed.
 
 pub struct BattleBuilder {
-    ally_team: Option<Vec<MonsterBuilder>>,
-    opponent_team: Option<Vec<MonsterBuilder>>,
+    ally_team: Option<Vec<Monster>>,
+    opponent_team: Option<Vec<Monster>>,
 }
 
 impl BattleState {
@@ -20,7 +20,13 @@ impl BattleState {
 }
 
 impl BattleBuilder {
-    
+    pub fn ally_team(&mut self, monsters: Vec<Monster>) -> &mut Self {
+        todo!()
+    }
+
+    pub fn with_opponent_team(&mut self, monsters: Vec<Monster>) -> &mut Self {
+        todo!()
+    }    
 }
 
 pub struct MonsterBuilder {
@@ -30,7 +36,6 @@ pub struct MonsterBuilder {
     nickname: Option<&'static str>,
     level: Option<u16>,
     nature: Option<MonsterNature>,
-    stats: Option<StatSet>,
     stat_modifiers: Option<StatModifierSet>,
     current_health: Option<u16>,
 }
@@ -45,7 +50,6 @@ impl Monster {
             nickname: None,
             level: None,
             nature: None,
-            stats: None,
             stat_modifiers: None,
             current_health: None, 
         }
@@ -71,7 +75,57 @@ impl MonsterBuilder {
     }
 
     pub fn build(self) -> Monster {
+        
+        let placeholder_uid = ALLY_3;
+        let nickname = self.nickname;
+        
+        let moveset = self.moves.expect(format!["{} must be given 1-4 moves but none were given.", self.species.name].as_str());
+        let ability = self.ability.expect(format!["{} must be given an ability but none were given", self.species.name].as_str());
+        let level = 50;
+        // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
+        let iv_in_stat = 31;
+        let ev_in_stat = 252;
+        // In-game hp-stat determination formula
+        let health_stat = ((2 * self.species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
+        let nature = MonsterNature::Serious;
 
+        // In-game non-hp-stat determination formula
+        let get_non_hp_stat = |stat: Stat| -> u16 {
+            // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
+            let iv_in_stat = 31;
+            let ev_in_stat = 252;
+            let mut out = ((2 * self.species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
+            out = f64::floor(out as f64 * nature[stat]) as u16;
+            out
+        };
+        
+        Monster {
+            uid: placeholder_uid,
+            nickname,
+            level,
+            max_health: health_stat,
+            nature,
+            current_health: health_stat,
+            is_fainted: false,
+            species: self.species,
+            moveset,
+            ability,
+            stats: StatSet::new(
+                health_stat,
+                get_non_hp_stat(Stat::PhysicalAttack),
+                get_non_hp_stat(Stat::PhysicalDefense),
+                get_non_hp_stat(Stat::SpecialAttack),
+                get_non_hp_stat(Stat::SpecialDefense),
+                get_non_hp_stat(Stat::Speed),
+            ),
+            stat_modifiers: StatModifierSet::new(
+                0,
+                0,
+                0,
+                0,
+                0,
+            ),
+        } 
     }
 }
 

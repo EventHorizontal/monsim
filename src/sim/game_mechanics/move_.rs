@@ -9,6 +9,7 @@ use std::ops::Index;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Move {
+    // TODO: Add UID here
     pub(crate) species: &'static MoveSpecies,
     pub(crate) base_accuracy: u16,
     pub(crate) base_power: u16,

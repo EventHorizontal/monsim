@@ -274,7 +274,7 @@ mod max_sized_vec {
         }
 
         pub fn push(&mut self, item: T) {
-            self.elements[self.count - 1] = item;
+            self.elements[self.count] = item;
             self.count += 1;
         }
 

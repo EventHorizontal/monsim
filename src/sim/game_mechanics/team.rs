@@ -64,8 +64,9 @@ impl MonsterTeam {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TeamUID {
+    #[default]
     Allies,
     Opponents,
 }
@@ -75,6 +76,15 @@ impl TeamUID {
         match self {
             TeamUID::Allies => TeamUID::Opponents,
             TeamUID::Opponents => TeamUID::Allies,
+        }
+    }
+}
+
+impl Display for TeamUID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TeamUID::Allies => write!(f, "Ally Team"),
+            TeamUID::Opponents => write!(f, "Opponent Team"),
         }
     }
 }
@@ -190,12 +200,6 @@ impl<T: Clone> IntoIterator for PerTeam<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.as_array().into_iter()
-    }
-}
-
-impl Display for TeamUID {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

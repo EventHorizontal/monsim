@@ -1,15 +1,15 @@
 use monsim_utils::MaxSizedVec;
 
-use crate::sim::{
-    event::{EventHandlerDeck, EventFilteringOptions},
+use crate::{sim::{
+    event::{EventFilteringOptions, EventHandlerDeck},
     BattleState, MonsterUID, Type,
-};
+}, MoveUID};
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Move {
-    // TODO: Add UID here
+    pub(crate) uid: MoveUID,// TODO: Move UID type to this module.
     pub(crate) species: &'static MoveSpecies,
     pub(crate) base_accuracy: u16,
     pub(crate) base_power: u16,
@@ -20,8 +20,9 @@ pub struct Move {
 }
 
 impl Move {
-    pub fn new(species: &'static MoveSpecies) -> Self {
+    pub fn new(uid: MoveUID, species: &'static MoveSpecies) -> Self {
         Self { 
+            uid,
             species,
             base_accuracy: species.base_accuracy,
             base_power: species.base_power,

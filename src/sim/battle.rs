@@ -25,8 +25,8 @@ pub struct BattleState {
 
 impl BattleState {
 
-    pub(crate) fn new(ally_team: MonsterTeam, opponent_team: MonsterTeam) -> Self {
-        let teams = PerTeam::new(Ally::new(ally_team), Opponent::new(opponent_team));
+    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>) -> Self {
+        let teams = PerTeam::new(ally_team, opponent_team);
         Self {
             prng: Prng::from_current_time(),
             is_finished: false,
@@ -231,7 +231,11 @@ impl BattleState {
                 assert!(number_of_switchees < 6);
             }
         }
-        MaxSizedVec::from_vec(switchable_benched_monsters)
+        if switchable_benched_monsters.is_empty() {
+            MaxSizedVec::empty()
+        } else {
+            MaxSizedVec::from_vec(switchable_benched_monsters)
+        }
     }
 }
 

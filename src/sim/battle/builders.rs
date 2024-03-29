@@ -1,6 +1,7 @@
-use monsim_utils::MaxSizedVec;
+use monsim_utils::{Ally, MaxSizedVec, Opponent};
+use tap::Pipe;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, BattleState, Monster, Move, Stat, ALLY_3};
+use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, Monster, MonsterNumber, MonsterTeam, MonsterUID, Move, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 // TODO: Some basic state validation will be done now, but later 
 // on I want to extend that to more stuff, such as validating that 
@@ -9,30 +10,109 @@ use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, Monste
 // combination of things they provided is not allowed.
 
 pub struct BattleBuilder {
-    ally_team: Option<Vec<Monster>>,
-    opponent_team: Option<Vec<Monster>>,
+    maybe_ally_team: Option<Ally<MonsterTeamBuilder>>,
+    maybe_opponent_team: Option<Opponent<MonsterTeamBuilder>>,
 }
 
 impl BattleState {
-    pub fn empty() -> BattleBuilder {
-        BattleBuilder { ally_team: None, opponent_team: None }
+    pub fn builder() -> BattleBuilder {
+        BattleBuilder { maybe_ally_team: None, maybe_opponent_team: None }
     }
 }
 
 impl BattleBuilder {
-    pub fn ally_team(&mut self, monsters: Vec<Monster>) -> &mut Self {
-        todo!()
+    pub fn add_ally_team(mut self, ally_team_builder: MonsterTeamBuilder) -> Self {
+        assert!(self.maybe_ally_team.is_none(), "Only one Ally Team is allowed per battle, but found multiple.");
+        self.maybe_ally_team = Some(Ally::new(ally_team_builder));
+        self
     }
 
-    pub fn with_opponent_team(&mut self, monsters: Vec<Monster>) -> &mut Self {
-        todo!()
+    pub fn add_opponent_team(mut self, opponent_team: MonsterTeamBuilder) -> Self {
+        assert!(self.maybe_opponent_team.is_none(), "Only one Opponent Team is allowed per battle, but found multiple.");
+        self.maybe_opponent_team = Some(Opponent::new(opponent_team));
+        self
+    }
+
+    pub fn build(self) -> BattleState {
+        const ALLY_UIDS: [MonsterUID; 6] = [
+            ALLY_1,
+            ALLY_2,
+            ALLY_3,
+            ALLY_4,
+            ALLY_5,
+            ALLY_6,
+        ];
+
+        let ally_team = self.maybe_ally_team
+            .expect("Building the BattleState requires adding an Ally Team, found none.")
+            .map_consume(|ally_team_builder| {
+                ally_team_builder.build(ALLY_UIDS, TeamUID::Allies)                
+            });
+
+        const OPPONENT_UIDS: [MonsterUID; 6] = [
+            OPPONENT_1,
+            OPPONENT_2,
+            OPPONENT_3,
+            OPPONENT_4,
+            OPPONENT_5,
+            OPPONENT_6,
+        ];
+
+        let opponent_team = self.maybe_opponent_team
+            .expect("Building the BattleState requires adding an Opponent Team, found none.")
+            .map_consume(|opponent_team_builder| {
+                opponent_team_builder.build(OPPONENT_UIDS, TeamUID::Opponents)                
+            });
+
+        BattleState::new(ally_team, opponent_team)
     }    
 }
 
+pub struct MonsterTeamBuilder {
+    maybe_monsters: Option<MaxSizedVec<MonsterBuilder, 6>>
+}
+
+impl MonsterTeam {
+    pub fn builder() -> MonsterTeamBuilder {
+        MonsterTeamBuilder {
+            maybe_monsters: None
+        }
+    }
+}
+
+impl MonsterTeamBuilder {
+    pub fn add_monster(mut self, monster: MonsterBuilder) -> Self {
+        match self.maybe_monsters {
+            Some(ref mut monsters) => {
+                monsters.push(monster);
+            },
+            None => {
+                self.maybe_monsters = Some(MaxSizedVec::from_vec(vec![monster]));
+            },
+        }
+        self
+    }
+
+    fn build(self, monster_uids: [MonsterUID; 6], team_uid: TeamUID) -> MonsterTeam {
+        self.maybe_monsters
+            .expect(
+                format!["Expected {team_uid} to have at least one monster, but none were given"].as_str()
+            )
+            .into_iter()
+            .zip(monster_uids.into_iter())
+            .map(|(monster_builder, monster_uid)| {
+                monster_builder.build(monster_uid)
+            })
+            .collect::<Vec<_>>()
+            .pipe(|monsters| MonsterTeam::new(monsters, team_uid))
+    }
+}
+
+#[derive(Clone)]
 pub struct MonsterBuilder {
     species: &'static MonsterSpecies,
-    moves: Option<MaxSizedVec<Move, 4>>,
-    ability: Option<Ability>,
+    maybe_moves: Option<MaxSizedVec<MoveBuilder, 4>>,
+    maybe_ability: Option<AbilityBuilder>,
     nickname: Option<&'static str>,
     level: Option<u16>,
     nature: Option<MonsterNature>,
@@ -45,8 +125,8 @@ impl Monster {
     pub fn of_species(species: &'static MonsterSpecies) -> MonsterBuilder {
         MonsterBuilder {
             species,
-            moves: None,
-            ability: None,
+            maybe_moves: None,
+            maybe_ability: None,
             nickname: None,
             level: None,
             nature: None,
@@ -59,8 +139,13 @@ impl Monster {
 const MAX_MOVES_PER_MOVESET: usize = 4;
 
 impl MonsterBuilder {
-    pub fn with_move(&mut self, move_: Move) -> &mut Self {
-        match self.moves {
+    pub fn with_nickname(mut self, nickname: &'static str) -> Self {
+        self.nickname = Some(nickname);
+        self
+    } 
+
+    pub fn add_move(mut self, move_: MoveBuilder) -> Self {
+        match self.maybe_moves {
             Some(ref mut moves) => { 
                 assert!(moves.count() < MAX_MOVES_PER_MOVESET, 
                 "Couldn't add {move_name}, {monster_name} already has {MAX_MOVES_PER_MOVESET}.",
@@ -69,18 +154,49 @@ impl MonsterBuilder {
             );
                 moves.push(move_); 
             },
-            None => { self.moves = Some(MaxSizedVec::from_vec(vec![move_]))},
+            None => { self.maybe_moves = Some(MaxSizedVec::from_vec(vec![move_]))},
         }
         self
     }
 
-    pub fn build(self) -> Monster {
+    pub fn add_ability(mut self, species: &'static AbilitySpecies) -> Self {
+        assert!(self.maybe_ability.is_none(), );
+        self.maybe_ability = match self.maybe_ability {
+            Some(_) => {
+                panic!("Only one Ability is allowed per Monster, but found multiple.");
+            },
+            None => { Some(AbilityBuilder { species }) },
+        };
+        self
+    }
+
+    pub fn build(self, monster_uid: MonsterUID) -> Monster {
         
-        let placeholder_uid = ALLY_3;
         let nickname = self.nickname;
         
-        let moveset = self.moves.expect(format!["{} must be given 1-4 moves but none were given.", self.species.name].as_str());
-        let ability = self.ability.expect(format!["{} must be given an ability but none were given", self.species.name].as_str());
+        let move_uids: [MoveUID; 4] = [
+            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_1 },
+            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_2 },
+            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_3 },
+            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_4 },
+        ];
+
+        let moveset = self.maybe_moves
+                .expect(format!["{} must be given 1-4 moves but none were given.", self.species.name].as_str())
+                .into_iter()
+                .zip(move_uids.into_iter()).map(|(move_builder, move_uid)| {
+                    move_builder.build(move_uid)
+                })
+                .collect::<Vec<_>>()
+                .pipe(|vec| { MaxSizedVec::from_vec(vec) });
+        
+        let ability = self.maybe_ability
+                .expect(
+                    format!["Expected {monster_uid} {monster_name} to be given one ability, but none were given.",
+                    monster_name = self.species.name].as_str()
+                )
+                .build(monster_uid);
+        
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;
@@ -100,7 +216,7 @@ impl MonsterBuilder {
         };
         
         Monster {
-            uid: placeholder_uid,
+            uid: monster_uid,
             nickname,
             level,
             max_health: health_stat,
@@ -129,6 +245,7 @@ impl MonsterBuilder {
     }
 }
 
+#[derive(Clone)]
 pub struct MoveBuilder {
     species: & 'static MoveSpecies,
     power_points: Option<u8>,
@@ -144,7 +261,7 @@ impl Move {
 }
 
 impl MoveBuilder {
-    pub fn with_power_points(&mut self, power_points: u8) -> &mut MoveBuilder {
+    pub fn with_power_points(mut self, power_points: u8) -> MoveBuilder {
         assert!(power_points < self.species.max_power_points, 
             "Expected move {move_name} to have less than {max_pp} power points",
             move_name = self.species.name,
@@ -154,19 +271,22 @@ impl MoveBuilder {
         self
     }
 
-    pub fn build(self) -> Move {
+    fn build(self, move_uid: MoveUID) -> Move {
+        let species = self.species;
         Move {
-            species: self.species,
-            base_accuracy: self.species.base_accuracy,
-            base_power: self.species.base_power,
-            category: self.species.category,
-            power_points: self.power_points.unwrap_or(self.species.max_power_points),
-            priority: self.species.priority,
-            type_: self.species.type_,
+            uid: move_uid,
+            species,
+            base_accuracy: species.base_accuracy,
+            base_power: species.base_power,
+            category: species.category,
+            power_points: self.power_points.unwrap_or(species.max_power_points),
+            priority: species.priority,
+            type_: species.type_,
         }
     } 
 }
 
+#[derive(Clone)]
 pub struct AbilityBuilder {
     pub species: & 'static AbilitySpecies,
 }
@@ -183,10 +303,10 @@ impl Ability {
 // This implementation doesn't really afford us anything extra, but if
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
-    pub fn build(self) -> Ability {
-        Ability {
-            species: self.species,
+    fn build(self, uid: AbilityUID) -> Ability {
+        Ability { 
+            uid, 
+            species: self.species 
         }
-    } 
+    }
 }
-

@@ -220,14 +220,15 @@ pub struct MonsterSpecies {
     pub event_handler_deck: &'static EventHandlerDeck,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MonsterUID {
     pub team_uid: TeamUID,
     pub monster_number: MonsterNumber,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MonsterNumber {
+    #[default]
     _1,
     _2,
     _3,
@@ -288,7 +289,24 @@ pub const OPPONENT_6: MonsterUID = MonsterUID {
 
 impl Display for MonsterUID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}{:?}", self.team_uid, self.monster_number)
+        match self.team_uid {
+            TeamUID::Allies => match self.monster_number {
+                MonsterNumber::_1 => write!(f, "First Ally"),
+                MonsterNumber::_2 => write!(f, "Second Ally"),
+                MonsterNumber::_3 => write!(f, "Third Ally"),
+                MonsterNumber::_4 => write!(f, "Fourth Ally"),
+                MonsterNumber::_5 => write!(f, "Fifth Ally"),
+                MonsterNumber::_6 => write!(f, "Sixth Ally"),
+            },
+            TeamUID::Opponents => match self.monster_number {
+                MonsterNumber::_1 => write!(f, "First Opponent"),
+                MonsterNumber::_2 => write!(f, "Second Opponent"),
+                MonsterNumber::_3 => write!(f, "Third Opponent"),
+                MonsterNumber::_4 => write!(f, "Fourth Opponent"),
+                MonsterNumber::_5 => write!(f, "Fifth Opponent"),
+                MonsterNumber::_6 => write!(f, "Sixth Opponent"),
+            },
+        }
     }
 }
 

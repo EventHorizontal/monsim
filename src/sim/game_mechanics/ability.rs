@@ -3,8 +3,11 @@ use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ability {
-    pub species: &'static AbilitySpecies,
+    pub(crate) uid: AbilityUID, 
+    pub(crate) species: &'static AbilitySpecies,
 }
+
+pub type AbilityUID = MonsterUID;
 
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {
@@ -47,9 +50,6 @@ impl AbilitySpecies {
 impl Eq for AbilitySpecies {}
 
 impl Ability {
-    pub(crate) fn new(species: &'static AbilitySpecies) -> Self {
-        Ability { species }
-    }
 
     pub fn on_activate(&self, battle: &mut BattleState, owner_uid: MonsterUID) {
         (self.species.on_activate)(battle, owner_uid);

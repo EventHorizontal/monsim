@@ -390,7 +390,19 @@ mod max_sized_vec {
             self.elements.into_iter().take(self.count)
         }
     }
+    
+    impl<T: Default, const CAP:usize> MaxSizedVec<T, CAP> {
+        pub fn empty() -> Self {
+            MaxSizedVec {
+                elements: std::array::from_fn::<_, CAP, _>(|_| {
+                    T::default()
+                }),
+                count: 0,
+            }
+        }
+    }
 }
+
 
 /// Makes `!` more readable
 #[macro_export]
@@ -437,7 +449,7 @@ impl<T> Into<TeamAffl<T>> for Ally<T> {
 }
 
 impl<T> Ally<T> {
-    pub fn new(item: T) -> Self {
+    pub const fn new(item: T) -> Self {
         Self(item)
     }
 
@@ -448,6 +460,16 @@ impl<T> Ally<T> {
     pub fn map_consume<U, F>(self, f: F) -> Ally<U> where F: FnOnce(T) -> U {
         let item = f(self.0);
         Ally(item)
+    }
+}
+
+pub trait IntoAlly<T> {
+    fn mark_as_ally(self) -> Ally<T>;
+}
+
+impl<T> IntoAlly<T> for T {
+    fn mark_as_ally(self) -> Ally<T> {
+        Ally::new(self)
     }
 }
 
@@ -495,7 +517,7 @@ impl<T> Into<TeamAffl<T>> for Opponent<T> {
 }
 
 impl<T> Opponent<T> {
-    pub fn new(item: T) -> Self {
+    pub const fn new(item: T) -> Self {
         Self(item)
     }
 
@@ -515,6 +537,16 @@ impl<T: Clone> Opponent<T> {
     pub fn map_clone<U, F>(&self, f: F) -> Opponent<U> where F: FnOnce(T) -> U {
         let item = f(self.0.clone());
         Opponent(item)
+    }
+}
+
+pub trait IntoOpponent<T> {
+    fn mark_as_opponent(self) -> Opponent<T>;
+}
+
+impl<T> IntoOpponent<T> for T {
+    fn mark_as_opponent(self) -> Opponent<T> {
+        Opponent::new(self)
     }
 }
 

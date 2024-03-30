@@ -1,127 +1,13 @@
 mod syntax;
 
 use proc_macro::TokenStream;
-use syntax::{path_to_ident, ExprBattle, ExprEventHandlerDeck, ExprMechanicAccessor, ExprMonsterTeam, GameMechanicType};
 use proc_macro2::{Ident, Literal, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{parse_macro_input, ExprTuple, Pat};
 
-// BattleState generation macro ------
-
-/// This macro parses the following custom syntax:
-/// ```
-/// {
-///     AllyTeam {
-///         let MonsterNameHere: Monster = OptionalNameStr {
-///                 MoveNameHere: Move,
-///                 //...up to 3 more
-///                 AbilityNameHere: Ability,
-///                 ItemNameHere: Item, //(Not Implemented yet)
-///             },
-///         //...up to 5 more
-///     },
-///    OpponentTeam {
-///         let MonsterNameHere: Monster = OptionalNameStr {
-///                 MoveNameHere: Move,
-///                 //...up to 3 more
-///                 AbilityNameHere: Ability,
-///                 ItemNameHere: Item, //(Not Implemented yet)
-///             },
-///         //...up to 5 more
-///     }
-/// }
-/// ```
-/// and produces a `battle::BattleState`.
-#[proc_macro]
-pub fn battle_state(input: TokenStream) -> TokenStream {
-    // Parse the expression ________________________________________________________________
-    let context_expr = parse_macro_input!(input as ExprBattle);
-
-    // Construct the streams of Tokens_______________________________________________________
-    
-    let ExprBattle { 
-        ally_expr_monster_team, 
-        opponent_expr_monster_team 
-    } = context_expr;
-
-    let ally_team_type = ally_expr_monster_team.team_type.clone();
-    let opponent_team_type = opponent_expr_monster_team.team_type.clone();
-    
-    let ally_monsters_vec = monster_team_to_tokens(
-        ally_expr_monster_team
-    );
-    let opponent_monsters_vec = monster_team_to_tokens(
-        opponent_expr_monster_team
-    );
-    
-    let output = quote!(
-        { 
-            monsim::sim::BattleState::new(
-                #ally_team_type::new(#ally_monsters_vec, TeamUID::Allies),
-                #opponent_team_type::new(#opponent_monsters_vec, TeamUID::Opponents)
-            )
-        }
-    );
-    
-    // Return the final stream of Tokens ______________________________________________________
-    output.into()
-}
-
-fn monster_team_to_tokens<'a>(
-    expr_monster_team: ExprMonsterTeam
-) -> TokenStream2 {
-    let team_name_ident = expr_monster_team.team_path;
-    let sim_ident = quote!(monsim::sim);
-    let move_mod = quote!(#sim_ident::move_);
-    let mut comma_separated_monsters = quote!();
-    
-    // Iterate through monsters
-    for (index, monster) in expr_monster_team.monster_fields.into_iter().enumerate() {
-        let monster_species = monster.monster_instance_path.clone();
-        let monster_nickname = monster.nickname_literal;
-        let monster_nickname = if monster_nickname.is_some() { quote!(Some(#monster_nickname))} else { quote!(None) };
-        let mut ability_type_path = None;
-        let mut ability_species = quote!();
-        let mut moves_vec_delimited = quote!();
-        
-        // Iterate through game_mechanics on monster
-        for game_mechanic_expr in monster.fields.iter() {
-            match game_mechanic_expr.game_mechanic_type {
-                GameMechanicType::Move => {
-                    let move_ident = path_to_ident(&game_mechanic_expr.game_mechanic_instance_path);
-                    let move_type_path = game_mechanic_expr.game_mechanic_type_path.clone();
-                    // Add to the moves array
-                    moves_vec_delimited = quote!(
-                        #moves_vec_delimited #move_type_path::new(&#move_ident),
-                    );
-                },
-                GameMechanicType::Ability => {
-                    let ability_ident = path_to_ident(&game_mechanic_expr.game_mechanic_instance_path);
-                    ability_species = quote!(&#ability_ident);
-                    ability_type_path = Some(game_mechanic_expr.game_mechanic_type_path.clone());
-                },
-                GameMechanicType::Item => todo!("Items have not been implemented yet in the engine."),
-            }
-        }
-
-        moves_vec_delimited = quote!(vec![#moves_vec_delimited]);
-        let monster_number = quote!(MonsterNumber::from(#index));
-        let ability_type_path = ability_type_path.expect("Every monster must have an ability.");
-        
-        comma_separated_monsters = quote!(
-            #comma_separated_monsters 
-            #sim_ident::Monster::new(
-                #sim_ident::MonsterUID { team_uid: #sim_ident::TeamUID::#team_name_ident, monster_number: #sim_ident::#monster_number },
-                &#monster_species, 
-                #monster_nickname,
-                #move_mod::MoveSet::new(#moves_vec_delimited),
-                #ability_type_path::new(#ability_species),
-            ),        
-        );
-    }
-
-    quote!(vec![#comma_separated_monsters])
-}
+use syntax::battle_macro_syntax::{MonsterExpr, BattleExpr, MonsterTeamExpr};
+use syntax::event_system_macro_syntax::ExprEventHandlerDeck;
+use syntax::accessor_macro_syntax::ExprMechanicAccessor;
 
 /// Shorthand for retrieving a `Monster` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
 #[proc_macro]
@@ -180,7 +66,7 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
 /// pub trait TraitName;  
 /// ```
 #[proc_macro]
-pub fn generate_events(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn generate_events(input: TokenStream) -> TokenStream {
     
     let event_handler_type = quote!(EventHandler);
     
@@ -338,4 +224,86 @@ fn to_pascal_case(input_string: String) -> String {
         previous_char = Some(char);
     }
     output_string.replace("_", "")
+}
+
+/// This macro parses the following syntax:
+/// ```
+/// team: Allies
+/// {
+///     *MonsterName*: "*OptionalMonsterNickname*" {
+///         moveset: (*MoveName* { *optional_specifiers* }, ..0-3 more ),
+///         ability: *AbilityName*
+///     },
+///     ..0-5 more
+/// },
+/// team: Opponents
+/// {
+///     *MonsterName*: "*OptionalMonsterNickname*" {
+///         moveset: (*MoveName* { *optional_specifiers* }, ..0-3 more ),
+///         ability: *AbilityName*
+///     },
+///     ..0-5 more
+/// }
+/// ```
+/// and produces a `BattleState` with the given specifications.
+#[proc_macro]
+pub fn battle(input: TokenStream) -> TokenStream {
+    let battle_expr = parse_macro_input!(input as BattleExpr);
+
+    let (ally_team_expr, opponent_team_expr) = battle_expr.team_exprs();
+    let get_team_tokens = |team_expr: MonsterTeamExpr, method_ident: TokenStream2| {
+        let team_monster_tokens = team_expr.monster_exprs()
+            .fold( quote!(), |mut tokens_so_far, monster_expr|  {
+                    let MonsterExpr { monster_ident, maybe_nickname_literal, moveset_expr, ability_expr } = monster_expr;
+
+                    let nickname_tokens = maybe_nickname_literal.map_or(quote!(), |nickname| { quote!(.with_nickname(#nickname)) });
+
+                    let move_tokens = moveset_expr.move_exprs
+                        .into_iter()
+                        .fold(quote!(), |mut tokens_so_far, move_expr| {
+                                let power_point_tokens = move_expr.maybe_power_points
+                                    .clone()
+                                    .map(|lit_int| {
+                                        quote!(.with_power_points(#lit_int))
+                                    });
+
+                                tokens_so_far.extend(quote!(
+                                    .add_move(
+                                        Move::of_species(&#move_expr)
+                                            #power_point_tokens
+                                    )
+                                )); 
+                                tokens_so_far
+                            }
+                        );
+
+                    let ability_tokens = quote!(.add_ability(&#ability_expr));
+
+                    let monster_tokens = quote!(
+                        .add_monster(Monster::of_species(&#monster_ident)
+                            #nickname_tokens
+                            #move_tokens
+                            #ability_tokens
+                        )
+                    );
+                    tokens_so_far.extend(monster_tokens);
+                    tokens_so_far
+                }
+            );
+        quote!(
+            .#method_ident(
+                MonsterTeam::builder()
+                    #team_monster_tokens
+            )
+        )
+    };
+    let ally_team_tokens = get_team_tokens(ally_team_expr, quote!(add_ally_team));
+    let opponent_team_tokens = get_team_tokens(opponent_team_expr, quote!(add_opponent_team));
+    let output = quote!(
+        BattleState::builder()
+            #ally_team_tokens
+            #opponent_team_tokens
+            .build()
+    );
+    output.into()
 }

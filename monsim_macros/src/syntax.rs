@@ -1,289 +1,5 @@
-pub use battle_state_macro_syntax::*;
-pub use event_system_macro_syntax::*;
-pub use accessor_macro_syntax::*;
 
-mod battle_state_macro_syntax {
-    use proc_macro2::{Ident, Literal};
-    use syn::{braced, parse::{Parse, ParseStream}, punctuated::Punctuated, token::Comma, Error, Result, ExprPath, Token,};
-    #[derive(Clone)]
-    pub struct ExprBattle {
-        pub ally_expr_monster_team: ExprMonsterTeam,
-        pub opponent_expr_monster_team: ExprMonsterTeam,
-    }
-    
-    impl Parse for ExprBattle {
-        fn parse(input: ParseStream) -> Result<Self> {
-            let battle_contents = parse_braced_comma_separated_list::<ExprMonsterTeam>(input)?;
-            let mut battle_contents = battle_contents.iter();
-    
-            let mut check_team_uid = |id_to_match: &str| -> Result<ExprMonsterTeam> {
-                let team_expr = battle_contents
-                    .next()
-                    .expect("Error: Failed to parse team identifier.")
-                    .clone();
-    
-                let team_path = team_expr.team_path.clone();
-    
-                if is_expected_type(id_to_match, &path_to_ident(&team_path)) {
-                    Ok(team_expr)
-                } else {
-                    return Err(Error::new_spanned(
-                        team_path.clone(),
-                        format!(
-                            "Error: Expected Team identifier {}, found {}.",
-                            id_to_match,
-                            path_to_ident(&team_path).to_string().as_str()
-                        ),
-                    ));
-                }
-            };
-    
-            let ally_expr_monster_team = check_team_uid("Allies")?;
-            let opponent_expr_monster_team = check_team_uid("Opponents")?;
-    
-            Ok(ExprBattle {
-                ally_expr_monster_team,
-                opponent_expr_monster_team,
-            })
-        }
-    }
-    
-    #[derive(Clone)]
-    pub struct ExprMonsterTeam {
-        pub team_path: ExprPath,
-        pub team_type: ExprPath,
-        pub monster_fields: Punctuated<ExprMonster, Comma>,
-    }
-    
-    impl Parse for ExprMonsterTeam {
-        fn parse(input: ParseStream) -> syn::Result<Self> {
-            let team_uident: ExprPath = input.parse().expect(
-                "Error: Failed to parse TeamExpression identifier in expected TeamExpression.",
-            );
-    
-            let _: Token![:] = input.parse()?;
-            
-            let team_type: ExprPath = input.parse()?;
-    
-            let monster_fields = parse_braced_comma_separated_list::<ExprMonster>(input)?;
-            let monster_count = monster_fields.clone().iter().len();
-            if monster_count > 6 || monster_count < 1 {
-                return Err(Error::new_spanned(
-                    team_uident.clone(),
-                    format!(
-                        "Error: You can put betweeen one and six monsters on a team. {:?} has {} monsters.", 
-                        path_to_ident(&team_uident).to_string(),
-                        monster_count,
-                    ),
-                ));
-            };
-    
-            Ok(ExprMonsterTeam {
-                team_path: team_uident,
-                team_type,
-                monster_fields,
-            })
-        }
-    }
-    
-    fn parse_braced_comma_separated_list<T: Parse>(input: ParseStream) -> Result<Punctuated<T, Comma>> {
-        let content;
-        braced!(content in input);
-        content.parse_terminated(T::parse, Comma)
-    }
-    
-    fn is_expected_type(expected_keyword_name: &str, keyword: &Ident) -> bool {
-        let keyword_as_string = keyword.to_string();
-        let keyword_as_str = keyword_as_string.as_str();
-        keyword_as_str == expected_keyword_name
-    }
-    
-    // Syntax:
-    // let <MonsterName>: <PathToMonsterType> = <Nickname> { <GameMechanicExpression>, ... }
-    #[derive(Clone)]
-    pub struct ExprMonster {
-        pub monster_instance_path: ExprPath,
-        pub monster_type_path: ExprPath,
-        pub nickname_literal: Option<Literal>,
-        pub fields: Punctuated<ExprGameMechanic, Comma>,
-        pub move_count: usize,
-    }
-    
-    const MONSTER_KEYWORD: &str = "Monster";
-    
-    impl Parse for ExprMonster {
-        fn parse(input: ParseStream) -> Result<Self> {
-    
-            let monster_instance_path: ExprPath = input.parse()?;
-    
-            let _: Token![:] = input.parse()?;
-            
-            let monster_type_path: ExprPath = input.parse()?;
-    
-            let monster_type = path_to_ident(&monster_type_path);
-    
-            let mut nickname_literal = None;
-            if input.parse::<Token!(=)>().is_ok() {
-                let nickname_ident_result =  input.parse::<Literal>();
-                nickname_literal = nickname_ident_result.ok();
-            }
-    
-            if monster_type.to_string().as_str() == MONSTER_KEYWORD {
-            let fields = parse_braced_comma_separated_list::<ExprGameMechanic>(input)?;
-                
-            // Alerting the user if the number of moves is greater than 4.
-            let move_count = fields.iter()
-                .filter(|it| { it.game_mechanic_type == GameMechanicType::Move })
-                .count();
-            let monster_ident = path_to_ident(&monster_instance_path).to_string();
-            let default_nickname_literal = Literal::string(&monster_ident);
-            let nickname_or_default = nickname_literal
-                .clone()
-                .unwrap_or(default_nickname_literal)
-                .to_string();
-            // let nickname_or_default = "TEST";
-            if move_count > 4 || move_count < 1 {
-                let incorrect_move_count_error = Err(Error::new_spanned(
-                    monster_instance_path.clone(),
-                    format!(
-                        "Error: You can put betweeen one and four moves on a monster. {:?} has {} moves.", 
-                        nickname_or_default,
-                        move_count,
-                    ),
-                ));
-                return incorrect_move_count_error;
-            };
-            
-            // Alerting the user if the number of abilities is greater than 1.
-            let ability_count = fields.iter()
-                .filter(|it| { it.game_mechanic_type == GameMechanicType::Ability })
-                .count();
-            
-            if ability_count == 0 {
-                let incorrect_ability_count_error = Err(Error::new_spanned(
-                    monster_instance_path.clone(),
-                    format!(
-                        "Error: You must put at leaset one ability on a monster.{:?} has no ability.", 
-                        nickname_or_default
-                    ),
-                ));
-                return incorrect_ability_count_error;
-            } else if ability_count > 1 {
-                let incorrect_ability_count_error = Err(Error::new_spanned(
-                    monster_instance_path.clone(),
-                    format!(
-                        "Error: You can only put one ability on a monster.{:?} has more than one ability.", 
-                        nickname_or_default
-                    ),
-                ));
-                return incorrect_ability_count_error;
-            }
-            
-            // Alerting the user if the monster has more than one of any type of effect.
-            let game_mechanic_names = fields.iter()
-                .map(|it| {
-                    path_to_ident(&it.game_mechanic_instance_path)
-                })
-                .collect::<Vec<_>>();
-                
-            let has_duplicate_names = (1..game_mechanic_names.len())
-                .any(|i| game_mechanic_names[i..].contains(&game_mechanic_names[i - 1])
-            );
-            if has_duplicate_names {
-                let duplicate_mechanic_error = Err(Error::new_spanned(
-                    monster_instance_path.clone(),
-                    format!(
-                        "Error: More than one of any effect, i.e. move, ability etc. is not allowed. Please check if you have duplicated any attribute of {:?}", 
-                        nickname_or_default,
-                    ),
-                ));
-                return duplicate_mechanic_error;
-            }
-            return Ok(ExprMonster {
-                monster_instance_path,
-                monster_type_path,
-                nickname_literal,
-                fields,
-                move_count,
-            });
-        } else {
-            Err(Error::new_spanned(
-                    monster_type.clone(),
-                    format!(
-                        "Error: Expected 'Monster' as the type parameter of the MonsterExpression, found {} instead.",
-                        monster_type.to_string().as_str()
-                        ),
-                    )
-                )
-            }
-        }
-    }
-    
-    // Syntax:
-    // <MoveName>: <PathToMoveType>
-    // <AbilityName>: <PathToAbilityType>
-    // <ItemName>: <PathToItemType>
-    
-    #[derive(Clone)]
-    pub struct ExprGameMechanic {
-        pub game_mechanic_instance_path: ExprPath,
-        pub game_mechanic_type_path: ExprPath,
-        pub game_mechanic_type: GameMechanicType
-    }
-    
-    const MOVE_KEYWORD: &str = "Move";
-    const ABILITY_KEYWORD: &str = "Ability";
-    const ITEM_KEYWORD: &str = "Item";
-    
-    impl Parse for ExprGameMechanic {
-        fn parse(input: ParseStream) -> Result<Self> {
-            
-            let game_mechanic_instance_path: ExprPath = input.parse()?;
-            let _: Token![:] = input.parse()?;
-            let game_mechanic_type_path: ExprPath = input.parse()?;
-            let game_mechanic_type = path_to_ident(&game_mechanic_type_path);
-            let game_mechanic_type = to_enum_value(game_mechanic_type, &game_mechanic_instance_path)?;
-    
-            Ok(ExprGameMechanic {
-                game_mechanic_instance_path,
-                game_mechanic_type_path,
-                game_mechanic_type,
-            })
-        }
-    }
-    
-    pub fn path_to_ident(expr_path: &ExprPath) -> Ident {
-        expr_path
-            .path
-            .segments
-            .last()
-            .expect("There should be at least one segment in the path to the monster.")
-            .ident
-            .clone()
-    }
-    
-    #[derive(Clone, Debug, PartialEq, Eq)]
-    pub enum GameMechanicType {
-        Move,
-        Ability,
-        Item,
-    }
-    
-    fn to_enum_value(game_mechanic_type: Ident, game_mechanic_instance_path: &ExprPath) -> Result<GameMechanicType> {
-        let game_mechanic_type = match game_mechanic_type.to_string().as_str() {
-            MOVE_KEYWORD => { GameMechanicType::Move },
-            ABILITY_KEYWORD => { GameMechanicType::Ability },
-            ITEM_KEYWORD => { GameMechanicType::Item },
-            _ => return Err(Error::new_spanned(game_mechanic_instance_path, format!(
-                "Error: Expected a valid Game Mechanic identifier, found {} instead.",
-                game_mechanic_type.to_string().as_str()
-            ))), 
-        };
-        Ok(game_mechanic_type)
-    }
-}
-
-mod accessor_macro_syntax {
+pub mod accessor_macro_syntax {
     use syn::{parse::Parse, Token};
     use proc_macro2::Ident;
 
@@ -304,7 +20,7 @@ mod accessor_macro_syntax {
     }
 }
 
-mod event_system_macro_syntax {
+pub mod event_system_macro_syntax {
     use proc_macro2::Ident;
     use syn::{braced, parse::{Parse, ParseStream}, Attribute, ExprMatch, Token};
 
@@ -357,4 +73,228 @@ mod event_system_macro_syntax {
             )
         }
     }
+}
+
+pub mod battle_macro_syntax {
+    use quote::{quote, ToTokens};
+    use syn::{braced, parenthesized, parse::Parse, token::{Brace, Comma, Token}, Error, Ident, LitInt, LitStr, Token};
+
+    mod keywords{
+        use syn::custom_keyword;
+
+        custom_keyword!(moveset);
+        custom_keyword!(ability);
+        custom_keyword!(team);
+        custom_keyword!(power_points);
+    }
+
+    #[derive(Clone)]
+    pub struct BattleExpr {
+        pub ally_team_expr: MonsterTeamExpr,
+        pub opponent_team_expr: MonsterTeamExpr,
+    }
+
+    impl Parse for BattleExpr {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let items = input.parse_terminated(MonsterTeamExpr::parse, Comma)?;
+
+            if items.len() != 2 {
+                return Err(Error::new(input.span(), format!["Expected exactly 2 MonsterTeam expressions, but {} were found", items.len()]))
+            }
+
+            let expr_ally_team = (*items.iter()
+                .find(|item| { item.team_ident.to_string() == "Allies" })
+                .expect("Expected one team to be marked with `Allies`"))
+                .clone();
+
+            let expr_opponent_team = items.into_iter()
+                .find(|item| { item.team_ident.to_string() == "Opponents" })
+                .expect("Expected one team to be marked with `Opponents`");
+
+            Ok(BattleExpr {
+                ally_team_expr: expr_ally_team,
+                opponent_team_expr: expr_opponent_team,
+            })
+        }
+    }
+
+    impl BattleExpr {
+        pub fn team_exprs(self) -> (MonsterTeamExpr, MonsterTeamExpr) {
+            (self.ally_team_expr, self.opponent_team_expr)
+        }
+    }
+
+    /// syntax: 
+    /// ```no_compile
+    /// team: Allies/Opponents
+    /// {
+    ///     MonsterExpr,
+    ///     ... 0-5 more
+    /// }
+    /// ```
+    #[derive(Clone)]
+    pub struct MonsterTeamExpr {
+        pub team_ident: Ident,
+        pub monster_exprs: Vec<MonsterExpr>,
+    }
+    
+    const MAX_MONSTERS_PER_TEAM: usize = 6;
+
+    impl Parse for MonsterTeamExpr {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let _: keywords::team = input.parse()?;
+            let _: Token![:] = input.parse()?;
+            let team_ident: Ident = input.parse()?;
+            let content;
+            let _ = braced!(content in input);
+            let items = content.parse_terminated(MonsterExpr::parse, Comma)?;
+            let monster_expr = items.into_iter().collect::<Vec<_>>();
+            if monster_expr.is_empty() {
+                return Err(Error::new(content.span(), "Expected at least one Monster expression, but none were found"));
+            } else if monster_expr.len() > MAX_MONSTERS_PER_TEAM {
+                return Err(Error::new(content.span(), format!["Expected at most 6 Monster expressions, but {} were found", monster_expr.len()]));
+            }
+
+            Ok(MonsterTeamExpr {
+                team_ident,
+                monster_exprs: monster_expr,
+            })
+        }
+    }
+
+    impl MonsterTeamExpr {
+        pub fn monster_exprs(self) -> impl Iterator<Item = MonsterExpr> {
+            self.monster_exprs.into_iter()
+        }
+    }
+
+    /// syntax:
+    /// ```no_compile
+    /// *MonsterName*: "*OptionalNicknameStrLiteral*" {
+    ///     moveset: ExprMoveSet,
+    ///     ability: ExprAbility
+    /// }
+    /// ```
+    #[derive(Clone)]
+    pub struct MonsterExpr {
+        pub monster_ident: Ident,
+        pub maybe_nickname_literal: Option<LitStr>,
+        pub moveset_expr: MoveSetExpr,
+        pub ability_expr: AbilityExpr,
+    }
+
+    impl Parse for MonsterExpr {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let monster_ident: Ident = input.parse()?;
+            let maybe_nickname_literal: Option<LitStr> = match input.parse::<Token![:]>() {
+                Ok(_) => {
+                    Some(input.parse()?)
+                },
+                Err(_) => None,
+            };
+            let braced_content; let _ = braced!(braced_content in input);
+            let moveset_expr: MoveSetExpr = braced_content.parse()?;
+            let _: Token![,] = braced_content.parse()?;
+            let ability_expr: AbilityExpr = braced_content.parse()?;
+            // Last comma is optional
+            let _ = braced_content.parse::<Token![,]>();
+            
+            Ok(MonsterExpr {
+                monster_ident,
+                maybe_nickname_literal,
+                moveset_expr,
+                ability_expr,
+            })
+        }
+    }
+
+    #[derive(Clone)]
+    /// syntax: `moveset: (ExprMove, ...0-3 more)`
+    pub struct MoveSetExpr {
+        pub move_exprs: Vec<MoveExpr>,
+        
+    }
+
+    impl Parse for MoveSetExpr {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let _: keywords::moveset = input.parse()?;
+            let _: Token![:] = input.parse()?;
+            let content;
+            let _ = parenthesized!(content in input);
+            let content_span = content.span();
+            let items = content.parse_terminated(MoveExpr::parse, Comma)?; 
+            let move_exprs = items.into_iter().collect::<Vec<_>>();
+            if move_exprs.len() < 1 {
+                return Err(Error::new(content_span, "Expected at least one Move expression, but none were found"));
+            } else if move_exprs.len() > 4 {
+                return Err(Error::new(content_span, format!["Expected at most 4 Move expressions, but {} were found", move_exprs.len()]));
+            }
+
+            Ok(MoveSetExpr {
+                move_exprs,
+            })
+        }
+    }
+
+    
+    /// syntax: `*MoveName*`
+    #[derive(Clone)]
+    pub struct MoveExpr {
+        pub move_ident: Ident,
+        pub maybe_power_points: Option<LitInt>,
+    }
+    
+    impl Parse for MoveExpr {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let move_ident: Ident = input.parse()?;
+            let mut maybe_power_points: Option<LitInt> = None;
+            if input.peek(Brace) {
+                let content; let _ = braced!(content in input);
+
+                // Optional power point field 
+                if content.parse::<keywords::power_points>().is_ok() {
+                    let _: Token![:] = content.parse()?;
+                    maybe_power_points = Some(content.parse()?);
+                };
+            }
+
+            Ok(MoveExpr {
+                move_ident,
+                maybe_power_points,
+            })
+        }
+    }
+
+    impl ToTokens for MoveExpr {
+        fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+            let move_ident = &self.move_ident;
+            tokens.extend(quote!(#move_ident));
+        }
+    } 
+
+    /// syntax: `ability: *AbilityName*`
+    #[derive(Clone)]
+    pub struct AbilityExpr {
+        pub ability_ident: Ident,
+    }
+
+    impl Parse for AbilityExpr {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let _: keywords::ability = input.parse()?;
+            let _ : Token![:] = input.parse()?;
+            let ability_ident: Ident = input.parse()?;
+
+            Ok(AbilityExpr {
+                ability_ident,
+            })
+        }
+    }
+
+    impl ToTokens for AbilityExpr {
+        fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+            let ability_ident = &self.ability_ident;
+            tokens.extend(quote!(#ability_ident));
+        }
+    }
+
 }

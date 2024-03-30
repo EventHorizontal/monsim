@@ -1,12 +1,12 @@
 use monsim::*;
+
 mod ability_dex;
 mod monster_dex;
 mod move_dex;
 
-use ability_dex::{FlashFire, WaterAbsorb};
-use monster_dex::{Drifloon, Mudkip, Torchic, Treecko};
-use move_dex::{Bubble, Ember, Growl, Scratch, Tackle};
-use monsim_utils::{IntoAlly, IntoOpponent, Nothing};
+use ability_dex::*;
+use monster_dex::*;
+use move_dex::*;
 
 fn main() -> MonsimResult<()> {
     let battle = BattleState::builder()
@@ -40,5 +40,30 @@ fn main() -> MonsimResult<()> {
                 )
         )
         .build();
+
+    let _battle2 = battle!(
+        team: Opponents
+        {
+            Mudkip: "Blub" {
+                moveset: (Bubble, Tackle),
+                ability: FlashFire,
+            },
+            Torchic: "Cheep" {
+                moveset: (Scratch, Tackle, Growl),
+                ability: WaterAbsorb
+            }
+        },
+        team: Allies
+        {
+            Drifloon: "Cheerio" {
+                moveset: (Scratch, Ember),
+                ability: FlashFire,
+            },
+            Torchic: "Cheep" {
+                moveset: (Scratch { power_points: 23 }, Tackle, Growl),
+                ability: WaterAbsorb
+            }
+        },
+    );
     monsim::run(battle)
 }

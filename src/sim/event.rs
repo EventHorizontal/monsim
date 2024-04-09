@@ -277,7 +277,7 @@ impl EventFilteringOptions {
 #[cfg(all(test, feature = "debug"))]
 mod tests {
 
-    use crate::prng::Prng;
+    use crate::{prng::Prng, test_monster_dex::Zombler};
 
     #[test]
     fn test_if_priority_sorting_is_deterministic() {
@@ -285,7 +285,7 @@ mod tests {
         use crate::sim::*;
         use crate::sim::{
             test_ability_dex::FlashFire,
-            test_monster_dex::{Drifblim, Mudkip, Torchic, Treecko},
+            test_monster_dex::{Merkey, Squirecoal, Dandyleo},
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
         let mut result = [Vec::new(), Vec::new()];
@@ -294,21 +294,21 @@ mod tests {
                 .add_ally_team(
                     MonsterTeam::spawn()
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("Ruby")
                         )
                         .add_monster(
-                            Mudkip.spawn(
+                            Merkey.spawn(
                                 (Tackle.spawn(), Some(Bubble.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("Sapphire")
                         )
                         .add_monster(
-                            Treecko.spawn(
+                            Dandyleo.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
@@ -318,7 +318,7 @@ mod tests {
                 .add_opponent_team(
                     MonsterTeam::spawn()
                         .add_monster(
-                                Drifblim.spawn(
+                                Zombler.spawn(
                                     (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                     FlashFire.spawn()
                                 )
@@ -341,7 +341,7 @@ mod tests {
         }
 
         assert_eq!(result[0], result[1]);
-        assert_eq!(result[0][0], "Drifblim");
+        assert_eq!(result[0][0], "Zombler");
         assert_eq!(result[0][1], "Emerald");
         assert_eq!(result[0][2], "Ruby");
         assert_eq!(result[0][3], "Sapphire");
@@ -355,7 +355,7 @@ mod tests {
         use crate::sim::*;
         use crate::sim::{
             test_ability_dex::FlashFire,
-            test_monster_dex::{Drifblim, Mudkip, Torchic},
+            test_monster_dex::{Merkey, Squirecoal},
             test_move_dex::{Ember, Scratch},
         };
         let mut result = [Vec::new(), Vec::new()];
@@ -364,42 +364,42 @@ mod tests {
                 .add_ally_team(
                     MonsterTeam::spawn()
                         .add_monster(
-                            Drifblim.spawn(
+                            Zombler.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("A")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("B")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("C")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("D")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("E")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
@@ -409,42 +409,42 @@ mod tests {
                 .add_opponent_team(
                     MonsterTeam::spawn()
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("G")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("H")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("I")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("J")
                         )
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("K")
                         )
                         .add_monster(
-                            Mudkip.spawn(
+                            Merkey.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
@@ -469,13 +469,13 @@ mod tests {
 
         // Check that the two runs are not equal, there is an infinitesimal chance they will be by coincidence, but the probability is negligible.
         assert_ne!(result[0], result[1]);
-        // Check that Drifblim is indeed the in the front.
+        // Check that Zombler is indeed the in the front.
         assert_eq!(result[0][0], "A");
-        // Check that the Torchics are all in the middle.
+        // Check that the Squirecoals are all in the middle.
         for name in ["B", "C", "D", "E", "F", "G", "H", "I", "J", "K"].iter() {
             assert!(result[0].contains(&name.to_string()));
         }
-        //Check that the Mudkip is last.
+        //Check that the Merkey is last.
         assert_eq!(result[0][11], "L");
     }
 
@@ -486,7 +486,7 @@ mod tests {
         use crate::sim::*;
         use crate::sim::{
             test_ability_dex::FlashFire,
-            test_monster_dex::{Mudkip, Torchic, Treecko},
+            test_monster_dex::{Merkey, Squirecoal, Dandyleo},
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
             MonsterNumber, TeamUID,
         };
@@ -494,14 +494,14 @@ mod tests {
                 .add_ally_team(
                     MonsterTeam::spawn()
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Ember.spawn(), Some(Scratch.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("Ruby")
                         )
                         .add_monster(
-                            Mudkip.spawn(
+                            Merkey.spawn(
                                 (Tackle.spawn(), Some(Bubble.spawn()), None, None),
                                 FlashFire.spawn()
                             )
@@ -511,7 +511,7 @@ mod tests {
                     .add_opponent_team(
                         MonsterTeam::spawn()
                         .add_monster(
-                            Treecko.spawn(
+                            Dandyleo.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )

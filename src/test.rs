@@ -8,7 +8,7 @@ mod battle {
         use crate::sim::*;
         use crate::sim::{
             test_ability_dex::FlashFire,
-            test_monster_dex::{Drifloon, Mudkip, Torchic, Treecko},
+            test_monster_dex::{Zombler, Merkey, Squirecoal, Dandyleo},
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
 
@@ -16,20 +16,20 @@ mod battle {
                 .add_ally_team(
                     MonsterTeam::spawn()
                         .add_monster(
-                            Torchic.spawn(
+                            Squirecoal.spawn(
                                 (Ember.spawn(), Some(Scratch.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                             .with_nickname("Ruby")
                         )
                         .add_monster(
-                            Mudkip.spawn(
+                            Merkey.spawn(
                                 (Tackle.spawn(), Some(Bubble.spawn()), None, None),
                                 FlashFire.spawn()
                             )
                         )
                         .add_monster(
-                            Treecko.spawn(
+                            Dandyleo.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
@@ -39,7 +39,7 @@ mod battle {
                 .add_opponent_team(
                     MonsterTeam::spawn()
                         .add_monster(
-                            Drifloon.spawn(
+                            Zombler.spawn(
                                 (Scratch.spawn(), Some(Ember.spawn()), None, None),
                                 FlashFire.spawn()
                             )
@@ -53,21 +53,21 @@ mod battle {
             format!["{}", test_battle],
             String::from(
                 "Ally Team
-\t├── Ruby the Torchic (First Ally) [HP: 152/152]
+\t├── Ruby the Squirecoal (First Ally) [HP: 152/152]
 \t│\t│
 \t│\t├──    type: Fire
 \t│\t├── ability: Flash Fire
 \t│\t├──    move: Ember
 \t│\t└──    move: Scratch
 \t│\t
-\t├── Mudkip (Second Ally) [HP: 157/157]
+\t├── Merkey (Second Ally) [HP: 157/157]
 \t│\t│
-\t│\t├──    type: Water
+\t│\t├──    type: Water/Bug
 \t│\t├── ability: Flash Fire
 \t│\t├──    move: Tackle
 \t│\t└──    move: Bubble
 \t│\t
-\t└── Emerald the Treecko (Third Ally) [HP: 147/147]
+\t└── Emerald the Dandyleo (Third Ally) [HP: 147/147]
 \t \t│
 \t \t├──    type: Grass
 \t \t├── ability: Flash Fire
@@ -75,9 +75,9 @@ mod battle {
 \t \t└──    move: Ember
 \t \t
 Opponent Team
-\t└── Cheerio the Drifloon (First Opponent) [HP: 197/197]
+\t└── Cheerio the Zombler (First Opponent) [HP: 197/197]
 \t \t│
-\t \t├──    type: Ghost/Flying
+\t \t├──    type: Ghost/Dark
 \t \t├── ability: Flash Fire
 \t \t├──    move: Scratch
 \t \t└──    move: Ember

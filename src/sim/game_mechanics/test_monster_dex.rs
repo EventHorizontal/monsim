@@ -7,8 +7,8 @@ use super::{
     Type,
 };
 
-pub const Treecko: MonsterSpecies = MonsterSpecies {
-    name: "Treecko",
+pub const Dandyleo: MonsterSpecies = MonsterSpecies {
+    name: "Dandyleo",
     dex_number: 252,
     primary_type: Type::Grass,
     secondary_type: None,
@@ -16,8 +16,8 @@ pub const Treecko: MonsterSpecies = MonsterSpecies {
     ..MonsterSpecies::const_default()
 };
 
-pub const Torchic: MonsterSpecies = MonsterSpecies {
-    name: "Torchic",
+pub const Squirecoal: MonsterSpecies = MonsterSpecies {
+    name: "Squirecoal",
     dex_number: 255,
     primary_type: Type::Fire,
     secondary_type: None,
@@ -25,29 +25,20 @@ pub const Torchic: MonsterSpecies = MonsterSpecies {
     ..MonsterSpecies::const_default()
 };
 
-pub const Mudkip: MonsterSpecies = MonsterSpecies {
-    name: "Mudkip",
+pub const Merkey: MonsterSpecies = MonsterSpecies {
+    name: "Merkey",
     dex_number: 258,
     primary_type: Type::Water,
-    secondary_type: None,
+    secondary_type: Some(Type::Bug),
     base_stats: StatSet::new(50, 70, 50, 50, 50, 40),
     ..MonsterSpecies::const_default()
 };
 
-pub const Drifloon: MonsterSpecies = MonsterSpecies {
-    name: "Drifloon",
+pub const Zombler: MonsterSpecies = MonsterSpecies {
+    name: "Zombler",
     dex_number: 425,
     primary_type: Type::Ghost,
-    secondary_type: Some(Type::Flying),
+    secondary_type: Some(Type::Dark),
     base_stats: StatSet::new(90, 50, 34, 60, 44, 70),
-    ..MonsterSpecies::const_default()
-};
-
-pub const Drifblim: MonsterSpecies = MonsterSpecies {
-    name: "Drifblim",
-    dex_number: 426,
-    primary_type: Type::Ghost,
-    secondary_type: Some(Type::Flying),
-    base_stats: StatSet::new(150, 80, 44, 90, 54, 80),
     ..MonsterSpecies::const_default()
 };

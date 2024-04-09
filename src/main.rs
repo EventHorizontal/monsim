@@ -13,7 +13,7 @@ fn main() -> MonsimResult<()> {
         .add_ally_team(
             MonsterTeam::spawn()
                 .add_monster(
-                    Drifloon.spawn(
+                    Zombler.spawn(
                         (
                             Tackle.spawn()
                                 .with_power_points(23),
@@ -28,7 +28,7 @@ fn main() -> MonsimResult<()> {
         .add_opponent_team(
             MonsterTeam::spawn()
                 .add_monster(
-                    Mudkip.spawn(
+                    Merkey.spawn(
                         (
                             Growl.spawn(),
                             Some(Tackle.spawn()),
@@ -45,22 +45,22 @@ fn main() -> MonsimResult<()> {
     let _battle2 = battle!(
         team: Opponents
         {
-            Mudkip: "Blub" {
+            Merkey: "Blub" {
                 moveset: (Bubble, Tackle),
                 ability: FlashFire,
             },
-            Torchic: "Cheep" {
+            Squirecoal: "Cheep" {
                 moveset: (Scratch, Tackle, Growl),
                 ability: WaterAbsorb
             }
         },
         team: Allies
         {
-            Drifloon: "Cheerio" {
+            Zombler: "Cheerio" {
                 moveset: (Scratch, Ember),
                 ability: FlashFire,
             },
-            Torchic: "Cheep" {
+            Squirecoal: "Cheep" {
                 moveset: (Scratch { power_points: 23 }, Tackle, Growl),
                 ability: WaterAbsorb
             }

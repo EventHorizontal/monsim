@@ -1,6 +1,6 @@
 [package]
-name = "battle_context_macro"
-version = "0.1.0"
+name = "monsim_macros"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,6 +9,6 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-syn = {version = "1.0.95", features = ["extra-traits"]}
-quote =  "1.0.18"
-proc-macro2 = "1.0.39"
+syn = {version = "2.0.53", features = ["full"]}
+quote =  "1.0.35"
+proc-macro2 = "1.0.79"

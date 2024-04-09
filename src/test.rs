@@ -12,45 +12,42 @@ mod battle {
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
 
-        let test_battle = BattleState::builder()
-        .add_ally_team(
-            MonsterTeam::builder()
-                .add_monster(
-                    Monster::of_species(&Torchic)
-                        .with_nickname("Ruby")
-                        .add_move(Move::of_species(&Ember))
-                        .add_move(Move::of_species(&Scratch))
-                        .add_ability(&FlashFire)
-                        
+        let test_battle = BattleState::spawn()
+                .add_ally_team(
+                    MonsterTeam::spawn()
+                        .add_monster(
+                            Torchic.spawn(
+                                (Ember.spawn(), Some(Scratch.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Ruby")
+                        )
+                        .add_monster(
+                            Mudkip.spawn(
+                                (Tackle.spawn(), Some(Bubble.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                        )
+                        .add_monster(
+                            Treecko.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Emerald")
+                        )
                 )
-                .add_monster(
-                    Monster::of_species(&Mudkip)
-                        .add_move(Move::of_species(&Tackle))
-                        .add_move(Move::of_species(&Bubble))
-                        .add_ability(&FlashFire)
-                        
+                .add_opponent_team(
+                    MonsterTeam::spawn()
+                        .add_monster(
+                            Drifloon.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Cheerio")
+                        )
                 )
-                .add_monster(
-                    Monster::of_species(&Treecko)
-                        .with_nickname("Emerald")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                        
-                )
-        )
-        .add_opponent_team(
-            MonsterTeam::builder()
-                .add_monster(
-                    Monster::of_species(&Drifloon)
-                        .with_nickname("Cheerio")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                        
-                )
-        )
-        .build();
+                .build();
+
         println!("{}", test_battle);
         assert_eq!(
             format!["{}", test_battle],

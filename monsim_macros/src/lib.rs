@@ -258,32 +258,50 @@ pub fn battle(input: TokenStream) -> TokenStream {
 
                     let nickname_tokens = maybe_nickname_literal.map_or(quote!(), |nickname| { quote!(.with_nickname(#nickname)) });
 
+                    let mut number_of_moves = 0;
                     let move_tokens = moveset_expr.move_exprs
                         .into_iter()
                         .fold(quote!(), |mut tokens_so_far, move_expr| {
+                                number_of_moves += 1;
                                 let power_point_tokens = move_expr.maybe_power_points
                                     .clone()
                                     .map(|lit_int| {
                                         quote!(.with_power_points(#lit_int))
                                     });
 
-                                tokens_so_far.extend(quote!(
-                                    .add_move(
-                                        Move::of_species(&#move_expr)
-                                            #power_point_tokens
-                                    )
-                                )); 
+                                if number_of_moves > 1 {
+                                    tokens_so_far.extend(quote!(
+                                        Some(#move_expr.spawn()
+                                            #power_point_tokens),
+                                    ));    
+                                } else {
+                                    tokens_so_far.extend(quote!(
+                                        #move_expr.spawn()
+                                            #power_point_tokens,
+                                    )); 
+                                }
                                 tokens_so_far
                             }
                         );
-
-                    let ability_tokens = quote!(.add_ability(&#ability_expr));
+                    let empty_moveslot_tokens = (number_of_moves+1..=4).fold(
+                        quote!(),
+                        |mut tokens_so_far, _| {
+                            tokens_so_far.extend(quote![None,]);
+                            tokens_so_far
+                        }
+                    );
+                            
+                    let ability_tokens = quote!(#ability_expr.spawn());
 
                     let monster_tokens = quote!(
-                        .add_monster(Monster::of_species(&#monster_ident)
+                        .add_monster(#monster_ident.spawn(
+                                (
+                                    #move_tokens
+                                    #empty_moveslot_tokens
+                                ),
+                                #ability_tokens
+                            )
                             #nickname_tokens
-                            #move_tokens
-                            #ability_tokens
                         )
                     );
                     tokens_so_far.extend(monster_tokens);
@@ -292,7 +310,7 @@ pub fn battle(input: TokenStream) -> TokenStream {
             );
         quote!(
             .#method_ident(
-                MonsterTeam::builder()
+                MonsterTeam::spawn()
                     #team_monster_tokens
             )
         )
@@ -300,7 +318,7 @@ pub fn battle(input: TokenStream) -> TokenStream {
     let ally_team_tokens = get_team_tokens(ally_team_expr, quote!(add_ally_team));
     let opponent_team_tokens = get_team_tokens(opponent_team_expr, quote!(add_opponent_team));
     let output = quote!(
-        BattleState::builder()
+        BattleState::spawn()
             #ally_team_tokens
             #opponent_team_tokens
             .build()

@@ -12,6 +12,7 @@ use std::{error::Error, fmt::Display};
 
 pub use actions::Effect; use actions::Action;
 pub use battle::*;
+pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt};
 pub use monsim_macros::*;
 pub use battle_constants::*;
 pub use choice::*;

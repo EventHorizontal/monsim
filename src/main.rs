@@ -9,33 +9,34 @@ use monster_dex::*;
 use move_dex::*;
 
 fn main() -> MonsimResult<()> {
-    let battle = BattleState::builder()
+    let battle = BattleState::spawn()
         .add_ally_team(
-            MonsterTeam::builder()
+            MonsterTeam::spawn()
                 .add_monster(
-                    Monster::of_species(&Drifloon)
-                        .add_move(
-                            Move::of_species(&Tackle)
-                                .with_power_points(23)
-                        )
-                        .add_move(
-                            Move::of_species(&Growl)
-                        )
-                        .add_ability(&FlashFire)
-                        
+                    Drifloon.spawn(
+                        (
+                            Tackle.spawn()
+                                .with_power_points(23),
+                            Some(Growl.spawn()),
+                            None,
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )
                 )
         )
         .add_opponent_team(
-            MonsterTeam::builder()
+            MonsterTeam::spawn()
                 .add_monster(
-                    Monster::of_species(&Torchic)
-                        .add_move(
-                            Move::of_species(&Growl)
-                        )
-                        .add_move(
-                            Move::of_species(&Bubble)
-                        )
-                        .add_ability(&WaterAbsorb)
+                    Mudkip.spawn(
+                        (
+                            Growl.spawn(),
+                            Some(Tackle.spawn()),
+                            None,
+                            None
+                        ),
+                        WaterAbsorb.spawn()
+                    )
                         
                 )
         )

@@ -276,7 +276,6 @@ impl EventFilteringOptions {
 
 #[cfg(all(test, feature = "debug"))]
 mod tests {
-    use monsim_utils::{IntoAlly, IntoOpponent};
 
     use crate::prng::Prng;
 
@@ -291,38 +290,38 @@ mod tests {
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_battle = BattleState::builder()
+            let test_battle = BattleState::spawn()
                 .add_ally_team(
-                    MonsterTeam::builder()
+                    MonsterTeam::spawn()
                         .add_monster(
-                            Monster::of_species(&Torchic)
-                                .with_nickname("Ruby")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Ruby")
                         )
                         .add_monster(
-                            Monster::of_species(&Mudkip)
-                                .with_nickname("Sapphire")
-                                .add_move(Move::of_species(&Tackle))
-                                .add_move(Move::of_species(&Bubble))
-                                .add_ability(&FlashFire)
+                            Mudkip.spawn(
+                                (Tackle.spawn(), Some(Bubble.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Sapphire")
                         )
                         .add_monster(
-                            Monster::of_species(&Treecko)
-                                .with_nickname("Emerald")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Treecko.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Emerald")
                         )
                 )
                 .add_opponent_team(
-                    MonsterTeam::builder()
+                    MonsterTeam::spawn()
                         .add_monster(
-                            Monster::of_species(&Drifblim)
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                                Drifblim.spawn(
+                                    (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                    FlashFire.spawn()
+                                )
                         )
                 )
                 .build();
@@ -361,96 +360,96 @@ mod tests {
         };
         let mut result = [Vec::new(), Vec::new()];
         for i in 0..=1 {
-            let test_battle = BattleState::builder()
+            let test_battle = BattleState::spawn()
                 .add_ally_team(
-                    MonsterTeam::builder()
+                    MonsterTeam::spawn()
                         .add_monster(
-                            Monster::of_species(&Drifblim)
-                                .with_nickname("A")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Drifblim.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("A")
                         )
                         .add_monster(
-                            Monster::of_species(&Torchic)
-                                .with_nickname("B")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("B")
                         )
                         .add_monster(
-                            Monster::of_species(&Torchic)
-                                .with_nickname("C")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("C")
                         )
                         .add_monster(
-                            Monster::of_species(&Torchic)
-                                .with_nickname("D")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("D")
                         )
                         .add_monster(
-                            Monster::of_species(&Torchic)
-                                .with_nickname("E")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("E")
                         )
                         .add_monster(
-                            Monster::of_species(&Torchic)
-                                .with_nickname("F")
-                                .add_move(Move::of_species(&Scratch))
-                                .add_move(Move::of_species(&Ember))
-                                .add_ability(&FlashFire)
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("F")
                         )
                 )
-            .add_opponent_team(
-                MonsterTeam::builder()
-                .add_monster(
-                    Monster::of_species(&Torchic)
-                        .with_nickname("G")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                )
-                .add_monster(
-                    Monster::of_species(&Torchic)
-                        .with_nickname("H")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                )
-                .add_monster(
-                    Monster::of_species(&Torchic)
-                        .with_nickname("I")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                )
-                .add_monster(
-                    Monster::of_species(&Torchic)
-                        .with_nickname("J")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                )
-                .add_monster(
-                    Monster::of_species(&Torchic)
-                        .with_nickname("K")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                )
-                .add_monster(
-                    Monster::of_species(&Mudkip)
-                        .with_nickname("L")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                    )
+                .add_opponent_team(
+                    MonsterTeam::spawn()
+                        .add_monster(
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("G")
+                        )
+                        .add_monster(
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("H")
+                        )
+                        .add_monster(
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("I")
+                        )
+                        .add_monster(
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("J")
+                        )
+                        .add_monster(
+                            Torchic.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("K")
+                        )
+                        .add_monster(
+                            Mudkip.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("L")
+                        )
             )
             .build();
             let mut prng = Prng::new(i as u64);
@@ -491,38 +490,36 @@ mod tests {
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
             MonsterNumber, TeamUID,
         };
-        let test_battle = BattleState::builder()
-        .add_ally_team(
-            MonsterTeam::builder()
-                .add_monster(
-                    Monster::of_species(&Torchic)
-                        .with_nickname("Ruby")
-                        .add_move(Move::of_species(&Ember))
-                        .add_move(Move::of_species(&Scratch))
-                        .add_ability(&FlashFire)
-                        
+        let test_battle = BattleState::spawn()
+                .add_ally_team(
+                    MonsterTeam::spawn()
+                        .add_monster(
+                            Torchic.spawn(
+                                (Ember.spawn(), Some(Scratch.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Ruby")
+                        )
+                        .add_monster(
+                            Mudkip.spawn(
+                                (Tackle.spawn(), Some(Bubble.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Sapphire")
+                        )
+                    )
+                    .add_opponent_team(
+                        MonsterTeam::spawn()
+                        .add_monster(
+                            Treecko.spawn(
+                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
+                                FlashFire.spawn()
+                            )
+                            .with_nickname("Emerald")
+                        )
                 )
-                .add_monster(
-                    Monster::of_species(&Mudkip)
-                        .add_move(Move::of_species(&Tackle))
-                        .add_move(Move::of_species(&Bubble))
-                        .add_ability(&FlashFire)
-                        
-                )
-        )
-        .add_opponent_team(
-            MonsterTeam::builder()
-                .add_monster(
-                    Monster::of_species(&Treecko)
-                        .with_nickname("Emerald")
-                        .add_move(Move::of_species(&Scratch))
-                        .add_move(Move::of_species(&Ember))
-                        .add_ability(&FlashFire)
-                        
-                )
-        )
-        .build();
-
+                .build();
+       
         let passed_filter = EventDispatcher::filter_event_handlers(
             &test_battle,
             MonsterUID {

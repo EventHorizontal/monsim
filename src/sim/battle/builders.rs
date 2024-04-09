@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, Monster, MonsterNumber, MonsterTeam, MonsterUID, Move, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 // TODO: Some basic state validation will be done now, but later 
 // on I want to extend that to more stuff, such as validating that 
@@ -15,7 +15,7 @@ pub struct BattleBuilder {
 }
 
 impl BattleState {
-    pub fn builder() -> BattleBuilder {
+    pub fn spawn() -> BattleBuilder {
         BattleBuilder { maybe_ally_team: None, maybe_opponent_team: None }
     }
 }
@@ -73,7 +73,7 @@ pub struct MonsterTeamBuilder {
 }
 
 impl MonsterTeam {
-    pub fn builder() -> MonsterTeamBuilder {
+    pub fn spawn() -> MonsterTeamBuilder {
         MonsterTeamBuilder {
             maybe_monsters: None
         }
@@ -111,8 +111,8 @@ impl MonsterTeamBuilder {
 #[derive(Clone)]
 pub struct MonsterBuilder {
     species: &'static MonsterSpecies,
-    maybe_moves: Option<MaxSizedVec<MoveBuilder, 4>>,
-    maybe_ability: Option<AbilityBuilder>,
+    moves: MaxSizedVec<MoveBuilder, 4>,
+    ability: AbilityBuilder,
     nickname: Option<&'static str>,
     level: Option<u16>,
     nature: Option<MonsterNature>,
@@ -120,13 +120,51 @@ pub struct MonsterBuilder {
     current_health: Option<u16>,
 }
 
+pub trait MonsterBuilderExt {
+    fn spawn(&'static self, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>), ability: AbilityBuilder) -> MonsterBuilder;
+}
+
+impl MonsterBuilderExt for MonsterSpecies {
+    fn spawn(&'static self, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>), ability: AbilityBuilder) -> MonsterBuilder {
+        Monster::with(&self, moves, ability)
+    }
+}
+
 impl Monster {
     /// Starting point for building a Monster.
-    pub fn of_species(species: &'static MonsterSpecies) -> MonsterBuilder {
+    pub fn with(
+        species:  &'static MonsterSpecies,
+        moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>),
+        ability: AbilityBuilder,
+    ) -> MonsterBuilder {
+        
+        let moves = vec![moves.0]
+            .pipe(|mut vec| {  
+                if let Some(move_) = moves.1 {
+                    vec.push(move_)
+                }
+                vec
+            })
+            .pipe(|mut vec| {  
+                if let Some(move_) = moves.2 {
+                    vec.push(move_)
+                }
+                vec
+            })
+            .pipe(|mut vec| {  
+                if let Some(move_) = moves.3 {
+                    vec.push(move_)
+                }
+                vec
+            }
+        );
+
+        let moves = MaxSizedVec::from_vec(moves);
+        
         MonsterBuilder {
             species,
-            maybe_moves: None,
-            maybe_ability: None,
+            moves,
+            ability,
             nickname: None,
             level: None,
             nature: None,
@@ -144,32 +182,6 @@ impl MonsterBuilder {
         self
     } 
 
-    pub fn add_move(mut self, move_: MoveBuilder) -> Self {
-        match self.maybe_moves {
-            Some(ref mut moves) => { 
-                assert!(moves.count() < MAX_MOVES_PER_MOVESET, 
-                "Couldn't add {move_name}, {monster_name} already has {MAX_MOVES_PER_MOVESET}.",
-                move_name = move_.species.name,
-                monster_name = self.species.name,
-            );
-                moves.push(move_); 
-            },
-            None => { self.maybe_moves = Some(MaxSizedVec::from_vec(vec![move_]))},
-        }
-        self
-    }
-
-    pub fn add_ability(mut self, species: &'static AbilitySpecies) -> Self {
-        assert!(self.maybe_ability.is_none(), );
-        self.maybe_ability = match self.maybe_ability {
-            Some(_) => {
-                panic!("Only one Ability is allowed per Monster, but found multiple.");
-            },
-            None => { Some(AbilityBuilder { species }) },
-        };
-        self
-    }
-
     pub fn build(self, monster_uid: MonsterUID) -> Monster {
         
         let nickname = self.nickname;
@@ -181,21 +193,16 @@ impl MonsterBuilder {
             MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_4 },
         ];
 
-        let moveset = self.maybe_moves
-                .expect(format!["{} must be given 1-4 moves but none were given.", self.species.name].as_str())
-                .into_iter()
-                .zip(move_uids.into_iter()).map(|(move_builder, move_uid)| {
-                    move_builder.build(move_uid)
-                })
-                .collect::<Vec<_>>()
-                .pipe(|vec| { MaxSizedVec::from_vec(vec) });
+        let moveset = self.moves
+            .into_iter()
+            .zip(move_uids.into_iter()).map(|(move_builder, move_uid)| {
+                move_builder.build(move_uid)
+            })
+            .collect::<Vec<_>>()
+            .pipe(|vec| { MaxSizedVec::from_vec(vec) });
         
-        let ability = self.maybe_ability
-                .expect(
-                    format!["Expected {monster_uid} {monster_name} to be given one ability, but none were given.",
-                    monster_name = self.species.name].as_str()
-                )
-                .build(monster_uid);
+        let ability = self.ability
+            .build(monster_uid);
         
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
@@ -251,8 +258,18 @@ pub struct MoveBuilder {
     power_points: Option<u8>,
 }
 
+pub trait MoveBuilderExt {
+    fn spawn(&'static self) -> MoveBuilder;
+}
+
+impl MoveBuilderExt for MoveSpecies {
+    fn spawn(&'static self) -> MoveBuilder {
+        Move::builder(self)
+    }
+}
+
 impl Move {
-    pub fn of_species(species: &'static MoveSpecies) -> MoveBuilder {
+    pub fn builder(species: &'static MoveSpecies) -> MoveBuilder {
         MoveBuilder {
             species,
             power_points: None,
@@ -291,9 +308,19 @@ pub struct AbilityBuilder {
     pub species: & 'static AbilitySpecies,
 }
 
+pub trait AbilityBuilderExt {
+    fn spawn(&'static self) -> AbilityBuilder;
+}
+
+impl AbilityBuilderExt for AbilitySpecies {
+    fn spawn(&'static self) -> AbilityBuilder {
+        Ability::builder(self)
+    }
+}
+
 impl Ability {
     /// Starting point for building an Ability.
-    pub fn of_species(species: &'static AbilitySpecies) -> AbilityBuilder {
+    pub fn builder(species: &'static AbilitySpecies) -> AbilityBuilder {
         AbilityBuilder {
             species,
         }

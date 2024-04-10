@@ -77,7 +77,7 @@ pub mod event_system_macro_syntax {
 
 pub mod battle_macro_syntax {
     use quote::{quote, ToTokens};
-    use syn::{braced, parenthesized, parse::Parse, token::{Brace, Comma, Token}, Error, Ident, LitInt, LitStr, Token};
+    use syn::{braced, parenthesized, parse::Parse, token::{Brace, Comma}, Error, Ident, LitInt, LitStr, Token};
 
     mod keywords{
         use syn::custom_keyword;

@@ -22,55 +22,48 @@ pub mod accessor_macro_syntax {
 
 pub mod event_system_macro_syntax {
     use proc_macro2::Ident;
-    use syn::{braced, parse::{Parse, ParseStream}, Attribute, ExprMatch, Token};
+    use syn::{parenthesized, parse::{Parse, ParseStream}, token::Comma, Token};
 
-    pub struct ExprEventHandlerDeck {
-        pub doc_comment: Attribute,
-        pub first_pub_keyword: Token![pub],
-        pub struct_keyword: Token![struct],
-        pub struct_name: Ident,
-        pub match_expr: ExprMatch,
-        pub const_keyword: Token![const],
-        pub default_handler_constant_name: Ident,
-        pub default_handler_value: Ident,
-        pub second_pub_keyword: Token![pub],
-        pub trait_keyword: Token![trait],
-        pub trait_name: Ident,
+    pub struct EventListExpr {
+        pub event_exprs: Vec<EventExpr>,
     }
     
-    impl Parse for ExprEventHandlerDeck {
+    impl Parse for EventListExpr {
         fn parse(input: ParseStream) -> syn::Result<Self> {
-            let doc_comment = input.call(Attribute::parse_outer)?[0].clone();
-            let first_pub_keyword: Token![pub] = input.parse()?;
-            let struct_keyword: Token![struct] = input.parse()?;
-            let struct_name: Ident = input.parse()?;
-            let content;
-             _ = braced!(content in input);
-            let match_expr: ExprMatch = content.parse()?;
-            let const_keyword: Token![const] = input.parse()?;
-            let default_handler_constant_name: Ident = input.parse()?;
-            let _: Token![=] = input.parse()?;
-            let default_handler_value: Ident = input.parse()?;
-            let _: Token![;] = input.parse()?;
-            let second_pub_keyword: Token![pub] = input.parse()?;
-            let trait_keyword: Token![trait] = input.parse()?;
-            let trait_name: Ident = input.parse()?;
-            let _: Token![;] = input.parse()?;
-            Ok(
-                Self {
-                    doc_comment,
-                    first_pub_keyword,
-                    struct_keyword,
-                    struct_name,
-                    match_expr,
-                    default_handler_constant_name,
-                    const_keyword,
-                    default_handler_value,
-                    second_pub_keyword,
-                    trait_keyword,
-                    trait_name,
-                }
-            )
+            let items = input.parse_terminated(EventExpr::parse, Comma)?;
+            let events = items.into_iter().collect::<Vec<_>>();
+            Ok(Self {
+                event_exprs: events,
+            })
+        }
+    }
+
+    pub struct EventExpr {
+        pub event_name_pascal_case: Ident,
+        pub event_context_type_name_pascal_case: Ident,
+        pub event_return_type_name: Ident,
+    }
+
+
+    mod keywords{
+        use syn::custom_keyword;
+
+        custom_keyword!(event);
+    }
+
+    impl Parse for EventExpr {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let _: keywords::event = input.parse()?;
+            let event_name: Ident = input.parse()?;
+            let content; let _ = parenthesized!(content in input);
+            let event_context_type_name: Ident = content.parse()?;
+            let _ : Token![=>] = input.parse()?;
+            let event_return_type_name: Ident = input.parse()?;
+            Ok(EventExpr {
+                event_name_pascal_case: event_name,
+                event_context_type_name_pascal_case: event_context_type_name,
+                event_return_type_name,
+            })
         }
     }
 }

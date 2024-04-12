@@ -1,12 +1,13 @@
 mod syntax;
 
+use convert_case::Casing;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal, TokenStream as TokenStream2};
 use quote::quote;
-use syn::{parse_macro_input, ExprTuple, Pat};
+use syn::parse_macro_input;
 
 use syntax::battle_macro_syntax::{MonsterExpr, BattleExpr, MonsterTeamExpr};
-use syntax::event_system_macro_syntax::ExprEventHandlerDeck;
+use syntax::event_system_macro_syntax::{EventExpr, EventListExpr};
 use syntax::accessor_macro_syntax::ExprMechanicAccessor;
 
 /// Shorthand for retrieving a `Monster` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
@@ -67,163 +68,98 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
 /// ```
 #[proc_macro]
 pub fn generate_events(input: TokenStream) -> TokenStream {
-    
-    let event_handler_type = quote!(EventHandler);
-    
-    let ExprEventHandlerDeck { 
-        doc_comment, 
-        first_pub_keyword, 
-        struct_keyword, 
-        struct_name, 
-        match_expr, 
-        const_keyword, 
-        default_handler_constant_name, 
-        default_handler_value, 
-        second_pub_keyword, 
-        trait_keyword, 
-        trait_name 
-    }: ExprEventHandlerDeck = parse_macro_input!(input);
+    let EventListExpr { event_exprs } = parse_macro_input!(input as EventListExpr);
 
-    let mut fields = quote!();
-    let mut fields_for_constant = quote!();
-    let mut events = quote!();
-    let mut macro_fields = quote!();
+    let mut event_handler_storage_tokens = quote![];
+    let mut event_handler_impl_new_tokens = quote![];
+    let mut trait_impl_block_tokens = quote![];
+    let mut trait_enum_tokens = quote![];
+    let mut event_handler_deck_field_tokens = quote![];
+    let mut event_handler_deck_defaults_tokens = quote![];
+    let mut event_id_iterator_tokens = quote![];
 
-    for expression in match_expr.arms {
-        let mut comments = quote!();
-        let mut maybe_context_type = None;
-        for attr in expression.attrs {
-            let attribute_name = attr.path().get_ident().expect("There should be an ident").to_string();
-            if attribute_name == "doc" {
-                comments = quote!(
-                    #comments
-                    #attr
-                );
-            } else if attribute_name == "context" {
-                let type_token = attr.parse_args::<ExprTuple>();
-                match type_token {
-                    Ok(type_token) => maybe_context_type = Some(quote!(#type_token)),
-                    Err(_) => {
-                        let type_token = attr.parse_args::<Ident>().expect("Context must be a type or `None`");
-                        if type_token.to_string() == "None" {
-                            maybe_context_type = Some(quote!(()));
-                        } else {
-                            maybe_context_type = Some(quote!(#type_token));
-                        }
-                    },
+    for event_expr in event_exprs {
+        let EventExpr { event_name_pascal_case, event_context_type_name_pascal_case, event_return_type_name } = event_expr;
+        let event_name_snake_case = event_name_pascal_case.to_string().to_case(convert_case::Case::Snake);
+        let event_name_snake_case = Ident::new(&event_name_snake_case, event_name_pascal_case.span());
+        let event_trait_literal = Literal::string(&event_name_pascal_case.to_string());
+
+        event_handler_storage_tokens.extend(quote!(
+            pub #event_name_snake_case: Vec<OwnedEventHandler<#event_return_type_name, #event_context_type_name_pascal_case>>,
+        ));
+
+        event_handler_impl_new_tokens.extend(quote!(
+            #event_name_snake_case: vec![],
+        ));
+
+        trait_impl_block_tokens.extend(quote![
+            
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+            pub struct #event_name_pascal_case;
+
+            impl Event for #event_name_pascal_case {
+                type EventReturnType = #event_return_type_name;
+                type ContextType = #event_context_type_name_pascal_case;
+                fn corresponding_handler(&self, event_handler_deck: &EventHandlerDeck) -> Option<EventHandler<Self::EventReturnType, Self::ContextType>> {
+                    event_handler_deck.#event_name_snake_case
                 }
-            } else {
-                panic!("Only doc comment and `context` attributes are allowed in this macro.")
+    
+                fn name(&self) -> &'static str {
+                    #event_trait_literal
+                }
             }
-        }
-        let context_type = match maybe_context_type {
-            Some(tokens) => tokens,
-            None => panic!("A context must be specified for each field."),
-        };
-        let handler_ident = expression.pat;
-        let handler_return_type = *expression.body;
+
+        ]);
+
+        trait_enum_tokens.extend(quote![
+            #event_name_pascal_case,
+        ]);
+
+        event_handler_deck_field_tokens.extend(quote![
+            pub #event_name_snake_case: Option<EventHandler<#event_return_type_name, #event_context_type_name_pascal_case>>,
+        ]);
+
+        event_handler_deck_defaults_tokens.extend(quote![
+            #event_name_snake_case: None,
+        ]);
         
-        let pat_ident = match handler_ident {
-            Pat::Ident( ref pat_ident) => pat_ident.clone(),
-            _ => panic!("Error: Expected handler_ident to be an identifier."),
-        };
-        let trait_name_string_in_pascal_case = to_pascal_case(pat_ident.clone().ident.to_string());
-        let event_trait_literal = Literal::string(&trait_name_string_in_pascal_case);
-        let event_name_ident_in_pascal_case = Ident::new(
-            &trait_name_string_in_pascal_case,
-            pat_ident.ident.span(),
-        );
-            fields = quote!( 
-                #fields
-                #comments
-                pub #handler_ident: Option<#event_handler_type<#handler_return_type, #context_type>>,
-            );
-            fields_for_constant = quote!(
-                #fields_for_constant
-                #handler_ident: #default_handler_value,
-            );
-            events = quote!(
-                #events
+        event_id_iterator_tokens.extend(quote![
+            EventID::#event_name_pascal_case,    
+        ]);
 
-                #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-                pub struct #event_name_ident_in_pascal_case;
-
-                impl #trait_name for #event_name_ident_in_pascal_case {
-                    type EventReturnType = #handler_return_type;
-                    type ContextType = #context_type;
-                    fn corresponding_handler(&self, event_handler_deck: &#struct_name) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>> {
-                        event_handler_deck.#handler_ident
-                    }
-        
-                    fn name(&self) -> &'static str {
-                        #event_trait_literal
-                    }
-                }
-            );
-
-            macro_fields = quote!(
-                #macro_fields
-                (stringify![#event_name_ident_in_pascal_case]) => { #handler_ident }
-            )
     }
 
-    let output_token_stream = quote!(
-        #doc_comment
+    let output = quote![
         #[derive(Debug, Clone, Copy)]
-        #first_pub_keyword #struct_keyword #struct_name {
-            #fields
+        pub struct EventHandlerDeck {
+            #event_handler_deck_field_tokens
         }
 
-        #const_keyword #default_handler_constant_name: #struct_name = #struct_name {
-            #fields_for_constant
+        const DEFAULT_DECK: EventHandlerDeck = EventHandlerDeck {
+            #event_handler_deck_defaults_tokens
         };
 
-        #second_pub_keyword #trait_keyword #trait_name: Clone + Copy {
-            type EventReturnType: Sized + Clone + Copy;
-            type ContextType: Sized + Clone + Copy;
-
-            fn corresponding_handler(
-                &self,
-                event_handler_deck: &#struct_name,
-            ) -> Option<#event_handler_type<Self::EventReturnType, Self::ContextType>>;
-
-            fn name(&self) -> &'static str;
+        #[derive(Debug, Clone)]
+        pub struct EventHandlerStorage {
+            #event_handler_storage_tokens
         }
 
-        #[macro_export]
-        macro_rules! corresponding_handler {
-            ($x: expr) => {
-                match stringify![$x] {
-                    #macro_fields
+        impl EventHandlerStorage {
+            pub const fn new() -> Self {
+                Self {
+                    #event_handler_impl_new_tokens
                 }
-            }            
+            }
         }
 
         pub mod event_dex {
             use super::*;
 
-            #events
+            #trait_impl_block_tokens
         }
-    );
-    output_token_stream.into()
-}
+    ];
 
-fn to_pascal_case(input_string: String) -> String {
-    let mut output_string = String::new();
-    let mut previous_char = None;
-    for char in input_string.chars() {
-        if let Some(previous_char) = previous_char {
-            if previous_char == '_' {
-                output_string.push(char.to_ascii_uppercase());
-            } else {
-                output_string.push(char);
-            }
-        } else {
-            output_string.push(char.to_ascii_uppercase());
-        }
-        previous_char = Some(char);
-    }
-    output_string.replace("_", "")
+    output.into()
 }
 
 /// This macro parses the following syntax:

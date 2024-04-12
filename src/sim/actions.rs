@@ -27,7 +27,7 @@ impl Action {
             _move = move_![move_used].species.name
         ]);
 
-        if EventDispatcher::dispatch_trial_event(battle, attacker, calling_context, OnTryMove).failed() {
+        if EventDispatcher::dispatch_trial_event(battle, OnTryMove, attacker, calling_context).failed() {
             battle.message_log.push_str("The move failed!");
             return Ok(NOTHING);
         }
@@ -89,7 +89,7 @@ impl Action {
 
         // Do the calculated damage to the target
         Effect::deal_damage(battle, defender, damage);
-        EventDispatcher::dispatch_event(battle, attacker, calling_context, OnDamageDealt, NOTHING, None);
+        EventDispatcher::dispatch_event(battle, OnDamageDealt, attacker, NOTHING, NOTHING, None);
 
         let type_effectiveness = match type_matchup_multiplier {
             Percent(25) | Percent(50) => "not very effective",
@@ -123,7 +123,7 @@ impl Action {
             move_ = move_![move_used].species.name
         ]);
 
-        if EventDispatcher::dispatch_trial_event(battle, attacker, calling_context, OnTryMove).failed() {
+        if EventDispatcher::dispatch_trial_event(battle, OnTryMove, attacker, calling_context).failed() {
             battle.message_log.push_str("The move failed!");
             return Ok(NOTHING);
         }
@@ -133,7 +133,7 @@ impl Action {
             move_.on_activate(battle, attacker, target);
         }
 
-        EventDispatcher::dispatch_event(battle, attacker, calling_context, OnStatusMoveUsed, NOTHING, None);
+        EventDispatcher::dispatch_event(battle, OnStatusMoveUsed, attacker, calling_context, NOTHING, None);
 
         Ok(NOTHING)
     }
@@ -167,10 +167,10 @@ impl Effect {
     pub fn activate_ability(battle: &mut BattleState, ability_owner: MonsterUID) -> Outcome {
         let calling_context = AbilityUsed::new(ability_owner);
 
-        if EventDispatcher::dispatch_trial_event(battle, ability_owner, calling_context, OnTryActivateAbility).succeeded() {
+        if EventDispatcher::dispatch_trial_event(battle, OnTryActivateAbility, ability_owner, calling_context).succeeded() {
             let ability = *ability![ability_owner];
             ability.on_activate(battle, ability_owner);
-            EventDispatcher::dispatch_event(battle, ability_owner, calling_context, OnAbilityActivated, NOTHING, None);
+            EventDispatcher::dispatch_event(battle, OnAbilityActivated, ability_owner, calling_context, NOTHING, None);
             Outcome::Success
         } else {
             Outcome::Failure
@@ -181,7 +181,7 @@ impl Effect {
     ///
     /// Returns a `bool` indicating whether the stat raising succeeded.
     pub fn raise_stat(battle: &mut BattleState, affected_monster: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-        if EventDispatcher::dispatch_trial_event(battle, affected_monster, NOTHING, OnTryRaiseStat).succeeded() {
+        if EventDispatcher::dispatch_trial_event(battle, OnTryRaiseStat, affected_monster, NOTHING).succeeded() {
             let effective_stages = monster![mut affected_monster].stat_modifiers.raise_stat(stat, number_of_stages);
 
             battle.message_log.push(format![
@@ -205,7 +205,7 @@ impl Effect {
     ///
     /// Returns a `bool` indicating whether the stat lowering succeeded.
     pub fn lower_stat(battle: &mut BattleState, affected_monster: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-        if EventDispatcher::dispatch_trial_event(battle, affected_monster, NOTHING, OnTryLowerStat).succeeded() {
+        if EventDispatcher::dispatch_trial_event(battle, OnTryLowerStat, affected_monster, NOTHING).succeeded() {
             let effective_stages = monster![mut affected_monster].stat_modifiers.lower_stat(stat, number_of_stages);
 
             battle.message_log.push(format![

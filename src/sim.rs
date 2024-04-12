@@ -17,7 +17,7 @@ pub use monsim_macros::*;
 pub use battle_constants::*;
 pub use choice::*;
 pub use event::{
-    contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, InBattleEvent, TargetFlags,
+    contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, Event, TargetFlags,
 };
 pub use game_mechanics::*;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent};

@@ -79,44 +79,28 @@ pub mod contexts {
     }
 }
 
-generate_events![
-    /// A "deck" is meant to be a collection with 0-1 of each "card".
-    pub struct EventHandlerDeck {
-        match event {
-            /// Return value: `Outcome::Success` means the move succeeded.
-            #[context(MoveUsed)]
-            on_try_move => Outcome,
+generate_events!{
+    event OnTryMove(MoveUsed) => Outcome,
+    event OnDamageDealt(Nothing) => Nothing,
+    event OnTryActivateAbility(AbilityUsed) => Outcome,
+    event OnAbilityActivated(AbilityUsed) => Nothing,
+    event OnModifyAccuracy(MoveUsed) => Percent,
+    event OnTryRaiseStat(Nothing) => Outcome,
+    event OnTryLowerStat(Nothing) => Outcome,
+    event OnStatusMoveUsed(MoveUsed) => Nothing,
+}
 
-            #[context(MoveUsed)]
-            on_damage_dealt => Nothing,
+pub trait Event: Clone + Copy {
+    type EventReturnType: Sized + Clone + Copy;
+    type ContextType: Sized + Clone + Copy;
 
-            /// Return value: `Outcome::Success` means ability activation succeeded.
-            #[context(AbilityUsed)]
-            on_try_activate_ability => Outcome,
+    fn corresponding_handler(
+        &self,
+        event_handler_deck: &EventHandlerDeck,
+    ) -> Option<EventHandler<Self::EventReturnType, Self::ContextType>>;
 
-            #[context(AbilityUsed)]
-            on_ability_activated => Nothing,
-
-            /// Return value: `Percent` value indicates percentage multiplier for
-            /// accuracy modification.
-            #[context(MoveUsed)]
-            on_modify_accuracy => Percent,
-
-            /// Return value: `Outcome::Success` means stat was successfully raised.
-            #[context(None)]
-            on_try_raise_stat => Outcome,
-
-            /// Return value: `Outcome::Success` means stat was successfully lowered.
-            #[context(None)]
-            on_try_lower_stat => Outcome,
-
-            #[context(MoveUsed)]
-            on_status_move_used => Nothing,
-        }
-    }
-    const DEFAULT_DECK = None;
-    pub trait InBattleEvent;
-];
+    fn name(&self) -> &'static str;
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct OwnedEventHandlerDeck {
@@ -138,11 +122,11 @@ impl EventDispatcher {
 
     pub fn dispatch_trial_event<C: Copy>(
         battle: &mut BattleState,
+        event: impl Event<EventReturnType = Outcome, ContextType = C>,
         broadcaster_uid: MonsterUID,
-        calling_context: C,
-        event: impl InBattleEvent<EventReturnType = Outcome, ContextType = C>,
+        event_context: C,
     ) -> Outcome {
-        Self::dispatch_event(battle, broadcaster_uid, calling_context, event, Outcome::Success, Some(Outcome::Failure))
+        Self::dispatch_event(battle, event, broadcaster_uid, event_context, Outcome::Success, Some(Outcome::Failure))
     }
 
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
@@ -150,9 +134,9 @@ impl EventDispatcher {
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
     pub fn dispatch_event<R: PartialEq + Copy, C: Copy>(
         battle: &mut BattleState,
+        event: impl Event<EventReturnType = R, ContextType = C>,
         broadcaster_uid: MonsterUID,
         calling_context: C,
-        event: impl InBattleEvent<EventReturnType = R, ContextType = C>,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
@@ -215,7 +199,7 @@ impl EventDispatcher {
 
     fn handlers_for_event<R: Copy, C: Copy>(
         event_handler_deck_instances: Vec<OwnedEventHandlerDeck>,
-        event: impl InBattleEvent<EventReturnType = R, ContextType = C>,
+        event: impl Event<EventReturnType = R, ContextType = C>,
     ) -> Vec<OwnedEventHandler<R, C>> {
         event_handler_deck_instances
             .iter()
@@ -250,7 +234,7 @@ impl EventHandlerDeck {
 impl OwnedEventHandlerDeck {
     fn handler_for_event<R: Copy, C: Copy>(
         &self,
-        event: impl InBattleEvent<EventReturnType = R, ContextType = C>,
+        event: impl Event<EventReturnType = R, ContextType = C>,
     ) -> Option<OwnedEventHandler<R, C>> {
         let event_handler = event.corresponding_handler(&self.event_handler_deck);
         event_handler.map(|event_handler| OwnedEventHandler {
@@ -538,7 +522,7 @@ mod tests {
     #[test]
     #[cfg(feature = "debug")]
     fn test_print_event_handler_instance() {
-        use crate::sim::{test_ability_dex::FlashFire, event::OwnedEventHandler, event_dex::OnTryMove, MonsterUID, InBattleEvent};
+        use crate::sim::{test_ability_dex::FlashFire, event::OwnedEventHandler, event_dex::OnTryMove, MonsterUID, Event};
         let event_handler_instance = OwnedEventHandler {
             event_name: OnTryMove.name(),
             event_handler: FlashFire.event_handler_deck.on_try_move.unwrap(),

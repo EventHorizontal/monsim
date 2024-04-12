@@ -12,7 +12,7 @@ mod battle {
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
 
-        let test_battle = BattleState::spawn()
+        let test_battle = Battle::spawn()
                 .add_ally_team(
                     MonsterTeam::spawn()
                         .add_monster(
@@ -116,7 +116,7 @@ mod prng {
         let mut prng = Prng::from_current_time();
         let mut dist = [0u64; 100];
         for _ in 0..=10_000_000 {
-            let n = prng.generate_random_u16_in_range(0..=99) as usize;
+            let n = prng.generate_random_number_in_range(0..=99) as usize;
             dist[n] += 1;
         }
         let avg_deviation = dist
@@ -135,8 +135,8 @@ mod prng {
         let mut prng1 = Prng::from_current_time();
         let mut prng2 = prng1;
         for i in 0..10_000 {
-            let generated_number_1 = prng1.generate_random_u16_in_range(0..=u16::MAX - 1);
-            let generated_number_2 = prng2.generate_random_u16_in_range(0..=u16::MAX - 1);
+            let generated_number_1 = prng1.generate_random_number_in_range(0..=u16::MAX - 1);
+            let generated_number_2 = prng2.generate_random_number_in_range(0..=u16::MAX - 1);
             assert_eq!(generated_number_1, generated_number_2, "iteration {}", i);
         }
     }

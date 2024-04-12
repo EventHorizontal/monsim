@@ -1,41 +1,68 @@
-mod message_log;
+pub mod message_log;
 pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::sim::{
+use tap::Pipe;
+use crate::{sim::{
         Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
-};
+}, EventDispatcher};
 
-use super::{event::OwnedEventHandlerDeck, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
+use super::{event::EventHandlerStorage, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
 
-/// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BattleState {
+/// The representation of a Battle in the simulator engine. Contains all information one could possibly want to know about a single instance of a Battle. 
+#[derive(Debug, Clone)]
+pub struct Battle {
 
-    pub(crate) prng: Prng,
     pub turn_number: u16,
     pub is_finished: bool,
-    // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
-    pub message_log: MessageLog,
     
-    teams: PerTeam<MonsterTeam>,
+    pub message_log: MessageLog,
+    pub entities: BattleEntities,
+    
+    pub(crate) prng: Prng,
+    pub(crate) event_dispatcher: EventDispatcher, 
 }
 
-impl BattleState {
+#[derive(Debug, Clone)]
+pub struct BattleEntities {
+    // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
+    pub teams: PerTeam<MonsterTeam>,
+}
+
+impl Battle { // Initialisation
 
     pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>) -> Self {
         let teams = PerTeam::new(ally_team, opponent_team);
         Self {
             prng: Prng::from_current_time(),
+            event_dispatcher: EventDispatcher {
+                event_handler_storage: EventHandlerStorage::new(),
+            },
             is_finished: false,
             turn_number: 0,
-            teams,
+            entities: BattleEntities {
+                teams,
+            },
             message_log: MessageLog::new(),
         }
+            .pipe(|mut battle| { battle.populate_event_handler_storage(); battle} )
     }
 
+    fn populate_event_handler_storage(&mut self) {
+        self.entities.teams[TeamUID::Allies].populate_event_handlers(&mut self.event_dispatcher.event_handler_storage);
+        self.entities.teams[TeamUID::Opponents].populate_event_handlers(&mut self.event_dispatcher.event_handler_storage);
+    }
+
+    /// An function for internal use to split borrows on stuff that's important for the engine and stuff that's 
+    /// important to the user.
+    pub(crate) fn split(&mut self) -> (&mut Prng, &mut BattleEntities, &mut MessageLog, &mut EventDispatcher) {
+        (&mut self.prng, &mut self.entities, &mut self.message_log, &mut self.event_dispatcher)
+    } 
+}
+
+impl BattleEntities {
     // Teams -----------------
 
     pub fn team(&self, team_uid: TeamUID) -> &MonsterTeam {
@@ -86,13 +113,6 @@ impl BattleState {
 
         (self.is_on_ally_team(owner_uid) && self.is_on_ally_team(event_caller_uid))
             || (self.is_on_opponent_team(event_caller_uid) && self.is_on_opponent_team(owner_uid))
-    }
-
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let mut out = Vec::new();
-        out.append(&mut self.ally_team().event_handler_deck_instances());
-        out.append(&mut self.opponent_team().event_handler_deck_instances());
-        out
     }
 
     // Monsters -----------------
@@ -239,7 +259,7 @@ impl BattleState {
     }
 }
 
-impl Display for BattleState {
+impl Display for BattleEntities {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 

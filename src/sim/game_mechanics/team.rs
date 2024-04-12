@@ -1,7 +1,7 @@
 use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 
-use crate::sim::{event::OwnedEventHandlerDeck, MonsterNumber};
+use crate::sim::{event::EventHandlerStorage, MonsterNumber};
 use super::{Monster, MonsterUID, MoveNumber};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
@@ -47,12 +47,10 @@ impl MonsterTeam {
         &mut self.monsters
     }
 
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let mut out = Vec::new();
+    pub fn populate_event_handlers(&self, event_handler_storage: &mut EventHandlerStorage) {
         for monster in self.monsters.iter() {
-            out.append(&mut monster.event_handler_deck_instances())
+            monster.populate_event_handlers(event_handler_storage);
         }
-        out
     }
 
     pub(crate) fn team_status_string(&self) -> String {
@@ -207,4 +205,13 @@ impl<T: Clone> IntoIterator for PerTeam<T> {
 pub struct MoveUID {
     pub owner_uid: MonsterUID,
     pub move_number: MoveNumber,
+}
+
+impl MoveUID {
+    pub fn new(owner_uid: MonsterUID, move_number: MoveNumber) -> Self {
+        Self {
+            owner_uid,
+            move_number,
+        }
+    }
 }

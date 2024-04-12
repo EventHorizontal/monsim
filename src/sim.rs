@@ -10,14 +10,14 @@ mod ordering;
 
 use std::{error::Error, fmt::Display};
 
-pub use actions::Effect; use actions::Action;
+pub use actions::Reaction; use actions::Action;
 pub use battle::*;
 pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt};
 pub use monsim_macros::*;
 pub use battle_constants::*;
 pub use choice::*;
 pub use event::{
-    contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, InBattleEvent, TargetFlags,
+    contexts::*, event_dex, ActivationOrder, EventFilteringOptions, EventDispatcher, EventHandler, Event, TargetFlags,
 };
 pub use game_mechanics::*;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent};
@@ -30,19 +30,7 @@ pub enum SimError {
     InvalidStateReached(String),
 }
 
-impl Error for SimError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        None
-    }
-
-    fn description(&self) -> &str {
-        "description() is deprecated; use Display"
-    }
-
-    fn cause(&self) -> Option<&dyn Error> {
-        self.source()
-    }
-}
+impl Error for SimError {}
 
 impl Display for SimError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -58,7 +46,7 @@ pub struct BattleSimulator;
 
 impl BattleSimulator {
 
-    pub fn simulate_turn(battle: &mut BattleState, choices: PerTeam<FullySpecifiedChoice>) -> SimResult {
+    pub fn simulate_turn(battle: &mut Battle, choices: PerTeam<FullySpecifiedChoice>) -> SimResult {
         
         assert!(not!(battle.is_finished), "The simulator cannot be called on a finished battle.");
 
@@ -84,9 +72,9 @@ impl BattleSimulator {
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, .. } => match battle.move_(move_uid).category() {
-                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, attacker_uid, move_uid, target_uid),
-                    MoveCategory::Status => Action::use_status_move(battle, attacker_uid, move_uid, target_uid),
+                FullySpecifiedChoice::Move { attacker: move_user, move_used, target, .. } => match move_!(move_used).category() {
+                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, MoveUsed { move_user, move_used, target }),
+                    MoveCategory::Status => Action::use_status_move(battle, MoveUsed {move_user, move_used, target}),
                 },
                 FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, .. } => {
                     Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)
@@ -94,8 +82,8 @@ impl BattleSimulator {
             }?;
 
             // Check if a Monster fainted this turn
-            let maybe_fainted_active_monster = battle.monsters()
-                .find(|monster| battle.monster(monster.uid).is_fainted && battle.is_active_monster(monster.uid));
+            let maybe_fainted_active_monster = battle.entities.monsters()
+                .find(|monster| monster.is_fainted && battle.entities.is_active_monster(monster.uid));
             
             if let Some(fainted_active_monster) = maybe_fainted_active_monster {
                 
@@ -105,11 +93,11 @@ impl BattleSimulator {
                 ]);
                 
                 // Check if any of the teams is out of usable Monsters
-                let are_all_ally_team_monsters_fainted = battle.ally_team()
+                let are_all_ally_team_monsters_fainted = battle.entities.ally_team()
                     .monsters()
                     .iter()
                     .all(|monster| { monster.is_fainted });
-                let are_all_opponent_team_monsters_fainted = battle.opponent_team()
+                let are_all_opponent_team_monsters_fainted = battle.entities.opponent_team()
                     .monsters()
                     .iter()
                     .all(|monster| { monster.is_fainted });
@@ -138,14 +126,14 @@ impl BattleSimulator {
     }
     
     /// Fails if the turn limit (`u16::MAX`, i.e. `65535`) is exceeded. It's not expected for this to ever happen.
-    pub(crate) fn increment_turn_number(battle: &mut BattleState) -> Result<Nothing, &str> {
+    pub(crate) fn increment_turn_number(battle: &mut Battle) -> Result<Nothing, &str> {
         match battle.turn_number.checked_add(1) {
             Some(turn_number) => { battle.turn_number = turn_number; Ok(NOTHING)},
             None => Err("Turn limit (65535) exceeded."),
         }
     }
 
-    pub(crate) fn switch_out_between_turns(battle: &mut BattleState, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> SimResult {
+    pub(crate) fn switch_out_between_turns(battle: &mut Battle, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> SimResult {
         Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)
     }
 }

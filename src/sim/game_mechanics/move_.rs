@@ -1,9 +1,8 @@
-use monsim_utils::MaxSizedVec;
+use monsim_utils::{MaxSizedVec, Nothing};
 
 use crate::{sim::{
-    event::{EventFilteringOptions, EventHandlerDeck},
-    BattleState, MonsterUID, Type,
-}, MoveUID};
+    event::{EventFilteringOptions, EventHandlerStorage, OwnerInfo}, MonsterUID, Type,
+}, BattleEntities, MoveUID};
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
 
@@ -45,10 +44,10 @@ impl Move {
         self.species.base_accuracy
     }
 
-    pub(crate) fn on_activate(&self, battle: &mut BattleState, owner_uid: MonsterUID, target_uid: MonsterUID) {
+    pub(crate) fn on_activate(&self, entities: &mut BattleEntities, owner_uid: MonsterUID, target_uid: MonsterUID) {
         let on_activate_logic = self.species.on_activate;
         if let Some(on_activate_logic) = on_activate_logic {
-            on_activate_logic(battle, owner_uid, target_uid);
+            on_activate_logic(entities, owner_uid, target_uid);
         }
     }
     
@@ -62,8 +61,8 @@ pub struct MoveSpecies {
     pub dex_number: u16,
     pub name: &'static str,
     
-    /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
-    pub on_activate: Option<fn(&mut BattleState, MonsterUID, MonsterUID)>,
+    /// `fn(entities: &mut BattleEntities, attacker: MonsterUID, target: MonsterUID)`
+    pub on_activate: Option<fn(&mut BattleEntities, MonsterUID, MonsterUID)>,
     pub base_accuracy: u16,
     pub base_power: u16,
     pub category: MoveCategory,
@@ -71,7 +70,7 @@ pub struct MoveSpecies {
     pub priority: i8,
     pub type_: Type,
     
-    pub event_handler_deck: &'static EventHandlerDeck,
+    pub event_callbacks: fn(OwnerInfo, &mut EventHandlerStorage) -> Nothing,
     pub event_handler_deck_filtering_options: EventFilteringOptions,
 }
 
@@ -87,7 +86,7 @@ const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     priority: 0,
     type_: Type::Normal,
 
-    event_handler_deck: &EventHandlerDeck::const_default(),
+    event_callbacks: |_, _| {},
     event_handler_deck_filtering_options: EventFilteringOptions::default(),
 };
 

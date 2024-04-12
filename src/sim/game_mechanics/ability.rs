@@ -1,4 +1,6 @@
-use crate::sim::{event::EventFilteringOptions, BattleState, EventHandlerDeck, MonsterUID};
+use monsim_utils::Nothing;
+
+use crate::{sim::event::{BattleAPI, EventFilteringOptions, EventHandlerStorage, OwnerInfo}, BattleEntities, MonsterUID};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,8 +16,9 @@ pub struct AbilitySpecies {
     pub dex_number: u16,
     pub name: &'static str,
     /// `fn(battle: &mut Battle, ability_holder: MonsterUID)`
-    pub on_activate: fn(&mut BattleState, MonsterUID),
-    pub event_handler_deck: &'static EventHandlerDeck,
+    pub on_activate: fn(BattleAPI, MonsterUID),
+    /// A function that adds `OwnedEventHandler`s to the Battle's `EventHandlerStorage`
+    pub event_callbacks: fn(OwnerInfo, &mut EventHandlerStorage) -> Nothing,
     pub filtering_options: EventFilteringOptions,
     pub order: u16,
 }
@@ -35,8 +38,8 @@ impl PartialEq for AbilitySpecies {
 const ABILITY_DEFAULTS: AbilitySpecies = AbilitySpecies {
     dex_number: 000,
     name: "Unnamed",
-    event_handler_deck: &EventHandlerDeck::const_default(),
-    on_activate: |_battle, _ability_holder_uid| {},
+    event_callbacks: |_, _| {},
+    on_activate: |_,_| {},
     filtering_options: EventFilteringOptions::default(),
     order: 0,
 };
@@ -51,11 +54,11 @@ impl Eq for AbilitySpecies {}
 
 impl Ability {
 
-    pub fn on_activate(&self, battle: &mut BattleState, owner_uid: MonsterUID) {
+    pub fn on_activate(&self, battle: &mut BattleEntities, owner_uid: MonsterUID) {
         (self.species.on_activate)(battle, owner_uid);
     }
 
-    pub fn event_handler_deck(&self) -> &'static EventHandlerDeck {
-        self.species.event_handler_deck
-    }
+    // pub fn event_handler_deck(&self) -> &'static EventHandlerDeck {
+    //     self.species.event_handler_deck
+    // }
 }

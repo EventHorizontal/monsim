@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use monsim::*;
 
 mod ability_dex;
@@ -9,7 +11,11 @@ use monster_dex::*;
 use move_dex::*;
 
 fn main() -> MonsimResult<()> {
-    let battle = BattleState::spawn()
+    
+    // let mut on_try_move_handlers: HashMap<&'static str, EventHandler<Outcome, MoveUsed>> = HashMap::new();
+    // on_try_move_handlers.insert(FlashFire.name, EventHandler { callback: flash_fire_on_try_move, debugging_information: "test" });
+
+    let battle = Battle::spawn()
         .add_ally_team(
             MonsterTeam::spawn()
                 .add_monster(

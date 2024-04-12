@@ -14,6 +14,6 @@ pub use cli::run as run_cli;
 
 pub type MonsimResult<S> = Result<S, Box<dyn Error>>;
 
-pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
+pub fn run(battle: Battle) -> MonsimResult<Nothing> {
     run_cli(battle)
 }

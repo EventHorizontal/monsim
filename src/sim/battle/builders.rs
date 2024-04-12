@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, Battle, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 // TODO: Some basic state validation will be done now, but later 
 // on I want to extend that to more stuff, such as validating that 
@@ -14,7 +14,7 @@ pub struct BattleBuilder {
     maybe_opponent_team: Option<Opponent<MonsterTeamBuilder>>,
 }
 
-impl BattleState {
+impl Battle {
     pub fn spawn() -> BattleBuilder {
         BattleBuilder { maybe_ally_team: None, maybe_opponent_team: None }
     }
@@ -33,7 +33,7 @@ impl BattleBuilder {
         self
     }
 
-    pub fn build(self) -> BattleState {
+    pub fn build(self) -> Battle {
         const ALLY_UIDS: [MonsterUID; 6] = [
             ALLY_1,
             ALLY_2,
@@ -64,7 +64,7 @@ impl BattleBuilder {
                 opponent_team_builder.build(OPPONENT_UIDS, TeamUID::Opponents)                
             });
 
-        BattleState::new(ally_team, opponent_team)
+        Battle::new(ally_team, opponent_team)
     }    
 }
 

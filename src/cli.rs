@@ -2,7 +2,7 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, TeamAffl, NOTHING};
 
-use crate::{MonsimResult, sim::{AvailableChoicesForTeam, BattleState, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
+use crate::{MonsimResult, sim::{AvailableChoicesForTeam, Battle, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
 
 enum TurnStage {
     ChooseActions(PerTeam<AvailableChoicesForTeam>),
@@ -10,7 +10,7 @@ enum TurnStage {
     BattleEnded,
 }
 
-pub fn run(mut battle: BattleState) -> MonsimResult<Nothing> {
+pub fn run(mut battle: Battle) -> MonsimResult<Nothing> {
     let mut turn_stage = TurnStage::ChooseActions(battle.available_choices());
 
     // We lock stdout so that we don't have to acquire the lock every time with `println!`
@@ -178,7 +178,7 @@ enum UIChoice<T> {
     Repeat(PerTeam<FullySpecifiedChoice>),
 }
 
-fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: TeamAffl<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> MonsimResult<UIChoice<TeamAffl<FullySpecifiedChoice>>> 
+fn translate_input_to_choices(battle: &Battle, available_choices_for_team: TeamAffl<AvailableChoicesForTeam>, locked_stdout: &mut StdoutLock, last_turn_action: Option<PerTeam<FullySpecifiedChoice>>) -> MonsimResult<UIChoice<TeamAffl<FullySpecifiedChoice>>> 
 {
 
     let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );
@@ -201,7 +201,7 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
     let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[choice_index]);
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
-            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order },
+            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { attacker: attacker_uid, move_used: move_uid, target: target_uid, activation_order },
             
             PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
                 let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| battle.monster(uid).full_name()).enumerate();

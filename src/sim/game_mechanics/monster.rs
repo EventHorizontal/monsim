@@ -1,10 +1,10 @@
 use core::{fmt::Debug, panic};
 use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 
-use monsim_utils::MaxSizedVec;
+use monsim_utils::{MaxSizedVec, Nothing};
 
-use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
-use crate::{sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Move};
+use super::{Ability, MoveNumber, MoveUID, TeamUID };
+use crate::{sim::{event::{EventHandlerStorage, OwnerInfo}, ActivationOrder, EventFilteringOptions, Type}, Move};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -141,52 +141,76 @@ impl Monster {
         self.species.primary_type == test_type_ || self.species.secondary_type == Some(test_type_)
     }
 
-    pub fn ability_event_handler_deck_instance(&self) -> OwnedEventHandlerDeck {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: self.ability.species.order,
-        };
-        OwnedEventHandlerDeck {
-            event_handler_deck: self.ability.event_handler_deck(),
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        }
-    }
-
-    pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<OwnedEventHandlerDeck> {
-        self.moveset
-            .iter()
-            .map(|it| OwnedEventHandlerDeck {
-                event_handler_deck: &it.species.event_handler_deck,
-                owner_uid: uid,
+    pub(crate) fn populate_event_handlers(&self, event_handler_storage: &mut EventHandlerStorage) {
+        
+        { // Self/Monster
+            let owner_info = OwnerInfo {
+                uid: self.uid,
                 activation_order: ActivationOrder {
-                    priority: it.species.priority,
+                    priority: 0,
                     speed: self.stats[Stat::Speed],
                     order: 0,
                 },
-                filtering_options: EventFilteringOptions::default(),
-            })
-            .collect::<Vec<_>>()
+            };
+    
+            (self.species.event_callbacks)(owner_info, event_handler_storage);
+        }
+        { // Ability
+            let owner_info = OwnerInfo {
+                uid: self.uid,
+                activation_order: ActivationOrder {
+                    priority: 0,
+                    speed: self.stats[Stat::Speed],
+                    order: self.ability.species.order,
+                },
+            };
+            (self.ability.species.event_callbacks)(owner_info, event_handler_storage);
+        };
+        { // Moves
+            self.moveset
+                .iter()
+                .for_each(|move_| {
+                    let owner_info = OwnerInfo {
+                        uid: (&self).uid,
+                        activation_order: ActivationOrder {
+                            priority: move_.priority,
+                            speed: (&self).stats[Stat::Speed],
+                            order: 0,
+                        },
+                    };
+                    (move_.species.event_callbacks)(owner_info, event_handler_storage)
+                }
+            );
+        };
     }
 
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: 0,
+    pub(crate) fn populate_event_handlers_from_ability(&self, event_handler_storage: &mut EventHandlerStorage) {
+        let owner_info = OwnerInfo {
+            uid: self.uid,
+            activation_order: ActivationOrder {
+                priority: 0,
+                speed: self.stats[Stat::Speed],
+                order: self.ability.species.order,
+            },
         };
-        let monster_event_handler_deck_instance = OwnedEventHandlerDeck {
-            event_handler_deck: self.species.event_handler_deck,
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        };
-        let mut out = vec![monster_event_handler_deck_instance];
-        out.append(&mut self.moveset_event_handler_deck_instances(self.uid));
-        out.push(self.ability_event_handler_deck_instance());
-        out
+        (self.ability.species.event_callbacks)(owner_info, event_handler_storage);
+    }
+
+    pub(crate) fn populate_event_handlers_from_moves(&self, event_handler_storage: &mut EventHandlerStorage) {
+        self.moveset
+            .iter()
+            .for_each(|move_| {
+                let owner_info = OwnerInfo {
+                    uid: self.uid,
+                    activation_order: ActivationOrder {
+                        priority: move_.priority,
+                        speed: self.stats[Stat::Speed],
+                        order: 0,
+                    },
+                };
+                (move_.species.event_callbacks)(owner_info, event_handler_storage)
+            }
+        );
     }
 
     pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
@@ -217,7 +241,7 @@ pub struct MonsterSpecies {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
-    pub event_handler_deck: &'static EventHandlerDeck,
+    pub event_callbacks: fn(OwnerInfo, &mut EventHandlerStorage) -> Nothing,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -316,7 +340,7 @@ const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Normal,
     secondary_type: None,
     base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handler_deck: &EventHandlerDeck::const_default(),
+    event_callbacks: |_, _| {},
 };
 
 impl MonsterSpecies {

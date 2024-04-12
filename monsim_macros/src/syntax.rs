@@ -3,16 +3,16 @@ pub mod accessor_macro_syntax {
     use syn::{parse::Parse, Token};
     use proc_macro2::Ident;
 
-    pub struct ExprMechanicAccessor {
+    pub struct MechanicAccessorExpr {
         pub is_mut: bool,
         pub ident: Ident,
     }
     
-    impl Parse for ExprMechanicAccessor {
+    impl Parse for MechanicAccessorExpr {
         fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
             let is_mut = input.parse::<Token!(mut)>().is_ok();
             let ident: Ident = input.parse()?;
-            Ok(ExprMechanicAccessor {
+            Ok(MechanicAccessorExpr {
                 is_mut,
                 ident,
             })
@@ -22,7 +22,7 @@ pub mod accessor_macro_syntax {
 
 pub mod event_system_macro_syntax {
     use proc_macro2::Ident;
-    use syn::{braced, parse::{Parse, ParseStream}, Attribute, ExprMatch, Token};
+    use syn::{braced, parenthesized, parse::{Parse, ParseStream}, token::Comma, Attribute, ExprMatch, Token};
 
     pub struct ExprEventHandlerDeck {
         pub doc_comment: Attribute,
@@ -71,6 +71,49 @@ pub mod event_system_macro_syntax {
                     trait_name,
                 }
             )
+        }
+    }
+
+    pub struct EventListExpr {
+        pub event_exprs: Vec<EventExpr>,
+    }
+    
+    impl Parse for EventListExpr {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let items = input.parse_terminated(EventExpr::parse, Comma)?;
+            let events = items.into_iter().collect::<Vec<_>>();
+            Ok(Self {
+                event_exprs: events,
+            })
+        }
+    }
+
+    pub struct EventExpr {
+        pub event_name_pascal_case: Ident,
+        pub event_context_type_name_pascal_case: Ident,
+        pub event_return_type_name: Ident,
+    }
+
+
+    mod keywords{
+        use syn::custom_keyword;
+
+        custom_keyword!(event);
+    }
+
+    impl Parse for EventExpr {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let _: keywords::event = input.parse()?;
+            let event_name: Ident = input.parse()?;
+            let content; let _ = parenthesized!(content in input);
+            let event_context_type_name: Ident = content.parse()?;
+            let _ : Token![=>] = input.parse()?;
+            let event_return_type_name: Ident = input.parse()?;
+            Ok(EventExpr {
+                event_name_pascal_case: event_name,
+                event_context_type_name_pascal_case: event_context_type_name,
+                event_return_type_name,
+            })
         }
     }
 }

@@ -1,7 +1,5 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use crate::sim::EventHandlerDeck;
-
 use super::{
     monster::{MonsterSpecies, StatSet},
     Type,

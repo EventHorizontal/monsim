@@ -10,14 +10,15 @@ mod ordering;
 
 use std::{error::Error, fmt::Display};
 
-pub use actions::Effect; use actions::Action;
+pub use actions::Reaction; use actions::Action;
 pub use battle::*;
 pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt};
+#[cfg(feature="macros")]
 pub use monsim_macros::*;
 pub use battle_constants::*;
 pub use choice::*;
 pub use event::{
-    contexts::*, event_dex, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, Event, TargetFlags,
+    contexts::*, generated::{*, event_dex}, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, Event, TargetFlags,
 };
 pub use game_mechanics::*;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent};

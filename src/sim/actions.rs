@@ -11,7 +11,7 @@ pub(crate) struct Action;
 /// **Effects** are triggered Actions or by other Effects. This results in a chain reaction that _should_ eventually cease.
 /// Effects are _atomic_, that is, you are not supposed to do half of an Effect, this may leave the Battle in an invalid state. 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Effect;
+pub struct Reaction;
 
 impl Action {
     /// **Action** A monster's turn may be initiated by this Action.
@@ -23,8 +23,8 @@ impl Action {
 
         battle.message_log.push(format![
             "{attacker} used {_move}",
-            attacker = monster![attacker].name(),
-            _move = move_![move_used].species.name
+            attacker = battle[attacker].name(),
+            _move = battle[move_used].species.name
         ]);
 
         if EventDispatcher::dispatch_trial_event(battle, OnTryMove, attacker, calling_context).failed() {
@@ -32,20 +32,20 @@ impl Action {
             return Ok(NOTHING);
         }
 
-        let level = monster![attacker].level;
-        let move_power = move_![move_used].base_power();
+        let level = battle[attacker].level;
+        let move_power = battle[move_used].base_power();
 
-        let (attackers_attacking_stat, defenders_defense_stat) = match move_![move_used].category() {
+        let (attackers_attacking_stat, defenders_defense_stat) = match battle[move_used].category() {
             MoveCategory::Physical => {
                 (
-                    monster![attacker].stats[Stat::PhysicalAttack],
-                    monster![defender].stats[Stat::PhysicalDefense]
+                    battle[attacker].stats[Stat::PhysicalAttack],
+                    battle[defender].stats[Stat::PhysicalDefense]
                 )
             }
             MoveCategory::Special => {
                 (
-                    monster![attacker].stats[Stat::SpecialAttack],
-                    monster![defender].stats[Stat::SpecialDefense]
+                    battle[attacker].stats[Stat::SpecialAttack],
+                    battle[defender].stats[Stat::SpecialDefense]
                 )
             }
             _ => unreachable!("Expected physical or special move."),
@@ -55,13 +55,13 @@ impl Action {
         let random_multiplier = ClampedPercent::from(random_multiplier);
 
         let stab_multiplier = {
-            let move_type = move_![move_used].species.type_;
-            if monster![attacker].is_type(move_type) { Percent(125) } else { Percent(100) }
+            let move_type = battle[move_used].species.type_;
+            if battle[attacker].is_type(move_type) { Percent(125) } else { Percent(100) }
         };
 
-        let move_type = move_![move_used].species.type_;
-        let target_primary_type = monster![defender].species.primary_type;
-        let target_secondary_type = monster![defender].species.secondary_type;
+        let move_type = battle[move_used].species.type_;
+        let target_primary_type = battle[defender].species.primary_type;
+        let target_secondary_type = battle[defender].species.secondary_type;
 
         let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
             matchup!(move_type against target_primary_type / target_secondary_type)
@@ -88,7 +88,7 @@ impl Action {
         // TODO: Introduce more damage multipliers as we implement them.
 
         // Do the calculated damage to the target
-        Effect::deal_damage(battle, defender, damage);
+        Reaction::deal_damage(battle, defender, damage);
         EventDispatcher::dispatch_event(battle, OnDamageDealt, attacker, NOTHING, NOTHING, None);
 
         let type_effectiveness = match type_matchup_multiplier {
@@ -103,12 +103,12 @@ impl Action {
         battle.message_log.push(format!["It was {type_effectiveness}!"]);
         battle.message_log.push(format![
             "{defender} took {damage} damage!", 
-            defender = monster![defender].name()
+            defender = battle[defender].name()
         ]);
         battle.message_log.push(format![
             "{defender} has {num_hp} health left.",
-            defender = monster![defender].name(),
-            num_hp = monster![defender].current_health
+            defender = battle[defender].name(),
+            num_hp = battle[defender].current_health
         ]);
 
         Ok(NOTHING)
@@ -119,8 +119,8 @@ impl Action {
 
         battle.message_log.push(format![
             "{attacker} used {move_}",
-            attacker = monster![attacker].name(),
-            move_ = move_![move_used].species.name
+            attacker = battle[attacker].name(),
+            move_ = battle[move_used].species.name
         ]);
 
         if EventDispatcher::dispatch_trial_event(battle, OnTryMove, attacker, calling_context).failed() {
@@ -129,7 +129,7 @@ impl Action {
         }
 
         {
-            let move_ = *move_![move_used];
+            let move_ = battle[move_used];
             move_.on_activate(battle, attacker, target);
         }
 
@@ -142,21 +142,21 @@ impl Action {
         battle.team_mut(active_monster.team_uid).active_monster_uid = benched_monster;
         battle.message_log.push(format![
             "{active_monster} switched out! Go {benched_monster}!", 
-            active_monster = monster![active_monster].name(),
-            benched_monster = monster![benched_monster].name()
+            active_monster = battle[active_monster].name(),
+            benched_monster = battle[benched_monster].name()
         ]);
         Ok(NOTHING)
     }
 }
 
-impl Effect {
+impl Reaction {
     /// Deducts `damage` from HP of target corresponding to `target_uid`.
     ///
     /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
     pub fn deal_damage(battle: &mut BattleState, defender: MonsterUID, damage: u16) {
-        monster![mut defender].current_health = monster![defender].current_health.saturating_sub(damage);
-        if monster![defender].current_health == 0 { monster![mut defender].is_fainted = true; };
+        battle[defender].current_health = battle[defender].current_health.saturating_sub(damage);
+        if battle[defender].current_health == 0 { battle[defender].is_fainted = true; };
     }
 
     /// **Secondary Action** This action can only be triggered by other Actions.
@@ -164,13 +164,14 @@ impl Effect {
     /// Resolves activation of any ability.
     ///
     /// Returns a `Outcome` indicating whether the ability succeeded.
-    pub fn activate_ability(battle: &mut BattleState, ability_owner: MonsterUID) -> Outcome {
-        let calling_context = AbilityUsed::new(ability_owner);
+    pub fn activate_ability(battle: &mut BattleState, ability_used: AbilityUID) -> Outcome {
+        let ability_owner = ability_used.owner;
 
-        if EventDispatcher::dispatch_trial_event(battle, OnTryActivateAbility, ability_owner, calling_context).succeeded() {
-            let ability = *ability![ability_owner];
-            ability.on_activate(battle, ability_owner);
-            EventDispatcher::dispatch_event(battle, OnAbilityActivated, ability_owner, calling_context, NOTHING, None);
+        let ability_use_context = AbilityUseContext { ability_used };
+        if EventDispatcher::dispatch_trial_event(battle, OnTryActivateAbility, ability_owner, ability_use_context).succeeded() {
+            let ability = battle[ability_used];
+            ability.activate(battle, ability_use_context);
+            EventDispatcher::dispatch_event(battle, OnAbilityActivated, ability_owner, ability_use_context, NOTHING, None);
             Outcome::Success
         } else {
             Outcome::Failure
@@ -182,18 +183,18 @@ impl Effect {
     /// Returns a `bool` indicating whether the stat raising succeeded.
     pub fn raise_stat(battle: &mut BattleState, affected_monster: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
         if EventDispatcher::dispatch_trial_event(battle, OnTryRaiseStat, affected_monster, NOTHING).succeeded() {
-            let effective_stages = monster![mut affected_monster].stat_modifiers.raise_stat(stat, number_of_stages);
+            let effective_stages = battle[affected_monster].stat_modifiers.raise_stat(stat, number_of_stages);
 
             battle.message_log.push(format![
                 "{monster}\'s {stat} was raised by {stages} stage(s)!",
-                monster = monster![affected_monster].name(),
+                monster = battle[affected_monster].name(),
                 stat = stat,
                 stages = effective_stages
             ]);
 
             Outcome::Success
         } else {
-            battle.message_log.push(format!["{monster}'s stats were not raised.", monster = monster![affected_monster].name()]);
+            battle.message_log.push(format!["{monster}'s stats were not raised.", monster = battle[affected_monster].name()]);
 
             Outcome::Failure
         }
@@ -206,18 +207,18 @@ impl Effect {
     /// Returns a `bool` indicating whether the stat lowering succeeded.
     pub fn lower_stat(battle: &mut BattleState, affected_monster: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
         if EventDispatcher::dispatch_trial_event(battle, OnTryLowerStat, affected_monster, NOTHING).succeeded() {
-            let effective_stages = monster![mut affected_monster].stat_modifiers.lower_stat(stat, number_of_stages);
+            let effective_stages = battle[affected_monster].stat_modifiers.lower_stat(stat, number_of_stages);
 
             battle.message_log.push(format![
                 "{monster}\'s {stat} was lowered by {stages} stage(s)!",
-                monster = monster![affected_monster].name(),
+                monster = battle[affected_monster].name(),
                 stat = stat,
                 stages = effective_stages
             ]);
 
             Outcome::Success
         } else {
-            battle.message_log.push(format!["{monster}'s stats were not lowered.", monster = monster![affected_monster].name()]);
+            battle.message_log.push(format!["{monster}'s stats were not lowered.", monster = battle[affected_monster].name()]);
 
             Outcome::Failure
         }

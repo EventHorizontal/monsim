@@ -151,11 +151,11 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
                 }
             }
         }
-
+        
+        #trait_impl_block_tokens
         pub mod event_dex {
             use super::*;
 
-            #trait_impl_block_tokens
         }
     ];
 

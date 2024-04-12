@@ -202,7 +202,7 @@ impl MonsterBuilder {
             .pipe(|vec| { MaxSizedVec::from_vec(vec) });
         
         let ability = self.ability
-            .build(monster_uid);
+            .build(AbilityUID { owner: monster_uid});
         
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.

@@ -1,11 +1,11 @@
 mod message_log;
 pub(super) mod builders;
 
-use std::fmt::Display;
+use std::{fmt::Display, ops::{Index, IndexMut}};
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::sim::{
+use crate::{sim::{
         Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
-};
+}, AbilityUID};
 
 use super::{event::OwnedEventHandlerDeck, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
@@ -21,6 +21,48 @@ pub struct BattleState {
     pub message_log: MessageLog,
     
     teams: PerTeam<MonsterTeam>,
+}
+
+impl Index<MonsterUID> for BattleState {
+    type Output = Monster;
+
+    fn index(&self, index: MonsterUID) -> &Self::Output {
+        self.monster(index)
+    }
+}
+
+impl IndexMut<MonsterUID> for BattleState {
+    fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
+        self.monster_mut(index)
+    }
+}
+
+impl Index<MoveUID> for BattleState {
+    type Output = Move;
+
+    fn index(&self, index: MoveUID) -> &Self::Output {
+        self.move_(index)
+    }
+}
+
+impl IndexMut<MoveUID> for BattleState {
+    fn index_mut(&mut self, index: MoveUID) -> &mut Self::Output {
+        self.move_mut(index)
+    }
+}
+
+impl Index<AbilityUID> for BattleState {
+    type Output = Ability;
+
+    fn index(&self, index: AbilityUID) -> &Self::Output {
+        self.ability(index.owner)
+    }
+}
+
+impl IndexMut<AbilityUID> for BattleState {
+    fn index_mut(&mut self, index: AbilityUID) -> &mut Self::Output {
+        self.ability_mut(index.owner)
+    }
 }
 
 impl BattleState {

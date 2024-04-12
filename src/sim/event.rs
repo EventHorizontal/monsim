@@ -1,7 +1,10 @@
 use core::fmt::Debug;
 
-use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent, generate_events};
+pub mod generated;
+
+use crate::sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent};
 use contexts::*;
+pub use generated::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventDispatcher;
@@ -46,7 +49,7 @@ bitflags::bitflags! {
 }
 
 pub mod contexts {
-    use crate::sim::{MonsterUID, MoveUID};
+    use crate::{sim::{MonsterUID, MoveUID}, AbilityUID};
 
     #[derive(Debug, Clone, Copy)]
     pub struct MoveUsed {
@@ -56,8 +59,8 @@ pub mod contexts {
     }
 
     #[derive(Debug, Clone, Copy)]
-    pub struct AbilityUsed {
-        pub ability_holder_uid: MonsterUID,
+    pub struct AbilityUseContext {
+        pub ability_used: AbilityUID,
     }
 
     impl MoveUsed {
@@ -70,36 +73,13 @@ pub mod contexts {
         }
     }
 
-    impl AbilityUsed {
-        pub fn new(ability_user_uid: MonsterUID) -> Self {
+    impl AbilityUseContext {
+        pub fn new(owner: MonsterUID) -> Self {
             Self {
-                ability_holder_uid: ability_user_uid,
+                ability_used: AbilityUID { owner },
             }
         }
     }
-}
-
-generate_events!{
-    event OnTryMove(MoveUsed) => Outcome,
-    event OnDamageDealt(Nothing) => Nothing,
-    event OnTryActivateAbility(AbilityUsed) => Outcome,
-    event OnAbilityActivated(AbilityUsed) => Nothing,
-    event OnModifyAccuracy(MoveUsed) => Percent,
-    event OnTryRaiseStat(Nothing) => Outcome,
-    event OnTryLowerStat(Nothing) => Outcome,
-    event OnStatusMoveUsed(MoveUsed) => Nothing,
-}
-
-pub trait Event: Clone + Copy {
-    type EventReturnType: Sized + Clone + Copy;
-    type ContextType: Sized + Clone + Copy;
-
-    fn corresponding_handler(
-        &self,
-        event_handler_deck: &EventHandlerDeck,
-    ) -> Option<EventHandler<Self::EventReturnType, Self::ContextType>>;
-
-    fn name(&self) -> &'static str;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -222,12 +202,6 @@ impl<'a, R: Copy, C: Copy> Debug for EventHandler<R, C> {
             write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.")
         };
         out
-    }
-}
-
-impl EventHandlerDeck {
-    pub const fn const_default() -> Self {
-        DEFAULT_DECK
     }
 }
 

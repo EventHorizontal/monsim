@@ -39,6 +39,6 @@ pub const Zombler: MonsterSpecies = MonsterSpecies {
     dex_number: 425,
     primary_type: Type::Ghost,
     secondary_type: Some(Type::Dark),
-    base_stats: StatSet::new(90, 50, 34, 60, 44, 70),
+    base_stats: StatSet::new(90, 50, 34, 60, 44, 71),
     ..MonsterSpecies::const_default()
 };

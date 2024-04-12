@@ -4,8 +4,7 @@ use monsim_utils::not;
 
 use super::{ability::AbilitySpecies, Type};
 use crate::{
-    source_code_location,
-    sim::{event::contexts::MoveUsed, EventHandlerDeck, EventFilteringOptions, EventHandler, Outcome, Effect},
+    sim::{event::contexts::MoveUsed, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome, Reaction}, source_code_location, AbilityUID
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies {
@@ -13,13 +12,11 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     name: "Flash Fire",
     event_handler_deck: &EventHandlerDeck {
         on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { move_user: attacker_uid, move_used: move_uid, target: target_uid}, _relay| {
-                            let current_move = battle.move_(move_uid);
-                            let is_current_move_fire_type = (current_move.species.type_ == Type::Fire);
-                            if is_current_move_fire_type {
-                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
-                                return not!(activation_succeeded);
-                            }
+            callback: |battle, MoveUsed { move_user, move_used, target}, _relay| {
+                if battle[move_used].is_type(Type::Fire) {
+                    let activation_succeeded = Reaction::activate_ability(battle, AbilityUID { owner: target });
+                    return not!(activation_succeeded);
+                }
                 Outcome::Success
             },
             #[cfg(feature = "debug")]
@@ -27,35 +24,10 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         }),
         ..EventHandlerDeck::const_default()
     },
-    on_activate: |battle, owner_uid| {
-        let owner_name = battle.monster(owner_uid).name();
+    on_activate: |battle, crate::AbilityUseContext { ability_used }| {
+        let owner_name = battle[ability_used.owner].name();
         battle.message_log.push(format!["{owner_name}'s Flash Fire activated!"]);
     },
     ..AbilitySpecies::const_default()
 };
 
-pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
-    dex_number: 002,
-    name: "Water Absorb",
-    event_handler_deck: &EventHandlerDeck {
-        on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { move_user: attacker_uid, move_used: move_uid, target: target_uid}, _relay| {
-                            let current_move = battle.move_(move_uid);
-                            let is_current_move_fire_type = (current_move.species.type_ == Type::Water);
-                            if is_current_move_fire_type {
-                                let activation_succeeded = Effect::activate_ability(battle, target_uid);
-                                return not!(activation_succeeded);
-                            }
-                Outcome::Success
-            },
-            #[cfg(feature = "debug")]
-            debugging_information: source_code_location!(),
-        }),
-        ..EventHandlerDeck::const_default()
-    },
-    on_activate: |battle, owner_uid| {
-        let owner_name = battle.monster(owner_uid).name();
-        battle.message_log.push(format!["{owner_name}'s Water Absorb activated!"]);
-    },
-    ..AbilitySpecies::const_default()
-};

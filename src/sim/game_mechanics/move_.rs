@@ -1,8 +1,8 @@
 use monsim_utils::{MaxSizedVec, Nothing};
 
 use crate::{sim::{
-    event::{EventFilteringOptions, EventHandlerStorage, OwnerInfo}, MonsterUID, Type,
-}, BattleEntities, MoveUID};
+    event::{BattleAPI, EventFilteringOptions, EventHandlerStorage, OwnerInfo}, MonsterUID, Type,
+}, BattleEntities, MoveUID, TheMoveUsed};
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
 
@@ -44,10 +44,10 @@ impl Move {
         self.species.base_accuracy
     }
 
-    pub(crate) fn on_activate(&self, entities: &mut BattleEntities, owner_uid: MonsterUID, target_uid: MonsterUID) {
+    pub(crate) fn activate(&self, api: BattleAPI, context: TheMoveUsed) {
         let on_activate_logic = self.species.on_activate;
         if let Some(on_activate_logic) = on_activate_logic {
-            on_activate_logic(entities, owner_uid, target_uid);
+            on_activate_logic(api, context);
         }
     }
     
@@ -61,8 +61,6 @@ pub struct MoveSpecies {
     pub dex_number: u16,
     pub name: &'static str,
     
-    /// `fn(entities: &mut BattleEntities, attacker: MonsterUID, target: MonsterUID)`
-    pub on_activate: Option<fn(&mut BattleEntities, MonsterUID, MonsterUID)>,
     pub base_accuracy: u16,
     pub base_power: u16,
     pub category: MoveCategory,
@@ -70,6 +68,8 @@ pub struct MoveSpecies {
     pub priority: i8,
     pub type_: Type,
     
+    /// A special callback for what the move itself does. More pertinent to status moves.
+    pub on_activate: Option<fn(BattleAPI, TheMoveUsed)>,
     pub event_callbacks: fn(OwnerInfo, &mut EventHandlerStorage) -> Nothing,
     pub event_handler_deck_filtering_options: EventFilteringOptions,
 }

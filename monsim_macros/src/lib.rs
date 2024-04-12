@@ -75,7 +75,9 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
     let mut event_handler_impl_new_tokens = quote![];
     let mut trait_impl_block_tokens = quote![];
     let mut trait_enum_tokens = quote![];
-    let mut enum_to_trait_mapper_tokens = quote![];
+    let mut event_handler_deck_field_tokens = quote![];
+    let mut event_handler_deck_defaults_tokens = quote![];
+    let mut event_id_iterator_tokens = quote![];
 
     for event_expr in event_exprs {
         let EventExpr { event_name_pascal_case, event_context_type_name_pascal_case, event_return_type_name } = event_expr;
@@ -110,7 +112,7 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
                 }
         
                 fn uid(&self) -> EventID {
-                    EventID::#event_name_pascal_case(*self)
+                    EventID::#event_name_pascal_case
                 }
             }
 
@@ -120,9 +122,18 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
             #event_name_pascal_case,
         ]);
 
-        enum_to_trait_mapper_tokens.extend(quote![
-            EventID::#event_name_pascal_case => &#event_name_pascal_case, 
+        event_handler_deck_field_tokens.extend(quote![
+            pub #event_name_snake_case: Option<EventCallback<#event_return_type_name, #event_context_type_name_pascal_case>>,
         ]);
+
+        event_handler_deck_defaults_tokens.extend(quote![
+            #event_name_snake_case: None,
+        ]);
+        
+        event_id_iterator_tokens.extend(quote![
+            EventID::#event_name_pascal_case,    
+        ]);
+
     }
 
     let output = quote![
@@ -140,16 +151,29 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
         }
 
         #[derive(Debug, Clone, Copy)]
+        pub struct EventHandlerDeck {
+            #event_handler_deck_field_tokens
+        }
+
+        impl EventHandlerDeck {
+            pub const fn const_default() -> EventHandlerDeck {
+                EventHandlerDeck {
+                    #event_handler_deck_defaults_tokens
+                }
+            }
+        }
+
+        #[derive(Debug, Clone, Copy)]
         pub enum EventID {
             #trait_enum_tokens
         }
 
         impl EventID {
-            pub fn corresponding_event(&self) -> impl Event {
-                match self {
-                    #enum_to_trait_mapper_tokens
-                }
-            } 
+            pub fn all() -> impl Iterator<EventID> {
+                [
+                    #event_id_iterator_tokens
+                ].into_iter()
+            }
         }
         
         pub mod event_dex {
@@ -416,10 +440,4 @@ pub fn battle(input: TokenStream) -> TokenStream {
             .build()
     );
     output.into()
-}
-
-#[proc_macro]
-pub fn event_handlers(input: TokenStream) -> TokenStream {
-
-
 }

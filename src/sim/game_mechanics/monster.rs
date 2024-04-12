@@ -4,7 +4,7 @@ use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{MaxSizedVec, Nothing};
 
 use super::{Ability, MoveNumber, MoveUID, TeamUID };
-use crate::{sim::{event::{EventHandlerStorage, OwnerInfo}, ActivationOrder, EventFilteringOptions, Type}, Move};
+use crate::{sim::{event::{EventHandlerStorage, EventID, OwnerInfo}, ActivationOrder, EventFilteringOptions, Type}, Move};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -164,7 +164,11 @@ impl Monster {
                     order: self.ability.species.order,
                 },
             };
-            (self.ability.species.event_callbacks)(owner_info, event_handler_storage);
+            let ability_event_handler_deck = (self.ability.species.event_handlers)();
+
+            for event in EventID::all() {
+                
+            }
         };
         { // Moves
             self.moveset
@@ -193,7 +197,7 @@ impl Monster {
                 order: self.ability.species.order,
             },
         };
-        (self.ability.species.event_callbacks)(owner_info, event_handler_storage);
+        (self.ability.species.event_handlers)(owner_info, event_handler_storage);
     }
 
     pub(crate) fn populate_event_handlers_from_moves(&self, event_handler_storage: &mut EventHandlerStorage) {

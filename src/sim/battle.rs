@@ -1,12 +1,12 @@
 pub mod message_log;
 pub(super) mod builders;
 
-use std::fmt::Display;
-use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
+use std::{fmt::Display, ops::{Index, IndexMut}};
+use monsim_utils::{not, Ally, MaxSizedVec, Opponent, Outcome};
 use tap::Pipe;
 use crate::{sim::{
         Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
-}, EventDispatcher};
+}, AbilityUID, Event, EventDispatcher, TheAbilityActivated, TheMoveUsed};
 
 use super::{event::EventHandlerStorage, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
@@ -60,6 +60,108 @@ impl Battle { // Initialisation
     pub(crate) fn split(&mut self) -> (&mut Prng, &mut BattleEntities, &mut MessageLog, &mut EventDispatcher) {
         (&mut self.prng, &mut self.entities, &mut self.message_log, &mut self.event_dispatcher)
     } 
+}
+
+impl Index<MonsterUID> for Battle {
+    type Output = Monster;
+
+    fn index(&self, index: MonsterUID) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl IndexMut<MonsterUID> for Battle {
+    fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
+        &mut self.entities[index]
+    }
+}
+
+impl Index<MoveUID> for Battle {
+    type Output = Move;
+
+    fn index(&self, index: MoveUID) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl IndexMut<MoveUID> for Battle {
+    fn index_mut(&mut self, index: MoveUID) -> &mut Self::Output {
+        &mut self.entities[index]
+    }
+}
+
+impl Index<AbilityUID> for Battle {
+    type Output = Ability;
+
+    fn index(&self, index: AbilityUID) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl IndexMut<AbilityUID> for Battle {
+    fn index_mut(&mut self, index: AbilityUID) -> &mut Self::Output {
+        &mut self.entities[index]
+    }
+}
+
+impl Index<MonsterUID> for BattleEntities {
+    type Output = Monster;
+
+    fn index(&self, index: MonsterUID) -> &Self::Output {
+        self.monster(index)
+    }
+}
+
+impl IndexMut<MonsterUID> for BattleEntities {
+    fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
+        self.monster_mut(index)
+    }
+}
+
+impl Index<MoveUID> for BattleEntities {
+    type Output = Move;
+
+    fn index(&self, index: MoveUID) -> &Self::Output {
+        self.move_(index)
+    }
+}
+
+impl IndexMut<MoveUID> for BattleEntities {
+    fn index_mut(&mut self, index: MoveUID) -> &mut Self::Output {
+        self.move_mut(index)
+    }
+}
+
+impl Index<AbilityUID> for BattleEntities {
+    type Output = Ability;
+
+    fn index(&self, index: AbilityUID) -> &Self::Output {
+        self.ability(index.owner)
+    }
+}
+
+impl IndexMut<AbilityUID> for BattleEntities {
+    fn index_mut(&mut self, index: AbilityUID) -> &mut Self::Output {
+        self.ability_mut(index.owner)
+    }
+}
+
+impl Battle { // Events
+    pub fn trigger_try_event<E: Event<EventResult = Outcome, Context = C>, C: Copy>(&mut self, event: E, broadcaster: MonsterUID, context: C) -> Outcome {
+        self.event_dispatcher.dispatch_try_event(&mut self.prng, (&mut self.entities, &mut self.message_log), event, broadcaster, context)
+    }
+
+    pub fn trigger_event<E: Event<EventResult = R, Context = C>, R: PartialEq + Copy, C: Copy>(&mut self, event: E, broadcaster: MonsterUID, context: C, default: R, short_circuit: Option<R>) -> R {
+        self.event_dispatcher.dispatch_event(&mut self.prng, (&mut self.entities, &mut self.message_log), event, broadcaster, context, default, short_circuit)
+    }
+
+    pub fn activate_ability(&mut self, context: TheAbilityActivated) {
+        self[context.activated_ability].activate((&mut self.entities, &mut self.message_log), context)
+    }
+
+    pub fn activate_move(&mut self, move_: MoveUID, context: TheMoveUsed) {
+        self[context.move_used].activate((&mut self.entities, &mut self.message_log), context)
+    }
 }
 
 impl BattleEntities {

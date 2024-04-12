@@ -6,14 +6,14 @@ use contexts::*;
 use event_dex::*;
 
 generate_events!{
-    event OnTryMove(MoveUsed) => Outcome,
+    event OnTryMove(TheMoveUsed) => Outcome,
     event OnDamageDealt(Nothing) => Nothing,
-    event OnTryActivateAbility(AbilityActivated) => Outcome,
-    event OnAbilityActivated(AbilityActivated) => Nothing,
-    event OnModifyAccuracy(MoveUsed) => Percent,
+    event OnTryActivateAbility(TheAbilityActivated) => Outcome,
+    event OnAbilityActivated(TheAbilityActivated) => Nothing,
+    event OnModifyAccuracy(TheMoveUsed) => Percent,
     event OnTryRaiseStat(Nothing) => Outcome,
     event OnTryLowerStat(Nothing) => Outcome,
-    event OnStatusMoveUsed(MoveUsed) => Nothing,
+    event OnStatusMoveUsed(TheMoveUsed) => Nothing,
 }
 
 pub trait Event: Clone + Copy {
@@ -26,6 +26,16 @@ pub trait Event: Clone + Copy {
 
     fn uid(&self) -> EventID;
 }
+
+pub trait EventResponse<R: Clone + Copy, C: Clone + Copy> {
+ fn get(&self) -> &EventCallback<R, C>;
+}
+
+impl<R: Clone + Copy, C: Sized + Clone + Copy> EventResponse<R, C> for EventCallback<R, C> {
+    fn get(&self) -> &EventCallback<R, C> {
+        self
+    }
+}  
 
 #[derive(Debug, Clone)]
 pub struct EventDispatcher {
@@ -72,23 +82,17 @@ bitflags::bitflags! {
 }
 
 pub mod contexts {
-    use crate::sim::{MonsterUID, MoveUID};
-
-    #[derive(Debug, Clone)]
-    pub enum EventContextEnum {
-        MoveUsed(MoveUsed),
-        AbilityUsed(AbilityActivated),
-    }
+    use crate::{sim::{MonsterUID, MoveUID}, AbilityUID};
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    pub struct MoveUsed {
+    pub struct TheMoveUsed {
         // TODO: Make these private?
         pub move_user: MonsterUID,
         pub move_used: MoveUID,
         pub target: MonsterUID,
     }
 
-    impl MoveUsed {
+    impl TheMoveUsed {
         pub fn new(move_used: MoveUID, target: MonsterUID) -> Self {
             Self {
                 move_user: move_used.owner_uid,
@@ -99,14 +103,14 @@ pub mod contexts {
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    pub struct AbilityActivated {
-        pub ability_holder: MonsterUID,
+    pub struct TheAbilityActivated {
+        pub activated_ability: AbilityUID,
     }
 
-    impl AbilityActivated {
-        pub fn new(ability_user_uid: MonsterUID) -> Self {
+    impl TheAbilityActivated {
+        pub fn new(ability_owner: MonsterUID) -> Self {
             Self {
-                ability_holder: ability_user_uid,
+                activated_ability: AbilityUID { owner: ability_owner },
             }
         }
     }
@@ -159,13 +163,15 @@ pub struct ActivationOrder {
 impl EventDispatcher {
 
     /// Convenience wrapper for `dispatch_event` for specifially trial events.
-    pub fn dispatch_trial_event<C: Copy>(
+    pub fn dispatch_try_event<C: Copy>(
         &mut self,
         prng: &mut Prng,
         api: (&mut BattleEntities, &mut MessageLog),
         event: impl Event<EventResult = Outcome, Context = C>,
+        broadcaster: MonsterUID,
+        context: C,
     ) -> Outcome {
-        self.dispatch_event(prng, api, event, Outcome::Success, Some(Outcome::Failure))
+        self.dispatch_event(prng, api, event, broadcaster, context, Outcome::Success, Some(Outcome::Failure))
     }
 
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
@@ -176,6 +182,8 @@ impl EventDispatcher {
         prng: &mut Prng,
         api: (&mut BattleEntities, &mut MessageLog),
         event: impl Event<EventResult = R, Context = C>,
+        broadcaster: MonsterUID,
+        context: C,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
@@ -202,8 +210,8 @@ impl EventDispatcher {
             ..
         } in owned_event_handlers.into_iter()
         {
-            if Self::filter_event_handlers(api.0, event.broadcaster(), owner.uid, *filtering_options) {
-                relay = (event_handler.callback)(api, event.context(), relay);
+            if Self::filter_event_handlers(api.0, broadcaster, owner.uid, *filtering_options) {
+                relay = (event_handler.callback)(api, context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {

@@ -1,6 +1,6 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::event::{BattleAPI, EventFilteringOptions, EventHandlerStorage, OwnerInfo}, BattleEntities, MonsterUID};
+use crate::{message_log::MessageLog, sim::event::{BattleAPI, EventFilteringOptions, EventHandlerDeck, EventHandlerStorage, EventResponse, OwnerInfo}, BattleEntities, Event, MonsterUID, TheAbilityActivated};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -9,16 +9,19 @@ pub struct Ability {
     pub(crate) species: &'static AbilitySpecies,
 }
 
-pub type AbilityUID = MonsterUID;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AbilityUID {
+    pub owner: MonsterUID
+}
 
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {
     pub dex_number: u16,
     pub name: &'static str,
-    /// `fn(battle: &mut Battle, ability_holder: MonsterUID)`
-    pub on_activate: fn(BattleAPI, MonsterUID),
+    /// `fn(api: BattleAPI, activated_ability: TheActivatedAbility)`
+    pub on_activate: fn(BattleAPI, TheAbilityActivated),
     /// A function that adds `OwnedEventHandler`s to the Battle's `EventHandlerStorage`
-    pub event_callbacks: fn(OwnerInfo, &mut EventHandlerStorage) -> Nothing,
+    pub event_handlers: fn() -> EventHandlerDeck,
     pub filtering_options: EventFilteringOptions,
     pub order: u16,
 }
@@ -38,7 +41,7 @@ impl PartialEq for AbilitySpecies {
 const ABILITY_DEFAULTS: AbilitySpecies = AbilitySpecies {
     dex_number: 000,
     name: "Unnamed",
-    event_callbacks: |_, _| {},
+    event_handlers: || { EventHandlerDeck::const_default() },
     on_activate: |_,_| {},
     filtering_options: EventFilteringOptions::default(),
     order: 0,
@@ -54,11 +57,7 @@ impl Eq for AbilitySpecies {}
 
 impl Ability {
 
-    pub fn on_activate(&self, battle: &mut BattleEntities, owner_uid: MonsterUID) {
-        (self.species.on_activate)(battle, owner_uid);
+    pub fn activate(&self, api: BattleAPI, context: TheAbilityActivated) {
+        (self.species.on_activate)(api, context);
     }
-
-    // pub fn event_handler_deck(&self) -> &'static EventHandlerDeck {
-    //     self.species.event_handler_deck
-    // }
 }

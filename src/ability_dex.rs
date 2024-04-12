@@ -2,7 +2,7 @@
 
 use monsim_utils::{not, Outcome};
 use monsim::{move_, sim::{
-        Ability, AbilitySpecies, Reaction, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveUsed, Type
+        Ability, AbilitySpecies, Reaction, EventFilteringOptions, EventHandler, EventHandlerDeck, TheMoveUsed, Type
 }};
 
 #[cfg(feature = "debug")]
@@ -13,7 +13,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
     name: "Flash Fire",
     event_handler_deck: &EventHandlerDeck {
         on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { move_user, move_used, target } , _relay| {
+            callback: |battle, TheMoveUsed { move_user, move_used, target } , _relay| {
                             if move_![move_used].is_type(Type::Fire) {
                                 let activation_succeeded = Reaction::activate_ability(battle, target);
                                 return not!(activation_succeeded);
@@ -37,7 +37,7 @@ pub const WaterAbsorb: AbilitySpecies = AbilitySpecies {
     name: "Water Absorb",
     event_handler_deck: &EventHandlerDeck {
         on_try_move: Some(EventHandler {
-            callback: |battle, MoveUsed { move_user, move_used, target}, _relay| {
+            callback: |battle, TheMoveUsed { move_user, move_used, target}, _relay| {
                             if move_![move_used].is_type(Type::Water) {
                                 let activation_succeeded = Reaction::activate_ability(battle, target);
                                 return not!(activation_succeeded);

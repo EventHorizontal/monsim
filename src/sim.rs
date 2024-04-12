@@ -10,7 +10,7 @@ mod ordering;
 
 use std::{error::Error, fmt::Display};
 
-pub use actions::Reaction; use actions::Action;
+pub use actions::Reaction; use actions::Action; // Users are not allowed to call aActions.
 pub use battle::*;
 pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt};
 pub use monsim_macros::*;
@@ -50,7 +50,9 @@ impl BattleSimulator {
         
         assert!(not!(battle.is_finished), "The simulator cannot be called on a finished battle.");
 
-        Self::increment_turn_number(battle)
+        let Battle { turn_number, is_finished, message_log, entities, prng, event_dispatcher } = battle;
+
+        BattleSimulator::increment_turn_number(battle)
             .map_err(|message| { SimError::InvalidStateReached(String::from(message))})?;
         
         battle.message_log.extend(&[
@@ -72,9 +74,9 @@ impl BattleSimulator {
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { attacker: move_user, move_used, target, .. } => match move_!(move_used).category() {
-                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, MoveUsed { move_user, move_used, target }),
-                    MoveCategory::Status => Action::use_status_move(battle, MoveUsed {move_user, move_used, target}),
+                FullySpecifiedChoice::Move { move_user, move_used, target, .. } => match move_!(move_used).category() {
+                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(battle, TheMoveUsed { move_user, move_used, target }),
+                    MoveCategory::Status => Action::use_status_move(battle, TheMoveUsed {move_user, move_used, target}),
                 },
                 FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, .. } => {
                     Action::perform_switch_out(battle, active_monster_uid, benched_monster_uid)

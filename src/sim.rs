@@ -31,19 +31,7 @@ pub enum SimError {
     InvalidStateReached(String),
 }
 
-impl Error for SimError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        None
-    }
-
-    fn description(&self) -> &str {
-        "description() is deprecated; use Display"
-    }
-
-    fn cause(&self) -> Option<&dyn Error> {
-        self.source()
-    }
-}
+impl Error for SimError {}
 
 impl Display for SimError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

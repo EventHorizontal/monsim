@@ -70,23 +70,17 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
 pub fn generate_events(input: TokenStream) -> TokenStream {
     let EventListExpr { event_exprs } = parse_macro_input!(input as EventListExpr);
 
-    let mut event_handler_storage_tokens = quote![];
     let mut event_handler_impl_new_tokens = quote![];
     let mut trait_impl_block_tokens = quote![];
     let mut trait_enum_tokens = quote![];
     let mut event_handler_deck_field_tokens = quote![];
     let mut event_handler_deck_defaults_tokens = quote![];
-    let mut event_id_iterator_tokens = quote![];
 
     for event_expr in event_exprs {
         let EventExpr { event_name_pascal_case, event_context_type_name_pascal_case, event_return_type_name } = event_expr;
         let event_name_snake_case = event_name_pascal_case.to_string().to_case(convert_case::Case::Snake);
         let event_name_snake_case = Ident::new(&event_name_snake_case, event_name_pascal_case.span());
         let event_trait_literal = Literal::string(&event_name_pascal_case.to_string());
-
-        event_handler_storage_tokens.extend(quote!(
-            pub #event_name_snake_case: Vec<OwnedEventHandler<#event_return_type_name, #event_context_type_name_pascal_case>>,
-        ));
 
         event_handler_impl_new_tokens.extend(quote!(
             #event_name_snake_case: vec![],
@@ -100,7 +94,8 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
             impl Event for #event_name_pascal_case {
                 type EventReturnType = #event_return_type_name;
                 type ContextType = #event_context_type_name_pascal_case;
-                fn corresponding_handler(&self, event_handler_deck: &EventHandlerDeck) -> Option<EventHandler<Self::EventReturnType, Self::ContextType>> {
+                
+                fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
                     event_handler_deck.#event_name_snake_case
                 }
     
@@ -116,17 +111,12 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
         ]);
 
         event_handler_deck_field_tokens.extend(quote![
-            pub #event_name_snake_case: Option<EventHandler<#event_return_type_name, #event_context_type_name_pascal_case>>,
+            pub #event_name_snake_case: Option<EventHandler<#event_name_pascal_case>>,
         ]);
 
         event_handler_deck_defaults_tokens.extend(quote![
             #event_name_snake_case: None,
         ]);
-        
-        event_id_iterator_tokens.extend(quote![
-            EventID::#event_name_pascal_case,    
-        ]);
-
     }
 
     let output = quote![
@@ -135,27 +125,14 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
             #event_handler_deck_field_tokens
         }
 
-        const DEFAULT_DECK: EventHandlerDeck = EventHandlerDeck {
+        pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
             #event_handler_deck_defaults_tokens
         };
 
-        #[derive(Debug, Clone)]
-        pub struct EventHandlerStorage {
-            #event_handler_storage_tokens
-        }
-
-        impl EventHandlerStorage {
-            pub const fn new() -> Self {
-                Self {
-                    #event_handler_impl_new_tokens
-                }
-            }
-        }
-        
-        #trait_impl_block_tokens
         pub mod event_dex {
             use super::*;
 
+            #trait_impl_block_tokens
         }
     ];
 

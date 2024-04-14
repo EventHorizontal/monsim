@@ -4,9 +4,9 @@ use super::{
     move_::{MoveCategory, MoveSpecies},
     Type,
 };
-use crate::sim::{
-    Reaction, event::EventFilteringOptions, BattleState, MonsterUID, Move, Stat
-};
+use crate::{sim::{
+    event_dispatch::EventFilteringOptions, BattleState, MonsterUID, Move, Reaction, Stat
+}, BattleSimulator, MoveUseContext};
 
 pub const Tackle: MoveSpecies = MoveSpecies {
     dex_number: 001,
@@ -55,8 +55,6 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    on_activate: Some(|battle: &mut BattleState, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
-        _ = Reaction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
-    }),
+    on_activate: Some(|sim, context| { _ = Reaction::lower_stat(sim, context.target, Stat::PhysicalAttack, 1); }),
     ..MoveSpecies::const_default()
 };

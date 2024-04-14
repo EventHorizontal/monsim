@@ -2,9 +2,10 @@ use core::{fmt::Debug, panic};
 use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 
 use monsim_utils::MaxSizedVec;
+use tap::Pipe;
 
-use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
-use crate::{sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Move};
+use super::{Ability, MoveNumber, MoveUID, TeamUID };
+use crate::{sim::{ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Event, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -141,51 +142,70 @@ impl Monster {
         self.species.primary_type == test_type_ || self.species.secondary_type == Some(test_type_)
     }
 
-    pub fn ability_event_handler_deck_instance(&self) -> OwnedEventHandlerDeck {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: self.ability.species.order,
-        };
-        OwnedEventHandlerDeck {
-            event_handler_deck: self.ability.event_handler_deck(),
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        }
+    pub fn ability_event_handler_for<E: Event>(&self, event: E) -> Option<OwnedEventHandler<E>> {
+        event.corresponding_handler((self.ability.species.event_handlers)()) 
+            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                OwnedEventHandler {
+                    event_handler,
+                    owner: self.uid,
+                    activation_order:  ActivationOrder {
+                        priority: 0,
+                        speed: self.stats[Stat::Speed],
+                        order: self.ability.species.order,
+                    },
+                    filtering_options: EventFilteringOptions::default(),
+                }
+            }
+        )
     }
 
-    pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<OwnedEventHandlerDeck> {
+    pub fn moveset_event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
         self.moveset
             .iter()
-            .map(|it| OwnedEventHandlerDeck {
-                event_handler_deck: &it.species.event_handler_deck,
-                owner_uid: uid,
-                activation_order: ActivationOrder {
-                    priority: it.species.priority,
-                    speed: self.stats[Stat::Speed],
-                    order: 0,
-                },
-                filtering_options: EventFilteringOptions::default(),
-            })
-            .collect::<Vec<_>>()
+            .filter_map(|move_| {
+                event.corresponding_handler((move_.species.event_handlers)()) 
+                    .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                        OwnedEventHandler {
+                            event_handler,
+                            owner: self.uid,
+                            activation_order: ActivationOrder {
+                                priority: move_.species.priority,
+                                speed: self.stats[Stat::Speed],
+                                order: 0,
+                            },
+                            filtering_options: EventFilteringOptions::default(),
+                        }
+                    })
+                })
+                .collect::<Vec<_>>()
     }
 
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: 0,
-        };
-        let monster_event_handler_deck_instance = OwnedEventHandlerDeck {
-            event_handler_deck: self.species.event_handler_deck,
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        };
-        let mut out = vec![monster_event_handler_deck_instance];
-        out.append(&mut self.moveset_event_handler_deck_instances(self.uid));
-        out.push(self.ability_event_handler_deck_instance());
+    pub fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+        let mut out = Vec::new();
+        event.corresponding_handler((self.species.event_handlers)()) 
+            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                OwnedEventHandler {
+                    event_handler,
+                    owner: self.uid,
+                    activation_order:  ActivationOrder {
+                        priority: 0,
+                        speed: self.stats[Stat::Speed],
+                        order: 0,
+                    },
+                    filtering_options: EventFilteringOptions::default(),
+                }
+            })
+            .pipe(|optional_owned_event_handler| { // TODO: pipe_if_some
+                if let Some(owned_event_handler) = optional_owned_event_handler {
+                    out.push(owned_event_handler);
+                }
+            });
+        self.ability_event_handler_for(event).pipe(|optional_owned_event_handler| {
+            if let Some(owned_event_handler) = optional_owned_event_handler {
+                out.push(owned_event_handler)
+            }
+        });
+        out.append(&mut self.moveset_event_handlers_for(event));
         out
     }
 
@@ -217,8 +237,9 @@ pub struct MonsterSpecies {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
-    pub event_handler_deck: &'static EventHandlerDeck,
+    pub event_handlers: fn() -> EventHandlerDeck,
 }
+
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MonsterUID {
@@ -316,7 +337,7 @@ const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Normal,
     secondary_type: None,
     base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handler_deck: &EventHandlerDeck::const_default(),
+    event_handlers: | | EventHandlerDeck::const_default(),
 };
 
 impl MonsterSpecies {

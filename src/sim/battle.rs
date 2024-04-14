@@ -1,13 +1,11 @@
 mod message_log;
 pub(super) mod builders;
 
-use std::{fmt::Display, ops::{Index, IndexMut}};
+use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{
-        Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat
-}, AbilityUID};
+use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat}, Event, OwnedEventHandler};
 
-use super::{event::OwnedEventHandlerDeck, prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
+use super::{prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
@@ -15,54 +13,12 @@ use message_log::MessageLog;
 pub struct BattleState {
 
     pub(crate) prng: Prng,
-    pub turn_number: u16,
-    pub is_finished: bool,
+    pub(crate) turn_number: u16,
+    pub(crate) is_finished: bool,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
     
     teams: PerTeam<MonsterTeam>,
-}
-
-impl Index<MonsterUID> for BattleState {
-    type Output = Monster;
-
-    fn index(&self, index: MonsterUID) -> &Self::Output {
-        self.monster(index)
-    }
-}
-
-impl IndexMut<MonsterUID> for BattleState {
-    fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
-        self.monster_mut(index)
-    }
-}
-
-impl Index<MoveUID> for BattleState {
-    type Output = Move;
-
-    fn index(&self, index: MoveUID) -> &Self::Output {
-        self.move_(index)
-    }
-}
-
-impl IndexMut<MoveUID> for BattleState {
-    fn index_mut(&mut self, index: MoveUID) -> &mut Self::Output {
-        self.move_mut(index)
-    }
-}
-
-impl Index<AbilityUID> for BattleState {
-    type Output = Ability;
-
-    fn index(&self, index: AbilityUID) -> &Self::Output {
-        self.ability(index.owner)
-    }
-}
-
-impl IndexMut<AbilityUID> for BattleState {
-    fn index_mut(&mut self, index: AbilityUID) -> &mut Self::Output {
-        self.ability_mut(index.owner)
-    }
 }
 
 impl BattleState {
@@ -75,6 +31,7 @@ impl BattleState {
             turn_number: 0,
             teams,
             message_log: MessageLog::new(),
+            
         }
     }
 
@@ -130,10 +87,10 @@ impl BattleState {
             || (self.is_on_opponent_team(event_caller_uid) && self.is_on_opponent_team(owner_uid))
     }
 
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
+    pub fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team().event_handler_deck_instances());
-        out.append(&mut self.opponent_team().event_handler_deck_instances());
+        out.append(&mut self.ally_team().event_handlers_for(event));
+        out.append(&mut self.opponent_team().event_handlers_for(event));
         out
     }
 

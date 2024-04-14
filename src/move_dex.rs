@@ -49,8 +49,6 @@ pub const Growl: MoveSpecies = MoveSpecies {
     category: MoveCategory::Status,
     base_power: 0,
     base_accuracy: 100,
-    on_activate: Some(|battle: &mut BattleState, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
-        _ = Reaction::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
-    }),
+    on_activate: Some(|sim, context| { _ = Reaction::lower_stat(sim, context.target, Stat::PhysicalAttack, 1); }),
     ..MoveSpecies::const_default()
 };

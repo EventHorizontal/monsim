@@ -19,7 +19,7 @@ pub enum PartiallySpecifiedChoice {
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedChoice {
-    Move { attacker_uid: MonsterUID, move_uid: MoveUID, target_uid: MonsterUID, activation_order: ActivationOrder },
+    Move { move_user: MonsterUID, move_used: MoveUID, target: MonsterUID, activation_order: ActivationOrder },
     SwitchOut { active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID, activation_order: ActivationOrder },
 }
 impl FullySpecifiedChoice {

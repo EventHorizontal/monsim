@@ -10,8 +10,11 @@ enum TurnStage {
     BattleEnded,
 }
 
-pub fn run(mut battle: BattleState) -> MonsimResult<Nothing> {
-    let mut turn_stage = TurnStage::ChooseActions(battle.available_choices());
+pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
+
+    let mut sim = BattleSimulator::init(battle);
+
+    let mut turn_stage = TurnStage::ChooseActions(sim.battle.available_choices());
 
     // We lock stdout so that we don't have to acquire the lock every time with `println!`
     let mut locked_stdout = io::stdout().lock();
@@ -21,17 +24,17 @@ pub fn run(mut battle: BattleState) -> MonsimResult<Nothing> {
             TurnStage::ChooseActions(available_choices) => {
 
                 // Check if any of the active monsters has fainted and needs to switched out
-                for active_monster_uid in battle.active_monster_uids() {
-                    if battle.monster(active_monster_uid).is_fainted {
+                for active_monster_uid in sim.battle.active_monster_uids() {
+                    if sim.battle.monster(active_monster_uid).is_fainted {
                         if let Some(&PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, .. }) = available_choices[active_monster_uid.team_uid].switch_out_choice() {
-                            let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| battle.monster(uid).full_name()).enumerate();
-                            writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", battle.monster(active_monster_uid).name())?;
+                            let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| sim.battle.monster(uid).full_name()).enumerate();
+                            writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", sim.battle.monster(active_monster_uid).name())?;
                             for (index, monster_name) in switchable_benched_monster_names {
                                 writeln!(locked_stdout, "[{}] {}", index + 1, monster_name)?;
                             }
                             let switchable_benched_monster_choice_index = input_as_choice_index(&mut locked_stdout, switchable_benched_monster_uids.count()).unwrap();
                             let chosen_switchable_benched_monster_uid = switchable_benched_monster_uids[switchable_benched_monster_choice_index];
-                            BattleSimulator::switch_out_between_turns(&mut battle, active_monster_uid, chosen_switchable_benched_monster_uid)?;
+                            sim.switch_out_between_turns(active_monster_uid, chosen_switchable_benched_monster_uid)?;
                             last_turn_chosen_actions = None;
                         } else {
                             turn_stage = TurnStage::BattleEnded;
@@ -46,19 +49,19 @@ pub fn run(mut battle: BattleState) -> MonsimResult<Nothing> {
                 writeln!(locked_stdout, "Current Battle Status:")?;
                 write_empty_line(&mut locked_stdout)?;
 
-                writeln!(locked_stdout, "Ally Active Monster: {}", battle.monster(battle.ally_team().active_monster_uid).status_string())?;
-                writeln!(locked_stdout, "Opponent Active Monster {}", battle.monster(battle.opponent_team().active_monster_uid).status_string())?;
+                writeln!(locked_stdout, "Ally Active Monster: {}", sim.battle.monster(sim.battle.ally_team().active_monster_uid).status_string())?;
+                writeln!(locked_stdout, "Opponent Active Monster {}", sim.battle.monster(sim.battle.opponent_team().active_monster_uid).status_string())?;
                 writeln!(locked_stdout, "Ally Team:")?;
-                writeln!(locked_stdout, "{}", battle.ally_team().team_status_string())?;
+                writeln!(locked_stdout, "{}", sim.battle.ally_team().team_status_string())?;
                 writeln!(locked_stdout, "Opponent Team:")?;
-                writeln!(locked_stdout, "{}", battle.opponent_team().team_status_string())?;
+                writeln!(locked_stdout, "{}", sim.battle.opponent_team().team_status_string())?;
                 
                 // Ally Team choices
-                writeln!(locked_stdout, "Choose an Action for {}", battle.monster(battle.ally_team().active_monster_uid).full_name())?;
+                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.ally_team().active_monster_uid).full_name())?;
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&ally_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
-                let ally_team_fully_specified_action = match translate_input_to_choices(&battle, TeamAffl::ally(ally_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
+                let ally_team_fully_specified_action = match translate_input_to_choices(&sim.battle, TeamAffl::ally(ally_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
                     UIChoice::Quit => {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
@@ -71,11 +74,11 @@ pub fn run(mut battle: BattleState) -> MonsimResult<Nothing> {
                 };
 
                 // Opponent choices
-                writeln!(locked_stdout, "Choose an Action for {}", battle.monster(battle.opponent_team().active_monster_uid).full_name())?;
+                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.opponent_team().active_monster_uid).full_name())?;
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&opponent_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
-                let opponent_team_fully_specified_action = match translate_input_to_choices(&battle, TeamAffl::opponent(opponent_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
+                let opponent_team_fully_specified_action = match translate_input_to_choices(&sim.battle, TeamAffl::opponent(opponent_team_available_choices), &mut locked_stdout, last_turn_chosen_actions)? {
                     UIChoice::Quit => {
                         writeln!(locked_stdout, "Exiting...")?;
                         break 'main
@@ -95,17 +98,17 @@ pub fn run(mut battle: BattleState) -> MonsimResult<Nothing> {
             },
             TurnStage::SimulateTurn(chosen_actions_for_turn) => {
 
-                battle.message_log.set_last_turn_cursor_to_log_length();
+                sim.battle.message_log.set_last_turn_cursor_to_log_length();
                 
-                BattleSimulator::simulate_turn(&mut battle, chosen_actions_for_turn)?;
+                sim.simulate_turn(chosen_actions_for_turn)?;
 
                 // Show the message log
-                battle.message_log.show_last_turn_messages();
+                sim.battle.message_log.show_last_turn_messages();
                 
-                if battle.is_finished {
+                if sim.battle.is_finished {
                     turn_stage = TurnStage::BattleEnded;
                 } else {
-                    turn_stage = TurnStage::ChooseActions(battle.available_choices());
+                    turn_stage = TurnStage::ChooseActions(sim.battle.available_choices());
                 }
             },
             TurnStage::BattleEnded => {
@@ -201,7 +204,7 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
     let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[choice_index]);
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
-            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order },
+            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { move_user: attacker_uid, move_used: move_uid, target: target_uid, activation_order },
             
             PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
                 let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| battle.monster(uid).full_name()).enumerate();

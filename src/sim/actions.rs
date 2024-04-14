@@ -18,50 +18,53 @@ impl Action {
     ///
     /// Calculates and applies the effects of a damaging move
     /// corresponding to `move_uid` being used on `target_uid`
-    pub fn use_damaging_move(battle: &mut BattleState, attacker: MonsterUID, move_used: MoveUID, defender: MonsterUID) -> SimResult {
-        let calling_context = MoveUsed::new(move_used, defender);
+    pub fn use_damaging_move(
+        sim: &mut BattleSimulator,
+        context: MoveUseContext,
+    ) -> SimResult {
+        let MoveUseContext { move_user: attacker, move_used, target: defender } = context;
 
-        battle.message_log.push(format![
+        sim.push_message(format![
             "{attacker} used {_move}",
-            attacker = battle[attacker].name(),
-            _move = battle[move_used].species.name
+            attacker = sim[attacker].name(),
+            _move = sim[move_used].species.name
         ]);
 
-        if EventDispatcher::dispatch_trial_event(battle, OnTryMove, attacker, calling_context).failed() {
-            battle.message_log.push_str("The move failed!");
+        if sim.trigger_try_event(OnTryMove, attacker, context).failed() {
+           sim.push_message("The move failed!");
             return Ok(NOTHING);
         }
 
-        let level = battle[attacker].level;
-        let move_power = battle[move_used].base_power();
+        let level = sim[attacker].level;
+        let move_power = sim[move_used].base_power();
 
-        let (attackers_attacking_stat, defenders_defense_stat) = match battle[move_used].category() {
+        let (attackers_attacking_stat, defenders_defense_stat) = match sim[move_used].category() {
             MoveCategory::Physical => {
                 (
-                    battle[attacker].stats[Stat::PhysicalAttack],
-                    battle[defender].stats[Stat::PhysicalDefense]
+                    sim[attacker].stats[Stat::PhysicalAttack],
+                    sim[defender].stats[Stat::PhysicalDefense]
                 )
             }
             MoveCategory::Special => {
                 (
-                    battle[attacker].stats[Stat::SpecialAttack],
-                    battle[defender].stats[Stat::SpecialDefense]
+                    sim[attacker].stats[Stat::SpecialAttack],
+                    sim[defender].stats[Stat::SpecialDefense]
                 )
             }
             _ => unreachable!("Expected physical or special move."),
         };
 
-        let random_multiplier = battle.prng.generate_random_u16_in_range(85..=100);
+        let random_multiplier = sim.generate_random_number_in_range_inclusive(85..=100);
         let random_multiplier = ClampedPercent::from(random_multiplier);
 
         let stab_multiplier = {
-            let move_type = battle[move_used].species.type_;
-            if battle[attacker].is_type(move_type) { Percent(125) } else { Percent(100) }
+            let move_type = sim[move_used].species.type_;
+            if sim[attacker].is_type(move_type) { Percent(125) } else { Percent(100) }
         };
 
-        let move_type = battle[move_used].species.type_;
-        let target_primary_type = battle[defender].species.primary_type;
-        let target_secondary_type = battle[defender].species.secondary_type;
+        let move_type = sim[move_used].species.type_;
+        let target_primary_type = sim[defender].species.primary_type;
+        let target_secondary_type = sim[defender].species.secondary_type;
 
         let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
             matchup!(move_type against target_primary_type / target_secondary_type)
@@ -71,7 +74,7 @@ impl Action {
 
         // If the opponent is immune, damage calculation is skipped.
         if type_matchup_multiplier.is_matchup_ineffective() {
-            battle.message_log.push_str("It was ineffective...");
+            sim.push_message("It was ineffective...");
             return Ok(NOTHING);
         }
 
@@ -88,8 +91,8 @@ impl Action {
         // TODO: Introduce more damage multipliers as we implement them.
 
         // Do the calculated damage to the target
-        Reaction::deal_damage(battle, defender, damage);
-        EventDispatcher::dispatch_event(battle, OnDamageDealt, attacker, NOTHING, NOTHING, None);
+        Reaction::deal_damage(sim, defender, damage);
+        sim.trigger_event(OnDamageDealt, attacker, NOTHING, NOTHING, None);
 
         let type_effectiveness = match type_matchup_multiplier {
             Percent(25) | Percent(50) => "not very effective",
@@ -100,50 +103,50 @@ impl Action {
                 unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
             }
         };
-        battle.message_log.push(format!["It was {type_effectiveness}!"]);
-        battle.message_log.push(format![
+        sim.push_message(format!["It was {type_effectiveness}!"]);
+        sim.push_message(format![
             "{defender} took {damage} damage!", 
-            defender = battle[defender].name()
+            defender = sim[defender].name()
         ]);
-        battle.message_log.push(format![
+        sim.push_message(format![
             "{defender} has {num_hp} health left.",
-            defender = battle[defender].name(),
-            num_hp = battle[defender].current_health
+            defender = sim[defender].name(),
+            num_hp = sim[defender].current_health
         ]);
 
         Ok(NOTHING)
     }
 
-    pub fn use_status_move(battle: &mut BattleState, attacker: MonsterUID, move_used: MoveUID, target: MonsterUID) -> SimResult {
-        let calling_context = MoveUsed::new(move_used, target);
+    pub fn use_status_move(
+        sim: &mut BattleSimulator,
+        context: MoveUseContext,
+    ) -> SimResult {
+        let MoveUseContext { move_user, move_used, target: _ } = context;
 
-        battle.message_log.push(format![
-            "{attacker} used {move_}",
-            attacker = battle[attacker].name(),
-            move_ = battle[move_used].species.name
+        sim.push_message(format![
+            "{move_user} used {move_}",
+            move_user = sim[move_user].name(),
+            move_ = sim[move_used].species.name
         ]);
 
-        if EventDispatcher::dispatch_trial_event(battle, OnTryMove, attacker, calling_context).failed() {
-            battle.message_log.push_str("The move failed!");
+        if sim.trigger_try_event(OnTryMove, move_user, context).failed() {
+            sim.push_message("The move failed!");
             return Ok(NOTHING);
         }
+        
+        sim.activate_move_internal(context);
 
-        {
-            let move_ = battle[move_used];
-            move_.on_activate(battle, attacker, target);
-        }
-
-        EventDispatcher::dispatch_event(battle, OnStatusMoveUsed, attacker, calling_context, NOTHING, None);
+        sim.trigger_event(OnStatusMoveUsed, move_user, context, NOTHING, None);
 
         Ok(NOTHING)
     }
 
-    pub fn perform_switch_out(battle: &mut BattleState, active_monster: MonsterUID, benched_monster: MonsterUID) -> SimResult {
-        battle.team_mut(active_monster.team_uid).active_monster_uid = benched_monster;
-        battle.message_log.push(format![
+    pub fn perform_switch_out(sim: &mut BattleSimulator, active_monster: MonsterUID, benched_monster: MonsterUID) -> SimResult {
+        sim.battle.team_mut(active_monster.team_uid).active_monster_uid = benched_monster;
+        sim.push_message(format![
             "{active_monster} switched out! Go {benched_monster}!", 
-            active_monster = battle[active_monster].name(),
-            benched_monster = battle[benched_monster].name()
+            active_monster = sim[active_monster].name(),
+            benched_monster = sim[benched_monster].name()
         ]);
         Ok(NOTHING)
     }
@@ -154,24 +157,25 @@ impl Reaction {
     ///
     /// This function should be used when an amount of damage has already been calculated,
     /// and the only thing left to do is to deduct it from the HP of the target.
-    pub fn deal_damage(battle: &mut BattleState, defender: MonsterUID, damage: u16) {
-        battle[defender].current_health = battle[defender].current_health.saturating_sub(damage);
-        if battle[defender].current_health == 0 { battle[defender].is_fainted = true; };
+    pub fn deal_damage(sim: &mut BattleSimulator, defender: MonsterUID, damage: u16) {
+        sim[defender].current_health = sim[defender].current_health.saturating_sub(damage);
+        if sim[defender].current_health == 0 { sim[defender].is_fainted = true; };
     }
 
-    /// **Secondary Action** This action can only be triggered by other Actions.
-    ///
-    /// Resolves activation of any ability.
+    /// Reaction Effct: Activates the ability of `ability_owner`, resolving the consequences of the ability activation.
     ///
     /// Returns a `Outcome` indicating whether the ability succeeded.
-    pub fn activate_ability(battle: &mut BattleState, ability_used: AbilityUID) -> Outcome {
-        let ability_owner = ability_used.owner;
+    #[must_use]
+    pub fn activate_ability(
+        sim: &mut BattleSimulator,
+        ability_owner: MonsterUID,
+    ) -> Outcome {
+        let context = AbilityUseContext::new(ability_owner);
 
-        let ability_use_context = AbilityUseContext { ability_used };
-        if EventDispatcher::dispatch_trial_event(battle, OnTryActivateAbility, ability_owner, ability_use_context).succeeded() {
-            let ability = battle[ability_used];
-            ability.activate(battle, ability_use_context);
-            EventDispatcher::dispatch_event(battle, OnAbilityActivated, ability_owner, ability_use_context, NOTHING, None);
+        if sim.trigger_try_event(OnTryActivateAbility, ability_owner, context).succeeded() {
+            let ability = sim[AbilityUID::from_owner(ability_owner)];
+            ability.activate(sim, context);
+            sim.trigger_event(OnAbilityActivated, ability_owner, context, NOTHING, None);
             Outcome::Success
         } else {
             Outcome::Failure
@@ -181,20 +185,25 @@ impl Reaction {
     /// Resolves raising the `stat` stat of the monster corresponding to `monster_uid` by `number_of_stages`. The stat cannot be HP.
     ///
     /// Returns a `bool` indicating whether the stat raising succeeded.
-    pub fn raise_stat(battle: &mut BattleState, affected_monster: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-        if EventDispatcher::dispatch_trial_event(battle, OnTryRaiseStat, affected_monster, NOTHING).succeeded() {
-            let effective_stages = battle[affected_monster].stat_modifiers.raise_stat(stat, number_of_stages);
+    pub fn raise_stat(
+        sim: &mut BattleSimulator,
+        affected_monster: MonsterUID, 
+        stat: Stat, 
+        number_of_stages: u8
+    ) -> Outcome {
+        if sim.trigger_try_event(OnTryRaiseStat, affected_monster, NOTHING).succeeded() {
+            let effective_stages = sim[affected_monster].stat_modifiers.raise_stat(stat, number_of_stages);
 
-            battle.message_log.push(format![
+            sim.push_message(format![
                 "{monster}\'s {stat} was raised by {stages} stage(s)!",
-                monster = battle[affected_monster].name(),
+                monster = sim[affected_monster].name(),
                 stat = stat,
                 stages = effective_stages
             ]);
 
             Outcome::Success
         } else {
-            battle.message_log.push(format!["{monster}'s stats were not raised.", monster = battle[affected_monster].name()]);
+            sim.push_message(format!["{monster}'s stats were not raised.", monster = sim[affected_monster].name()]);
 
             Outcome::Failure
         }
@@ -205,20 +214,25 @@ impl Reaction {
     /// Resolves lowering the `stat` stat of the monster corresponding to `monster_uid` by `number_of_stages`. The stat cannot be HP.
     ///
     /// Returns a `bool` indicating whether the stat lowering succeeded.
-    pub fn lower_stat(battle: &mut BattleState, affected_monster: MonsterUID, stat: Stat, number_of_stages: u8) -> Outcome {
-        if EventDispatcher::dispatch_trial_event(battle, OnTryLowerStat, affected_monster, NOTHING).succeeded() {
-            let effective_stages = battle[affected_monster].stat_modifiers.lower_stat(stat, number_of_stages);
+    pub fn lower_stat(
+        sim: &mut BattleSimulator,
+        affected_monster: MonsterUID, 
+        stat: Stat, 
+        number_of_stages: u8
+    ) -> Outcome {
+        if sim.trigger_try_event(OnTryLowerStat, affected_monster, NOTHING).succeeded() {
+            let effective_stages = sim[affected_monster].stat_modifiers.lower_stat(stat, number_of_stages);
 
-            battle.message_log.push(format![
+            sim.push_message(format![
                 "{monster}\'s {stat} was lowered by {stages} stage(s)!",
-                monster = battle[affected_monster].name(),
+                monster = sim[affected_monster].name(),
                 stat = stat,
                 stages = effective_stages
             ]);
 
             Outcome::Success
         } else {
-            battle.message_log.push(format!["{monster}'s stats were not lowered.", monster = battle[affected_monster].name()]);
+            sim.push_message(format!["{monster}'s stats were not lowered.", monster = sim[affected_monster].name()]);
 
             Outcome::Failure
         }

@@ -1,9 +1,7 @@
 use monsim_utils::MaxSizedVec;
 
 use crate::{sim::{
-    event::{EventFilteringOptions, EventHandlerDeck},
-    BattleState, MonsterUID, Type,
-}, MoveUID};
+    event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, BattleSimulator, MoveUID, MoveUseContext};
 use core::{fmt::Debug, slice::Iter};
 use std::ops::Index;
 
@@ -45,10 +43,12 @@ impl Move {
         self.species.base_accuracy
     }
 
-    pub(crate) fn on_activate(&self, battle: &mut BattleState, owner_uid: MonsterUID, target_uid: MonsterUID) {
-        let on_activate_logic = self.species.on_activate;
-        if let Some(on_activate_logic) = on_activate_logic {
-            on_activate_logic(battle, owner_uid, target_uid);
+    // TODO: Make the on_activate handler do damage by default 
+    // for damaging moves (status moves kind of necessitate custom activation logic.)
+    pub(crate) fn activate(&self, sim: &mut BattleSimulator, context: MoveUseContext) {
+        let on_activate_handler = self.species.on_activate;
+        if let Some(on_activate_handler) = on_activate_handler {
+            on_activate_handler(sim, context);
         }
     }
     
@@ -62,8 +62,7 @@ pub struct MoveSpecies {
     pub dex_number: u16,
     pub name: &'static str,
     
-    /// `fn(battle: &mut Battle, attacker: MonsterUID, target: MonsterUID)`
-    pub on_activate: Option<fn(&mut BattleState, MonsterUID, MonsterUID)>,
+    pub on_activate: Option<fn(&mut BattleSimulator, MoveUseContext)>,
     pub base_accuracy: u16,
     pub base_power: u16,
     pub category: MoveCategory,
@@ -71,8 +70,8 @@ pub struct MoveSpecies {
     pub priority: i8,
     pub type_: Type,
     
-    pub event_handler_deck: &'static EventHandlerDeck,
-    pub event_handler_deck_filtering_options: EventFilteringOptions,
+    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_filtering_options: EventFilteringOptions,
 }
 
 const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
@@ -87,8 +86,8 @@ const MOVE_DEFAULTS: MoveSpecies = MoveSpecies {
     priority: 0,
     type_: Type::Normal,
 
-    event_handler_deck: &EventHandlerDeck::const_default(),
-    event_handler_deck_filtering_options: EventFilteringOptions::default(),
+    event_handlers: | | EventHandlerDeck::const_default(),
+    event_filtering_options: EventFilteringOptions::default(),
 };
 
 impl Debug for MoveSpecies {

@@ -148,9 +148,7 @@ impl BattleSimulator { // simulation
             on_activate_handler(self, context)
         }
     }
-}
 
-impl BattleSimulator { // public interface
     pub(crate) fn switch_out_between_turns(&mut self, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> SimResult {
         Action::perform_switch_out(self, active_monster_uid, benched_monster_uid)
     }
@@ -174,6 +172,9 @@ impl BattleSimulator { // public interface
     ) -> R {
         EventDispatcher::dispatch_event(self, event, broadcaster, event_context, default, short_circuit)
     }
+}
+
+impl BattleSimulator { // public interface
     
     pub fn push_message(&mut self, message: impl ToString) {
         self.battle.message_log.push(message);

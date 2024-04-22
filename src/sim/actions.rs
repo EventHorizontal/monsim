@@ -27,7 +27,7 @@ impl Action {
         sim.push_message(format![
             "{attacker} used {_move}",
             attacker = sim[attacker].name(),
-            _move = sim[move_used].species.name
+            _move = sim[move_used].name()
         ]);
 
         if sim.trigger_try_event(OnTryMove, attacker, context).failed() {
@@ -58,11 +58,11 @@ impl Action {
         let random_multiplier = ClampedPercent::from(random_multiplier);
 
         let stab_multiplier = {
-            let move_type = sim[move_used].species.type_;
+            let move_type = sim[move_used].type_();
             if sim[attacker].is_type(move_type) { Percent(125) } else { Percent(100) }
         };
 
-        let move_type = sim[move_used].species.type_;
+        let move_type = sim[move_used].type_();
         let target_primary_type = sim[defender].species.primary_type;
         let target_secondary_type = sim[defender].species.secondary_type;
 
@@ -126,7 +126,7 @@ impl Action {
         sim.push_message(format![
             "{move_user} used {move_}",
             move_user = sim[move_user].name(),
-            move_ = sim[move_used].species.name
+            move_ = sim[move_used].name()
         ]);
 
         if sim.trigger_try_event(OnTryMove, move_user, context).failed() {
@@ -134,7 +134,7 @@ impl Action {
             return Ok(NOTHING);
         }
         
-        sim.activate_move_internal(context);
+        sim.activate_move_effect(context);
 
         sim.trigger_event(OnStatusMoveUsed, move_user, context, NOTHING, None);
 

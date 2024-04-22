@@ -143,8 +143,8 @@ impl BattleSimulator { // simulation
         }
     }
     
-    fn activate_move_internal(&mut self, context: MoveUseContext) {
-        if let Some(on_activate_handler) = self[context.move_used].species.on_activate {
+    fn activate_move_effect(&mut self, context: MoveUseContext) {
+        if let Some(on_activate_handler) = self[context.move_used].on_activate_effect() {
             on_activate_handler(self, context)
         }
     }

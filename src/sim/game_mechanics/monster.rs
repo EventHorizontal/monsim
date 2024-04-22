@@ -66,7 +66,7 @@ impl Display for Monster {
             } else {
                 out.push_str("\t│\t└── ");
             }
-            out.push_str(format!["mov {}\n", move_.species.name].as_str());
+            out.push_str(format!["mov {}\n", move_.name()].as_str());
         }
 
         write!(f, "{}", out)
@@ -163,13 +163,13 @@ impl Monster {
         self.moveset
             .iter()
             .filter_map(|move_| {
-                event.corresponding_handler((move_.species.event_handlers)()) 
+                event.corresponding_handler(move_.event_handlers()) 
                     .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                         OwnedEventHandler {
                             event_handler,
                             owner: self.uid,
                             activation_order: ActivationOrder {
-                                priority: move_.species.priority,
+                                priority: move_.priority(),
                                 speed: self.stats[Stat::Speed],
                                 order: 0,
                             },
@@ -337,7 +337,7 @@ const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
     primary_type: Type::Normal,
     secondary_type: None,
     base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handlers: | | EventHandlerDeck::const_default(),
+    event_handlers: EventHandlerDeck::empty,
 };
 
 impl MonsterSpecies {

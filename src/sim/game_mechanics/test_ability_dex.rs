@@ -24,7 +24,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
                 },
                 debugging_information: source_code_location!(),
             }),
-            ..EventHandlerDeck::const_default()
+            ..EventHandlerDeck::empty()
         }
     },
     on_activate: |sim, AbilityUseContext { ability_used }| {

@@ -39,7 +39,7 @@ pub trait Event: Clone + Copy + PartialEq + Eq {
 }
 
 impl EventHandlerDeck {
-    pub const fn const_default() -> Self {
+    pub const fn empty() -> Self {
         DEFAULT_EVENT_HANDLERS
     }
 }

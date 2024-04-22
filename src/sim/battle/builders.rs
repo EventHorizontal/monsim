@@ -279,10 +279,10 @@ impl Move {
 
 impl MoveBuilder {
     pub fn with_power_points(mut self, power_points: u8) -> MoveBuilder {
-        assert!(power_points < self.species.max_power_points, 
+        assert!(power_points < self.species.max_power_points(), 
             "Expected move {move_name} to have less than {max_pp} power points",
-            move_name = self.species.name,
-            max_pp = self.species.max_power_points,
+            move_name = self.species.name(),
+            max_pp = self.species.max_power_points(),
         ); 
         self.power_points = Some(power_points);
         self
@@ -293,12 +293,6 @@ impl MoveBuilder {
         Move {
             uid: move_uid,
             species,
-            base_accuracy: species.base_accuracy,
-            base_power: species.base_power,
-            category: species.category,
-            power_points: self.power_points.unwrap_or(species.max_power_points),
-            priority: species.priority,
-            type_: species.type_,
         }
     } 
 }

@@ -181,11 +181,11 @@ impl BattleState {
                 move_uid,
                 target_uid: self.active_monsters_on_team(team_uid.other()).uid,
                 activation_order: ActivationOrder {
-                    priority: self.move_(move_uid).species.priority,
+                    priority: self.move_(move_uid).priority(),
                     speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
                     order: 0, //TODO: Think about how to restrict order to be mutually exclusive
                 },
-                display_text: self.move_(move_uid).species.name 
+                display_text: self.move_(move_uid).name() 
             };
             move_actions.push(partially_specified_choice);
         }
@@ -292,7 +292,7 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
             } else {
                 output_string.push_str(&(prefix_str.to_owned() + "└── "));
             }
-            output_string.push_str(format!["   move: {}\n", move_.species.name].as_str());
+            output_string.push_str(format!["   move: {}\n", move_.name()].as_str());
         }
         output_string.push_str(&(prefix_str.to_owned() + "\n"));
     }

@@ -44,7 +44,7 @@ const ABILITY_DEFAULTS: AbilitySpecies = AbilitySpecies {
     dex_number: 000,
     name: "Unnamed",
     on_activate: |_,_| {},
-    event_handlers: || { EventHandlerDeck::const_default() },
+    event_handlers: EventHandlerDeck::empty,
     event_filtering_options: EventFilteringOptions::default(),
     order: 0,
 };

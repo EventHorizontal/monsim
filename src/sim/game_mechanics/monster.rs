@@ -58,7 +58,7 @@ impl Display for Monster {
         out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, self.species.secondary_type].as_str());
 
         out.push_str("\t│\t├── ");
-        out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
+        out.push_str(format!["abl {}\n", self.ability.species.name()].as_str());
 
         for (i, move_) in self.moveset.into_iter().enumerate() {
             if i < number_of_effects - 1 {
@@ -143,7 +143,7 @@ impl Monster {
     }
 
     pub fn ability_event_handler_for<E: Event>(&self, event: E) -> Option<OwnedEventHandler<E>> {
-        event.corresponding_handler((self.ability.species.event_handlers)()) 
+        event.corresponding_handler(self.ability.species.event_handlers()) 
             .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
@@ -151,7 +151,7 @@ impl Monster {
                     activation_order:  ActivationOrder {
                         priority: 0,
                         speed: self.stats[Stat::Speed],
-                        order: self.ability.species.order,
+                        order: self.ability.species.order(),
                     },
                     filtering_options: EventFilteringOptions::default(),
                 }

@@ -259,8 +259,8 @@ fn test_event_filtering_for_event_sources() {
 fn test_print_owned_event_handler() {
     use crate::sim::{test_ability_dex::FlashFire, event_dispatch::OwnedEventHandler, MonsterUID};
     let owned_event_handler = OwnedEventHandler {
-        event_handler: (FlashFire.event_handlers)().on_try_move.unwrap(),
-        activation_order: crate::ActivationOrder { priority: 0, speed: 11, order: FlashFire.order },
+        event_handler: FlashFire.event_handlers().on_try_move.unwrap(),
+        activation_order: crate::ActivationOrder { priority: 0, speed: 11, order: FlashFire.order() },
         owner: MonsterUID {
             team_uid: crate::sim::TeamUID::Allies,
             monster_number: crate::sim::MonsterNumber::_1,

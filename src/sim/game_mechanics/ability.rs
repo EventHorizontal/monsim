@@ -33,13 +33,14 @@ impl AbilityUID {
 
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {
-    pub dex_number: u16,
-    pub name: &'static str,
-    pub on_activate_effect: Effect<Nothing, AbilityUseContext>,
-    pub event_handlers: fn() -> EventHandlerDeck,
-    pub event_filtering_options: EventFilteringOptions,
-    pub order: u16,
+    dex_number: u16,
+    name: &'static str,
+    on_activate_effect: Effect<Nothing, AbilityUseContext>,
+    event_handlers: fn() -> EventHandlerDeck,
+    event_filtering_options: EventFilteringOptions,
+    order: u16,
 }
+
 
 impl Debug for AbilitySpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -54,3 +55,58 @@ impl PartialEq for AbilitySpecies {
 }
 
 impl Eq for AbilitySpecies {}
+
+impl AbilitySpecies {
+    pub const fn from_dex_data(dex_data: AbilityDexData) -> Self {
+        let AbilityDexData { dex_number, name, on_activate_effect, event_handlers, event_filtering_options, order } = dex_data;
+        
+        Self {
+            dex_number,
+            name,
+            on_activate_effect,
+            event_handlers,
+            event_filtering_options,
+            order,
+        }
+    }
+
+    #[inline(always)]
+    pub fn event_handlers(&self) -> EventHandlerDeck {
+        (self.event_handlers)()
+    }
+    
+    #[inline(always)]
+    pub fn on_activate_effect(&self) -> Effect<Nothing, AbilityUseContext> {
+        self.on_activate_effect
+    }
+    
+    #[inline(always)]
+    pub fn name(&self) -> & 'static str {
+        self.name
+    }
+    
+    #[inline(always)]
+    pub fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.event_filtering_options
+    }
+    
+    #[inline(always)]
+    pub fn order(&self) -> u16 {
+        self.order
+    }
+    
+    #[inline(always)]
+    pub fn dex_number(&self) -> u16 {
+        self.dex_number
+    }
+    
+}
+
+pub struct AbilityDexData {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub on_activate_effect: Effect<Nothing, AbilityUseContext>,
+    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_filtering_options: EventFilteringOptions,
+    pub order: u16,
+}

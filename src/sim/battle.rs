@@ -282,7 +282,7 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
         output_string.push_str(&type_string);
 
         output_string.push_str(&(prefix_str.to_owned() + "├── "));
-        output_string.push_str(format!["ability: {}\n", monster.ability.species.name].as_str());
+        output_string.push_str(format!["ability: {}\n", monster.ability.species.name()].as_str());
 
         let number_of_moves = monster.moveset.count();
         for (j, move_) in monster.moveset.into_iter().enumerate() {

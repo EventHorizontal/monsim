@@ -4,33 +4,36 @@ use monsim_utils::not;
 
 use super::{ability::AbilitySpecies, Type};
 use crate::{
-    event_dex::OnTryMove, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityUID, AbilityUseContext, effects::*,
+    effects::*, event_dex::OnTryMove, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexData, AbilityUID, AbilityUseContext
 };
 
-pub const FlashFire: AbilitySpecies = AbilitySpecies {
-    dex_number: 001,
-    name: "Flash Fire",
-    event_handlers: | | {
-        // TODO: builder syntax?
-        EventHandlerDeck {
-            on_try_move: Some(EventHandler {
-                event: OnTryMove,
-                effect: Effect::from(|sim, MoveUseContext { move_user, move_used, target}| {
-                    if sim[move_used].is_type(Type::Fire) {
-                        let activation_succeeded = ActivateAbility(sim, AbilityUseContext::new(target));
-                        return not!(activation_succeeded);
-                    }
-                    Outcome::Success
+pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 
+    AbilityDexData {
+        dex_number: 001,
+        name: "Flash Fire",
+        event_handlers: | | {
+            // TODO: builder syntax?
+            EventHandlerDeck {
+                on_try_move: Some(EventHandler {
+                    event: OnTryMove,
+                    effect: Effect::from(|sim, MoveUseContext { move_user, move_used, target}| {
+                        if sim[move_used].is_type(Type::Fire) {
+                            let activation_succeeded = ActivateAbility(sim, AbilityUseContext::new(target));
+                            return not!(activation_succeeded);
+                        }
+                        Outcome::Success
+                    }),
+                    #[cfg(feature = "debug")]
+                    source_code_location: source_code_location!(),
                 }),
-                source_code_location: source_code_location!(),
-            }),
-            ..EventHandlerDeck::empty()
-        }
-    },
-    on_activate_effect: Effect::from(|sim, AbilityUseContext { ability_used, ability_owner }| {
-        let owner_name = sim[ability_used.owner].name();
-        sim.push_message(format!["{owner_name}'s Flash Fire activated!"]);
-    }),
-    event_filtering_options: EventFilteringOptions::default(),
-    order: 0,
-};
+                ..EventHandlerDeck::empty()
+            }
+        },
+        on_activate_effect: Effect::from(|sim, AbilityUseContext { ability_used, ability_owner }| {
+            let owner_name = sim[ability_used.owner].name();
+            sim.push_message(format!["{owner_name}'s Flash Fire activated!"]);
+        }),
+        event_filtering_options: EventFilteringOptions::default(),
+        order: 0,
+    }
+);

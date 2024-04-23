@@ -82,14 +82,14 @@ impl BattleSimulator { // simulation
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { move_user, move_used, target, .. } => match self.battle.move_(move_used).category() {
-                    MoveCategory::Physical | MoveCategory::Special => Action::use_damaging_move(self, MoveUseContext { move_user, move_used, target }),
-                    MoveCategory::Status => Action::use_status_move(self, MoveUseContext { move_user, move_used, target } ),
+                // TODO: Put a `MoveUseContext` in `FullySpecifiedChoice`?
+                FullySpecifiedChoice::Move { move_user, move_used, target, .. } => {
+                    Action::use_move(self, MoveUseContext::new(move_used, target));
                 },
                 FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, .. } => {
                     Action::perform_switch_out(self, active_monster_uid, benched_monster_uid)
                 }
-            }?;
+            };
 
             // Check if a Monster fainted this turn
             let maybe_fainted_active_monster = self.battle.monsters()
@@ -149,7 +149,7 @@ impl BattleSimulator { // simulation
         }
     }
 
-    pub(crate) fn switch_out_between_turns(&mut self, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) -> SimResult {
+    pub(crate) fn switch_out_between_turns(&mut self, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) {
         Action::perform_switch_out(self, active_monster_uid, benched_monster_uid)
     }
 

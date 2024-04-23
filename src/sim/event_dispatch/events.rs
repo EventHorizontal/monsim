@@ -109,6 +109,7 @@ mod generated {
     
     generate_events!{
         event OnTryMove(MoveUseContext) => Outcome,
+        event OnMoveUsed(MoveUseContext) => Nothing,
         event OnDamageDealt(Nothing) => Nothing,
         event OnTryActivateAbility(AbilityUseContext) => Outcome,
         event OnAbilityActivated(AbilityUseContext) => Nothing,

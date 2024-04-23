@@ -13,7 +13,31 @@ pub(crate) struct Action;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Reaction;
 
+// TODO: / INFO: Removed the `SimResult` return type on Actions. This we be added back in if/when it is actually needed, when the simulator could actually
+// throw an error.
 impl Action {
+    pub fn use_move(
+        sim: &mut BattleSimulator,
+        context: MoveUseContext,
+    ) {
+        let MoveUseContext { move_user, move_used, target } = context;
+
+        sim.push_message(format![
+            "{attacker} used {_move}",
+            attacker = sim[move_user].name(),
+            _move = sim[move_used].name()
+        ]);
+
+        if sim.trigger_try_event(OnTryMove, move_user, context).failed() {
+            sim.push_message("The move failed!");
+            return;
+        }
+
+        sim.activate_move_effect(context);
+
+        sim.trigger_event(OnMoveUsed, move_user, context, NOTHING, None);
+    }
+
     /// **Action** A monster's turn may be initiated by this Action.
     ///
     /// Calculates and applies the effects of a damaging move
@@ -21,7 +45,7 @@ impl Action {
     pub fn use_damaging_move(
         sim: &mut BattleSimulator,
         context: MoveUseContext,
-    ) -> SimResult {
+    ) {
         let MoveUseContext { move_user: attacker, move_used, target: defender } = context;
 
         sim.push_message(format![
@@ -32,7 +56,7 @@ impl Action {
 
         if sim.trigger_try_event(OnTryMove, attacker, context).failed() {
            sim.push_message("The move failed!");
-            return Ok(NOTHING);
+            return;
         }
 
         let level = sim[attacker].level;
@@ -75,7 +99,7 @@ impl Action {
         // If the opponent is immune, damage calculation is skipped.
         if type_matchup_multiplier.is_matchup_ineffective() {
             sim.push_message("It was ineffective...");
-            return Ok(NOTHING);
+            return;
         }
 
         // The (WIP) bona-fide damage formula.
@@ -113,14 +137,12 @@ impl Action {
             defender = sim[defender].name(),
             num_hp = sim[defender].current_health
         ]);
-
-        Ok(NOTHING)
     }
 
     pub fn use_status_move(
         sim: &mut BattleSimulator,
         context: MoveUseContext,
-    ) -> SimResult {
+    ) {
         let MoveUseContext { move_user, move_used, target: _ } = context;
 
         sim.push_message(format![
@@ -131,24 +153,21 @@ impl Action {
 
         if sim.trigger_try_event(OnTryMove, move_user, context).failed() {
             sim.push_message("The move failed!");
-            return Ok(NOTHING);
+            return;
         }
         
         sim.activate_move_effect(context);
 
         sim.trigger_event(OnStatusMoveUsed, move_user, context, NOTHING, None);
-
-        Ok(NOTHING)
     }
 
-    pub fn perform_switch_out(sim: &mut BattleSimulator, active_monster: MonsterUID, benched_monster: MonsterUID) -> SimResult {
+    pub fn perform_switch_out(sim: &mut BattleSimulator, active_monster: MonsterUID, benched_monster: MonsterUID) {
         sim.battle.team_mut(active_monster.team_uid).active_monster_uid = benched_monster;
         sim.push_message(format![
             "{active_monster} switched out! Go {benched_monster}!", 
             active_monster = sim[active_monster].name(),
             benched_monster = sim[benched_monster].name()
         ]);
-        Ok(NOTHING)
     }
 }
 

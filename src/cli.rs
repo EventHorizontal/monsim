@@ -34,7 +34,7 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                             }
                             let switchable_benched_monster_choice_index = input_as_choice_index(&mut locked_stdout, switchable_benched_monster_uids.count()).unwrap();
                             let chosen_switchable_benched_monster_uid = switchable_benched_monster_uids[switchable_benched_monster_choice_index];
-                            sim.switch_out_between_turns(active_monster_uid, chosen_switchable_benched_monster_uid)?;
+                            sim.switch_out_between_turns(active_monster_uid, chosen_switchable_benched_monster_uid);
                             last_turn_chosen_actions = None;
                         } else {
                             turn_stage = TurnStage::BattleEnded;

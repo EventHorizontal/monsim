@@ -84,12 +84,6 @@ pub const DealDefaultDamage: Effect<Nothing, MoveUseContext> = Effect(deal_defau
 fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
     let MoveUseContext { move_user: attacker, move_used, target: defender } = context;
 
-    sim.push_message(format![
-        "{attacker} used {_move}",
-        attacker = sim[attacker].name(),
-        _move = sim[move_used].name()
-    ]);
-
     if sim.trigger_try_event(OnTryMove, attacker, context).failed() {
         sim.push_message("The move failed!");
         return;

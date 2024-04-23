@@ -10,7 +10,6 @@ pub use generated::*;
 /// directly, such as the user of the move, the move used and the target 
 /// in case of a move's effect. 
 type Effect<R, C> = fn(&mut BattleSimulator, C) -> R;
-#[cfg(feature = "debug")]
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -135,6 +134,7 @@ mod generated {
         pub on_try_lower_stat: Option<EventHandler<OnTryLowerStat>>,
         pub on_status_move_used: Option<EventHandler<OnStatusMoveUsed>>,
     }
+    
     pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
         on_try_move: None,
         on_damage_dealt: None,
@@ -147,6 +147,7 @@ mod generated {
     };
     pub mod event_dex {
         use super::*;
+
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnTryMove;
 

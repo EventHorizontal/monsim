@@ -42,7 +42,7 @@ pub const Zombler: MonsterSpecies = MonsterSpecies::from_dex_entry(
         name: "Zombler",
         primary_type: Type::Ghost,
         secondary_type: Some(Type::Dark),
-        base_stats: StatSet::new(90, 50, 34, 60, 44, 70),
+        base_stats: StatSet::new(90, 50, 34, 60, 44, 71),
         event_handlers: EventHandlerDeck::empty,
     }
 );

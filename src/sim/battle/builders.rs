@@ -328,9 +328,6 @@ impl Ability {
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
     fn build(self, uid: AbilityUID) -> Ability {
-        Ability { 
-            uid, 
-            species: self.species 
-        }
+        Ability::new(uid, self.species)
     }
 }

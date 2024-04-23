@@ -194,7 +194,7 @@ pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -
 
     if sim.trigger_try_event(OnTryActivateAbility, ability_owner, context).succeeded() {
         let ability = sim[ability_used];
-        ability.activate(sim, context);
+        (ability.on_activate_effect())(sim, context);
         sim.trigger_event(OnAbilityActivated, ability_owner, context, NOTHING, None);
         Outcome::Success
     } else {

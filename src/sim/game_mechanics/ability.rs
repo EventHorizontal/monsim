@@ -1,22 +1,50 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterUID}, AbilityUseContext, BattleSimulator, Effect};
+use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterUID}, AbilityUseContext, Effect};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ability {
-    pub(crate) uid: AbilityUID, 
-    pub(crate) species: &'static AbilitySpecies,
+    uid: AbilityUID, 
+    species: &'static AbilitySpecies,
 }
 
 impl Ability {
 
-    pub fn activate(&self, sim: &mut BattleSimulator, ability_use_context: AbilityUseContext) {
-        (self.species.on_activate_effect)(sim, ability_use_context);
+    pub const fn new(uid: AbilityUID, species: &'static AbilitySpecies) -> Self {
+        Self {
+            uid,
+            species,
+        }
     }
 
-    pub fn event_handler_deck(&self) -> EventHandlerDeck {
+    pub fn event_handlers(&self) -> EventHandlerDeck {
         (self.species.event_handlers)()
+    }
+    
+    #[inline(always)]
+    pub fn species(&self) -> & 'static AbilitySpecies {
+        self.species
+    }
+    
+    #[inline(always)]
+    pub fn name(&self) -> &'static str {
+        self.species.name
+    }
+    
+    #[inline(always)]
+    pub fn order(&self) -> u16 {
+        self.species.order
+    }
+    
+    #[inline(always)]
+    pub fn dex_number(&self) -> u16 {
+        self.species.dex_number
+    }
+    
+    #[inline(always)]
+    pub fn on_activate_effect(&self) -> Effect<Nothing, AbilityUseContext> {
+        self.species.on_activate_effect
     }
     
 }

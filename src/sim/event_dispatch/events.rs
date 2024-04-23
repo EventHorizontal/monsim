@@ -127,6 +127,7 @@ mod generated {
     #[derive(Debug, Clone, Copy)]
     pub struct EventHandlerDeck {
         pub on_try_move: Option<EventHandler<OnTryMove>>,
+        pub on_move_used: Option<EventHandler<OnMoveUsed>>,
         pub on_damage_dealt: Option<EventHandler<OnDamageDealt>>,
         pub on_try_activate_ability: Option<EventHandler<OnTryActivateAbility>>,
         pub on_ability_activated: Option<EventHandler<OnAbilityActivated>>,
@@ -135,9 +136,9 @@ mod generated {
         pub on_try_lower_stat: Option<EventHandler<OnTryLowerStat>>,
         pub on_status_move_used: Option<EventHandler<OnStatusMoveUsed>>,
     }
-    
     pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
         on_try_move: None,
+        on_move_used: None,
         on_damage_dealt: None,
         on_try_activate_ability: None,
         on_ability_activated: None,
@@ -148,10 +149,9 @@ mod generated {
     };
     pub mod event_dex {
         use super::*;
-
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnTryMove;
-
+    
         impl Event for OnTryMove {
             type EventReturnType = Outcome;
             type ContextType = MoveUseContext;
@@ -163,8 +163,21 @@ mod generated {
             }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        pub struct OnMoveUsed;
+    
+        impl Event for OnMoveUsed {
+            type EventReturnType = Nothing;
+            type ContextType = MoveUseContext;
+            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
+                event_handler_deck.on_move_used
+            }
+            fn name(&self) -> &'static str {
+                "OnMoveUsed"
+            }
+        }
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnDamageDealt;
-
+    
         impl Event for OnDamageDealt {
             type EventReturnType = Nothing;
             type ContextType = Nothing;
@@ -177,7 +190,7 @@ mod generated {
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnTryActivateAbility;
-
+    
         impl Event for OnTryActivateAbility {
             type EventReturnType = Outcome;
             type ContextType = AbilityUseContext;
@@ -190,7 +203,7 @@ mod generated {
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnAbilityActivated;
-
+    
         impl Event for OnAbilityActivated {
             type EventReturnType = Nothing;
             type ContextType = AbilityUseContext;
@@ -203,7 +216,7 @@ mod generated {
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnModifyAccuracy;
-
+    
         impl Event for OnModifyAccuracy {
             type EventReturnType = Percent;
             type ContextType = MoveUseContext;
@@ -216,7 +229,7 @@ mod generated {
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnTryRaiseStat;
-
+    
         impl Event for OnTryRaiseStat {
             type EventReturnType = Outcome;
             type ContextType = Nothing;
@@ -229,7 +242,7 @@ mod generated {
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnTryLowerStat;
-
+    
         impl Event for OnTryLowerStat {
             type EventReturnType = Outcome;
             type ContextType = Nothing;
@@ -242,7 +255,7 @@ mod generated {
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnStatusMoveUsed;
-
+    
         impl Event for OnStatusMoveUsed {
             type EventReturnType = Nothing;
             type ContextType = MoveUseContext;

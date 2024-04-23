@@ -27,9 +27,10 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
             ..EventHandlerDeck::empty()
         }
     },
-    on_activate: |sim, AbilityUseContext { ability_used, ability_owner }| {
+    on_activate_effect: Effect::from(|sim, AbilityUseContext { ability_used, ability_owner }| {
         let owner_name = sim[ability_used.owner].name();
         sim.push_message(format!["{owner_name}'s Flash Fire activated!"]);
-    },
-    ..AbilitySpecies::const_default()
+    }),
+    event_filtering_options: EventFilteringOptions::default(),
+    order: 0,
 };

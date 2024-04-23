@@ -122,23 +122,6 @@ impl EventDispatcher {
     
 }
 
-impl<'a, E: Event + Debug> Debug for EventHandler<E> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(feature = "debug")]
-        let out = {
-            f.debug_struct("EventHandler")
-                .field("event", &self.event)
-                .field("location", &self.debugging_information)
-                .finish()
-        };
-        #[cfg(not(feature = "debug"))]
-        let out = {
-            write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.")
-        };
-        out
-    }
-}
-
 impl EventFilteringOptions {
     pub const fn default() -> EventFilteringOptions {
         EventFilteringOptions {

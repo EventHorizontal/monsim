@@ -24,7 +24,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
                     Outcome::Success
                 },
                 #[cfg(feature = "debug")]
-                debugging_information: source_code_location!(),
+                source_code_location: source_code_location!(),
             }),
             ..EventHandlerDeck::empty()
         }

@@ -3,18 +3,39 @@ use crate::BattleSimulator;
 use super::*;
 pub use generated::*;
 
+/// `R`: A type that encodes any necessary information about how the `Effect` played
+/// out, _e.g._ an `Outcome` representing whether the `Effect` succeeded.
+///
+/// `C`: Any information necessary for the resolution of the effect, provided 
+/// directly, such as the user of the move, the move used and the target 
+/// in case of a move's effect. 
 type Effect<R, C> = fn(&mut BattleSimulator, C) -> R;
 #[cfg(feature = "debug")]
 
-/// `R`: indicates return type
-///
-/// `C`: indicates context specifier type
+/// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct EventHandler<E: Event> {
     pub event: E,
     pub effect: Effect<E::EventReturnType, E::ContextType>,
     #[cfg(feature = "debug")]
-    pub debugging_information: &'static str,
+    pub source_code_location: &'static str,
+}
+
+impl<'a, E: Event + Debug> Debug for EventHandler<E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[cfg(feature = "debug")]
+        let out = {
+            f.debug_struct("EventHandler")
+                .field("event", &self.event)
+                .field("source_code_location", &self.source_code_location)
+                .finish()
+        };
+        #[cfg(not(feature = "debug"))]
+        let out = {
+            write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.")
+        };
+        out
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -22,7 +22,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
                     }
                     Outcome::Success
                 },
-                debugging_information: source_code_location!(),
+                source_code_location: source_code_location!(),
             }),
             ..EventHandlerDeck::empty()
         }

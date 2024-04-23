@@ -22,8 +22,8 @@ impl Move {
         self.species.name
     }
 
-    pub fn on_activate_effect(&self) -> Option<Effect<Nothing, MoveUseContext>> {
-        self.species.on_activate_effect
+    pub fn on_activate_effect(&self) -> Effect<Nothing, MoveUseContext> {
+        self.species.on_use_effect
     }
 
     #[inline(always)]
@@ -76,7 +76,7 @@ impl Move {
 pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
-    on_activate_effect: Option<Effect<Nothing, MoveUseContext>>,
+    on_use_effect: Effect<Nothing, MoveUseContext>,
     base_accuracy: u16,
     base_power: u16,
     category: MoveCategory,
@@ -107,11 +107,11 @@ impl Eq for MoveSpecies {}
 
 impl MoveSpecies {
     pub const fn from_dex_entry(dex_entry: MoveDexEntry) -> Self {
-        let MoveDexEntry { dex_number, name, on_activate_effect, base_accuracy, base_power, category, max_power_points, priority, type_, event_handlers, event_filtering_options } = dex_entry;
+        let MoveDexEntry { dex_number, name, on_use_effect, base_accuracy, base_power, category, max_power_points, priority, type_, event_handlers, event_filtering_options } = dex_entry;
         MoveSpecies {
             dex_number,
             name,
-            on_activate_effect,
+            on_use_effect,
             base_accuracy,
             base_power,
             category,
@@ -165,7 +165,7 @@ pub struct MoveDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
 
-    pub on_activate_effect: Option<Effect<Nothing, MoveUseContext>>,
+    pub on_use_effect: Effect<Nothing, MoveUseContext>,
     pub base_accuracy: u16,
     pub base_power: u16,
     pub category: MoveCategory,

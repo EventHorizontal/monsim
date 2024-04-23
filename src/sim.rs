@@ -144,9 +144,7 @@ impl BattleSimulator { // simulation
     }
     
     fn activate_move_effect(&mut self, context: MoveUseContext) {
-        if let Some(on_activate_handler) = self[context.move_used].on_activate_effect() {
-            on_activate_handler(self, context)
-        }
+        (self[context.move_used].on_activate_effect())(self, context)
     }
 
     pub(crate) fn switch_out_between_turns(&mut self, active_monster: MonsterUID, benched_monster: MonsterUID) {

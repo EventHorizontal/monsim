@@ -3,9 +3,9 @@ use crate::BattleSimulator;
 use super::*;
 pub use generated::*;
 
-type EventCallback<R, C> = fn(&mut BattleSimulator, C, R) -> R;
+type EventCallback<R, C> = fn(&mut BattleSimulator, C) -> R;
 #[cfg(feature = "debug")]
-pub(super) type EventCallbackWithLifetime<'a, R, C> = fn(&'a mut BattleSimulator, C, R) -> R;
+pub(super) type EventCallbackWithLifetime<'a, R, C> = fn(&'a mut BattleSimulator, C) -> R;
 
 /// `R`: indicates return type
 ///

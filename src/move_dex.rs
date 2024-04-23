@@ -55,7 +55,7 @@ pub const Bubble: MoveSpecies = MoveSpecies::from_dex_entry(
         dex_number: 004,
         name: "Bubble",
         type_: Type::Water,
-        category: MoveCategory::Physical,
+        category: MoveCategory::Special,
         base_power: 40,
         base_accuracy: 100,
         on_use_effect: DealDefaultDamage,

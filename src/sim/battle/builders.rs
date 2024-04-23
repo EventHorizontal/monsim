@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, DealDefaultDamage, Monster, MonsterTeam, MonsterUID, Move, MoveCategory, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 // TODO: Some basic state validation will be done now, but later 
 // on I want to extend that to more stuff, such as validating that 
@@ -288,6 +288,11 @@ impl MoveBuilder {
 
     fn build(self, move_uid: MoveUID) -> Move {
         let species = self.species;
+        // TODO: When the engine is more mature, we'd like to make warnings like this toggleable.
+        if species.category() == MoveCategory::Status && species.
+        on_use_effect() == DealDefaultDamage {
+            println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
+        }
         Move {
             uid: move_uid,
             species,

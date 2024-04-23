@@ -108,6 +108,7 @@ impl Eq for MoveSpecies {}
 impl MoveSpecies {
     pub const fn from_dex_entry(dex_entry: MoveDexEntry) -> Self {
         let MoveDexEntry { dex_number, name, on_use_effect, base_accuracy, base_power, category, max_power_points, priority, type_, event_handlers, event_filtering_options } = dex_entry;
+        
         MoveSpecies {
             dex_number,
             name,
@@ -132,6 +133,18 @@ impl MoveSpecies {
     pub fn max_power_points(&self) -> u8 {
         self.max_power_points
     }
+
+    #[inline(always)]
+    pub fn category(&self) -> MoveCategory {
+        self.category
+    }
+
+    #[inline(always)]
+    pub fn on_use_effect(&self) -> Effect<Nothing, MoveUseContext> {
+        self.on_use_effect
+    }
+    
+    
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

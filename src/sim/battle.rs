@@ -272,8 +272,8 @@ fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: 
         output_string.push_str(&(prefix_str.to_owned() + "│\n"));
         output_string.push_str(&(prefix_str.to_owned() + "├── "));
 
-        let primary_type = monster.species.primary_type;
-        let secondary_type = monster.species.secondary_type;
+        let primary_type = monster.species.primary_type();
+        let secondary_type = monster.species.secondary_type();
         let type_string = if let Some(secondary_type) = secondary_type {
             format!["   type: {:?}/{:?}\n", primary_type, secondary_type]
         } else {

@@ -4,11 +4,11 @@ use monsim_utils::not;
 
 use super::{ability::AbilitySpecies, Type};
 use crate::{
-    effects::*, event_dex::OnTryMove, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexData, AbilityUID, AbilityUseContext
+    effects::*, event_dex::OnTryMove, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexEntry, AbilityUID, AbilityUseContext
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 
-    AbilityDexData {
+    AbilityDexEntry {
         dex_number: 001,
         name: "Flash Fire",
         event_handlers: | | {

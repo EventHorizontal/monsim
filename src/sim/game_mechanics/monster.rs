@@ -232,14 +232,13 @@ impl Monster {
 
 #[derive(Clone, Copy)]
 pub struct MonsterSpecies {
-    pub dex_number: u16,
-    pub name: &'static str,
-    pub primary_type: Type,
-    pub secondary_type: Option<Type>,
-    pub base_stats: StatSet,
-    pub event_handlers: fn() -> EventHandlerDeck,
+    dex_number: u16,
+    name: &'static str,
+    primary_type: Type,
+    secondary_type: Option<Type>,
+    base_stats: StatSet,
+    event_handlers: fn() -> EventHandlerDeck,
 }
-
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MonsterUID {
@@ -331,19 +330,49 @@ impl Display for MonsterUID {
     }
 }
 
-const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
-    dex_number: 000,
-    name: "Unnamed",
-    primary_type: Type::Normal,
-    secondary_type: None,
-    base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handlers: EventHandlerDeck::empty,
-};
-
 impl MonsterSpecies {
-    pub const fn const_default() -> Self {
-        MONSTER_DEFAULTS
+    pub const fn from_dex_entry(dex_entry: MonsterDexEntry) -> Self {
+        let MonsterDexEntry { dex_number, name, primary_type, secondary_type, base_stats, event_handlers } = dex_entry;
+        Self {
+            dex_number,
+            name,
+            primary_type,
+            secondary_type,
+            base_stats,
+            event_handlers,
+        }
     }
+
+    #[inline(always)]
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+    
+    #[inline(always)]
+    pub fn type_(&self) -> (Type, Option<Type>) {
+        (self.primary_type, self.secondary_type)
+    }
+
+    #[inline(always)]
+    pub fn primary_type(&self) -> Type {
+        self.primary_type
+    }
+
+    #[inline(always)]
+    pub fn secondary_type(&self) -> Option<Type> {
+        self.secondary_type
+    }
+
+    #[inline(always)]
+    pub fn base_stat(&self, stat: Stat) -> u16 {
+        self.base_stats[stat]
+    }
+    
+    #[inline(always)]
+    pub fn event_handlers(&self) -> EventHandlerDeck {
+        (self.event_handlers)()
+    }
+
 }
 
 impl From<usize> for MonsterNumber {
@@ -389,64 +418,6 @@ pub struct StatModifierSet {
     spe: i8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MonsterNature {
-    /// Neutral (+-Attack)
-    Hardy,
-    /// +Attack, -Defense
-    Lonely,
-    /// +Attack, -Speed
-    Brave,
-    /// +Attack, -Special Attack
-    Adamant,
-    /// +Attack, -Special Defense
-    Naughty,
-
-    /// Neutral (+-Defense)
-    Docile,
-    /// +Defense, -Attack
-    Bold,
-    /// +Defense, -Speed
-    Relaxed,
-    /// +Defense, -Special Attack
-    Impish, // - Special Attack
-    /// +Defense, -Special Defense
-    Lax, // - Special Defense
-
-    /// Neutral (+-Speed)
-    Serious,
-    /// +Speed, -Attack
-    Timid,
-    /// +Speed, -Defense
-    Hasty,
-    /// +Speed, -Special Attack
-    Jolly,
-    /// +Speed, -Special Defense
-    Naive,
-
-    /// Neutral (+-Special Attack)
-    Bashful,
-    /// +Special Attack, -Attack
-    Modest,
-    /// +Special Attack, -Defense
-    Mild,
-    /// +Special Attack, -Speed
-    Quiet,
-    /// +Special Attack, -Special Defense
-    Rash,
-
-    /// Neutral (+-Special Defense)
-    Quirky,
-    /// +Special Defense, -Attack
-    Calm,
-    /// +Special Defense, -Defense
-    Gentle,
-    /// +SpecialDefense, -Speed
-    Sassy,
-    /// +SpecialDefense, -Special Attack
-    Careful,
-}
-
 impl Debug for MonsterSpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -464,6 +435,16 @@ impl PartialEq for MonsterSpecies {
 }
 
 impl Eq for MonsterSpecies {}
+
+#[derive(Clone, Copy)]
+pub struct MonsterDexEntry {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub primary_type: Type,
+    pub secondary_type: Option<Type>,
+    pub base_stats: StatSet,
+    pub event_handlers: fn() -> EventHandlerDeck,
+}
 
 impl Index<Stat> for StatSet {
     type Output = u16;
@@ -551,6 +532,64 @@ impl Display for Stat {
             Stat::Speed => write!(f, "Speed"),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MonsterNature {
+    /// Neutral (+-Attack)
+    Hardy,
+    /// +Attack, -Defense
+    Lonely,
+    /// +Attack, -Speed
+    Brave,
+    /// +Attack, -Special Attack
+    Adamant,
+    /// +Attack, -Special Defense
+    Naughty,
+
+    /// Neutral (+-Defense)
+    Docile,
+    /// +Defense, -Attack
+    Bold,
+    /// +Defense, -Speed
+    Relaxed,
+    /// +Defense, -Special Attack
+    Impish, // - Special Attack
+    /// +Defense, -Special Defense
+    Lax, // - Special Defense
+
+    /// Neutral (+-Speed)
+    Serious,
+    /// +Speed, -Attack
+    Timid,
+    /// +Speed, -Defense
+    Hasty,
+    /// +Speed, -Special Attack
+    Jolly,
+    /// +Speed, -Special Defense
+    Naive,
+
+    /// Neutral (+-Special Attack)
+    Bashful,
+    /// +Special Attack, -Attack
+    Modest,
+    /// +Special Attack, -Defense
+    Mild,
+    /// +Special Attack, -Speed
+    Quiet,
+    /// +Special Attack, -Special Defense
+    Rash,
+
+    /// Neutral (+-Special Defense)
+    Quirky,
+    /// +Special Defense, -Attack
+    Calm,
+    /// +Special Defense, -Defense
+    Gentle,
+    /// +SpecialDefense, -Speed
+    Sassy,
+    /// +SpecialDefense, -Special Attack
+    Careful,
 }
 
 impl Index<Stat> for MonsterNature {

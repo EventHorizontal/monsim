@@ -3,13 +3,13 @@
 use monsim_utils::{not, Outcome};
 use monsim::{effects::*, event_dex::*, move_, sim::{
         Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveUseContext, Type
-}, AbilityDexData, AbilityUID, AbilityUseContext};
+}, AbilityDexEntry, AbilityUID, AbilityUseContext};
 
 #[cfg(feature = "debug")]
 use monsim::source_code_location;
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 
-    AbilityDexData {
+    AbilityDexEntry {
         dex_number: 001,
         name: "Flash Fire",
         event_handlers: | | {

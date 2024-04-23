@@ -85,8 +85,8 @@ impl PartialEq for AbilitySpecies {
 impl Eq for AbilitySpecies {}
 
 impl AbilitySpecies {
-    pub const fn from_dex_data(dex_data: AbilityDexData) -> Self {
-        let AbilityDexData { dex_number, name, on_activate_effect, event_handlers, event_filtering_options, order } = dex_data;
+    pub const fn from_dex_data(dex_data: AbilityDexEntry) -> Self {
+        let AbilityDexEntry { dex_number, name, on_activate_effect, event_handlers, event_filtering_options, order } = dex_data;
         
         Self {
             dex_number,
@@ -130,7 +130,7 @@ impl AbilitySpecies {
     
 }
 
-pub struct AbilityDexData {
+pub struct AbilityDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub on_activate_effect: Effect<Nothing, AbilityUseContext>,

@@ -207,7 +207,7 @@ impl MonsterBuilder {
         let iv_in_stat = 31;
         let ev_in_stat = 252;
         // In-game hp-stat determination formula
-        let health_stat = ((2 * self.species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
+        let health_stat = ((2 * self.species.base_stat(Stat::Hp) + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
         let nature = MonsterNature::Serious;
 
         // In-game non-hp-stat determination formula
@@ -215,7 +215,7 @@ impl MonsterBuilder {
             // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
             let iv_in_stat = 31;
             let ev_in_stat = 252;
-            let mut out = ((2 * self.species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
+            let mut out = ((2 * self.species.base_stat(stat) + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
             out = f64::floor(out as f64 * nature[stat]) as u16;
             out
         };

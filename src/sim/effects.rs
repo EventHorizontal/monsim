@@ -117,8 +117,8 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
     };
 
     let move_type = sim[move_used].type_();
-    let target_primary_type = sim[defender].species.primary_type;
-    let target_secondary_type = sim[defender].species.secondary_type;
+    let target_primary_type = sim[defender].species.primary_type();
+    let target_secondary_type = sim[defender].species.secondary_type();
 
     let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
         matchup!(move_type against target_primary_type / target_secondary_type)

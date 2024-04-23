@@ -1,4 +1,4 @@
-mod actions;
+pub mod actions;
 pub mod battle;
 pub mod battle_constants;
 pub(crate) mod choice;
@@ -10,7 +10,7 @@ mod ordering;
 
 use std::{error::Error, fmt::Display, ops::{Index, IndexMut, RangeInclusive}};
 
-pub use actions::Reaction; use actions::Action;
+pub use actions::*;
 pub use battle::*;
 pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt};
 #[cfg(feature="macros")]
@@ -83,11 +83,11 @@ impl BattleSimulator { // simulation
             
             match choice {
                 // TODO: Put a `MoveUseContext` in `FullySpecifiedChoice`?
-                FullySpecifiedChoice::Move { move_user, move_used, target, .. } => {
-                    Action::use_move(self, MoveUseContext::new(move_used, target));
+                FullySpecifiedChoice::Move { move_user: _, move_used, target, .. } => {
+                    UseMove(self, MoveUseContext::new(move_used, target));
                 },
-                FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, .. } => {
-                    Action::perform_switch_out(self, active_monster_uid, benched_monster_uid)
+                FullySpecifiedChoice::SwitchOut { active_monster_uid: active_monster, benched_monster_uid: benched_monster, .. } => {
+                    PerformSwitchOut(self, SwitchContext::new(active_monster, benched_monster))
                 }
             };
 
@@ -149,8 +149,8 @@ impl BattleSimulator { // simulation
         }
     }
 
-    pub(crate) fn switch_out_between_turns(&mut self, active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID) {
-        Action::perform_switch_out(self, active_monster_uid, benched_monster_uid)
+    pub(crate) fn switch_out_between_turns(&mut self, active_monster: MonsterUID, benched_monster: MonsterUID) {
+        PerformSwitchOut(self, SwitchContext::new(active_monster, benched_monster))
     }
 
     fn trigger_try_event<C: Copy, E: Event<EventReturnType = Outcome, ContextType = C>>(

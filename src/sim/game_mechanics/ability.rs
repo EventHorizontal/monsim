@@ -12,7 +12,7 @@ pub struct AbilityUID {
     pub owner: MonsterUID
 }
 impl AbilityUID {
-    pub(crate) fn from_owner(ability_owner: MonsterUID) -> AbilityUID {
+    pub(crate) fn _from_owner(ability_owner: MonsterUID) -> AbilityUID {
         AbilityUID { owner: ability_owner }
     }
 }

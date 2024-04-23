@@ -74,7 +74,7 @@ impl Display for Monster {
 }
 
 impl Monster {
-    pub(crate) fn new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MaxSizedVec<Move, 4>, ability: Ability) -> Self {
+    pub(crate) fn _new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MaxSizedVec<Move, 4>, ability: Ability) -> Self {
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
         let iv_in_stat = 31;

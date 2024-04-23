@@ -114,10 +114,10 @@ pub struct MonsterBuilder {
     moves: MaxSizedVec<MoveBuilder, 4>,
     ability: AbilityBuilder,
     nickname: Option<&'static str>,
-    level: Option<u16>,
-    nature: Option<MonsterNature>,
-    stat_modifiers: Option<StatModifierSet>,
-    current_health: Option<u16>,
+    _level: Option<u16>,
+    _nature: Option<MonsterNature>,
+    _stat_modifiers: Option<StatModifierSet>,
+    _current_health: Option<u16>,
 }
 
 pub trait MonsterBuilderExt {
@@ -166,15 +166,13 @@ impl Monster {
             moves,
             ability,
             nickname: None,
-            level: None,
-            nature: None,
-            stat_modifiers: None,
-            current_health: None, 
+            _level: None,
+            _nature: None,
+            _stat_modifiers: None,
+            _current_health: None, 
         }
     }
 }
-
-const MAX_MOVES_PER_MOVESET: usize = 4;
 
 impl MonsterBuilder {
     pub fn with_nickname(mut self, nickname: &'static str) -> Self {

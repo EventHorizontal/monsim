@@ -1,4 +1,6 @@
-use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, BattleSimulator, MoveUID, MoveUseContext};
+use monsim_utils::Nothing;
+
+use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MoveUID, MoveUseContext};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,7 +22,7 @@ impl Move {
         self.species.name
     }
 
-    pub fn on_activate_effect(&self) -> Option<fn(&mut BattleSimulator, MoveUseContext)> {
+    pub fn on_activate_effect(&self) -> Option<Effect<Nothing, MoveUseContext>> {
         self.species.on_activate_effect
     }
 
@@ -74,7 +76,7 @@ impl Move {
 pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
-    on_activate_effect: Option<fn(&mut BattleSimulator, MoveUseContext)>,
+    on_activate_effect: Option<Effect<Nothing, MoveUseContext>>,
     base_accuracy: u16,
     base_power: u16,
     category: MoveCategory,
@@ -82,7 +84,7 @@ pub struct MoveSpecies {
     priority: i8,
     type_: Type,
     event_handlers: fn() -> EventHandlerDeck,
-    event_filtering_options: EventFilteringOptions,
+    _event_filtering_options: EventFilteringOptions,
 }
 
 impl Debug for MoveSpecies {
@@ -117,7 +119,7 @@ impl MoveSpecies {
             priority,
             type_,
             event_handlers,
-            event_filtering_options,
+            _event_filtering_options: event_filtering_options,
         }
     }
 
@@ -163,7 +165,7 @@ pub struct MoveDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
 
-    pub on_activate_effect: Option<fn(&mut BattleSimulator, MoveUseContext)>,
+    pub on_activate_effect: Option<Effect<Nothing, MoveUseContext>>,
     pub base_accuracy: u16,
     pub base_power: u16,
     pub category: MoveCategory,

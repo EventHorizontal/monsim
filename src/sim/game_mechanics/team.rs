@@ -152,7 +152,7 @@ impl<T: Clone> PerTeam<Option<T>> {
 }
 
 impl<T: Clone> PerTeam<T> {
-    pub(crate) fn both(item: T) -> Self {
+    pub(crate) fn _both(item: T) -> Self {
         Self {
             ally_team_item: Ally::new(item.clone()),
             opponent_team_item: Opponent::new(item),

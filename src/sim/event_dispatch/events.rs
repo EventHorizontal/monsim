@@ -1,15 +1,6 @@
-use crate::BattleSimulator;
-
 use super::*;
 pub use generated::*;
-
-/// `R`: A type that encodes any necessary information about how the `Effect` played
-/// out, _e.g._ an `Outcome` representing whether the `Effect` succeeded.
-///
-/// `C`: Any information necessary for the resolution of the effect, provided 
-/// directly, such as the user of the move, the move used and the target 
-/// in case of a move's effect. 
-type Effect<R, C> = fn(&mut BattleSimulator, C) -> R;
+use crate::sim::Effect;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -75,12 +66,6 @@ pub mod contexts {
         pub target: MonsterUID,
     }
 
-    /// Holds the information of who activated whose ability was used (`ability_used`).
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct AbilityUseContext {
-        pub ability_used: AbilityUID,
-    }
-
     impl MoveUseContext {
         pub fn new(move_uid: MoveUID, target_uid: MonsterUID) -> Self {
             Self {
@@ -91,10 +76,35 @@ pub mod contexts {
         }
     }
 
+    /// Holds the information of which monster's ability was used (`ability_used`).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct AbilityUseContext {
+        pub ability_owner: MonsterUID,
+        pub ability_used: AbilityUID,
+    }
+
     impl AbilityUseContext {
-        pub fn new(owner: MonsterUID) -> Self {
+        pub fn new(ability_owner: MonsterUID) -> Self {
             Self {
-                ability_used: AbilityUID { owner },
+                ability_used: AbilityUID { owner: ability_owner },
+                ability_owner,
+            }
+        }
+    }
+
+    /// Holds the information of which monster is trying to switch out (`active_monster`) 
+    /// and which monster is trying to switch in (`benched_monster`).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct SwitchContext {
+        pub active_monster: MonsterUID,
+        pub benched_monster: MonsterUID,
+    }
+
+    impl SwitchContext {
+        pub fn new(active_monster: MonsterUID, benched_monster: MonsterUID) -> Self {
+            Self {
+                active_monster,
+                benched_monster,
             }
         }
     }

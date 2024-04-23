@@ -3,7 +3,7 @@
 use monsim_utils::{not, Outcome};
 use monsim::{event_dex::*, move_, sim::{
         Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveUseContext, Type
-}, AbilityUID, AbilityUseContext, actions::*};
+}, AbilityUID, AbilityUseContext, effects::*};
 
 #[cfg(feature = "debug")]
 use monsim::source_code_location;

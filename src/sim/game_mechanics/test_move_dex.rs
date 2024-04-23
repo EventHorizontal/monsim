@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{sim::{
     event_dispatch::EventFilteringOptions, BattleState, MonsterUID, Move, Stat
-}, BattleSimulator, actions::*, EventHandlerDeck, MoveDexEntry, MoveUseContext};
+}, BattleSimulator, effects::*, EventHandlerDeck, MoveDexEntry, MoveUseContext};
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {

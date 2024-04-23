@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{sim::{BattleState, EventFilteringOptions, MonsterUID, MoveCategory, MoveSpecies, Stat, Type}, EventHandlerDeck, MoveDexEntry, actions::*};
+use monsim::{sim::{BattleState, EventFilteringOptions, MonsterUID, MoveCategory, MoveSpecies, Stat, Type}, EventHandlerDeck, MoveDexEntry, effects::*};
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {

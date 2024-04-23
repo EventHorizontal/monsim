@@ -1,4 +1,4 @@
-pub mod actions;
+pub mod effects;
 pub mod battle;
 pub mod battle_constants;
 pub(crate) mod choice;
@@ -10,7 +10,7 @@ mod ordering;
 
 use std::{error::Error, fmt::Display, ops::{Index, IndexMut, RangeInclusive}};
 
-pub use actions::*;
+pub use effects::*;
 pub use battle::*;
 pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt};
 #[cfg(feature="macros")]

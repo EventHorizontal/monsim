@@ -128,7 +128,7 @@ impl BattleSimulator { // simulation
         }
 
         if self.battle.is_finished {
-            self.battle.message_log.extend(&[EMPTY_LINE, "The self.battle ended."]);
+            self.battle.message_log.extend(&[EMPTY_LINE, "The battle ended."]);
         }
         self.battle.message_log.extend(&["---", EMPTY_LINE]);
 

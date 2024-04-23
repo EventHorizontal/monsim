@@ -15,7 +15,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies {
         EventHandlerDeck {
             on_try_move: Some(EventHandler {
                 event: OnTryMove,
-                callback: |sim, MoveUseContext { move_user, move_used, target}| {
+                effect: |sim, MoveUseContext { move_user, move_used, target}| {
                     if sim[move_used].is_type(Type::Fire) {
                         let activation_succeeded = Reaction::activate_ability(sim, target);
                         return not!(activation_succeeded);

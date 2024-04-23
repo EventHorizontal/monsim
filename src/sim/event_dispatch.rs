@@ -81,7 +81,7 @@ impl EventDispatcher {
             if Self::filter_event_handlers(&sim.battle, broadcaster_uid, owner, filtering_options) {
                 // TODO: / INFO: Removed relaying the outcome of the previous handler from the event resolution. It will be
                 // reintroduced if it ever turns out to be useful. Otherwise remove this comment. 
-                relay = (event_handler.callback)(sim, calling_context);
+                relay = (event_handler.effect)(sim, calling_context);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -122,12 +122,12 @@ impl EventDispatcher {
     
 }
 
-impl<'a, E: Event> Debug for EventHandler<E> {
+impl<'a, E: Event + Debug> Debug for EventHandler<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[cfg(feature = "debug")]
         let out = {
             f.debug_struct("EventHandler")
-                .field("callback", &&(self.callback as EventCallbackWithLifetime<'a, E::EventReturnType, E::ContextType>))
+                .field("event", &self.event)
                 .field("location", &self.debugging_information)
                 .finish()
         };

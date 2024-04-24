@@ -204,48 +204,23 @@ impl MonsterBuilder {
         
         let level = 50;
         // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-        let iv_in_stat = 31;
-        let ev_in_stat = 252;
+        const IVS: StatSet = StatSet::new(31, 31, 31, 31, 31, 31);
+        const EVS: StatSet = StatSet::new(252, 252, 252, 252, 252, 252);
         // In-game hp-stat determination formula
-        let health_stat = ((2 * self.species.base_stat(Stat::Hp) + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
         let nature = MonsterNature::Serious;
-
-        // In-game non-hp-stat determination formula
-        let get_non_hp_stat = |stat: Stat| -> u16 {
-            // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-            let iv_in_stat = 31;
-            let ev_in_stat = 252;
-            let mut out = ((2 * self.species.base_stat(stat) + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
-            out = f64::floor(out as f64 * nature[stat]) as u16;
-            out
-        };
         
         Monster {
             uid: monster_uid,
             nickname,
             level,
-            max_health: health_stat,
+            effort_values: EVS,
+            individual_values: IVS,
             nature,
-            current_health: health_stat,
-            is_fainted: false,
+            stat_modifiers: StatModifierSet::new(0, 0, 0, 0, 0),
+            current_health: Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level),
             species: self.species,
             moveset,
             ability,
-            stats: StatSet::new(
-                health_stat,
-                get_non_hp_stat(Stat::PhysicalAttack),
-                get_non_hp_stat(Stat::PhysicalDefense),
-                get_non_hp_stat(Stat::SpecialAttack),
-                get_non_hp_stat(Stat::SpecialDefense),
-                get_non_hp_stat(Stat::Speed),
-            ),
-            stat_modifiers: StatModifierSet::new(
-                0,
-                0,
-                0,
-                0,
-                0,
-            ),
         } 
     }
 }
@@ -328,6 +303,9 @@ impl Ability {
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
     fn build(self, uid: AbilityUID) -> Ability {
-        Ability::new(uid, self.species)
+        Ability {
+            uid,
+            species: self.species,
+        }
     }
 }

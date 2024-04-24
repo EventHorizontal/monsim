@@ -182,7 +182,7 @@ impl BattleState {
                 target_uid: self.active_monsters_on_team(team_uid.other()).uid,
                 activation_order: ActivationOrder {
                     priority: self.move_(move_uid).priority(),
-                    speed: self.monster(move_uid.owner_uid).stats[Stat::Speed],
+                    speed: self.monster(move_uid.owner_uid).stat(Stat::Speed),
                     order: 0, //TODO: Think about how to restrict order to be mutually exclusive
                 },
                 display_text: self.move_(move_uid).name() 
@@ -199,7 +199,7 @@ impl BattleState {
                 switchable_benched_monster_uids,
                 activation_order: ActivationOrder { 
                     priority: 8, 
-                    speed: self.monster(active_monster_on_team.uid).stats[Stat::Speed], 
+                    speed: self.monster(active_monster_on_team.uid).stat(Stat::Speed), 
                     order: 0
                 },
                 display_text: "Switch Out",
@@ -223,7 +223,7 @@ impl BattleState {
         let mut switchable_benched_monsters = Vec::with_capacity(5);
         for monster in self.team(team_uid).monsters().iter() {
             let is_active_monster_for_team = monster.uid == self.teams[team_uid].active_monster_uid;
-            let is_valid_switch_partner = not!(self.monster(monster.uid).is_fainted) && not!(is_active_monster_for_team);
+            let is_valid_switch_partner = not!(self.monster(monster.uid).is_fainted()) && not!(is_active_monster_for_team);
             if is_valid_switch_partner {
                 switchable_benched_monsters.push(monster.uid);
                 number_of_switchees += 1;

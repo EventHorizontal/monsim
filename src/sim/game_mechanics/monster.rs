@@ -9,18 +9,18 @@ use crate::{sim::{ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type
 
 #[derive(Debug, Clone)]
 pub struct Monster {
-    pub uid: MonsterUID,
+    pub(crate) uid: MonsterUID,
     pub(crate) nickname: Option<&'static str>,
-    pub level: u16,
-    pub max_health: u16,
-    pub nature: MonsterNature,
-    pub stats: StatSet,
-    pub stat_modifiers: StatModifierSet,
-    pub is_fainted: bool,
-    pub current_health: u16,
-    pub species: &'static MonsterSpecies,
-    pub moveset: MaxSizedVec<Move, 4>,
-    pub ability: Ability,
+    pub(crate) level: u16,
+    pub(crate) effort_values: StatSet,
+    pub(crate) individual_values: StatSet,
+    pub(crate) nature: MonsterNature,
+    pub(crate) stat_modifiers: StatModifierSet,
+    pub(crate) current_health: u16,
+    pub(crate) species: &'static MonsterSpecies,
+    
+    pub(crate) moveset: MaxSizedVec<Move, 4>,
+    pub(crate) ability: Ability,
 }
 
 impl PartialEq for Monster {
@@ -38,7 +38,7 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    nickname, self.species.name, self.uid, self.current_health, self.max_health
+                    nickname, self.species.name, self.uid, self.current_health, self.max_health()
                 ]
                 .as_str(),
             );
@@ -46,7 +46,7 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.species.name, self.uid, self.current_health, self.max_health
+                    self.species.name, self.uid, self.current_health, self.max_health()
                 ]
                 .as_str(),
             );
@@ -73,55 +73,7 @@ impl Display for Monster {
     }
 }
 
-impl Monster {
-    pub(crate) fn _new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MaxSizedVec<Move, 4>, ability: Ability) -> Self {
-        let level = 50;
-        // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-        let iv_in_stat = 31;
-        let ev_in_stat = 252;
-        // In-game hp-stat determination formula
-        let health_stat = ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
-        let nature = MonsterNature::Serious;
-
-        // In-game non-hp-stat determination formula
-        let get_non_hp_stat = |stat: Stat| -> u16 {
-            // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-            let iv_in_stat = 31;
-            let ev_in_stat = 252;
-            let mut out = ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
-            out = f64::floor(out as f64 * nature[stat]) as u16;
-            out
-        };
-        
-        Monster {
-            uid,
-            nickname,
-            level,
-            max_health: health_stat,
-            nature,
-            current_health: health_stat,
-            is_fainted: false,
-            species,
-            moveset,
-            ability,
-            stats: StatSet {
-                hp: health_stat,
-                att: get_non_hp_stat(Stat::PhysicalAttack),
-                def: get_non_hp_stat(Stat::PhysicalDefense),
-                spa: get_non_hp_stat(Stat::SpecialAttack),
-                spd: get_non_hp_stat(Stat::SpecialDefense),
-                spe: get_non_hp_stat(Stat::Speed),
-            },
-            stat_modifiers: StatModifierSet {
-                att: 0,
-                def: 0,
-                spa: 0,
-                spd: 0,
-                spe: 0,
-            },
-        }
-    }
-
+impl Monster { // public
     pub fn name(&self) -> String {
         if let Some(nickname) = self.nickname {
             nickname.to_owned()
@@ -130,27 +82,91 @@ impl Monster {
         }
     }
 
-    pub fn full_name(&self) -> String {
-        if let Some(nickname) = self.nickname {
-            format!["{} the {}", nickname, self.species.name]
-        } else {
-            self.species.name.to_string()
-        }
-    }
-
     pub fn is_type(&self, test_type_: Type) -> bool {
         self.species.primary_type == test_type_ || self.species.secondary_type == Some(test_type_)
     }
 
-    pub fn ability_event_handler_for<E: Event>(&self, event: E) -> Option<OwnedEventHandler<E>> {
+    #[inline(always)]
+    pub fn max_health(&self) -> u16 {
+        // INFO: Unless this turns out to be a bad idea, we just calculate every time its 
+        // requested. The only situation I would need to change this is if the formula
+        // were to change, which I don't think will happen.
+        Monster::calculate_max_health(self.species.base_stat(Stat::Hp), self.individual_values[Stat::Hp], self.effort_values[Stat::Hp], self.level)
+    }
+
+    #[inline(always)]
+    pub fn stat(&self, stat: Stat) -> u16 {
+        match stat {
+            Stat::Hp => self.max_health(),
+            _ => {
+                // TODO: Division is supposed to be floating point here.
+                ((2 * self.species.base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5 // * self.nature[stat]
+            }
+        }
+    }
+    
+    #[inline(always)]
+    pub fn current_health(&self) -> u16 {
+        self.current_health
+    }
+
+    #[inline(always)]
+    pub fn nature(&self) -> MonsterNature {
+        self.nature
+    }
+
+    #[inline(always)]
+    pub fn is_fainted(&self) -> bool {
+        self.current_health == 0
+    }
+
+    #[inline(always)]
+    pub fn stat_modifier(&self, stat: Stat) -> i8 {
+        self.stat_modifiers[stat]
+    }
+
+    #[inline(always)]
+    pub fn ability(&self) -> &Ability {
+        &self.ability
+    }
+
+    #[inline(always)]
+    pub fn moveset(&self) -> &MaxSizedVec<Move, 4> {
+        &self.moveset
+    }
+    
+    #[inline(always)]
+    pub fn species(&self) -> &'static MonsterSpecies {
+        self.species
+    }
+
+    #[inline(always)]
+    pub fn iv_in_stat(&self, stat: Stat) -> u16 {
+        self.individual_values[stat]
+    }
+
+    #[inline(always)]
+    pub fn ev_in_stat(&self, stat: Stat) -> u16 {
+        self.effort_values[stat]
+    }
+    
+}
+
+impl Monster { // private
+
+    pub(crate) fn calculate_max_health(base_hp: u16, hp_iv: u16, hp_ev: u16, level: u16) -> u16 {
+        ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
+    }
+
+    pub(crate) fn ability_event_handler_for<E: Event>(&self, event: E) -> Option<OwnedEventHandler<E>> {
         event.corresponding_handler(self.ability.event_handlers()) 
             .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
                     owner: self.uid,
-                    activation_order:  ActivationOrder {
+                    activation_order: ActivationOrder {
                         priority: 0,
-                        speed: self.stats[Stat::Speed],
+                        speed: self.stat(Stat::Speed),
                         order: self.ability.order(),
                     },
                     filtering_options: EventFilteringOptions::default(),
@@ -159,7 +175,7 @@ impl Monster {
         )
     }
 
-    pub fn moveset_event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+    pub(crate) fn moveset_event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
         self.moveset
             .iter()
             .filter_map(|move_| {
@@ -170,7 +186,7 @@ impl Monster {
                             owner: self.uid,
                             activation_order: ActivationOrder {
                                 priority: move_.priority(),
-                                speed: self.stats[Stat::Speed],
+                                speed: self.stat(Stat::Speed),
                                 order: 0,
                             },
                             filtering_options: EventFilteringOptions::default(),
@@ -180,7 +196,7 @@ impl Monster {
                 .collect::<Vec<_>>()
     }
 
-    pub fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+    pub(crate) fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
         let mut out = Vec::new();
         event.corresponding_handler((self.species.event_handlers)()) 
             .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
@@ -189,7 +205,7 @@ impl Monster {
                     owner: self.uid,
                     activation_order:  ActivationOrder {
                         priority: 0,
-                        speed: self.stats[Stat::Speed],
+                        speed: self.stat(Stat::Speed),
                         order: 0,
                     },
                     filtering_options: EventFilteringOptions::default(),
@@ -209,6 +225,14 @@ impl Monster {
         out
     }
 
+    pub(crate) fn full_name(&self) -> String {
+        if let Some(nickname) = self.nickname {
+            format!["{} the {}", nickname, self.species.name]
+        } else {
+            self.species.name.to_string()
+        }
+    }
+
     pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
         self.moveset
             .iter()
@@ -220,11 +244,11 @@ impl Monster {
             .collect()
     }
 
-    pub fn status_string(&self) -> String {
+    pub(crate) fn status_string(&self) -> String {
         let mut out = String::new();
         out.push_str(&format![
             "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.uid, self.current_health, self.max_health
+            self.full_name(), self.uid, self.current_health, self.max_health()
         ]);
         out
     }

@@ -25,7 +25,7 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
 
                 // Check if any of the active monsters has fainted and needs to switched out
                 for active_monster_uid in sim.battle.active_monster_uids() {
-                    if sim.battle.monster(active_monster_uid).is_fainted {
+                    if sim.battle.monster(active_monster_uid).is_fainted() {
                         if let Some(&PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, .. }) = available_choices[active_monster_uid.team_uid].switch_out_choice() {
                             let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| sim.battle.monster(uid).full_name()).enumerate();
                             writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", sim.battle.monster(active_monster_uid).name())?;

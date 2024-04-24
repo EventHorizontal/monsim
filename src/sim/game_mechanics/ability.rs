@@ -5,18 +5,11 @@ use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ability {
-    uid: AbilityUID, 
-    species: &'static AbilitySpecies,
+    pub(crate) uid: AbilityUID, 
+    pub(crate) species: &'static AbilitySpecies,
 }
 
 impl Ability {
-
-    pub const fn new(uid: AbilityUID, species: &'static AbilitySpecies) -> Self {
-        Self {
-            uid,
-            species,
-        }
-    }
 
     pub fn event_handlers(&self) -> EventHandlerDeck {
         (self.species.event_handlers)()

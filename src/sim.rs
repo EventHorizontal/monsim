@@ -93,7 +93,7 @@ impl BattleSimulator { // simulation
 
             // Check if a Monster fainted this turn
             let maybe_fainted_active_monster = self.battle.monsters()
-                .find(|monster| self.battle.monster(monster.uid).is_fainted && self.battle.is_active_monster(monster.uid));
+                .find(|monster| self.battle.monster(monster.uid).is_fainted() && self.battle.is_active_monster(monster.uid));
             
             if let Some(fainted_active_monster) = maybe_fainted_active_monster {
                 
@@ -106,11 +106,11 @@ impl BattleSimulator { // simulation
                 let are_all_ally_team_monsters_fainted = self.battle.ally_team()
                     .monsters()
                     .iter()
-                    .all(|monster| { monster.is_fainted });
+                    .all(|monster| { monster.is_fainted() });
                 let are_all_opponent_team_monsters_fainted = self.battle.opponent_team()
                     .monsters()
                     .iter()
-                    .all(|monster| { monster.is_fainted });
+                    .all(|monster| { monster.is_fainted() });
                 
                 if are_all_ally_team_monsters_fainted {
                     self.battle.is_finished = true;
@@ -172,7 +172,7 @@ impl BattleSimulator { // simulation
     }
 }
 
-impl BattleSimulator { // public interface
+impl BattleSimulator { // public
     
     pub fn push_message(&mut self, message: impl ToString) {
         self.battle.message_log.push(message);

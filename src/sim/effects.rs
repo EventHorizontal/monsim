@@ -95,14 +95,14 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
     let (attackers_attacking_stat, defenders_defense_stat) = match sim[move_used].category() {
         MoveCategory::Physical => {
             (
-                sim[attacker].stats[Stat::PhysicalAttack],
-                sim[defender].stats[Stat::PhysicalDefense]
+                sim[attacker].stat(Stat::PhysicalAttack),
+                sim[defender].stat(Stat::PhysicalDefense)
             )
         }
         MoveCategory::Special => {
             (
-                sim[attacker].stats[Stat::SpecialAttack],
-                sim[defender].stats[Stat::SpecialDefense]
+                sim[attacker].stat(Stat::SpecialAttack),
+                sim[defender].stat(Stat::SpecialDefense)
             )
         }
         _ => unreachable!("Expected physical or special move."),
@@ -170,6 +170,8 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
 }
 
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`.
+/// 
+/// Returns the actual damage dealt.
 pub const DealDirectDamage: Effect<u16, (MonsterUID, u16)> = Effect(deal_direct_damge);
 
 #[must_use]
@@ -177,8 +179,7 @@ fn deal_direct_damge(sim: &mut BattleSimulator, context: (MonsterUID, u16)) -> u
     let (target, mut damage) = context;
         let original_health = sim[target].current_health;
         sim[target].current_health = original_health.saturating_sub(damage);
-        if sim[target].current_health == 0 { 
-            sim[target].is_fainted = true;
+        if sim[target].is_fainted() { 
             damage = original_health 
         };
         damage

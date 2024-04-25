@@ -72,8 +72,8 @@ impl EventDispatcher {
             return default;
         }
  
-        sort_by_activation_order(&mut sim.battle.prng, &mut owned_event_handlers, &mut |it| {
-            it.activation_order
+        sort_by_activation_order(&mut sim.battle.prng, &mut owned_event_handlers, |owned_event_handler| {
+            owned_event_handler.activation_order
         });
 
         let mut relay = default;

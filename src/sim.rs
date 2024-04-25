@@ -76,7 +76,7 @@ impl BattleSimulator { // simulation
         ordering::sort_by_activation_order(
             &mut self.battle.prng, 
             &mut choices, 
-            &mut |choice| { choice.activation_order() }
+            |choice| { choice.activation_order() }
         );
 
         'turn: for choice in choices.into_iter() {

@@ -3,12 +3,15 @@ use tap::Pipe;
 
 use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, DealDefaultDamage, Monster, MonsterTeam, MonsterUID, Move, MoveCategory, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
-// TODO: Some basic state validation will be done now, but later 
-// on I want to extend that to more stuff, such as validating that 
-// a certain monster species is allowed to have certain abilities etc. 
-// Mostly that kind of thing where the user is alerted that the 
-// combination of things they provided is not allowed.
-
+/*  
+    FEATURE: Better Validation -> Some basic state validation will be done 
+    now, but later on I want to extend that to more stuff, such as validating 
+    that a certain monster species is allowed to have certain abilities etc. 
+    Mostly that kind of thing where the user is alerted that the combination 
+    of things they provided is not allowed. The thing to keep in mind here is
+    that monsim will eventually run with a GUI, this is just the engine, and so
+    the interactive UI will allow reporting this errors iteratively.
+*/
 pub struct BattleBuilder {
     maybe_ally_team: Option<Ally<MonsterTeamBuilder>>,
     maybe_opponent_team: Option<Opponent<MonsterTeamBuilder>>,
@@ -203,7 +206,7 @@ impl MonsterBuilder {
             .build(AbilityUID { owner: monster_uid});
         
         let level = 50;
-        // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
+        // FEATURE: EVs and IVs should be settable through the builder.
         const IVS: StatSet = StatSet::new(31, 31, 31, 31, 31, 31);
         const EVS: StatSet = StatSet::new(252, 252, 252, 252, 252, 252);
         // In-game hp-stat determination formula
@@ -263,7 +266,7 @@ impl MoveBuilder {
 
     fn build(self, move_uid: MoveUID) -> Move {
         let species = self.species;
-        // TODO: When the engine is more mature, we'd like to make warnings like this toggleable.
+        // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
         if species.category() == MoveCategory::Status && species.
         on_use_effect() == DealDefaultDamage {
             println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())

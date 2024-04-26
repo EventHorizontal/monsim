@@ -1,6 +1,13 @@
 mod ui;
 use ui::Ui;
 
+/*
+TODO: We will probably be abandoning this TUI, either just using the CLI or replacing it with 
+the not-deprecated `ratutui` crate. This is just a message to indicate that and that this 
+module has been rotting for a while, since I turned it off to improve build times. So expect to 
+have to rewrite some or all of this later.
+*/
+
 use std::{error::Error, io::Stdout, sync::mpsc, thread, time::{Duration, Instant}};
 
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};

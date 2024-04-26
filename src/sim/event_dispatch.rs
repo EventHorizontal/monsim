@@ -71,7 +71,7 @@ impl EventDispatcher {
         let mut relay = default;
         for OwnedEventHandler { event_handler, owner, filtering_options, .. } in owned_event_handlers.into_iter() {
             if Self::filter_event_handlers(&sim.battle, broadcaster_uid, owner, filtering_options) {
-                // TODO: / INFO: Removed relaying the outcome of the previous handler from the event resolution. It will be
+                // INFO: Removed relaying the outcome of the previous handler from the event resolution. It will be
                 // reintroduced if it ever turns out to be useful. Otherwise remove this comment. 
                 relay = (event_handler.effect)(sim, calling_context);
                 // Return early if the relay becomes the short-circuiting value.
@@ -102,7 +102,7 @@ impl EventDispatcher {
             if battle.are_opponents(owner, broadcaster) {
                 bitmask |= TargetFlags::OPPONENTS.bits()
             } //0x04
-              // TODO: When the Environment is implemented, add the environment to the bitmask. (0x08)
+              // FEATURE: Bitmasking (0x08) for the Environment
             bitmask
         };
         let event_source_filter_passed = filter_options.event_source.bits() == bitmask;

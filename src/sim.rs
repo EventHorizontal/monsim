@@ -60,9 +60,11 @@ impl BattleSimulator { // simulation
         
         assert!(not!(self.battle.is_finished), "The simulator cannot be called on a finished battle.");
 
-        // TODO: Why am I so paranoid about exceeded the turn number limit?
-        self.increment_turn_number()
-            .map_err(|message| { SimError::InvalidStateReached(String::from(message))})?;
+        /*
+        INFO: Removed error on turn number increment. We are probably not going to exceed the `65535` threshold.
+        And if we do, something is wrong anyway.
+        */
+        _ = self.increment_turn_number();
         
         self.battle.message_log.extend(&[
             "---", 
@@ -83,7 +85,6 @@ impl BattleSimulator { // simulation
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                // TODO: Put a `MoveUseContext` in `FullySpecifiedChoice`?
                 FullySpecifiedChoice::Move { move_user: _, move_used, target, .. } => {
                     UseMove(self, MoveUseContext::new(move_used, target));
                 },
@@ -183,45 +184,3 @@ impl BattleSimulator { // public
         self.battle.prng.generate_random_u16_in_range(range)
     }
 }
-
-// impl Index<MonsterUID> for BattleSimulator {
-//     type Output = Monster;
-
-//     fn index(&self, index: MonsterUID) -> &Self::Output {
-//         self.battle.monster(index)
-//     }
-// }
-
-// impl IndexMut<MonsterUID> for BattleSimulator {
-//     fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
-//         self.battle.monster_mut(index)
-//     }
-// }
-
-// impl Index<MoveUID> for BattleSimulator {
-//     type Output = Move;
-
-//     fn index(&self, index: MoveUID) -> &Self::Output {
-//         self.battle.move_(index)
-//     }
-// }
-
-// impl IndexMut<MoveUID> for BattleSimulator {
-//     fn index_mut(&mut self, index: MoveUID) -> &mut Self::Output {
-//         self.battle.move_mut(index)
-//     }
-// }
-
-// impl Index<AbilityUID> for BattleSimulator {
-//     type Output = Ability;
-
-//     fn index(&self, index: AbilityUID) -> &Self::Output {
-//         self.battle.ability(index.owner)
-//     }
-// }
-
-// impl IndexMut<AbilityUID> for BattleSimulator {
-//     fn index_mut(&mut self, index: AbilityUID) -> &mut Self::Output {
-//         self.battle.ability_mut(index.owner)
-//     }
-// }

@@ -34,7 +34,8 @@ impl<R, C> Effect<R, C> {
     }
 }
 
-// TODO: / INFO: Removed the `SimResult` return type on Actions. This we be added back in if/when it is actually needed, when the simulator could actually
+// TODO: / INFO: Removed the `SimResult` return type on Actions. This we 
+// be added back in if/when it is actually needed, when the simulator could actually
 // throw an error.
 
 // internal `Effects` that are only supposed to be used by the engine.

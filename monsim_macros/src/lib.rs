@@ -11,7 +11,7 @@ use syn::parse_macro_input;
 use syntax::battle_macro_syntax::{MonsterExpr, BattleExpr, MonsterTeamExpr};
 #[cfg(feature="event_gen")]
 use syntax::event_system_macro_syntax::{EventExpr, EventListExpr};
-use syntax::entity_fetcher_macro_syntax::ExprMechanicAccessor;
+use syntax::entity_fetcher_macro_syntax::ExprEntityFetcher;
 
 #[cfg(feature="entity_fetchers")]
 /// Shorthand for fetching an `Monster` from the Simulator. **Note** with the current implementation, this requires a `BattleSimulator` to be in scope within the identifier `sim`.
@@ -36,8 +36,7 @@ pub fn abl(input: TokenStream) -> TokenStream {
 
 #[cfg(feature="entity_fetchers")]
 fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenStream {
-    let ExprMechanicAccessor { is_mut, ident } = parse_macro_input!(input as ExprMechanicAccessor);
-    let span = ident.span();
+    let ExprEntityFetcher { is_mut, path_to_entity, span } = parse_macro_input!(input as ExprEntityFetcher);
     if is_mut {
         // add "_mut" to the accessor
         let mut accessor = accessor_name.to_string();
@@ -47,9 +46,9 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
             accessor.push_str("_mut");
         }
         let suffixed_accessor = Ident::new(accessor.as_str(), span);
-        quote!(sim.battle.#suffixed_accessor(#ident)).into()
+        quote!(sim.battle.#suffixed_accessor(#path_to_entity)).into()
     } else {
-        quote!(sim.battle.#accessor_name(#ident)).into()
+        quote!(sim.battle.#accessor_name(#path_to_entity)).into()
     }
 }
 

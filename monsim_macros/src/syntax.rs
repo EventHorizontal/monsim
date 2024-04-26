@@ -2,20 +2,36 @@
 #[cfg(feature="entity_fetchers")]
 pub mod entity_fetcher_macro_syntax {
     use syn::{parse::Parse, Token};
-    use proc_macro2::Ident;
+    use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
+    use quote::quote;
 
-    pub struct ExprMechanicAccessor {
+    pub struct ExprEntityFetcher {
         pub is_mut: bool,
-        pub ident: Ident,
+        pub path_to_entity: TokenStream2,
+        pub span: Span,
     }
     
-    impl Parse for ExprMechanicAccessor {
+    impl Parse for ExprEntityFetcher {
         fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
             let is_mut = input.parse::<Token!(mut)>().is_ok();
+            let span = Span::call_site();
             let ident: Ident = input.parse()?;
-            Ok(ExprMechanicAccessor {
+            let mut path_to_entity = quote!(#ident);
+            let mut parsed_dot = true;
+            while parsed_dot {
+                let optional_dot: Option<Token![.]> = input.parse().ok();
+                if optional_dot.is_some() {
+                    let ident: Ident = input.parse()?;
+                    path_to_entity.extend(quote!(.#ident));
+                    parsed_dot = true;
+                } else {
+                    parsed_dot = false;
+                }
+            }
+            Ok(ExprEntityFetcher {
                 is_mut,
-                ident,
+                path_to_entity,
+                span
             })
         }
     }

@@ -32,9 +32,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
             }
         },
         on_activate_effect: Effect::from(|sim, AbilityUseContext { ability_used, ability_owner }| {
-            // FIXME: make accessors parse dereference expressions.
-            let owner = ability_used.owner;
-            let owner_name = mon![owner].name();
+            let owner_name = mon![ability_used.owner].name();
             sim.push_message(format!["{owner_name}'s Flash Fire activated!"]);
         }),
         event_filtering_options: EventFilteringOptions::default(),

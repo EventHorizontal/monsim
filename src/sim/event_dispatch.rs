@@ -26,14 +26,6 @@ bitflags::bitflags! {
     }
 }
 
-// TODO: Move to ordering.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ActivationOrder {
-    pub priority: i8,
-    pub speed: u16,
-    pub order: u16,
-}
-
 impl EventDispatcher {
 
     pub fn dispatch_trial_event<C: Copy>(

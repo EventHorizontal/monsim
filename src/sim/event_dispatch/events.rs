@@ -1,6 +1,6 @@
 use super::*;
 pub use generated::*;
-use crate::sim::Effect;
+use crate::{sim::Effect, ActivationOrder};
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]

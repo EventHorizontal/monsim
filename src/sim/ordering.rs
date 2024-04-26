@@ -1,4 +1,11 @@
-use crate::sim::{prng::Prng, ActivationOrder};
+use crate::sim::prng::Prng;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ActivationOrder {
+    pub priority: i8,
+    pub speed: u16,
+    pub order: u16,
+}
 
 /// Sorts the given items using their associated ActivationOrders, resolving speed ties using `prng` after stable sorting.
 pub(crate) fn sort_by_activation_order<T: Clone + Copy>(prng: &mut Prng, slice: &mut [T], activation_order: fn(T) -> ActivationOrder) {

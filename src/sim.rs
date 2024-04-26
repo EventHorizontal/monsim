@@ -18,11 +18,12 @@ pub use monsim_macros::*;
 pub use battle_constants::*;
 pub use choice::*;
 pub use event_dispatch::{
-    contexts::*, events::*, ActivationOrder, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, Event, TargetFlags,
+    contexts::*, events::*, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, Event, TargetFlags,
 };
 pub use game_mechanics::*;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent};
 pub(crate) use monsim_utils::{not, NOTHING, Nothing};
+pub use ordering::ActivationOrder;
 
 type SimResult = Result<(), SimError>;
 

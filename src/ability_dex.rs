@@ -8,28 +8,21 @@ use monsim::{effects::*, event_dex::*, move_, sim::{
 
 #[cfg(feature = "debug")]
 use monsim::source_code_location;
+use tap::Pipe;
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 
     AbilityDexEntry {
         dex_number: 001,
         name: "Flash Fire",
         event_handlers: | | {
-            // FEATURE: We could do builder syntax for EventHandlerDeck since all the fields are optional. 
-            EventHandlerDeck {
-                on_try_move: Some(EventHandler {
-                    event: OnTryMove,
-                    effect: Effect::from(|sim, MoveUseContext { move_user, move_used, target}| {
-                        if mov![move_used].is_type(Type::Fire) {
-                            let activation_succeeded = ActivateAbility(sim, AbilityUseContext::new(target));
-                            return not!(activation_succeeded);
-                        }
-                        Outcome::Success
-                    }),
-                    #[cfg(feature = "debug")]
-                    source_code_location: source_code_location!(),
-                }),
-                ..EventHandlerDeck::empty()
-            }
+            EventHandlerDeck::empty()
+                .add(OnTryMove, |sim, MoveUseContext { move_user, move_used, target}| {
+                    if mov![move_used].is_type(Type::Fire) {
+                        let activation_succeeded = ActivateAbility(sim, AbilityUseContext::new(target));
+                        return not!(activation_succeeded);
+                    }
+                    Outcome::Success
+                }, source_code_location!())
         },
         on_activate_effect: Effect::from(|sim, AbilityUseContext { ability_used, ability_owner }| {
             let owner_name = mon![ability_used.owner].name();

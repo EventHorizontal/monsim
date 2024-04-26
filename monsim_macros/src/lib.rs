@@ -100,6 +100,10 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
                 fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
                     event_handler_deck.#event_name_snake_case
                 }
+
+                fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                    &mut event_handler_deck.#event_name_snake_case
+                }
     
                 fn name(&self) -> &'static str {
                     #event_trait_literal

@@ -45,12 +45,37 @@ pub trait Event: Clone + Copy + PartialEq + Eq {
         event_handler_deck: EventHandlerDeck,
     ) -> Option<EventHandler<Self>>;
 
+    fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>>;
+
     fn name(&self) -> &'static str;
 }
 
 impl EventHandlerDeck {
     pub const fn empty() -> Self {
         DEFAULT_EVENT_HANDLERS
+    }
+
+    #[cfg(feature="debug")]
+    pub fn add<E: Event>(&mut self, event: E, effect: fn(&mut BattleSimulator, E::ContextType) -> E::EventReturnType, source_code_location: &'static str) -> EventHandlerDeck {
+        *event.corresponding_handler_mut(self) = Some(
+            EventHandler {
+                event,
+                effect: Effect::from(effect),
+                source_code_location,
+            }
+        );
+        *self 
+    }
+
+    #[cfg(not(feature="debug"))]
+    pub fn add<E: Event>(&mut self, event: E, effect: fn(&mut BattleSimulator, E::ContextType) -> E::EventReturnType) -> EventHandlerDeck {
+        *event.corresponding_handler_mut(self) = Some(
+            EventHandler {
+                event,
+                effect: Effect::from(effect),
+            }
+        );
+        *self 
     }
 }
 
@@ -111,7 +136,7 @@ pub mod contexts {
 }
 
 // Generated.
-#[cfg(feature="macros")]
+#[cfg(feature="event_gen")]
 mod generated {
     use super::*;
     use monsim_macros::generate_events;
@@ -130,7 +155,9 @@ mod generated {
     }
 }
 
-#[cfg(not(feature="macros"))] 
+// This module is mostly to improve build times when working on the engine in a way that doesn't
+// touch the event generation.
+#[cfg(not(feature="event_gen"))] 
 mod generated {
     use super::*;
     use event_dex::*;
@@ -171,6 +198,10 @@ mod generated {
             fn name(&self) -> &'static str {
                 "OnTryMove"
             }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_try_move
+            }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnMoveUsed;
@@ -183,6 +214,10 @@ mod generated {
             }
             fn name(&self) -> &'static str {
                 "OnMoveUsed"
+            }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_move_used
             }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -197,6 +232,10 @@ mod generated {
             fn name(&self) -> &'static str {
                 "OnDamageDealt"
             }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_damage_dealt
+            }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnTryActivateAbility;
@@ -209,6 +248,10 @@ mod generated {
             }
             fn name(&self) -> &'static str {
                 "OnTryActivateAbility"
+            }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_try_activate_ability
             }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -223,6 +266,10 @@ mod generated {
             fn name(&self) -> &'static str {
                 "OnAbilityActivated"
             }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_ability_activated
+            }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnModifyAccuracy;
@@ -235,6 +282,10 @@ mod generated {
             }
             fn name(&self) -> &'static str {
                 "OnModifyAccuracy"
+            }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_modify_accuracy
             }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -249,6 +300,10 @@ mod generated {
             fn name(&self) -> &'static str {
                 "OnTryRaiseStat"
             }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_try_raise_stat
+            }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnTryLowerStat;
@@ -262,6 +317,10 @@ mod generated {
             fn name(&self) -> &'static str {
                 "OnTryLowerStat"
             }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_try_lower_stat
+            }
         }
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct OnStatusMoveUsed;
@@ -274,6 +333,10 @@ mod generated {
             }
             fn name(&self) -> &'static str {
                 "OnStatusMoveUsed"
+            }
+            
+            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
+                &mut event_handler_deck.on_status_move_used
             }
         }
     }

@@ -14,7 +14,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
         dex_number: 001,
         name: "Flash Fire",
         event_handlers: | | {
-            // TODO: builder syntax?
+            // FEATURE: We could do builder syntax for EventHandlerDeck since all the fields are optional. 
             EventHandlerDeck {
                 on_try_move: Some(EventHandler {
                     event: OnTryMove,

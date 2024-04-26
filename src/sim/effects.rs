@@ -7,6 +7,8 @@ use crate::matchup;
 use super::event_dex::*;
 use super::*;
 
+type EffectFunction<R,C> = fn(&mut BattleSimulator, C) -> R;
+
 /// `R`: A type that encodes any necessary information about how the `Effect` played
 /// out, _e.g._ an `Outcome` representing whether the `Effect` succeeded.
 ///
@@ -14,10 +16,10 @@ use super::*;
 /// directly, such as the user of the move, the move used and the target 
 /// in case of a move's effect. 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Effect<R, C>(fn(&mut BattleSimulator, C) -> R);
+pub struct Effect<R, C>(EffectFunction<R, C>);
 
 impl<R, C> Deref for Effect<R, C> {
-    type Target = fn(&mut BattleSimulator, C) -> R;
+    type Target = EffectFunction<R, C>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -25,7 +27,7 @@ impl<R, C> Deref for Effect<R, C> {
 }
 
 impl<R, C> Effect<R, C> {
-    pub const fn from(effect: fn(&mut BattleSimulator, C) -> R) -> Self {
+    pub const fn from(effect: EffectFunction<R, C>) -> Self {
         Self(effect)
     }
 }

@@ -53,24 +53,17 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
 }
 
 
-// TODO: Old documentation needs to be updated.
 // Event system macros ------
 
-// Generates the struct `CollectionType`, the default constant and the `TraitName` trait plus 
-/// implementations for each event, when given a list of event identifiers. The syntax for this 
-/// is as follows
+/// Generates a bunch of stuff that is pertaining to the individual events that would be a pain
+/// to write by hand. Currently that includes a struct called `EventHandlerDeck`, a constant which
+/// represents an empty `EventHandlerDeck` called `DEFAULT_EVENT_HANDLERS` and the individual 
+/// implementations of `Event` for each of the event structs.  
 /// ```
-/// pub struct CollectionType {
-/// match event {
-///         /// Possible documentation for event_1
-///         #[context(<ContextType>)]
-///         event_name_1 => <EventReturnType>,
-///         ...
-///         /// Possible documentation for event_n
-///         #[context(<ContextType>)]
-///         event_name_n => <EventReturnType>,
-///     }
-/// }
+///     event event_name_1(<ContextType>) => <EventReturnType>,
+///     ...
+///     event event_name_n(<ContextType>) => <EventReturnType>,
+/// 
 /// pub const CONSTANT_NAME;
 /// pub trait TraitName;  
 /// ```

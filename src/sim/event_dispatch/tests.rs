@@ -51,7 +51,7 @@ fn test_if_priority_sorting_is_deterministic() {
         let sim = BattleSimulator::init(test_battle);
         use crate::sim::event_dex::OnTryMove;
         let mut owned_event_handlers = sim.battle.event_handlers_for(OnTryMove);
-        crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, &mut |it| it.activation_order);
+        crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, |it| it.activation_order);
 
         result[i] = owned_event_handlers
             .into_iter()
@@ -178,7 +178,7 @@ fn test_priority_sorting_with_speed_ties() {
 
         let mut owned_event_handlers = sim.battle.event_handlers_for(OnTryMove);
 
-        crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, &mut |it| it.activation_order);
+        crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, |it| it.activation_order);
 
         result[i] = owned_event_handlers
             .into_iter()

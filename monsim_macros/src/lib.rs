@@ -1,33 +1,40 @@
 mod syntax;
 
+#[cfg(feature="event_gen")]
 use convert_case::Casing;
 use proc_macro::TokenStream;
-use proc_macro2::{Ident, Literal, TokenStream as TokenStream2};
+use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::quote;
 use syn::parse_macro_input;
 
+#[cfg(feature="battle_builder")]
 use syntax::battle_macro_syntax::{MonsterExpr, BattleExpr, MonsterTeamExpr};
+#[cfg(feature="event_gen")]
 use syntax::event_system_macro_syntax::{EventExpr, EventListExpr};
-use syntax::accessor_macro_syntax::ExprMechanicAccessor;
+use syntax::entity_fetcher_macro_syntax::ExprMechanicAccessor;
 
-/// Shorthand for retrieving a `Monster` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
+#[cfg(feature="entity_fetchers")]
+/// Shorthand for fetching an `Monster` from the Simulator. **Note** with the current implementation, this requires a `BattleSimulator` to be in scope within the identifier `sim`.
 #[proc_macro]
-pub fn monster(input: TokenStream) -> TokenStream {
+pub fn mon(input: TokenStream) -> TokenStream {
     construct_accessor(input, quote!(monster))
 }
 
-/// Shorthand for retrieving a `Move` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
+#[cfg(feature="entity_fetchers")]
+/// Shorthand for fetching an `Move` from the Simulator. **Note** with the current implementation, this requires a `BattleSimulator` to be in scope within the identifier `sim`.
 #[proc_macro]
-pub fn move_(input: TokenStream) -> TokenStream {
+pub fn mov(input: TokenStream) -> TokenStream {
     construct_accessor(input, quote!(move_))
 }
 
-/// Shorthand for retrieving an `Ability` from a `Battle`. Currently requires a variable `battle` of type `Battle` to be in scope.
+#[cfg(feature="entity_fetchers")]
+/// Shorthand for fetching an `Ability` from the Simulator. **Note** with the current implementation, this requires a `BattleSimulator` to be in scope within the identifier `sim`.
 #[proc_macro]
-pub fn ability(input: TokenStream) -> TokenStream {
+pub fn abl(input: TokenStream) -> TokenStream {
     construct_accessor(input, quote!(ability))
 }
 
+#[cfg(feature="entity_fetchers")]
 fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenStream {
     let ExprMechanicAccessor { is_mut, ident } = parse_macro_input!(input as ExprMechanicAccessor);
     let span = ident.span();
@@ -40,12 +47,14 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
             accessor.push_str("_mut");
         }
         let suffixed_accessor = Ident::new(accessor.as_str(), span);
-        quote!(battle.#suffixed_accessor(#ident)).into()
+        quote!(sim.battle.#suffixed_accessor(#ident)).into()
     } else {
-        quote!(battle.#accessor_name(#ident)).into()
+        quote!(sim.battle.#accessor_name(#ident)).into()
     }
 }
 
+
+// TODO: Old documentation needs to be updated.
 // Event system macros ------
 
 // Generates the struct `CollectionType`, the default constant and the `TraitName` trait plus 
@@ -66,6 +75,7 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
 /// pub const CONSTANT_NAME;
 /// pub trait TraitName;  
 /// ```
+#[cfg(feature="event_gen")]
 #[proc_macro]
 pub fn generate_events(input: TokenStream) -> TokenStream {
     let EventListExpr { event_exprs } = parse_macro_input!(input as EventListExpr);
@@ -80,7 +90,7 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
         let EventExpr { event_name_pascal_case, event_context_type_name_pascal_case, event_return_type_name } = event_expr;
         let event_name_snake_case = event_name_pascal_case.to_string().to_case(convert_case::Case::Snake);
         let event_name_snake_case = Ident::new(&event_name_snake_case, event_name_pascal_case.span());
-        let event_trait_literal = Literal::string(&event_name_pascal_case.to_string());
+        let event_trait_literal = proc_macro2::Literal::string(&event_name_pascal_case.to_string());
 
         event_handler_impl_new_tokens.extend(quote!(
             #event_name_snake_case: vec![],
@@ -159,6 +169,7 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 /// and produces a `BattleState` with the given specifications.
+#[cfg(feature="battle_builder")]
 #[proc_macro]
 pub fn battle(input: TokenStream) -> TokenStream {
     let battle_expr = parse_macro_input!(input as BattleExpr);

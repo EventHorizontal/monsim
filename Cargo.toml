@@ -22,10 +22,12 @@ name = "monsim"
 path = "src/main.rs"
 
 [features]
-default = []
+default = ["entity_fetchers"]
 debug = ["const_format", "chrono"]
 monsim_tui = ["tui", "crossterm"]
-macros = ["monsim_macros"]
+event_gen = ["monsim_macros/event_gen"]
+entity_fetchers = ["monsim_macros/entity_fetchers"]
+battle_builder = ["monsim_macros/battle_builder"]
 
 [profile.speed]
 inherits = "dev"

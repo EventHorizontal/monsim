@@ -8,7 +8,7 @@ pub(crate) mod prng;
 mod event_dispatch;
 mod ordering;
 
-use std::{error::Error, fmt::Display, ops::{Index, IndexMut, RangeInclusive}};
+use std::{error::Error, fmt::Display, ops::RangeInclusive};
 
 pub use effects::*;
 pub use battle::*;
@@ -44,7 +44,7 @@ impl Display for SimError {
 /// The main engine behind `monsim`. This struct is a namespace for all the simulator functionality. It contains no data, just functions that transform a `Battle` from one state to another.
 #[derive(Debug)]
 pub struct BattleSimulator {
-    pub(crate) battle: BattleState,
+    pub battle: BattleState,
 }
 
 impl BattleSimulator { // simulation
@@ -144,7 +144,7 @@ impl BattleSimulator { // simulation
     }
     
     fn activate_move_effect(&mut self, context: MoveUseContext) {
-        (self[context.move_used].on_activate_effect())(self, context)
+        (self.battle.move_(context.move_used).on_activate_effect())(self, context)
     }
 
     pub(crate) fn switch_out_between_turns(&mut self, active_monster: MonsterUID, benched_monster: MonsterUID) {
@@ -183,44 +183,44 @@ impl BattleSimulator { // public
     }
 }
 
-impl Index<MonsterUID> for BattleSimulator {
-    type Output = Monster;
+// impl Index<MonsterUID> for BattleSimulator {
+//     type Output = Monster;
 
-    fn index(&self, index: MonsterUID) -> &Self::Output {
-        self.battle.monster(index)
-    }
-}
+//     fn index(&self, index: MonsterUID) -> &Self::Output {
+//         self.battle.monster(index)
+//     }
+// }
 
-impl IndexMut<MonsterUID> for BattleSimulator {
-    fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
-        self.battle.monster_mut(index)
-    }
-}
+// impl IndexMut<MonsterUID> for BattleSimulator {
+//     fn index_mut(&mut self, index: MonsterUID) -> &mut Self::Output {
+//         self.battle.monster_mut(index)
+//     }
+// }
 
-impl Index<MoveUID> for BattleSimulator {
-    type Output = Move;
+// impl Index<MoveUID> for BattleSimulator {
+//     type Output = Move;
 
-    fn index(&self, index: MoveUID) -> &Self::Output {
-        self.battle.move_(index)
-    }
-}
+//     fn index(&self, index: MoveUID) -> &Self::Output {
+//         self.battle.move_(index)
+//     }
+// }
 
-impl IndexMut<MoveUID> for BattleSimulator {
-    fn index_mut(&mut self, index: MoveUID) -> &mut Self::Output {
-        self.battle.move_mut(index)
-    }
-}
+// impl IndexMut<MoveUID> for BattleSimulator {
+//     fn index_mut(&mut self, index: MoveUID) -> &mut Self::Output {
+//         self.battle.move_mut(index)
+//     }
+// }
 
-impl Index<AbilityUID> for BattleSimulator {
-    type Output = Ability;
+// impl Index<AbilityUID> for BattleSimulator {
+//     type Output = Ability;
 
-    fn index(&self, index: AbilityUID) -> &Self::Output {
-        self.battle.ability(index.owner)
-    }
-}
+//     fn index(&self, index: AbilityUID) -> &Self::Output {
+//         self.battle.ability(index.owner)
+//     }
+// }
 
-impl IndexMut<AbilityUID> for BattleSimulator {
-    fn index_mut(&mut self, index: AbilityUID) -> &mut Self::Output {
-        self.battle.ability_mut(index.owner)
-    }
-}
+// impl IndexMut<AbilityUID> for BattleSimulator {
+//     fn index_mut(&mut self, index: AbilityUID) -> &mut Self::Output {
+//         self.battle.ability_mut(index.owner)
+//     }
+// }

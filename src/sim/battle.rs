@@ -3,7 +3,7 @@ pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat}, Event, OwnedEventHandler};
+use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat}, AbilityUID, Event, OwnedEventHandler};
 
 use super::{prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamUID};
 use message_log::MessageLog;
@@ -41,7 +41,7 @@ impl BattleState {
         & self.teams[team_uid]
     }
 
-    pub fn team_mut(&mut self, team_uid: TeamUID) -> &mut MonsterTeam {
+    pub(crate) fn team_mut(&mut self, team_uid: TeamUID) -> &mut MonsterTeam {
         &mut self.teams[team_uid]
     }
 
@@ -49,7 +49,7 @@ impl BattleState {
         self.teams.ally_ref()
     }
 
-    pub fn ally_team_mut(&mut self) -> Ally<&mut MonsterTeam> {
+    pub(crate) fn _ally_team_mut(&mut self) -> Ally<&mut MonsterTeam> {
         self.teams.ally_mut()
     }
 
@@ -57,7 +57,7 @@ impl BattleState {
         self.teams.opponent_ref()
     }
 
-    pub fn opponent_team_mut(&mut self) -> Opponent<&mut MonsterTeam> {
+    pub(crate) fn _opponent_team_mut(&mut self) -> Opponent<&mut MonsterTeam> {
         self.teams.opponent_mut()
     }
 
@@ -101,7 +101,7 @@ impl BattleState {
         ally_team.monsters().iter().chain(opponent_team.monsters().iter())
     }
 
-    pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
+    pub(crate) fn _monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_mut();
         ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
     }
@@ -111,7 +111,7 @@ impl BattleState {
         &team[monster_uid.monster_number]
     }
 
-    pub fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
+    pub(crate) fn monster_mut(&mut self, monster_uid: MonsterUID) -> &mut Monster {
         let team = self.team_mut(monster_uid.team_uid);
         &mut team[monster_uid.monster_number]
     }
@@ -137,12 +137,12 @@ impl BattleState {
 
     // Abilities -----------------
 
-    pub fn ability(&self, owner_uid: MonsterUID) -> &Ability {
-        &self.monster(owner_uid)
+    pub fn ability(&self, ability_uid: AbilityUID) -> &Ability {
+        &self.monster(ability_uid.owner)
             .ability
     }
 
-    pub fn ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
+    pub(crate) fn _ability_mut(&mut self, owner_uid: MonsterUID) -> &mut Ability {
         &mut self
             .monster_mut(owner_uid)
             .ability
@@ -155,7 +155,7 @@ impl BattleState {
             .moveset[move_uid.move_number as usize]
     }
 
-    pub fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
+    pub(crate) fn _move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
         &mut self.monster_mut(move_uid.owner_uid)
             .moveset[move_uid.move_number as usize]
     }

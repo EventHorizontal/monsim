@@ -1,5 +1,6 @@
 
-pub mod accessor_macro_syntax {
+#[cfg(feature="entity_fetchers")]
+pub mod entity_fetcher_macro_syntax {
     use syn::{parse::Parse, Token};
     use proc_macro2::Ident;
 
@@ -20,6 +21,7 @@ pub mod accessor_macro_syntax {
     }
 }
 
+#[cfg(feature="event_gen")]
 pub mod event_system_macro_syntax {
     use proc_macro2::Ident;
     use syn::{parenthesized, parse::{Parse, ParseStream}, token::Comma, Token};
@@ -68,6 +70,7 @@ pub mod event_system_macro_syntax {
     }
 }
 
+#[cfg(feature="battle_builder")]
 pub mod battle_macro_syntax {
     use quote::{quote, ToTokens};
     use syn::{braced, parenthesized, parse::Parse, token::{Brace, Comma}, Error, Ident, LitInt, LitStr, Token};

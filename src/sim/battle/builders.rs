@@ -259,7 +259,8 @@ impl MoveBuilder {
             "Expected move {move_name} to have less than {max_pp} power points",
             move_name = self.species.name(),
             max_pp = self.species.max_power_points(),
-        ); 
+        );
+         
         self.power_points = Some(power_points);
         self
     }
@@ -274,7 +275,7 @@ impl MoveBuilder {
         Move {
             uid: move_uid,
             
-            current_power_points: self.species.max_power_points(),
+            current_power_points: self.power_points.unwrap_or(self.species.max_power_points()),
             species,
         }
     } 

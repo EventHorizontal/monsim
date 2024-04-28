@@ -2,21 +2,16 @@ use monsim_utils::Nothing;
 
 use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterUID, MoveUseContext};
 use core::fmt::Debug;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+
 pub struct Move {
     pub(crate) uid: MoveUID,
     pub(crate) species: &'static MoveSpecies, 
+    
+    pub(crate) current_power_points: u8,
 }
 
 impl Move {
-    pub fn new(uid: MoveUID, species: &'static MoveSpecies) -> Self {
-        Self { 
-            uid,
-            species,
-        }
-    }
-
     #[inline(always)]
     pub fn name(&self) -> &'static str {
         self.species.name
@@ -39,6 +34,11 @@ impl Move {
     #[inline(always)]
     pub fn base_accuracy(&self) -> u16 {
         self.species.base_accuracy
+    }
+
+    #[inline(always)]
+    pub fn current_power_points(&self) -> u8 {
+        self.current_power_points
     }
 
     #[inline(always)]

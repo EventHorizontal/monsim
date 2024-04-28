@@ -53,12 +53,25 @@ fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
         _move = mov![move_used].name()
     ]);
 
+    if mov![move_used].current_power_points == 0 {
+        sim.push_message("but the move is out of power points!");
+        return;
+    }
+
     if sim.trigger_try_event(OnTryMove, move_user, context).failed() {
         sim.push_message("The move failed!");
         return;
     }
 
     sim.activate_move_effect(context);
+    mov![mut move_used].current_power_points -= 1;
+   #[cfg(feature="debug")]
+    sim.push_message(format![
+        "{}'s {}'s PP is now {}",
+        mon![move_user].name(),
+        mov![move_used].name(),
+        mov![move_used].current_power_points()
+    ]);
 
     sim.trigger_event(OnMoveUsed, move_user, context, NOTHING, None);
 }

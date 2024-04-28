@@ -215,12 +215,12 @@ impl MonsterBuilder {
         Monster {
             uid: monster_uid,
             nickname,
-            level,
             effort_values: EVS,
+            current_health: Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level),
             individual_values: IVS,
+            level,
             nature,
             stat_modifiers: StatModifierSet::new(0, 0, 0, 0, 0),
-            current_health: Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level),
             species: self.species,
             moveset,
             ability,
@@ -273,6 +273,8 @@ impl MoveBuilder {
         }
         Move {
             uid: move_uid,
+            
+            current_power_points: self.species.max_power_points(),
             species,
         }
     } 

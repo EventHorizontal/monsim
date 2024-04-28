@@ -10,13 +10,14 @@ use crate::{sim::{ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type
 #[derive(Debug, Clone)]
 pub struct Monster {
     pub(crate) uid: MonsterUID,
+    
     pub(crate) nickname: Option<&'static str>,
-    pub(crate) level: u16,
     pub(crate) effort_values: StatSet,
+    pub(crate) current_health: u16,
     pub(crate) individual_values: StatSet,
+    pub(crate) level: u16,
     pub(crate) nature: MonsterNature,
     pub(crate) stat_modifiers: StatModifierSet,
-    pub(crate) current_health: u16,
     pub(crate) species: &'static MonsterSpecies,
     
     pub(crate) moveset: MaxSizedVec<Move, 4>,

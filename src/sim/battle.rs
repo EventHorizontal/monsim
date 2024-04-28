@@ -163,7 +163,7 @@ impl BattleState {
             .moveset[move_uid.move_number as usize]
     }
 
-    pub(crate) fn _move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
+    pub(crate) fn move_mut(&mut self, move_uid: MoveUID) -> &mut Move {
         &mut self.monster_mut(move_uid.owner_uid)
             .moveset[move_uid.move_number as usize]
     }
@@ -181,21 +181,27 @@ impl BattleState {
         let active_monster_on_team = self.active_monsters_on_team(team_uid);
         
         // Move choices
-        let moves = active_monster_on_team.move_uids();
         let mut move_actions = Vec::with_capacity(4);
-        for move_uid in moves {
-            let partially_specified_choice = PartiallySpecifiedChoice::Move { 
-                attacker_uid: move_uid.owner_uid,
-                move_uid,
-                target_uid: self.active_monsters_on_team(team_uid.other()).uid,
-                activation_order: ActivationOrder {
-                    priority: self.move_(move_uid).priority(),
-                    speed: self.monster(move_uid.owner_uid).stat(Stat::Speed),
-                    order: 0, //TODO: Think about how to restrict order to be mutually exclusive
-                },
-                display_text: self.move_(move_uid).name() 
-            };
-            move_actions.push(partially_specified_choice);
+        for move_uid in active_monster_on_team.move_uids() {
+            /*
+            The move is only choosable if it still has power points. FEATURE: We might want to emit 
+            "inactive" choices in order to show a greyed out version of the choice (in this case that 
+            the monster has that move but its out of PP).
+            */
+            if self.move_(move_uid).current_power_points > 0 {
+                let partially_specified_choice = PartiallySpecifiedChoice::Move { 
+                    attacker_uid: move_uid.owner_uid,
+                    move_uid,
+                    target_uid: self.active_monsters_on_team(team_uid.other()).uid,
+                    activation_order: ActivationOrder {
+                        priority: self.move_(move_uid).priority(),
+                        speed: self.monster(move_uid.owner_uid).stat(Stat::Speed),
+                        order: 0, //TODO: Think about how to restrict order to be mutually exclusive
+                    },
+                    display_text: self.move_(move_uid).name() 
+                };
+                move_actions.push(partially_specified_choice);
+            }
         }
 
         // Switch choice

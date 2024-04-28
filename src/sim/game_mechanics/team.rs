@@ -202,9 +202,3 @@ impl<T: Clone> IntoIterator for PerTeam<T> {
         self.as_array().into_iter()
     }
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MoveUID {
-    pub owner_uid: MonsterUID,
-    pub move_number: MoveNumber,
-}

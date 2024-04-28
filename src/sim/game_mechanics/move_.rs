@@ -1,11 +1,11 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterUID, MoveUseContext};
+use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveUseContext};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
 pub struct Move {
-    pub(crate) uid: MoveUID,
+    pub(crate) id: MoveID,
     pub(crate) species: &'static MoveSpecies, 
     
     pub(crate) current_power_points: u8,
@@ -191,7 +191,7 @@ pub struct MoveDexEntry {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MoveUID {
-    pub owner_uid: MonsterUID,
+pub struct MoveID {
+    pub owner_id: MonsterID,
     pub move_number: MoveNumber,
 }

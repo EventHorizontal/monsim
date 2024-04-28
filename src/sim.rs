@@ -85,17 +85,17 @@ impl BattleSimulator { // simulation
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { move_user: _, move_used, target, .. } => {
-                    UseMove(self, MoveUseContext::new(move_used, target));
+                FullySpecifiedChoice::Move { move_user_id: _, move_id, target_id, .. } => {
+                    UseMove(self, MoveUseContext::new(move_id, target_id));
                 },
-                FullySpecifiedChoice::SwitchOut { active_monster_uid: active_monster, benched_monster_uid: benched_monster, .. } => {
-                    PerformSwitchOut(self, SwitchContext::new(active_monster, benched_monster))
+                FullySpecifiedChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {
+                    PerformSwitchOut(self, SwitchContext::new(active_monster_id, benched_monster_id))
                 }
             };
 
             // Check if a Monster fainted this turn
             let maybe_fainted_active_monster = self.battle.monsters()
-                .find(|monster| self.battle.monster(monster.uid).is_fainted() && self.battle.is_active_monster(monster.uid));
+                .find(|monster| self.battle.monster(monster.id).is_fainted() && self.battle.is_active_monster(monster.id));
             
             if let Some(fainted_active_monster) = maybe_fainted_active_monster {
                 
@@ -150,31 +150,28 @@ impl BattleSimulator { // simulation
     }
     
     fn activate_move_effect(&mut self, context: MoveUseContext) {
-        (self.battle.move_(context.move_used).on_activate_effect())(self, context)
+        (self.battle.move_(context.move_used_id).on_activate_effect())(self, context)
     }
 
-    pub(crate) fn switch_out_between_turns(&mut self, active_monster: MonsterUID, benched_monster: MonsterUID) {
-        PerformSwitchOut(self, SwitchContext::new(active_monster, benched_monster))
-    }
 
     fn trigger_try_event<C: Copy, E: Event<EventReturnType = Outcome, ContextType = C>>(
         &mut self, 
         event: E, 
-        broadcaster: MonsterUID,
+        broadcaster_id: MonsterID,
         event_context: C,
     ) -> Outcome {
-        EventDispatcher::dispatch_event(self, event, broadcaster, event_context, Outcome::Success, Some(Outcome::Failure))
+        EventDispatcher::dispatch_event(self, event, broadcaster_id, event_context, Outcome::Success, Some(Outcome::Failure))
     }
     
     fn trigger_event<R: Copy + PartialEq, C: Copy, E: Event<EventReturnType = R, ContextType = C>>(
         &mut self, 
         event: E, 
-        broadcaster: MonsterUID,
+        broadcaster_id: MonsterID,
         event_context: C,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        EventDispatcher::dispatch_event(self, event, broadcaster, event_context, default, short_circuit)
+        EventDispatcher::dispatch_event(self, event, broadcaster_id, event_context, default, short_circuit)
     }
 }
 

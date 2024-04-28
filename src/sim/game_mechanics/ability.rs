@@ -1,11 +1,11 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterUID}, AbilityUseContext, Effect};
+use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterID}, AbilityUseContext, Effect};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ability {
-    pub(crate) uid: AbilityUID, 
+    pub(crate) id: AbilityID, 
     pub(crate) species: &'static AbilitySpecies,
 }
 
@@ -43,12 +43,12 @@ impl Ability {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct AbilityUID {
-    pub owner: MonsterUID
+pub struct AbilityID {
+    pub owner_id: MonsterID
 }
-impl AbilityUID {
-    pub(crate) fn _from_owner(ability_owner: MonsterUID) -> AbilityUID {
-        AbilityUID { owner: ability_owner }
+impl AbilityID {
+    pub(crate) fn _from_owner(ability_owner: MonsterID) -> AbilityID {
+        AbilityID { owner_id: ability_owner }
     }
 }
 

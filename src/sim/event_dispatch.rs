@@ -4,7 +4,7 @@ pub mod events;
 #[cfg(all(test, feature = "debug"))]
 mod tests ;
 
-use crate::{sim::{game_mechanics::MonsterUID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent}, BattleSimulator};
+use crate::{sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent}, BattleSimulator};
 use contexts::*;
 pub use events::*;
 
@@ -32,13 +32,13 @@ impl EventDispatcher {
         sim: &mut BattleSimulator,
 
         event: impl Event<EventReturnType = Outcome, ContextType = C>,
-        broadcaster_uid: MonsterUID,
+        broadcaster_id: MonsterID,
         event_context: C,
     ) -> Outcome {
         EventDispatcher::dispatch_event(
             sim, 
             event, 
-            broadcaster_uid, 
+            broadcaster_id, 
             event_context, 
             Outcome::Success, 
             Some(Outcome::Failure)
@@ -52,7 +52,7 @@ impl EventDispatcher {
         sim: &mut BattleSimulator,
 
         event: impl Event<EventReturnType = R, ContextType = C>,
-        broadcaster_uid: MonsterUID,
+        broadcaster_id: MonsterID,
         calling_context: C,
         default: R,
         short_circuit: Option<R>,
@@ -69,8 +69,8 @@ impl EventDispatcher {
         });
 
         let mut relay = default;
-        for OwnedEventHandler { event_handler, owner, filtering_options, .. } in owned_event_handlers.into_iter() {
-            if Self::filter_event_handlers(&sim.battle, broadcaster_uid, owner, filtering_options) {
+        for OwnedEventHandler { event_handler, owner_id: owner, filtering_options, .. } in owned_event_handlers.into_iter() {
+            if Self::filter_event_handlers(&sim.battle, broadcaster_id, owner, filtering_options) {
                 // INFO: Removed relaying the outcome of the previous handler from the event resolution. It will be
                 // reintroduced if it ever turns out to be useful. Otherwise remove this comment. 
                 relay = (event_handler.effect)(sim, calling_context);
@@ -87,26 +87,26 @@ impl EventDispatcher {
 
     fn filter_event_handlers(
         battle: &BattleState,
-        broadcaster: MonsterUID,
-        owner: MonsterUID,
+        broadcaster_id: MonsterID,
+        owner_id: MonsterID,
         filter_options: EventFilteringOptions,
     ) -> bool {
         let bitmask = {
             let mut bitmask = 0b0000;
-            if broadcaster == owner {
+            if broadcaster_id == owner_id {
                 bitmask |= TargetFlags::SELF.bits()
             } // 0x01
-            if battle.are_allies(owner, broadcaster) {
+            if battle.are_allies(owner_id, broadcaster_id) {
                 bitmask |= TargetFlags::ALLIES.bits()
             } // 0x02
-            if battle.are_opponents(owner, broadcaster) {
+            if battle.are_opponents(owner_id, broadcaster_id) {
                 bitmask |= TargetFlags::OPPONENTS.bits()
             } //0x04
               // FEATURE: Bitmasking (0x08) for the Environment
             bitmask
         };
         let event_source_filter_passed = filter_options.event_source.bits() == bitmask;
-        let is_active_passed = battle.is_active_monster(owner);
+        let is_active_passed = battle.is_active_monster(owner_id);
 
         event_source_filter_passed && is_active_passed
     }

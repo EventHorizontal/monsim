@@ -55,7 +55,7 @@ fn test_if_priority_sorting_is_deterministic() {
 
         result[i] = owned_event_handlers
             .into_iter()
-            .map(|event_handler| sim.battle.monster(event_handler.owner).name())
+            .map(|event_handler| sim.battle.monster(event_handler.owner_id).name())
             .collect::<Vec<_>>();
     }
 
@@ -182,7 +182,7 @@ fn test_priority_sorting_with_speed_ties() {
 
         result[i] = owned_event_handlers
             .into_iter()
-            .map(|owned_event_handler| sim.battle.monster(owned_event_handler.owner).name())
+            .map(|owned_event_handler| sim.battle.monster(owned_event_handler.owner_id).name())
             .collect::<Vec<_>>();
     }
 
@@ -207,7 +207,7 @@ fn test_event_filtering_for_event_sources() {
         test_ability_dex::FlashFire,
         test_monster_dex::{Merkey, Squirecoal, Dandyleo},
         test_move_dex::{Bubble, Ember, Scratch, Tackle},
-        MonsterNumber, TeamUID,
+        MonsterNumber, TeamID,
     };
     let test_battle = BattleState::spawn()
             .add_ally_team(
@@ -241,12 +241,12 @@ fn test_event_filtering_for_event_sources() {
     
     let passed_filter = EventDispatcher::filter_event_handlers(
         &test_battle,
-        MonsterUID {
-            team_uid: TeamUID::Allies,
+        MonsterID {
+            team_id: TeamID::Allies,
             monster_number: MonsterNumber::_1,
         },
-        MonsterUID {
-            team_uid: TeamUID::Opponents,
+        MonsterID {
+            team_id: TeamID::Opponents,
             monster_number: MonsterNumber::_1,
         },
         EventFilteringOptions::default(),
@@ -257,12 +257,12 @@ fn test_event_filtering_for_event_sources() {
 #[test]
 #[cfg(feature = "debug")]
 fn test_print_owned_event_handler() {
-    use crate::sim::{test_ability_dex::FlashFire, event_dispatch::OwnedEventHandler, MonsterUID};
+    use crate::sim::{test_ability_dex::FlashFire, event_dispatch::OwnedEventHandler, MonsterID};
     let owned_event_handler = OwnedEventHandler {
         event_handler: FlashFire.event_handlers().on_try_move.unwrap(),
         activation_order: crate::ActivationOrder { priority: 0, speed: 11, order: FlashFire.order() },
-        owner: MonsterUID {
-            team_uid: crate::sim::TeamUID::Allies,
+        owner_id: MonsterID {
+            team_id: crate::sim::TeamID::Allies,
             monster_number: crate::sim::MonsterNumber::_1,
         },
         filtering_options: crate::sim::EventFilteringOptions::default(),

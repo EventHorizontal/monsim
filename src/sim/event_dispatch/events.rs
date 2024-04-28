@@ -31,7 +31,7 @@ impl<'a, E: Event + Debug> Debug for EventHandler<E> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OwnedEventHandler<E: Event> {
     pub event_handler: EventHandler<E>,
-    pub owner: MonsterUID,
+    pub owner_id: MonsterID,
     pub activation_order: ActivationOrder,
     pub filtering_options: EventFilteringOptions,
 }
@@ -80,56 +80,62 @@ impl EventHandlerDeck {
 }
 
 pub mod contexts {
-    use crate::{sim::{MonsterUID, MoveUID}, AbilityUID};
+    use crate::{sim::{MonsterID, MoveID}, AbilityID};
 
-    /// Holds the information of who used the move (`move_user`), which move was used (`move_used`)
-    /// and who the move was used on (`target`).
+    /// `move_user_id`: MonsterID of the Monster using the move.
+    /// 
+    /// `move_used_id`: MoveID of the Move being used.
+    /// 
+    /// `target_id`: MonsterID of the Monster the move is being used on.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct MoveUseContext {
-        pub move_user: MonsterUID,
-        pub move_used: MoveUID,
-        pub target: MonsterUID,
+        pub move_user_id: MonsterID,
+        pub move_used_id: MoveID,
+        pub target_id: MonsterID,
     }
 
     impl MoveUseContext {
-        pub fn new(move_uid: MoveUID, target_uid: MonsterUID) -> Self {
+        pub fn new(move_used_id: MoveID, target_id: MonsterID) -> Self {
             Self {
-                move_user: move_uid.owner_uid,
-                move_used: move_uid,
-                target: target_uid,
+                move_user_id: move_used_id.owner_id,
+                move_used_id,
+                target_id,
             }
         }
     }
 
-    /// Holds the information of which monster's ability was used (`ability_used`).
+    /// `ability_owner_id`: MonsterID of the Monster whose ability is being used.
+    /// 
+    /// `ability_used_id`: AbilityID of the Ability being used.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct AbilityUseContext {
-        pub ability_owner: MonsterUID,
-        pub ability_used: AbilityUID,
+        pub ability_owner_id: MonsterID,
+        pub ability_used_id: AbilityID,
     }
 
     impl AbilityUseContext {
-        pub fn new(ability_owner: MonsterUID) -> Self {
+        pub fn new(ability_owner: MonsterID) -> Self {
             Self {
-                ability_used: AbilityUID { owner: ability_owner },
-                ability_owner,
+                ability_used_id: AbilityID { owner_id: ability_owner },
+                ability_owner_id: ability_owner,
             }
         }
     }
 
-    /// Holds the information of which monster is trying to switch out (`active_monster`) 
-    /// and which monster is trying to switch in (`benched_monster`).
+    /// `active_monster_id`: MonsterID of the Monster to be switched out.
+    /// 
+    /// `benched_monster_id`: MonsterID of the Monster to be switched in.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct SwitchContext {
-        pub active_monster: MonsterUID,
-        pub benched_monster: MonsterUID,
+        pub active_monster_id: MonsterID,
+        pub benched_monster_id: MonsterID,
     }
 
     impl SwitchContext {
-        pub fn new(active_monster: MonsterUID, benched_monster: MonsterUID) -> Self {
+        pub fn new(active_monster: MonsterID, benched_monster: MonsterID) -> Self {
             Self {
-                active_monster,
-                benched_monster,
+                active_monster_id: active_monster,
+                benched_monster_id: benched_monster,
             }
         }
     }

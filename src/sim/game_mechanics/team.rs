@@ -2,14 +2,14 @@ use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 
 use crate::{sim::MonsterNumber, Event, OwnedEventHandler};
-use super::{Monster, MonsterUID, MoveNumber};
+use super::{Monster, MonsterID};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonsterTeam {
-    pub id: TeamUID,
-    pub active_monster_uid: MonsterUID,
+    pub id: TeamID,
+    pub active_monster_id: MonsterID,
     monsters: MaxSizedVec<Monster, 6>,
 }
 
@@ -28,13 +28,13 @@ impl IndexMut<MonsterNumber> for MonsterTeam {
 }
 
 impl MonsterTeam {
-    pub fn new(monsters: Vec<Monster>, id: TeamUID) -> Self {
+    pub fn new(monsters: Vec<Monster>, id: TeamID) -> Self {
         assert!(monsters.first().is_some(), "There is not a single monster in the team.");
         assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
         let monsters = MaxSizedVec::from_vec(monsters);
         MonsterTeam {
             id,
-            active_monster_uid: MonsterUID { team_uid: id, monster_number: MonsterNumber::_1}, 
+            active_monster_id: MonsterID { team_id: id, monster_number: MonsterNumber::_1}, 
             monsters 
         }
     }
@@ -65,26 +65,26 @@ impl MonsterTeam {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum TeamUID {
+pub enum TeamID {
     #[default]
     Allies,
     Opponents,
 }
 
-impl TeamUID {
-    pub fn other(&self) -> TeamUID {
+impl TeamID {
+    pub fn other(&self) -> TeamID {
         match self {
-            TeamUID::Allies => TeamUID::Opponents,
-            TeamUID::Opponents => TeamUID::Allies,
+            TeamID::Allies => TeamID::Opponents,
+            TeamID::Opponents => TeamID::Allies,
         }
     }
 }
 
-impl Display for TeamUID {
+impl Display for TeamID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            TeamUID::Allies => write!(f, "Ally Team"),
-            TeamUID::Opponents => write!(f, "Opponent Team"),
+            TeamID::Allies => write!(f, "Ally Team"),
+            TeamID::Opponents => write!(f, "Opponent Team"),
         }
     }
 }
@@ -173,22 +173,22 @@ impl<T: Clone> PerTeam<T> {
     }
 }
 
-impl<T> Index<TeamUID> for PerTeam<T> {
+impl<T> Index<TeamID> for PerTeam<T> {
     type Output = T;
 
-    fn index(&self, index: TeamUID) -> &Self::Output {
+    fn index(&self, index: TeamID) -> &Self::Output {
         match index {
-            TeamUID::Allies => &self.ally_team_item,
-            TeamUID::Opponents => &self.opponent_team_item,
+            TeamID::Allies => &self.ally_team_item,
+            TeamID::Opponents => &self.opponent_team_item,
         }
     }
 } 
 
-impl<T> IndexMut<TeamUID> for PerTeam<T> {
-    fn index_mut(&mut self, index: TeamUID) -> &mut Self::Output {
+impl<T> IndexMut<TeamID> for PerTeam<T> {
+    fn index_mut(&mut self, index: TeamID) -> &mut Self::Output {
         match index {
-            TeamUID::Allies => &mut self.ally_team_item,
-            TeamUID::Opponents => &mut self.opponent_team_item,
+            TeamID::Allies => &mut self.ally_team_item,
+            TeamID::Opponents => &mut self.opponent_team_item,
         }
     }
 }

@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, DealDefaultDamage, Monster, MonsterTeam, MonsterUID, Move, MoveCategory, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityID, BattleState, DealDefaultDamage, Monster, MonsterTeam, MonsterID, Move, MoveCategory, MoveID, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 /*  
     FEATURE: Better Validation -> Some basic state validation will be done 
@@ -37,7 +37,7 @@ impl BattleBuilder {
     }
 
     pub fn build(self) -> BattleState {
-        const ALLY_UIDS: [MonsterUID; 6] = [
+        const ALLY_IDS: [MonsterID; 6] = [
             ALLY_1,
             ALLY_2,
             ALLY_3,
@@ -49,10 +49,10 @@ impl BattleBuilder {
         let ally_team = self.maybe_ally_team
             .expect("Building the BattleState requires adding an Ally Team, found none.")
             .map_consume(|ally_team_builder| {
-                ally_team_builder.build(ALLY_UIDS, TeamUID::Allies)                
+                ally_team_builder.build(ALLY_IDS, TeamID::Allies)                
             });
 
-        const OPPONENT_UIDS: [MonsterUID; 6] = [
+        const OPPONENT_IDS: [MonsterID; 6] = [
             OPPONENT_1,
             OPPONENT_2,
             OPPONENT_3,
@@ -64,7 +64,7 @@ impl BattleBuilder {
         let opponent_team = self.maybe_opponent_team
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
             .map_consume(|opponent_team_builder| {
-                opponent_team_builder.build(OPPONENT_UIDS, TeamUID::Opponents)                
+                opponent_team_builder.build(OPPONENT_IDS, TeamID::Opponents)                
             });
 
         BattleState::new(ally_team, opponent_team)
@@ -96,18 +96,18 @@ impl MonsterTeamBuilder {
         self
     }
 
-    fn build(self, monster_uids: [MonsterUID; 6], team_uid: TeamUID) -> MonsterTeam {
+    fn build(self, monster_ids: [MonsterID; 6], team_id: TeamID) -> MonsterTeam {
         self.maybe_monsters
             .expect(
-                format!["Expected {team_uid} to have at least one monster, but none were given"].as_str()
+                format!["Expected {team_id} to have at least one monster, but none were given"].as_str()
             )
             .into_iter()
-            .zip(monster_uids.into_iter())
-            .map(|(monster_builder, monster_uid)| {
-                monster_builder.build(monster_uid)
+            .zip(monster_ids.into_iter())
+            .map(|(monster_builder, monster_id)| {
+                monster_builder.build(monster_id)
             })
             .collect::<Vec<_>>()
-            .pipe(|monsters| MonsterTeam::new(monsters, team_uid))
+            .pipe(|monsters| MonsterTeam::new(monsters, team_id))
     }
 }
 
@@ -183,27 +183,27 @@ impl MonsterBuilder {
         self
     } 
 
-    pub fn build(self, monster_uid: MonsterUID) -> Monster {
+    pub fn build(self, monster_id: MonsterID) -> Monster {
         
         let nickname = self.nickname;
         
-        let move_uids: [MoveUID; 4] = [
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_1 },
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_2 },
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_3 },
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_4 },
+        let move_ids: [MoveID; 4] = [
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_1 },
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_2 },
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_3 },
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_4 },
         ];
 
         let moveset = self.moves
             .into_iter()
-            .zip(move_uids.into_iter()).map(|(move_builder, move_uid)| {
-                move_builder.build(move_uid)
+            .zip(move_ids.into_iter()).map(|(move_builder, move_id)| {
+                move_builder.build(move_id)
             })
             .collect::<Vec<_>>()
             .pipe(|vec| { MaxSizedVec::from_vec(vec) });
         
         let ability = self.ability
-            .build(AbilityUID { owner: monster_uid});
+            .build(AbilityID { owner_id: monster_id});
         
         let level = 50;
         // FEATURE: EVs and IVs should be settable through the builder.
@@ -213,7 +213,7 @@ impl MonsterBuilder {
         let nature = MonsterNature::Serious;
         
         Monster {
-            uid: monster_uid,
+            id: monster_id,
             nickname,
             effort_values: EVS,
             current_health: Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level),
@@ -265,7 +265,7 @@ impl MoveBuilder {
         self
     }
 
-    fn build(self, move_uid: MoveUID) -> Move {
+    fn build(self, move_id: MoveID) -> Move {
         let species = self.species;
         // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
         if species.category() == MoveCategory::Status && species.
@@ -273,7 +273,7 @@ impl MoveBuilder {
             println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
         }
         Move {
-            uid: move_uid,
+            id: move_id,
             
             current_power_points: self.power_points.unwrap_or(self.species.max_power_points()),
             species,
@@ -308,9 +308,9 @@ impl Ability {
 // This implementation doesn't really afford us anything extra, but if
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
-    fn build(self, uid: AbilityUID) -> Ability {
+    fn build(self, id: AbilityID) -> Ability {
         Ability {
-            uid,
+            id,
             species: self.species,
         }
     }

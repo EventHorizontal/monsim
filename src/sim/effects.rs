@@ -45,48 +45,48 @@ impl<R, C> Effect<R, C> {
 pub(crate) const UseMove: Effect<Nothing, MoveUseContext> = Effect(use_move);
 
 fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
-    let MoveUseContext { move_user, move_used, target: _ } = context;
+    let MoveUseContext { move_user_id, move_used_id, target_id: _ } = context;
 
     sim.push_message(format![
         "{attacker} used {_move}",
-        attacker = mon![move_user].name(),
-        _move = mov![move_used].name()
+        attacker = mon![move_user_id].name(),
+        _move = mov![move_used_id].name()
     ]);
 
-    if mov![move_used].current_power_points == 0 {
+    if mov![move_used_id].current_power_points == 0 {
         sim.push_message("but the move is out of power points!");
         return;
     }
 
-    if sim.trigger_try_event(OnTryMove, move_user, context).failed() {
+    if sim.trigger_try_event(OnTryMove, move_user_id, context).failed() {
         sim.push_message("The move failed!");
         return;
     }
 
     sim.activate_move_effect(context);
-    mov![mut move_used].current_power_points -= 1;
+    mov![mut move_used_id].current_power_points -= 1;
    #[cfg(feature="debug")]
     sim.push_message(format![
         "{}'s {}'s PP is now {}",
-        mon![move_user].name(),
-        mov![move_used].name(),
-        mov![move_used].current_power_points()
+        mon![move_user_id].name(),
+        mov![move_used_id].name(),
+        mov![move_used_id].current_power_points()
     ]);
 
-    sim.trigger_event(OnMoveUsed, move_user, context, NOTHING, None);
+    sim.trigger_event(OnMoveUsed, move_user_id, context, NOTHING, None);
 }
 
 pub(crate) const PerformSwitchOut: Effect<Nothing, SwitchContext> = Effect(perform_switch_out);
 
 fn perform_switch_out(sim: &mut BattleSimulator, context: SwitchContext) {
-    let SwitchContext { active_monster, benched_monster } = context;
+    let SwitchContext { active_monster_id, benched_monster_id } = context;
 
-    sim.battle.team_mut(active_monster.team_uid).active_monster_uid = benched_monster;
+    sim.battle.team_mut(active_monster_id.team_id).active_monster_id = benched_monster_id;
     
     sim.push_message(format![
-        "{active_monster} switched out! Go {benched_monster}!", 
-        active_monster = mon![active_monster].name(),
-        benched_monster = mon![benched_monster].name()
+        "{} switched out! Go {}!", 
+        mon![active_monster_id].name(),
+        mon![benched_monster_id].name()
     ]);
 }
 
@@ -100,27 +100,27 @@ fn perform_switch_out(sim: &mut BattleSimulator, context: SwitchContext) {
 pub const DealDefaultDamage: Effect<Nothing, MoveUseContext> = Effect(deal_default_damage);
 
 fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
-    let MoveUseContext { move_user: attacker, move_used, target: defender } = context;
+    let MoveUseContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
 
-    if sim.trigger_try_event(OnTryMove, attacker, context).failed() {
+    if sim.trigger_try_event(OnTryMove, attacker_id, context).failed() {
         sim.push_message("The move failed!");
         return;
     }
 
-    let level = mon![attacker].level;
-    let move_power = mov![move_used].base_power();
+    let level = mon![attacker_id].level;
+    let move_power = mov![move_used_id].base_power();
 
-    let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used].category() {
+    let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used_id].category() {
         MoveCategory::Physical => {
             (
-                mon![attacker].stat(Stat::PhysicalAttack),
-                mon![defender].stat(Stat::PhysicalDefense)
+                mon![attacker_id].stat(Stat::PhysicalAttack),
+                mon![defender_id].stat(Stat::PhysicalDefense)
             )
         }
         MoveCategory::Special => {
             (
-                mon![attacker].stat(Stat::SpecialAttack),
-                mon![defender].stat(Stat::SpecialDefense)
+                mon![attacker_id].stat(Stat::SpecialAttack),
+                mon![defender_id].stat(Stat::SpecialDefense)
             )
         }
         _ => unreachable!("Expected physical or special move."),
@@ -130,13 +130,13 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
     let random_multiplier = ClampedPercent::from(random_multiplier);
 
     let stab_multiplier = {
-        let move_type = mov![move_used].type_();
-        if mon![attacker].is_type(move_type) { Percent(125) } else { Percent(100) }
+        let move_type = mov![move_used_id].type_();
+        if mon![attacker_id].is_type(move_type) { Percent(125) } else { Percent(100) }
     };
 
-    let move_type = mov![move_used].type_();
-    let target_primary_type = mon![defender].species.primary_type();
-    let target_secondary_type = mon![defender].species.secondary_type();
+    let move_type = mov![move_used_id].type_();
+    let target_primary_type = mon![defender_id].species.primary_type();
+    let target_secondary_type = mon![defender_id].species.secondary_type();
 
     let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
         matchup!(move_type against target_primary_type / target_secondary_type)
@@ -163,8 +163,8 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
     // TODO: Introduce more damage multipliers as we implement them.
 
     // Do the calculated damage to the target
-    DealDirectDamage(sim, (defender, damage));
-    sim.trigger_event(OnDamageDealt, attacker, NOTHING, NOTHING, None);
+    DealDirectDamage(sim, (defender_id, damage));
+    sim.trigger_event(OnDamageDealt, attacker_id, NOTHING, NOTHING, None);
 
     let type_effectiveness = match type_matchup_multiplier {
         Percent(25) | Percent(50) => "not very effective",
@@ -177,30 +177,30 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
     };
     sim.push_message(format!["It was {type_effectiveness}!"]);
     sim.push_message(format![
-        "{defender} took {damage} damage!", 
-        defender = mon![defender].name()
+        "{} took {damage} damage!", 
+        mon![defender_id].name()
     ]);
     sim.push_message(format![
-        "{defender} has {num_hp} health left.",
-        defender = mon![defender].name(),
-        num_hp = mon![defender].current_health
+        "{} has {num_hp} health left.",
+        mon![defender_id].name(),
+        num_hp = mon![defender_id].current_health
     ]);
 }
 
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`.
 /// 
 /// Returns the actual damage dealt.
-pub const DealDirectDamage: Effect<u16, (MonsterUID, u16)> = Effect(deal_direct_damge);
+pub const DealDirectDamage: Effect<u16, (MonsterID, u16)> = Effect(deal_direct_damge);
 
 #[must_use]
-fn deal_direct_damge(sim: &mut BattleSimulator, context: (MonsterUID, u16)) -> u16 {
-    let (target, mut damage) = context;
-        let original_health = mon![target].current_health;
-        mon![mut target].current_health = original_health.saturating_sub(damage);
-        if mon![target].is_fainted() { 
-            damage = original_health 
-        };
-        damage
+fn deal_direct_damge(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> u16 {
+    let (target_id, mut damage) = context;
+    let original_health = mon![target_id].current_health;
+    mon![mut target_id].current_health = original_health.saturating_sub(damage);
+    if mon![target_id].is_fainted() { 
+        damage = original_health 
+    };
+    damage
 }
 
 /// The simulator simulates the activation of the ability `AbilityUseContext.ability_used` owned by
@@ -209,12 +209,12 @@ pub const ActivateAbility: Effect<Outcome, AbilityUseContext> = Effect(activate_
 
 #[must_use]
 pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -> Outcome {
-    let AbilityUseContext { ability_used, ability_owner } = context;
+    let AbilityUseContext { ability_used_id, ability_owner_id } = context;
 
-    if sim.trigger_try_event(OnTryActivateAbility, ability_owner, context).succeeded() {
-        let ability = abl![ability_used];
+    if sim.trigger_try_event(OnTryActivateAbility, ability_owner_id, context).succeeded() {
+        let ability = abl![ability_used_id];
         (ability.on_activate_effect())(sim, context);
-        sim.trigger_event(OnAbilityActivated, ability_owner, context, NOTHING, None);
+        sim.trigger_event(OnAbilityActivated, ability_owner_id, context, NOTHING, None);
         Outcome::Success
     } else {
         Outcome::Failure
@@ -222,48 +222,49 @@ pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -
 }
 
 /// The simulator simulates the raising of stat `Context.1` of monster `Context.0` by `Context.2` stages
-pub const RaiseStat: Effect<Outcome, (MonsterUID, Stat, u8)> = Effect(raise_stat);
+pub const RaiseStat: Effect<Outcome, (MonsterID, Stat, u8)> = Effect(raise_stat);
 
 #[must_use]
 pub fn raise_stat(
     sim: &mut BattleSimulator,
-    (affected_monster, stat, number_of_stages): (MonsterUID, Stat, u8), 
+    (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
-    if sim.trigger_try_event(OnTryRaiseStat, affected_monster, NOTHING).succeeded() {
-        let effective_stages = mon![mut affected_monster].stat_modifiers.raise_stat(stat, number_of_stages);
+    if sim.trigger_try_event(OnTryRaiseStat, affected_monster_id, NOTHING).succeeded() {
+        let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, number_of_stages);
 
         sim.push_message(format![
             "{monster}\'s {stat} was raised by {effective_stages} stage(s)!",
-            monster = mon![affected_monster].name(),
+            monster = mon![affected_monster_id].name(),
         ]);
 
         Outcome::Success
     } else {
-        sim.push_message(format!["{monster}'s stats cannot get any higher.", monster = mon![affected_monster].name()]);
+        sim.push_message(format!["{monster}'s stats cannot get any higher.", monster = mon![affected_monster_id].name()]);
 
         Outcome::Failure
     }
 }
 
 /// The simulator simulates the lowering of stat `Context.1` of monster `Context.0` by `Context.2` stages
-pub const LowerStat: Effect<Outcome, (MonsterUID, Stat, u8)> = Effect(lower_stat);
+pub const LowerStat: Effect<Outcome, (MonsterID, Stat, u8)> = Effect(lower_stat);
 
 #[must_use]
 pub fn lower_stat(
     sim: &mut BattleSimulator,
-    (affected_monster, stat, number_of_stages): (MonsterUID, Stat, u8), 
+    (affected_monster_id
+        , stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
-    if sim.trigger_try_event(OnTryLowerStat, affected_monster, NOTHING).succeeded() {
-        let effective_stages = mon![mut affected_monster].stat_modifiers.lower_stat(stat, number_of_stages);
+    if sim.trigger_try_event(OnTryLowerStat, affected_monster_id, NOTHING).succeeded() {
+        let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);
 
         sim.push_message(format![
             "{monster}\'s {stat} was lowered by {effective_stages} stage(s)!",
-            monster = mon![affected_monster].name(),
+            monster = mon![affected_monster_id].name(),
         ]);
 
         Outcome::Success
     } else {
-        sim.push_message(format!["{monster}'s stats were not lowered.", monster = mon![affected_monster].name()]);
+        sim.push_message(format!["{monster}'s stats were not lowered.", monster = mon![affected_monster_id].name()]);
 
         Outcome::Failure
     }

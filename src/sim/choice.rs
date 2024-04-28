@@ -4,7 +4,7 @@ use monsim_utils::MaxSizedVec;
 
 use crate::ActivationOrder;
 
-use super::game_mechanics::{MonsterUID, MoveUID};
+use super::game_mechanics::{MonsterID, MoveID};
 
 
 /// An action choice before certain details can be established, most often the target.
@@ -12,16 +12,16 @@ use super::game_mechanics::{MonsterUID, MoveUID};
 pub enum PartiallySpecifiedChoice {
     /// TODO: This *should* be a move before targets are known, but since the targetting system is still unimplemented, for now we assume the one opponent monster is the target. 
     Move{ 
-        attacker_uid: MonsterUID, 
-        move_uid: MoveUID, 
-        target_uid: MonsterUID,
+        move_user_id: MonsterID, 
+        move_id: MoveID, 
+        target_id: MonsterID,
         activation_order: ActivationOrder, 
         display_text: &'static str
     },
     /// A switch out action before we know which monster to switch with.
     SwitchOut { 
-        active_monster_uid: MonsterUID, 
-        switchable_benched_monster_uids: MaxSizedVec<MonsterUID, 5>,
+        active_monster_id: MonsterID, 
+        switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>,
         activation_order: ActivationOrder, 
         display_text: &'static str 
     },
@@ -30,8 +30,8 @@ pub enum PartiallySpecifiedChoice {
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedChoice {
-    Move { move_user: MonsterUID, move_used: MoveUID, target: MonsterUID, activation_order: ActivationOrder },
-    SwitchOut { active_monster_uid: MonsterUID, benched_monster_uid: MonsterUID, activation_order: ActivationOrder },
+    Move { move_user_id: MonsterID, move_id: MoveID, target_id: MonsterID, activation_order: ActivationOrder },
+    SwitchOut { active_monster_id: MonsterID, benched_monster_id: MonsterID, activation_order: ActivationOrder },
 }
 impl FullySpecifiedChoice {
     pub(crate) fn activation_order(&self) -> ActivationOrder {

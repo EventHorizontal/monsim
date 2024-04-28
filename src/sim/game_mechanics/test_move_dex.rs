@@ -5,7 +5,7 @@ use super::{
     Type,
 };
 use crate::{sim::{
-    event_dispatch::EventFilteringOptions, BattleState, MonsterUID, Move, Stat
+    event_dispatch::EventFilteringOptions, BattleState, MonsterID, Move, Stat
 }, BattleSimulator, effects::*, EventHandlerDeck, MoveDexEntry, MoveUseContext};
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
@@ -81,7 +81,7 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 0,
         base_accuracy: 100,
         on_use_effect: Effect::from(|sim, context| { 
-            _ = LowerStat(sim, (context.target, Stat::PhysicalAttack, 1)); 
+            _ = LowerStat(sim, (context.target_id, Stat::PhysicalAttack, 1)); 
         }),
         max_power_points: 40,
         priority: 0,

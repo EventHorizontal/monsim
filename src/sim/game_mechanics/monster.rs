@@ -4,12 +4,12 @@ use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
-use super::{Ability, MoveNumber, MoveUID, TeamUID };
+use super::{Ability, MoveNumber, MoveID, TeamID };
 use crate::{sim::{ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Event, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
-    pub(crate) uid: MonsterUID,
+    pub(crate) id: MonsterID,
     
     pub(crate) nickname: Option<&'static str>,
     pub(crate) effort_values: StatSet,
@@ -26,7 +26,7 @@ pub struct Monster {
 
 impl PartialEq for Monster {
     fn eq(&self, other: &Self) -> bool {
-        self.uid == other.uid
+        self.id == other.id
     }
 }
 
@@ -39,7 +39,7 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    nickname, self.species.name, self.uid, self.current_health, self.max_health()
+                    nickname, self.species.name, self.id, self.current_health, self.max_health()
                 ]
                 .as_str(),
             );
@@ -47,7 +47,7 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.species.name, self.uid, self.current_health, self.max_health()
+                    self.species.name, self.id, self.current_health, self.max_health()
                 ]
                 .as_str(),
             );
@@ -164,7 +164,7 @@ impl Monster { // private
             .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
-                    owner: self.uid,
+                    owner_id: self.id,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: self.stat(Stat::Speed),
@@ -184,7 +184,7 @@ impl Monster { // private
                     .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                         OwnedEventHandler {
                             event_handler,
-                            owner: self.uid,
+                            owner_id: self.id,
                             activation_order: ActivationOrder {
                                 priority: move_.priority(),
                                 speed: self.stat(Stat::Speed),
@@ -203,7 +203,7 @@ impl Monster { // private
             .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
-                    owner: self.uid,
+                    owner_id: self.id,
                     activation_order:  ActivationOrder {
                         priority: 0,
                         speed: self.stat(Stat::Speed),
@@ -234,12 +234,12 @@ impl Monster { // private
         }
     }
 
-    pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
+    pub(crate) fn move_ids(&self) -> Vec<MoveID> {
         self.moveset
             .iter()
             .enumerate()
-            .map(|(idx, _)| MoveUID {
-                owner_uid: self.uid,
+            .map(|(idx, _)| MoveID {
+                owner_id: self.id,
                 move_number: MoveNumber::from(idx),
             })
             .collect()
@@ -249,7 +249,7 @@ impl Monster { // private
         let mut out = String::new();
         out.push_str(&format![
             "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.uid, self.current_health, self.max_health()
+            self.full_name(), self.id, self.current_health, self.max_health()
         ]);
         out
     }
@@ -266,8 +266,8 @@ pub struct MonsterSpecies {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MonsterUID {
-    pub team_uid: TeamUID,
+pub struct MonsterID {
+    pub team_id: TeamID,
     pub monster_number: MonsterNumber,
 }
 
@@ -282,60 +282,60 @@ pub enum MonsterNumber {
     _6,
 }
 
-pub const ALLY_1: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_1: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_1,
 };
-pub const ALLY_2: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_2: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_2,
 };
-pub const ALLY_3: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_3: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_3,
 };
-pub const ALLY_4: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_4: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_4,
 };
-pub const ALLY_5: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_5: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_5,
 };
-pub const ALLY_6: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_6: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_6,
 };
 
-pub const OPPONENT_1: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_1: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_1,
 };
-pub const OPPONENT_2: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_2: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_2,
 };
-pub const OPPONENT_3: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_3: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_3,
 };
-pub const OPPONENT_4: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_4: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_4,
 };
-pub const OPPONENT_5: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_5: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_5,
 };
-pub const OPPONENT_6: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_6: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_6,
 };
 
-impl Display for MonsterUID {
+impl Display for MonsterID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self.team_uid {
-            TeamUID::Allies => match self.monster_number {
+        match self.team_id {
+            TeamID::Allies => match self.monster_number {
                 MonsterNumber::_1 => write!(f, "First Ally"),
                 MonsterNumber::_2 => write!(f, "Second Ally"),
                 MonsterNumber::_3 => write!(f, "Third Ally"),
@@ -343,7 +343,7 @@ impl Display for MonsterUID {
                 MonsterNumber::_5 => write!(f, "Fifth Ally"),
                 MonsterNumber::_6 => write!(f, "Sixth Ally"),
             },
-            TeamUID::Opponents => match self.monster_number {
+            TeamID::Opponents => match self.monster_number {
                 MonsterNumber::_1 => write!(f, "First Opponent"),
                 MonsterNumber::_2 => write!(f, "Second Opponent"),
                 MonsterNumber::_3 => write!(f, "Third Opponent"),

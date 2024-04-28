@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{sim::{BattleState, EventFilteringOptions, MonsterUID, MoveCategory, MoveSpecies, Stat, Type}, EventHandlerDeck, MoveDexEntry, effects::*};
+use monsim::{sim::{BattleState, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type}, EventHandlerDeck, MoveDexEntry, effects::*};
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
@@ -75,7 +75,7 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 0,
         base_accuracy: 100,
         on_use_effect: Effect::from(|sim, context| { 
-            _ = LowerStat(sim, (context.target, Stat::PhysicalAttack, 1)); 
+            _ = LowerStat(sim, (context.target_id, Stat::PhysicalAttack, 1)); 
         }),
         max_power_points: 40,
         priority: 0,

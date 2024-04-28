@@ -24,18 +24,18 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
             TurnStage::ChooseActions(available_choices) => {
 
                 // Check if any of the active monsters has fainted and needs to switched out
-                for active_monster_uid in sim.battle.active_monster_uids() {
-                    let available_choices_for_team = &available_choices[active_monster_uid.team_uid];
-                    if sim.battle.monster(active_monster_uid).is_fainted() {
-                        if let Some(&PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, .. }) = available_choices_for_team.switch_out_choice() {
-                            let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| sim.battle.monster(uid).full_name()).enumerate();
-                            writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", sim.battle .monster(active_monster_uid).name())?;
+                for active_monster_id in sim.battle.active_monster_ids() {
+                    let available_choices_for_team = &available_choices[active_monster_id.team_id];
+                    if sim.battle.monster(active_monster_id).is_fainted() {
+                        if let Some(&PartiallySpecifiedChoice::SwitchOut { active_monster_id, switchable_benched_monster_ids, .. }) = available_choices_for_team.switch_out_choice() {
+                            let switchable_benched_monster_names = switchable_benched_monster_ids.into_iter().map(|id| sim.battle.monster(id).full_name()).enumerate();
+                            writeln!(locked_stdout, "{} fainted! Choose a monster to switch with", sim.battle .monster(active_monster_id).name())?;
                             for (index, monster_name) in switchable_benched_monster_names {
                                 writeln!(locked_stdout, "[{}] {}", index + 1, monster_name)?;
                             }
-                            let switchable_benched_monster_choice_index = input_to_choice_index(&mut locked_stdout, switchable_benched_monster_uids.count()).unwrap();
-                            let chosen_switchable_benched_monster_uid = switchable_benched_monster_uids[switchable_benched_monster_choice_index];
-                            PerformSwitchOut(&mut sim, crate::SwitchContext { active_monster: active_monster_uid, benched_monster: chosen_switchable_benched_monster_uid });
+                            let switchable_benched_monster_choice_index = input_to_choice_index(&mut locked_stdout, switchable_benched_monster_ids.count()).unwrap();
+                            let chosen_switchable_benched_monster_id = switchable_benched_monster_ids[switchable_benched_monster_choice_index];
+                            PerformSwitchOut(&mut sim, crate::SwitchContext { active_monster_id: active_monster_id, benched_monster_id: chosen_switchable_benched_monster_id });
                             last_turn_chosen_actions = None;
                         } else {
                             turn_stage = TurnStage::BattleEnded;
@@ -50,15 +50,15 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                 writeln!(locked_stdout, "Current Battle Status:")?;
                 write_empty_line(&mut locked_stdout)?;
 
-                writeln!(locked_stdout, "Ally Active Monster: {}", sim.battle.monster(sim.battle.ally_team().active_monster_uid).status_string())?;
-                writeln!(locked_stdout, "Opponent Active Monster {}", sim.battle.monster(sim.battle.opponent_team().active_monster_uid).status_string())?;
+                writeln!(locked_stdout, "Ally Active Monster: {}", sim.battle.monster(sim.battle.ally_team().active_monster_id).status_string())?;
+                writeln!(locked_stdout, "Opponent Active Monster {}", sim.battle.monster(sim.battle.opponent_team().active_monster_id).status_string())?;
                 writeln!(locked_stdout, "Ally Team:")?;
                 writeln!(locked_stdout, "{}", sim.battle.ally_team().team_status_string())?;
                 writeln!(locked_stdout, "Opponent Team:")?;
                 writeln!(locked_stdout, "{}", sim.battle.opponent_team().team_status_string())?;
                 
                 // Ally Team choices
-                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.ally_team().active_monster_uid).full_name())?;
+                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.ally_team().active_monster_id).full_name())?;
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&ally_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
@@ -75,7 +75,7 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                 };
 
                 // Opponent choices
-                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.opponent_team().active_monster_uid).full_name())?;
+                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.opponent_team().active_monster_id).full_name())?;
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&opponent_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
@@ -177,17 +177,17 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
     let partially_specified_action_for_team = available_choices_for_team.map(|actions| actions[choice_index]);
     let fully_specified_action_for_team = partially_specified_action_for_team.map(|action| {
         match action {
-            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => FullySpecifiedChoice::Move { move_user: attacker_uid, move_used: move_uid, target: target_uid, activation_order },
+            PartiallySpecifiedChoice::Move { move_user_id, move_id, target_id, activation_order, .. } => FullySpecifiedChoice::Move { move_user_id, move_id, target_id, activation_order },
             
-            PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
-                let switchable_benched_monster_names = switchable_benched_monster_uids.into_iter().map(|uid| battle.monster(uid).full_name()).enumerate();
+            PartiallySpecifiedChoice::SwitchOut { active_monster_id, switchable_benched_monster_ids, activation_order, .. } => {
+                let switchable_benched_monster_names = switchable_benched_monster_ids.into_iter().map(|id| battle.monster(id).full_name()).enumerate();
                 let _ = writeln!(locked_stdout, "Choose a benched monster to switch in");
                 for (index, switchee_name) in switchable_benched_monster_names {
                     let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
                 }
-                let chosen_switchable_benched_monster_choice_index = input_to_choice_index(locked_stdout, switchable_benched_monster_uids.count()).unwrap();
-                let benched_monster_uid = switchable_benched_monster_uids[chosen_switchable_benched_monster_choice_index];
-                FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, activation_order }
+                let chosen_switchable_benched_monster_choice_index = input_to_choice_index(locked_stdout, switchable_benched_monster_ids.count()).unwrap();
+                let benched_monster_id = switchable_benched_monster_ids[chosen_switchable_benched_monster_choice_index];
+                FullySpecifiedChoice::SwitchOut { active_monster_id, benched_monster_id, activation_order }
             },
         }
     });

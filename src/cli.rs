@@ -105,7 +105,7 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                 // Show the message log
                 sim.battle.message_log.show_last_turn_messages();
                 
-                if sim.battle.is_finished {
+                if sim.battle.is_finished() {
                     turn_stage = TurnStage::BattleEnded;
                 } else {
                     turn_stage = TurnStage::ChooseActions(sim.battle.available_choices());

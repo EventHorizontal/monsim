@@ -58,7 +58,7 @@ impl BattleSimulator { // simulation
 
     pub fn simulate_turn(&mut self, choices: PerTeam<FullySpecifiedChoice>) -> SimResult {
         
-        assert!(not!(self.battle.is_finished), "The simulator cannot be called on a finished battle.");
+        assert!(not!(self.battle.is_finished()), "The simulator cannot be called on a finished battle.");
 
         /*
         INFO: Removed error on turn number increment. We are probably not going to exceed the `65535` threshold.
@@ -105,31 +105,35 @@ impl BattleSimulator { // simulation
                 ]);
                 
                 // Check if any of the teams is out of usable Monsters
-                let are_all_ally_team_monsters_fainted = self.battle.ally_team()
+                let ally_team_wiped = self.battle.ally_team()
                     .monsters()
                     .iter()
                     .all(|monster| { monster.is_fainted() });
-                let are_all_opponent_team_monsters_fainted = self.battle.opponent_team()
+                let opponent_team_wiped = self.battle.opponent_team()
                     .monsters()
                     .iter()
                     .all(|monster| { monster.is_fainted() });
-                
-                if are_all_ally_team_monsters_fainted {
-                    self.battle.is_finished = true;
-                    self.battle.message_log.push("Opponent Team won!");
-                    break 'turn;
-                } 
-                if are_all_opponent_team_monsters_fainted {
-                    self.battle.is_finished = true;
-                    self.battle.message_log.push("Ally Team won!");
-                    break 'turn;
+                let team_wiped = (ally_team_wiped, opponent_team_wiped);
+                match team_wiped {
+                    (true, false) => {
+                        self.battle.message_log.push("Opponent Team won!");
+                        break 'turn;
+                    },
+                    (false, true) => {
+                        self.battle.message_log.push("Ally Team won!");
+                        break 'turn;
+                    },
+                    (true, true) => {
+                        self.battle.message_log.push("The teams tied!");
+                    },
+                    (false, false) => {}
                 }
             };
 
             self.battle.message_log.push(EMPTY_LINE);
         }
 
-        if self.battle.is_finished {
+        if self.battle.is_finished() {
             self.battle.message_log.extend(&[EMPTY_LINE, "The battle ended."]);
         }
         self.battle.message_log.extend(&["---", EMPTY_LINE]);

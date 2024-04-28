@@ -14,7 +14,6 @@ pub struct BattleState {
 
     pub(crate) prng: Prng,
     pub(crate) turn_number: u16,
-    pub(crate) is_finished: bool,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
     
@@ -27,12 +26,21 @@ impl BattleState {
         let teams = PerTeam::new(ally_team, opponent_team);
         Self {
             prng: Prng::from_current_time(),
-            is_finished: false,
             turn_number: 0,
             teams,
             message_log: MessageLog::new(),
             
         }
+    }
+
+    pub fn is_finished(&self) -> bool {
+        self.ally_team().monsters().iter().all(|monster| {
+            monster.is_fainted()
+        })
+        ||
+        self.opponent_team().monsters().iter().all(|monster| {
+            monster.is_fainted()
+        })
     }
 
     // Teams -----------------

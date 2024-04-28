@@ -24,6 +24,17 @@ fn main() -> MonsimResult<()> {
                         FlashFire.spawn()
                     )
                 )
+                .add_monster(
+                    Squirecoal.spawn(
+                        (
+                            Ember.spawn(),
+                            Some(Growl.spawn()),
+                            None,
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )
+                )
         )
         .add_opponent_team(
             MonsterTeam::spawn()

@@ -2,7 +2,7 @@ use std::io::{self, StdoutLock, Write};
 
 use monsim_utils::{Nothing, TeamAffl, NOTHING};
 
-use crate::{MonsimResult, sim::{AvailableChoicesForTeam, BattleState, BattleSimulator, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}};
+use crate::{sim::{AvailableChoicesForTeam, BattleSimulator, BattleState, FullySpecifiedChoice, PartiallySpecifiedChoice, PerTeam}, MonsimResult, PerformSwitchOut};
 
 enum TurnStage {
     ChooseActions(PerTeam<AvailableChoicesForTeam>),
@@ -33,9 +33,9 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                             for (index, monster_name) in switchable_benched_monster_names {
                                 writeln!(locked_stdout, "[{}] {}", index + 1, monster_name)?;
                             }
-                            let switchable_benched_monster_choice_index = input_to_choice_index(&mut locked_stdout).unwrap();
+                            let switchable_benched_monster_choice_index = input_to_choice_index(&mut locked_stdout, switchable_benched_monster_uids.count()).unwrap();
                             let chosen_switchable_benched_monster_uid = switchable_benched_monster_uids[switchable_benched_monster_choice_index];
-                            sim.switch_out_between_turns(active_monster_uid, chosen_switchable_benched_monster_uid);
+                            PerformSwitchOut(&mut sim, crate::SwitchContext { active_monster: active_monster_uid, benched_monster: chosen_switchable_benched_monster_uid });
                             last_turn_chosen_actions = None;
                         } else {
                             turn_stage = TurnStage::BattleEnded;
@@ -158,7 +158,7 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
 {
 
     let available_actions_count = available_choices_for_team.apply(|actions| actions.count() );
-    let choice_index = input_to_choice_index(locked_stdout)?;
+    let choice_index = input_to_choice_index(locked_stdout, available_actions_count + 2)?;
     
     let is_repeat_selected = choice_index == available_actions_count;
     let mut quit_offset = 0;
@@ -185,7 +185,7 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
                 for (index, switchee_name) in switchable_benched_monster_names {
                     let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
                 }
-                let chosen_switchable_benched_monster_choice_index = input_to_choice_index(locked_stdout).unwrap();
+                let chosen_switchable_benched_monster_choice_index = input_to_choice_index(locked_stdout, switchable_benched_monster_uids.count()).unwrap();
                 let benched_monster_uid = switchable_benched_monster_uids[chosen_switchable_benched_monster_choice_index];
                 FullySpecifiedChoice::SwitchOut { active_monster_uid, benched_monster_uid, activation_order }
             },
@@ -194,7 +194,7 @@ fn translate_input_to_choices(battle: &BattleState, available_choices_for_team: 
     Ok(UIChoice::Action(fully_specified_action_for_team))
 }
 
-fn input_to_choice_index(locked_stdout: &mut StdoutLock) -> MonsimResult<usize> {
+fn input_to_choice_index(locked_stdout: &mut StdoutLock, total_choices: usize) -> MonsimResult<usize> {
     loop { // We keep asking until the input is valid.
         let mut input = String::new();
         let _ = std::io::stdin().read_line(&mut input)?;
@@ -203,7 +203,9 @@ fn input_to_choice_index(locked_stdout: &mut StdoutLock) -> MonsimResult<usize> 
         if input.len() == 1 {
             let chosen_action_index = chosen_action_index.map(|char| { char.to_digit(10) }).flatten();
             if let Some(chosen_action_index) = chosen_action_index {
-                return Ok(chosen_action_index as usize - 1); // The -1 converts back to zero based counting 
+                if 0 < chosen_action_index && chosen_action_index <= total_choices as u32 {
+                    return Ok(chosen_action_index as usize - 1); // The -1 converts back to zero based counting 
+                }
             }
         };
         writeln!(locked_stdout, "Invalid index. Please try again.")?;

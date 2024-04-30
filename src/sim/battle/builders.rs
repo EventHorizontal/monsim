@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityID, BattleState, DealDefaultDamage, Monster, MonsterTeam, MonsterID, Move, MoveCategory, MoveID, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{FieldPosition, BoardPosition}}, AbilityID, BattleState, DealDefaultDamage, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 /*  
     FEATURE: Better Validation -> Some basic state validation will be done 
@@ -224,6 +224,10 @@ impl MonsterBuilder {
             species: self.species,
             moveset,
             ability,
+            board_position: match monster_id.team_id  {
+                TeamID::Allies => BoardPosition::Field(FieldPosition::AllyCentre),
+                TeamID::Opponents => BoardPosition::Field(FieldPosition::OpponentCentre),
+            },
         } 
     }
 }

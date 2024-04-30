@@ -6,6 +6,8 @@ use monsim_macros::{abl, mon, mov};
 
 use crate::matchup;
 
+use self::targetting::BoardPosition;
+
 use super::event_dex::*;
 use super::*;
 
@@ -82,6 +84,8 @@ fn perform_switch_out(sim: &mut BattleSimulator, context: SwitchContext) {
     let SwitchContext { active_monster_id, benched_monster_id } = context;
 
     sim.battle.team_mut(active_monster_id.team_id).active_monster_id = benched_monster_id;
+    mon![mut benched_monster_id].board_position = mon![active_monster_id].board_position;
+    mon![mut active_monster_id].board_position = BoardPosition::Bench; 
     
     sim.push_message(format![
         "{} switched out! Go {}!", 

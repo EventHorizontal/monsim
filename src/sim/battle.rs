@@ -5,7 +5,7 @@ use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterID, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler};
 
-use super::{prng::Prng, PartiallySpecifiedChoice, PerTeam, TeamID};
+use super::{prng::Prng, targetting::{FieldPosition, BoardPosition}, PartiallySpecifiedChoice, PerTeam, TeamID};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
@@ -179,6 +179,7 @@ impl BattleState {
     fn available_choices_for_team(&self, team_id: TeamID) -> AvailableChoicesForTeam {
         
         let active_monster_on_team = self.active_monsters_on_team(team_id);
+        let active_monster_on_other_team = self.active_monsters_on_team(team_id.other());
         
         // Move choices
         let mut move_actions = Vec::with_capacity(4);
@@ -190,9 +191,10 @@ impl BattleState {
             */
             if self.move_(move_id).current_power_points > 0 {
                 let partially_specified_choice = PartiallySpecifiedChoice::Move { 
-                    move_user_id: move_id.owner_id,
                     move_id,
-                    target_id: self.active_monsters_on_team(team_id.other()).id,
+                    target_position: {
+                        active_monster_on_other_team.board_position.expect_on_field()
+                    },
                     activation_order: ActivationOrder {
                         priority: self.move_(move_id).priority(),
                         speed: self.monster(move_id.owner_id).stat(Stat::Speed),
@@ -249,6 +251,17 @@ impl BattleState {
         } else {
             MaxSizedVec::from_vec(switchable_benched_monsters)
         }
+    }
+    
+    pub(crate) fn monster_at_position(&self, field_position: FieldPosition) -> Option<&Monster> {
+        self.monsters()
+            .find(|monster| {
+                if let Some(monster_field_position) = monster.field_position() {
+                    monster_field_position == field_position
+                } else {
+                    false
+                }
+            })
     }
 }
 

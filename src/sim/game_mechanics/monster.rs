@@ -5,7 +5,7 @@ use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, MoveNumber, MoveID, TeamID };
-use crate::{sim::{ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Event, Move, OwnedEventHandler};
+use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Event, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -17,6 +17,7 @@ pub struct Monster {
     pub(crate) individual_values: StatSet,
     pub(crate) level: u16,
     pub(crate) nature: MonsterNature,
+    pub(crate) board_position: BoardPosition,
     pub(crate) stat_modifiers: StatModifierSet,
     pub(crate) species: &'static MonsterSpecies,
     
@@ -149,6 +150,13 @@ impl Monster { // public
     #[inline(always)]
     pub fn ev_in_stat(&self, stat: Stat) -> u16 {
         self.effort_values[stat]
+    }
+    
+    pub(crate) fn field_position(&self) -> Option<FieldPosition> {
+        match self.board_position {
+            BoardPosition::Bench => None,
+            BoardPosition::Field(field_position) => Some(field_position),
+        }
     }
     
 }

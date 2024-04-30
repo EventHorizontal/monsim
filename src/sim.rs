@@ -7,6 +7,7 @@ pub(crate) mod prng;
 
 mod event_dispatch;
 mod ordering;
+mod targetting;
 
 use std::{error::Error, fmt::Display, ops::RangeInclusive};
 
@@ -85,7 +86,17 @@ impl BattleSimulator { // simulation
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { move_user_id: _, move_id, target_id, .. } => {
+                FullySpecifiedChoice::Move { move_id, target_position, .. } => {
+                    /*
+                    We evaluate the target at the position chosen at the moment the Move is actually executed. This accounts
+                    for switches changing the monster at a certain position. 
+                    TODO:/ FEATURE: We need to eventually do something for the case where a monster faints and there isn't another to replace it,
+                    in a double battle for example.
+                    */
+                    let target_id = self.battle
+                        .monster_at_position(target_position)
+                        .expect("We're assuming there is still a monster in the position since when the choice was made.")
+                        .id;
                     UseMove(self, MoveUseContext::new(move_id, target_id));
                 },
                 FullySpecifiedChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {

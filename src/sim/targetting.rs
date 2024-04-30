@@ -1,0 +1,70 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FieldPosition {
+    AllyLeft,
+    AllyCentre,
+    AllyRight,
+    OpponentLeft,
+    OpponentCentre,
+    OpponentRight,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BoardPosition {
+    Bench,
+    Field(FieldPosition),
+}
+
+impl FieldPosition {
+    /// Returns a vector of the positions adjacent to the position this method is called on, 
+    /// including allies and opponents, but not including self.
+    pub fn adjacent_positions(&self) -> Vec<FieldPosition> {
+        let (x, y) = FieldPosition::to_coords(*self);
+        let mut positions = Vec::with_capacity(8);
+        let compass_directions = [(-1,1), (-1, 0), (-1, -1), (0, 1), (0, -1), (1, 1), (1, 0), (1, -1)];
+        for (dx, dy) in compass_directions {
+            let (x, y) = (x + dx, y + dy);
+            let maybe_position = FieldPosition::from_coords((x, y));
+            if let Some(position) = maybe_position {
+                positions.push(position);
+            } 
+        }
+        positions
+    }
+
+    pub fn is_adjacent(&self, position_to_compare: FieldPosition) -> bool {
+        self.adjacent_positions().contains(&position_to_compare)
+    } 
+
+    fn from_coords(value: (i8, i8)) -> Option<FieldPosition> {
+        match value {
+            (0, 0) => Some(FieldPosition::AllyLeft),
+            (1, 0) => Some(FieldPosition::AllyCentre),
+            (2, 0) => Some(FieldPosition::AllyRight),
+            (0, 1) => Some(FieldPosition::OpponentLeft),
+            (1, 1) => Some(FieldPosition::OpponentCentre),
+            (2, 1) => Some(FieldPosition::OpponentRight),
+            _ => None,
+        }
+    }
+
+    fn to_coords(value: FieldPosition) -> (i8, i8) {
+        match value {
+            FieldPosition::AllyLeft => (0, 0),
+            FieldPosition::AllyCentre => (1, 0),
+            FieldPosition::AllyRight => (2, 0),
+            FieldPosition::OpponentLeft => (0, 1),
+            FieldPosition::OpponentCentre => (1, 1),
+            FieldPosition::OpponentRight => (2, 1),
+        }
+    }
+}
+
+impl BoardPosition {
+    pub fn expect_on_field(&self) -> FieldPosition {
+        match self {
+            BoardPosition::Bench => panic!(),
+            BoardPosition::Field(field_position) => *field_position,
+        }
+    }  
+}
+

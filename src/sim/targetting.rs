@@ -8,6 +8,13 @@ pub enum FieldPosition {
     OpponentRight,
 }
 
+/**
+I am thinking of the Battlefield as divided into two "zones", like a tabletop 
+card game, one is the **Bench** zone where the Monsters not participating in 
+the battle are, and the **Field** zone where the Monsters currently participating
+in the battle are. Monsters in the Field zone have a value indicating which tile
+they are standing on.
+*/
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BoardPosition {
     Bench,

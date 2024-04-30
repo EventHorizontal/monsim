@@ -159,6 +159,10 @@ impl Monster { // public
         }
     }
     
+    pub(crate) fn is_active(&self) -> bool {
+        matches!(self.board_position, BoardPosition::Field(_))
+    }
+    
 }
 
 impl Monster { // private

@@ -83,7 +83,7 @@ pub(crate) const PerformSwitchOut: Effect<Nothing, SwitchContext> = Effect(perfo
 fn perform_switch_out(sim: &mut BattleSimulator, context: SwitchContext) {
     let SwitchContext { active_monster_id, benched_monster_id } = context;
 
-    sim.battle.team_mut(active_monster_id.team_id).active_monster_id = benched_monster_id;
+    // Swap board positions of the two Monsters. (We just assume benched_monster_id corresponds to a benched monster at this point).
     mon![mut benched_monster_id].board_position = mon![active_monster_id].board_position;
     mon![mut active_monster_id].board_position = BoardPosition::Bench; 
     

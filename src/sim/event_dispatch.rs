@@ -89,9 +89,9 @@ impl EventDispatcher {
         battle: &BattleState,
         broadcaster_id: MonsterID,
         owner_id: MonsterID,
-        filter_options: EventFilteringOptions,
+        filtering_options: EventFilteringOptions,
     ) -> bool {
-        let bitmask = {
+        let passes_broadcasters_filtering_options = {
             let mut bitmask = 0b0000;
             if broadcaster_id == owner_id {
                 bitmask |= TargetFlags::SELF.bits()
@@ -103,15 +103,12 @@ impl EventDispatcher {
                 bitmask |= TargetFlags::OPPONENTS.bits()
             } //0x04
               // FEATURE: Bitmasking (0x08) for the Environment
-            bitmask
+            filtering_options.event_source.bits() == bitmask
         };
-        let event_source_filter_passed = filter_options.event_source.bits() == bitmask;
-        let is_active_passed = battle.is_active_monster(owner_id);
+        let passes_activity_filter = battle.monster(owner_id).is_active() && filtering_options.requires_being_active;
 
-        event_source_filter_passed && is_active_passed
-    }
-
-    
+        passes_broadcasters_filtering_options && passes_activity_filter
+    }  
 }
 
 impl EventFilteringOptions {

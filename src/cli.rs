@@ -24,7 +24,7 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
             TurnStage::ChooseActions(available_choices) => {
 
                 // Check if any of the active monsters has fainted and needs to switched out
-                for active_monster_id in sim.battle.active_monster_ids() {
+                for active_monster_id in sim.battle.active_monsters().map_consume(|monster| { monster.id }) {
                     let available_choices_for_team = &available_choices[active_monster_id.team_id];
                     if sim.battle.monster(active_monster_id).is_fainted() {
                         if let Some(&PartiallySpecifiedChoice::SwitchOut { active_monster_id, switchable_benched_monster_ids, .. }) = available_choices_for_team.switch_out_choice() {
@@ -50,15 +50,15 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                 writeln!(locked_stdout, "Current Battle Status:")?;
                 write_empty_line(&mut locked_stdout)?;
 
-                writeln!(locked_stdout, "Ally Active Monster: {}", sim.battle.monster(sim.battle.ally_team().active_monster_id).status_string())?;
-                writeln!(locked_stdout, "Opponent Active Monster {}", sim.battle.monster(sim.battle.opponent_team().active_monster_id).status_string())?;
+                writeln!(locked_stdout, "Ally Active Monster: {}", sim.battle.ally_team().active_monster().status_string())?;
+                writeln!(locked_stdout, "Opponent Active Monster {}", sim.battle.opponent_team().active_monster().status_string())?;
                 writeln!(locked_stdout, "Ally Team:")?;
                 writeln!(locked_stdout, "{}", sim.battle.ally_team().team_status_string())?;
                 writeln!(locked_stdout, "Opponent Team:")?;
                 writeln!(locked_stdout, "{}", sim.battle.opponent_team().team_status_string())?;
                 
                 // Ally Team choices
-                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.ally_team().active_monster_id).full_name())?;
+                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.ally_team().active_monster().full_name())?;
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&ally_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 
@@ -75,7 +75,7 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                 };
 
                 // Opponent choices
-                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.monster(sim.battle.opponent_team().active_monster_id).full_name())?;
+                writeln!(locked_stdout, "Choose an Action for {}", sim.battle.opponent_team().active_monster().full_name())?;
                 write_empty_line(&mut locked_stdout)?;
                 display_choices(&opponent_team_available_choices, &mut locked_stdout, last_turn_chosen_actions.is_some())?;
                 

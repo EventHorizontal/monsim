@@ -5,7 +5,7 @@ use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterID, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler};
 
-use super::{prng::Prng, targetting::{FieldPosition, BoardPosition}, PartiallySpecifiedChoice, PerTeam, TeamID};
+use super::{prng::Prng, targetting::{BoardPosition, FieldPosition}, PartiallySpecifiedChoice, PerTeam, TeamID};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
@@ -125,22 +125,9 @@ impl BattleState {
     }
 
     pub fn active_monsters(&self) -> PerTeam<&Monster> {
-        let ally_team_active_monster = self.ally_team().map_consume(|team| { self.monster(team.active_monster_id) });
-        let opponent_team_active_monster = self.opponent_team().map_consume(|team| { self.monster(team.active_monster_id) });
+        let ally_team_active_monster = self.ally_team().map_consume(|team| { team.active_monster() });
+        let opponent_team_active_monster = self.opponent_team().map_consume(|team| team.active_monster() );
         PerTeam::new(ally_team_active_monster, opponent_team_active_monster)
-    }
-
-    pub(crate) fn active_monster_ids(&self) -> PerTeam<MonsterID> {
-        self.active_monsters().map_consume(|monster| { monster.id })
-    }
-
-    /// Returns a singular monster for now. TODO: This will need to updated for double and multi battle support.
-    pub fn active_monsters_on_team(&self, team_id: TeamID) -> &Monster {
-        self.monster(self.teams[team_id].active_monster_id)
-    }
-
-    pub fn is_active_monster(&self, monster_id: MonsterID) -> bool {
-        self.teams[monster_id.team_id].active_monster_id == monster_id
     }
 
     // Abilities -----------------
@@ -178,8 +165,8 @@ impl BattleState {
 
     fn available_choices_for_team(&self, team_id: TeamID) -> AvailableChoicesForTeam {
         
-        let active_monster_on_team = self.active_monsters_on_team(team_id);
-        let active_monster_on_other_team = self.active_monsters_on_team(team_id.other());
+        let active_monster_on_team = self.team(team_id).active_monster();
+        let active_monster_on_other_team = self.team(team_id.other()).active_monster();
         
         // Move choices
         let mut move_actions = Vec::with_capacity(4);
@@ -238,8 +225,8 @@ impl BattleState {
         let mut number_of_switchees = 0;
         let mut switchable_benched_monsters = Vec::with_capacity(5);
         for monster in self.team(team_id).monsters().iter() {
-            let is_active_monster_for_team = monster.id == self.teams[team_id].active_monster_id;
-            let is_valid_switch_partner = not!(self.monster(monster.id).is_fainted()) && not!(is_active_monster_for_team);
+            let is_active_monster_for_team = matches!(monster.board_position, BoardPosition::Field(_));
+            let is_valid_switch_partner = not!(monster.is_fainted()) && not!(is_active_monster_for_team);
             if is_valid_switch_partner {
                 switchable_benched_monsters.push(monster.id);
                 number_of_switchees += 1;

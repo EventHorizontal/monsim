@@ -106,7 +106,7 @@ impl BattleSimulator { // simulation
 
             // Check if a Monster fainted this turn
             let maybe_fainted_active_monster = self.battle.monsters()
-                .find(|monster| self.battle.monster(monster.id).is_fainted() && self.battle.is_active_monster(monster.id));
+                .find(|monster| monster.is_fainted() && monster.is_active());
             
             if let Some(fainted_active_monster) = maybe_fainted_active_monster {
                 

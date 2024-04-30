@@ -1,7 +1,7 @@
 use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 
-use crate::{sim::MonsterNumber, Event, OwnedEventHandler};
+use crate::{sim::{targetting::BoardPosition, MonsterNumber}, Event, OwnedEventHandler};
 use super::{Monster, MonsterID};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
@@ -9,7 +9,6 @@ const MAX_BATTLERS_PER_TEAM: usize = 6;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonsterTeam {
     pub id: TeamID,
-    pub active_monster_id: MonsterID,
     monsters: MaxSizedVec<Monster, 6>,
 }
 
@@ -34,9 +33,17 @@ impl MonsterTeam {
         let monsters = MaxSizedVec::from_vec(monsters);
         MonsterTeam {
             id,
-            active_monster_id: MonsterID { team_id: id, monster_number: MonsterNumber::_1}, 
             monsters 
         }
+    }
+
+    pub fn active_monster(&self) -> &Monster {
+        self.monsters()
+            .iter()
+            .find(|monster| {
+                if let BoardPosition::Field(_) = monster.board_position { true } else { false }
+            })
+            .expect("We start the battle by assigning a single Monster as on the Field, and then we swap that value with other Monsters, but exactly one Monster should always have the BoardPosition::Field value.")
     }
 
     pub fn monsters(&self) -> &MaxSizedVec<Monster, 6> {

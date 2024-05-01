@@ -22,7 +22,6 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
     'main: loop {
         match turn_stage {
             TurnStage::ChooseActions(available_choices) => {
-
                 // Check if any of the active monsters has fainted and needs to switched out
                 for active_monster_id in sim.battle.active_monsters().map_consume(|monster| { monster.id }) {
                     let available_choices_for_team = &available_choices[active_monster_id.team_id];
@@ -35,7 +34,8 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                             }
                             let switchable_benched_monster_choice_index = input_to_choice_index(&mut locked_stdout, switchable_benched_monster_ids.count()).unwrap();
                             let chosen_switchable_benched_monster_id = switchable_benched_monster_ids[switchable_benched_monster_choice_index];
-                            PerformSwitchOut(&mut sim, crate::SwitchContext { active_monster_id: active_monster_id, benched_monster_id: chosen_switchable_benched_monster_id });
+                            PerformSwitchOut(&mut sim, crate::SwitchContext { active_monster_id, benched_monster_id: chosen_switchable_benched_monster_id });
+                            PerformSwitchOut(&mut sim, crate::SwitchContext { active_monster_id, benched_monster_id: chosen_switchable_benched_monster_id });
                             last_turn_chosen_actions = None;
                         } else {
                             turn_stage = TurnStage::BattleEnded;
@@ -198,7 +198,8 @@ fn input_to_choice_index(locked_stdout: &mut StdoutLock, total_choices: usize) -
     loop { // We keep asking until the input is valid.
         let mut input = String::new();
         let _ = std::io::stdin().read_line(&mut input)?;
-        let input = &input[..input.len()-2]; // I think there's a \cr\n at the end or something. TODO: Investigate later.
+        // INFO: Windows uses \r\n. Linux uses only \n, so we use `trim()` which accounts for both.
+        let input = input.trim();
         let chosen_action_index = input.chars().next();
         if input.len() == 1 {
             let chosen_action_index = chosen_action_index.map(|char| { char.to_digit(10) }).flatten();

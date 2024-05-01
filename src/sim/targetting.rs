@@ -1,13 +1,3 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FieldPosition {
-    AllyLeft,
-    AllyCentre,
-    AllyRight,
-    OpponentLeft,
-    OpponentCentre,
-    OpponentRight,
-}
-
 /**
 I am thinking of the Battlefield as divided into two "zones", like a tabletop 
 card game, one is the **Bench** zone where the Monsters not participating in 
@@ -38,7 +28,7 @@ impl FieldPosition {
         positions
     }
 
-    pub fn is_adjacent(&self, position_to_compare: FieldPosition) -> bool {
+    pub fn is_adjacent_to(&self, position_to_compare: FieldPosition) -> bool {
         self.adjacent_positions().contains(&position_to_compare)
     } 
 
@@ -67,11 +57,37 @@ impl FieldPosition {
 }
 
 impl BoardPosition {
-    pub fn expect_on_field(&self) -> FieldPosition {
+    pub fn field_position(&self) -> Option<FieldPosition> {
         match self {
-            BoardPosition::Bench => panic!(),
-            BoardPosition::Field(field_position) => *field_position,
+            BoardPosition::Bench => None,
+            BoardPosition::Field(field_position) => Some(*field_position),
         }
     }  
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FieldPosition {
+    AllyLeft,
+    AllyCentre,
+    AllyRight,
+    OpponentLeft,
+    OpponentCentre,
+    OpponentRight,
+}
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct TargetFlags: u8 {
+        const _           = 0b1111_1111;
+        
+        const ANY         = 0b0000_0000;
+        const ALL         = 0b0000_0001;
+        
+        const ADJACENT    = 0b0000_0010;
+        const NONADJACENT = 0b0000_0100;
+        
+        const SELF        = 0b0000_1000;
+        const ALLIES      = 0b0001_0000;
+        const OPPONENTS   = 0b0010_0000;
+    }
+}

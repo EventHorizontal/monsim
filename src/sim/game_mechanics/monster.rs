@@ -246,17 +246,6 @@ impl Monster { // private
         }
     }
 
-    pub(crate) fn move_ids(&self) -> Vec<MoveID> {
-        self.moveset
-            .iter()
-            .enumerate()
-            .map(|(idx, _)| MoveID {
-                owner_id: self.id,
-                move_number: MoveNumber::from(idx),
-            })
-            .collect()
-    }
-
     pub(crate) fn status_string(&self) -> String {
         let mut out = String::new();
         out.push_str(&format![

@@ -1,6 +1,6 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveUseContext};
+use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveUseContext, TargetFlags};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
@@ -52,6 +52,11 @@ impl Move {
     } 
 
     #[inline(always)]
+    pub fn targets(&self) -> TargetFlags {
+        self.species.targets
+    }
+
+    #[inline(always)]
     pub fn type_(&self) -> Type {
         self.species.type_
     }
@@ -82,6 +87,7 @@ pub struct MoveSpecies {
     category: MoveCategory,
     max_power_points: u8,
     priority: i8,
+    targets: TargetFlags,
     type_: Type,
     event_handlers: fn() -> EventHandlerDeck,
     _event_filtering_options: EventFilteringOptions,
@@ -107,7 +113,20 @@ impl Eq for MoveSpecies {}
 
 impl MoveSpecies {
     pub const fn from_dex_entry(dex_entry: MoveDexEntry) -> Self {
-        let MoveDexEntry { dex_number, name, on_use_effect, base_accuracy, base_power, category, max_power_points, priority, type_, event_handlers, event_filtering_options } = dex_entry;
+        let MoveDexEntry { 
+            dex_number, 
+            name, 
+            on_use_effect, 
+            base_accuracy, 
+            base_power, 
+            category, 
+            max_power_points, 
+            priority, 
+            targets, 
+            type_, 
+            event_handlers, 
+            event_filtering_options,
+        } = dex_entry;
         
         MoveSpecies {
             dex_number,
@@ -118,6 +137,7 @@ impl MoveSpecies {
             category,
             max_power_points,
             priority,
+            targets,
             type_,
             event_handlers,
             _event_filtering_options: event_filtering_options,
@@ -184,6 +204,7 @@ pub struct MoveDexEntry {
     pub category: MoveCategory,
     pub max_power_points: u8,
     pub priority: i8,
+    pub targets: TargetFlags,
     pub type_: Type,
      
     pub event_handlers: fn() -> EventHandlerDeck,

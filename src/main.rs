@@ -18,7 +18,7 @@ fn main() -> MonsimResult<()> {
                             Tackle.spawn()
                                 .with_power_points(23),
                             Some(Growl.spawn()),
-                            None,
+                            Some(DragonDance.spawn()),
                             None
                         ),
                         FlashFire.spawn()

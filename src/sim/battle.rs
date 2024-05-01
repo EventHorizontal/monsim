@@ -3,7 +3,7 @@ pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterTeam, MonsterID, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler};
+use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler, TargetFlags};
 
 use super::{prng::Prng, targetting::{BoardPosition, FieldPosition}, PartiallySpecifiedChoice, PerTeam, TeamID};
 use message_log::MessageLog;
@@ -70,29 +70,24 @@ impl BattleState {
     }
 
     pub fn is_on_ally_team(&self, monster_id: MonsterID) -> bool {
-        self.ally_team().monsters().iter().any(|monster| monster.id == monster_id)
+        monster_id.team_id == TeamID::Allies
     }
 
     pub fn is_on_opponent_team(&self, monster_id: MonsterID) -> bool {
-        self.opponent_team().monsters().iter().any(|it| it.id == monster_id)
+        monster_id.team_id == TeamID::Opponents
     }
 
     pub fn are_opponents(&self, monster_1_id: MonsterID, monster_2_id: MonsterID) -> bool {
-        if monster_1_id == monster_2_id {
-            return false;
-        }
-
-        (self.is_on_ally_team(monster_1_id) && self.is_on_opponent_team(monster_2_id))
-            || (self.is_on_ally_team(monster_2_id) && self.is_on_opponent_team(monster_1_id))
+        monster_1_id.team_id != monster_2_id.team_id
     }
 
+    /// A monster is not considered its own ally.
     pub fn are_allies(&self, monster_1_id: MonsterID, monster_2_id: MonsterID) -> bool {
         if monster_1_id == monster_2_id {
             return false;
+        } else {
+            monster_1_id.team_id == monster_2_id.team_id
         }
-
-        (self.is_on_ally_team(monster_1_id) && self.is_on_ally_team(monster_2_id))
-            || (self.is_on_opponent_team(monster_2_id) && self.is_on_opponent_team(monster_1_id))
     }
 
     pub fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
@@ -170,24 +165,31 @@ impl BattleState {
         
         // Move choices
         let mut move_actions = Vec::with_capacity(4);
-        for move_id in active_monster_on_team.move_ids() {
+        for move_ in active_monster_on_team.moveset().into_iter() {
             /*
             The move is only choosable if it still has power points. FEATURE: We might want to emit 
             "inactive" choices in order to show a greyed out version of the choice (in this case that 
             the monster has that move but its out of PP).
             */
-            if self.move_(move_id).current_power_points > 0 {
+            if move_.current_power_points > 0 {
                 let partially_specified_choice = PartiallySpecifiedChoice::Move { 
-                    move_id,
+                    move_id: move_.id,
                     target_position: {
-                        active_monster_on_other_team.board_position.expect_on_field()
+                        // FEATURE: Double battles will require this to be more flexible.
+                        if move_.targets().contains(TargetFlags::SELF) {
+                            active_monster_on_team.board_position.field_position().expect("The monster is active.")
+                        } else if move_.targets().contains(TargetFlags::OPPONENTS) {
+                            active_monster_on_other_team.board_position.field_position().expect("The monster is active.")
+                        } else {
+                            panic!("We currently only support moves that affect self or opponents.")
+                        }
                     },
                     activation_order: ActivationOrder {
-                        priority: self.move_(move_id).priority(),
-                        speed: self.monster(move_id.owner_id).stat(Stat::Speed),
+                        priority: move_.priority(),
+                        speed: active_monster_on_team.stat(Stat::Speed),
                         order: 0, //TODO: Think about how to restrict order to be mutually exclusive
                     },
-                    display_text: self.move_(move_id).name() 
+                    display_text: move_.name()  
                 };
                 move_actions.push(partially_specified_choice);
             }

@@ -200,7 +200,7 @@ fn test_priority_sorting_with_speed_ties() {
 
 #[test]
 #[cfg(feature = "debug")]
-fn test_event_filtering_for_event_sources() {
+fn test_filtering_events_by_broadcaster_relations() {
     extern crate self as monsim;
     use crate::sim::*;
     use crate::sim::{
@@ -239,7 +239,7 @@ fn test_event_filtering_for_event_sources() {
             )
             .build();
     
-    let passed_filter = EventDispatcher::filter_event_handlers(
+    let passed_filter_1 = EventDispatcher::does_event_pass_event_receivers_filtering_options(
         &test_battle,
         MonsterID {
             team_id: TeamID::Allies,
@@ -251,7 +251,21 @@ fn test_event_filtering_for_event_sources() {
         },
         EventFilteringOptions::default(),
     );
-    assert!(passed_filter);
+    assert!(passed_filter_1);
+    
+    let passed_filter_2 = EventDispatcher::does_event_pass_event_receivers_filtering_options(
+        &test_battle,
+        MonsterID {
+            team_id: TeamID::Allies,
+            monster_number: MonsterNumber::_1,
+        },
+        MonsterID {
+            team_id: TeamID::Allies,
+            monster_number: MonsterNumber::_1,
+        },
+        EventFilteringOptions::default(),
+    );
+    assert!(not!(passed_filter_2));
 }
 
 #[test]

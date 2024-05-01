@@ -2,7 +2,7 @@ use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 
 use crate::{sim::{targetting::BoardPosition, MonsterNumber}, Event, OwnedEventHandler};
-use super::{Monster, MonsterID};
+use super::Monster;
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 

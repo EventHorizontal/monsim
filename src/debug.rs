@@ -40,7 +40,7 @@ macro_rules! debug_to_file {
 macro_rules! source_code_location {
     () => {
         const_format::formatcp![
-            "[ {file}:{line}:{col} ]",
+            "[{file}:{line}:{col}]",
             file = std::file!(),
             line = std::line!(),
             col = std::column!(),

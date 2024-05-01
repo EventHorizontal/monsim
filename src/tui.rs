@@ -1,13 +1,20 @@
 mod ui;
 use ui::Ui;
 
+/*
+TODO: We will probably be abandoning this TUI, either just using the CLI or replacing it with 
+the not-deprecated `ratutui` crate. This is just a message to indicate that and that this 
+module has been rotting for a while, since I turned it off to improve build times. So expect to 
+have to rewrite some or all of this later.
+*/
+
 use std::{error::Error, io::Stdout, sync::mpsc, thread, time::{Duration, Instant}};
 
 use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
 use monsim_utils::{MaxSizedVec, Nothing, NOTHING};
 use tui::{backend::CrosstermBackend, Terminal};
 
-use crate::{sim::{BattleSimulator, BattleState, FullySpecifiedChoice, MonsterUID, PartiallySpecifiedChoice, PerTeam, TeamUID, EMPTY_LINE}, ActivationOrder, AvailableChoicesForTeam};
+use crate::{sim::{BattleSimulator, BattleState, FullySpecifiedChoice, MonsterID, PartiallySpecifiedChoice, PerTeam, TeamID, EMPTY_LINE}, ActivationOrder, AvailableChoicesForTeam};
 
 pub type TuiResult<S> = Result<S, Box<dyn Error>>;
 
@@ -33,8 +40,8 @@ pub enum InputMode {
     MidBattle(PerTeam<AvailableChoicesForTeam>),
     SwitcheePrompt {
         is_between_turn_switch: bool,
-        active_monster_uid: MonsterUID,
-        switchable_benched_monster_uids: MaxSizedVec<MonsterUID, 5>,
+        active_monster_id: MonsterID,
+        switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>,
         activation_order: ActivationOrder,
         highlight_cursor: usize,
     },
@@ -93,10 +100,10 @@ pub fn run(mut battle: BattleState) -> TuiResult<Nothing> {
                 ui.update_message_log(battle.message_log.len());
                 ui.update_team_status_panels(&battle);
                 
-                for team_uid in [TeamUID::Allies, TeamUID::Opponents] {
-                    if let FullySpecifiedChoice::SwitchOut { .. } = choices[team_uid] {
-                        ui.clear_choice_menu_selection_for_team(team_uid);
-                        choices_for_turn[team_uid] = None;
+                for team_id in [TeamID::Allies, TeamID::Opponents] {
+                    if let FullySpecifiedChoice::SwitchOut { .. } = choices[team_id] {
+                        ui.clear_choice_menu_selection_for_team(team_id);
+                        choices_for_turn[team_id] = None;
                     }
                 }
                 
@@ -110,12 +117,12 @@ pub fn run(mut battle: BattleState) -> TuiResult<Nothing> {
                     // HACK: Quickly cobbled together a way to get the ActivationOrder here, but not sure
                     // if this is guaranteed to give the right one, especially if there are 
                     // multiple monsters.
-                    let activation_order = { if let FullySpecifiedChoice::SwitchOut { activation_order, .. } = choices[fainted_battler.uid.team_uid] { activation_order } else { unreachable!() } };
+                    let activation_order = { if let FullySpecifiedChoice::SwitchOut { activation_order, .. } = choices[fainted_battler.id.team_id] { activation_order } else { unreachable!() } };
                     // FIXME: We cannot handle multiple simultaneous fainted battlers with this logic
                     current_app_state.transition(Some(AppState::AcceptingInput(InputMode::SwitcheePrompt { 
                         is_between_turn_switch: true,
-                        active_monster_uid: fainted_battler.uid,
-                        switchable_benched_monster_uids: battle.switchable_benched_monster_uids(fainted_battler.uid.team_uid),
+                        active_monster_id: fainted_battler.id,
+                        switchable_benched_monster_ids: battle.switchable_benched_monster_ids(fainted_battler.id.team_id),
                         activation_order,
                         highlight_cursor: 0 
                     })));
@@ -155,19 +162,19 @@ fn update_from_input(
                 KeyCode::Right => { ui.select_right_widget(); None },
                 KeyCode::Enter => {
                     let maybe_selected_menu_item = ui.select_currently_hightlighted_menu_item();
-                    if let Some((selected_menu_item_index, team_uid)) = maybe_selected_menu_item {
-                        let available_choices_for_team = available_choices[team_uid];
+                    if let Some((selected_menu_item_index, team_id)) = maybe_selected_menu_item {
+                        let available_choices_for_team = available_choices[team_id];
                         let selected_choice = available_choices_for_team[selected_menu_item_index];
                         match selected_choice {
-                            PartiallySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order, .. } => {
-                                choices_for_turn[team_uid] = Some(FullySpecifiedChoice::Move { attacker_uid, move_uid, target_uid, activation_order })
+                            PartiallySpecifiedChoice::Move { attacker_id, move_id, target_id, activation_order, .. } => {
+                                choices_for_turn[team_id] = Some(FullySpecifiedChoice::Move { attacker_id, move_id, target_id, activation_order })
                             },
-                            PartiallySpecifiedChoice::SwitchOut { active_monster_uid, switchable_benched_monster_uids, activation_order, .. } => {
+                            PartiallySpecifiedChoice::SwitchOut { active_monster_id, switchable_benched_monster_ids, activation_order, .. } => {
                                 // Update the switchee list when the switch option is selected.
                                 return Some(AppState::AcceptingInput(InputMode::SwitcheePrompt {
                                     is_between_turn_switch: false,
-                                    active_monster_uid,
-                                    switchable_benched_monster_uids,
+                                    active_monster_id,
+                                    switchable_benched_monster_ids,
                                     activation_order,
                                     highlight_cursor: 0,
                                 }));
@@ -196,36 +203,36 @@ fn update_from_input(
             }
         },
 
-        InputMode::SwitcheePrompt { is_between_turn_switch, active_monster_uid, switchable_benched_monster_uids, highlight_cursor, activation_order} => {
+        InputMode::SwitcheePrompt { is_between_turn_switch, active_monster_id, switchable_benched_monster_ids, highlight_cursor, activation_order} => {
             match pressed_key {
                 KeyCode::Esc => {
                     Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
                 },
 
                 KeyCode::Up => {
-                    let list_length = switchable_benched_monster_uids.iter().count();
+                    let list_length = switchable_benched_monster_ids.iter().count();
                     Ui::scroll_up_wrapped(highlight_cursor, list_length);
                     None
                 },
                 KeyCode::Down => { 
-                    let list_length = switchable_benched_monster_uids.iter().count();
+                    let list_length = switchable_benched_monster_ids.iter().count();
                     Ui::scroll_down_wrapped(highlight_cursor, list_length); 
                     None 
                 },
                 KeyCode::Enter => {
-                    let benched_monster_uid = switchable_benched_monster_uids[*highlight_cursor]; 
+                    let benched_monster_id = switchable_benched_monster_ids[*highlight_cursor]; 
                     // HACK: no formal way to switch out between turns.
                     if *is_between_turn_switch {
-                        let _ = BattleSimulator::switch_out_between_turns(battle, *active_monster_uid, benched_monster_uid);
-                        ui.clear_choice_menu_selection_for_team(active_monster_uid.team_uid);
+                        let _ = BattleSimulator::switch_out_between_turns(battle, *active_monster_id, benched_monster_id);
+                        ui.clear_choice_menu_selection_for_team(active_monster_id.team_id);
                         // HACK: This fixes the issue of targetting the previous fainted foe until we have a more robust targetting system
-                        ui.clear_choice_menu_selection_for_team(active_monster_uid.team_uid.other());
+                        ui.clear_choice_menu_selection_for_team(active_monster_id.team_id.other());
                         ui.update_team_status_panels(battle);
                         ui.update_message_log(battle.message_log.len());
 
                         *choices_for_turn = PerTeam::both(None);
                     } else {
-                        choices_for_turn[active_monster_uid.team_uid] = Some(FullySpecifiedChoice::SwitchOut { active_monster_uid: *active_monster_uid, benched_monster_uid, activation_order: *activation_order });
+                        choices_for_turn[active_monster_id.team_id] = Some(FullySpecifiedChoice::SwitchOut { active_monster_id: *active_monster_id, benched_monster_id, activation_order: *activation_order });
                     }
                     Some(AppState::AcceptingInput(InputMode::MidBattle(battle.available_choices())))
                 }

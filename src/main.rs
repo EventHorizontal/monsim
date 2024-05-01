@@ -18,6 +18,17 @@ fn main() -> MonsimResult<()> {
                             Tackle.spawn()
                                 .with_power_points(23),
                             Some(Growl.spawn()),
+                            Some(DragonDance.spawn()),
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )
+                )
+                .add_monster(
+                    Squirecoal.spawn(
+                        (
+                            Ember.spawn(),
+                            Some(Growl.spawn()),
                             None,
                             None
                         ),
@@ -35,13 +46,14 @@ fn main() -> MonsimResult<()> {
                             None,
                             None
                         ),
-                        WaterAbsorb.spawn()
+                        FlashFire.spawn()
                     )
                         
                 )
         )
         .build();
 
+    #[cfg(feature="macro")]
     let _battle2 = battle!(
         team: Opponents
         {
@@ -51,7 +63,7 @@ fn main() -> MonsimResult<()> {
             },
             Squirecoal: "Cheep" {
                 moveset: (Scratch, Tackle, Growl),
-                ability: WaterAbsorb
+                ability: FlashFire
             }
         },
         team: Allies
@@ -62,7 +74,7 @@ fn main() -> MonsimResult<()> {
             },
             Squirecoal: "Cheep" {
                 moveset: (Scratch { power_points: 23 }, Tackle, Growl),
-                ability: WaterAbsorb
+                ability: FlashFire
             }
         },
     );

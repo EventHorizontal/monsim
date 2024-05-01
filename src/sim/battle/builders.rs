@@ -1,14 +1,17 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{sim::game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, AbilityUID, BattleState, Monster, MonsterTeam, MonsterUID, Move, MoveUID, Stat, TeamUID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, DealDefaultDamage, Monster, MonsterID, MonsterNumber, MonsterTeam, Move, MoveCategory, MoveID, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
-// TODO: Some basic state validation will be done now, but later 
-// on I want to extend that to more stuff, such as validating that 
-// a certain monster species is allowed to have certain abilities etc. 
-// Mostly that kind of thing where the user is alerted that the 
-// combination of things they provided is not allowed.
-
+/*  
+    FEATURE: Better Validation -> Some basic state validation will be done 
+    now, but later on I want to extend that to more stuff, such as validating 
+    that a certain monster species is allowed to have certain abilities etc. 
+    Mostly that kind of thing where the user is alerted that the combination 
+    of things they provided is not allowed. The thing to keep in mind here is
+    that monsim will eventually run with a GUI, this is just the engine, and so
+    the interactive UI will allow reporting this errors iteratively.
+*/
 pub struct BattleBuilder {
     maybe_ally_team: Option<Ally<MonsterTeamBuilder>>,
     maybe_opponent_team: Option<Opponent<MonsterTeamBuilder>>,
@@ -34,7 +37,7 @@ impl BattleBuilder {
     }
 
     pub fn build(self) -> BattleState {
-        const ALLY_UIDS: [MonsterUID; 6] = [
+        const ALLY_IDS: [MonsterID; 6] = [
             ALLY_1,
             ALLY_2,
             ALLY_3,
@@ -46,10 +49,10 @@ impl BattleBuilder {
         let ally_team = self.maybe_ally_team
             .expect("Building the BattleState requires adding an Ally Team, found none.")
             .map_consume(|ally_team_builder| {
-                ally_team_builder.build(ALLY_UIDS, TeamUID::Allies)                
+                ally_team_builder.build(ALLY_IDS, TeamID::Allies)                
             });
 
-        const OPPONENT_UIDS: [MonsterUID; 6] = [
+        const OPPONENT_IDS: [MonsterID; 6] = [
             OPPONENT_1,
             OPPONENT_2,
             OPPONENT_3,
@@ -61,7 +64,7 @@ impl BattleBuilder {
         let opponent_team = self.maybe_opponent_team
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
             .map_consume(|opponent_team_builder| {
-                opponent_team_builder.build(OPPONENT_UIDS, TeamUID::Opponents)                
+                opponent_team_builder.build(OPPONENT_IDS, TeamID::Opponents)                
             });
 
         BattleState::new(ally_team, opponent_team)
@@ -93,18 +96,18 @@ impl MonsterTeamBuilder {
         self
     }
 
-    fn build(self, monster_uids: [MonsterUID; 6], team_uid: TeamUID) -> MonsterTeam {
+    fn build(self, monster_ids: [MonsterID; 6], team_id: TeamID) -> MonsterTeam {
         self.maybe_monsters
             .expect(
-                format!["Expected {team_uid} to have at least one monster, but none were given"].as_str()
+                format!["Expected {team_id} to have at least one monster, but none were given"].as_str()
             )
             .into_iter()
-            .zip(monster_uids.into_iter())
-            .map(|(monster_builder, monster_uid)| {
-                monster_builder.build(monster_uid)
+            .zip(monster_ids.into_iter())
+            .map(|(monster_builder, monster_id)| {
+                monster_builder.build(monster_id)
             })
             .collect::<Vec<_>>()
-            .pipe(|monsters| MonsterTeam::new(monsters, team_uid))
+            .pipe(|monsters| MonsterTeam::new(monsters, team_id))
     }
 }
 
@@ -114,10 +117,10 @@ pub struct MonsterBuilder {
     moves: MaxSizedVec<MoveBuilder, 4>,
     ability: AbilityBuilder,
     nickname: Option<&'static str>,
-    level: Option<u16>,
-    nature: Option<MonsterNature>,
-    stat_modifiers: Option<StatModifierSet>,
-    current_health: Option<u16>,
+    _level: Option<u16>,
+    _nature: Option<MonsterNature>,
+    _stat_modifiers: Option<StatModifierSet>,
+    _current_health: Option<u16>,
 }
 
 pub trait MonsterBuilderExt {
@@ -166,15 +169,13 @@ impl Monster {
             moves,
             ability,
             nickname: None,
-            level: None,
-            nature: None,
-            stat_modifiers: None,
-            current_health: None, 
+            _level: None,
+            _nature: None,
+            _stat_modifiers: None,
+            _current_health: None, 
         }
     }
 }
-
-const MAX_MOVES_PER_MOVESET: usize = 4;
 
 impl MonsterBuilder {
     pub fn with_nickname(mut self, nickname: &'static str) -> Self {
@@ -182,72 +183,57 @@ impl MonsterBuilder {
         self
     } 
 
-    pub fn build(self, monster_uid: MonsterUID) -> Monster {
+    pub fn build(self, monster_id: MonsterID) -> Monster {
         
         let nickname = self.nickname;
         
-        let move_uids: [MoveUID; 4] = [
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_1 },
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_2 },
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_3 },
-            MoveUID { owner_uid: monster_uid, move_number: crate::MoveNumber::_4 },
+        let move_ids: [MoveID; 4] = [
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_1 },
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_2 },
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_3 },
+            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_4 },
         ];
 
         let moveset = self.moves
             .into_iter()
-            .zip(move_uids.into_iter()).map(|(move_builder, move_uid)| {
-                move_builder.build(move_uid)
+            .zip(move_ids.into_iter()).map(|(move_builder, move_id)| {
+                move_builder.build(move_id)
             })
             .collect::<Vec<_>>()
             .pipe(|vec| { MaxSizedVec::from_vec(vec) });
         
         let ability = self.ability
-            .build(monster_uid);
+            .build(AbilityID { owner_id: monster_id});
         
         let level = 50;
-        // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-        let iv_in_stat = 31;
-        let ev_in_stat = 252;
+        // FEATURE: EVs and IVs should be settable through the builder.
+        const IVS: StatSet = StatSet::new(31, 31, 31, 31, 31, 31);
+        const EVS: StatSet = StatSet::new(252, 252, 252, 252, 252, 252);
         // In-game hp-stat determination formula
-        let health_stat = ((2 * self.species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
         let nature = MonsterNature::Serious;
-
-        // In-game non-hp-stat determination formula
-        let get_non_hp_stat = |stat: Stat| -> u16 {
-            // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-            let iv_in_stat = 31;
-            let ev_in_stat = 252;
-            let mut out = ((2 * self.species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
-            out = f64::floor(out as f64 * nature[stat]) as u16;
-            out
-        };
         
         Monster {
-            uid: monster_uid,
+            id: monster_id,
             nickname,
+            effort_values: EVS,
+            current_health: Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level),
+            individual_values: IVS,
             level,
-            max_health: health_stat,
             nature,
-            current_health: health_stat,
-            is_fainted: false,
+            stat_modifiers: StatModifierSet::new(0, 0, 0, 0, 0),
             species: self.species,
             moveset,
             ability,
-            stats: StatSet::new(
-                health_stat,
-                get_non_hp_stat(Stat::PhysicalAttack),
-                get_non_hp_stat(Stat::PhysicalDefense),
-                get_non_hp_stat(Stat::SpecialAttack),
-                get_non_hp_stat(Stat::SpecialDefense),
-                get_non_hp_stat(Stat::Speed),
-            ),
-            stat_modifiers: StatModifierSet::new(
-                0,
-                0,
-                0,
-                0,
-                0,
-            ),
+            board_position: {
+                if monster_id.monster_number == MonsterNumber::_1 {
+                    match monster_id.team_id  {
+                        TeamID::Allies => BoardPosition::Field(FieldPosition::AllyCentre),
+                        TeamID::Opponents => BoardPosition::Field(FieldPosition::OpponentCentre),
+                    }
+                } else {
+                    BoardPosition::Bench
+                }
+            },
         } 
     }
 }
@@ -279,26 +265,28 @@ impl Move {
 
 impl MoveBuilder {
     pub fn with_power_points(mut self, power_points: u8) -> MoveBuilder {
-        assert!(power_points < self.species.max_power_points, 
+        assert!(power_points < self.species.max_power_points(), 
             "Expected move {move_name} to have less than {max_pp} power points",
-            move_name = self.species.name,
-            max_pp = self.species.max_power_points,
-        ); 
+            move_name = self.species.name(),
+            max_pp = self.species.max_power_points(),
+        );
+         
         self.power_points = Some(power_points);
         self
     }
 
-    fn build(self, move_uid: MoveUID) -> Move {
+    fn build(self, move_id: MoveID) -> Move {
         let species = self.species;
+        // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
+        if species.category() == MoveCategory::Status && species.
+        on_use_effect() == DealDefaultDamage {
+            println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
+        }
         Move {
-            uid: move_uid,
+            id: move_id,
+            
+            current_power_points: self.power_points.unwrap_or(self.species.max_power_points()),
             species,
-            base_accuracy: species.base_accuracy,
-            base_power: species.base_power,
-            category: species.category,
-            power_points: self.power_points.unwrap_or(species.max_power_points),
-            priority: species.priority,
-            type_: species.type_,
         }
     } 
 }
@@ -330,10 +318,10 @@ impl Ability {
 // This implementation doesn't really afford us anything extra, but if
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
-    fn build(self, uid: AbilityUID) -> Ability {
-        Ability { 
-            uid, 
-            species: self.species 
+    fn build(self, id: AbilityID) -> Ability {
+        Ability {
+            id,
+            species: self.species,
         }
     }
 }

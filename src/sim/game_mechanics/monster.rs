@@ -2,29 +2,32 @@ use core::{fmt::Debug, panic};
 use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 
 use monsim_utils::MaxSizedVec;
+use tap::Pipe;
 
-use super::{Ability, MoveNumber, MoveSet, MoveUID, TeamUID };
-use crate::{sim::{event::OwnedEventHandlerDeck, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Move};
+use super::{Ability, MoveNumber, MoveID, TeamID };
+use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Event, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
-    pub uid: MonsterUID,
+    pub(crate) id: MonsterID,
+    
     pub(crate) nickname: Option<&'static str>,
-    pub level: u16,
-    pub max_health: u16,
-    pub nature: MonsterNature,
-    pub stats: StatSet,
-    pub stat_modifiers: StatModifierSet,
-    pub is_fainted: bool,
-    pub current_health: u16,
-    pub species: &'static MonsterSpecies,
-    pub moveset: MaxSizedVec<Move, 4>,
-    pub ability: Ability,
+    pub(crate) effort_values: StatSet,
+    pub(crate) current_health: u16,
+    pub(crate) individual_values: StatSet,
+    pub(crate) level: u16,
+    pub(crate) nature: MonsterNature,
+    pub(crate) board_position: BoardPosition,
+    pub(crate) stat_modifiers: StatModifierSet,
+    pub(crate) species: &'static MonsterSpecies,
+    
+    pub(crate) moveset: MaxSizedVec<Move, 4>,
+    pub(crate) ability: Ability,
 }
 
 impl PartialEq for Monster {
     fn eq(&self, other: &Self) -> bool {
-        self.uid == other.uid
+        self.id == other.id
     }
 }
 
@@ -37,7 +40,7 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    nickname, self.species.name, self.uid, self.current_health, self.max_health
+                    nickname, self.species.name, self.id, self.current_health, self.max_health()
                 ]
                 .as_str(),
             );
@@ -45,7 +48,7 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.species.name, self.uid, self.current_health, self.max_health
+                    self.species.name, self.id, self.current_health, self.max_health()
                 ]
                 .as_str(),
             );
@@ -57,7 +60,7 @@ impl Display for Monster {
         out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, self.species.secondary_type].as_str());
 
         out.push_str("\t│\t├── ");
-        out.push_str(format!["abl {}\n", self.ability.species.name].as_str());
+        out.push_str(format!["abl {}\n", self.ability.name()].as_str());
 
         for (i, move_) in self.moveset.into_iter().enumerate() {
             if i < number_of_effects - 1 {
@@ -65,62 +68,14 @@ impl Display for Monster {
             } else {
                 out.push_str("\t│\t└── ");
             }
-            out.push_str(format!["mov {}\n", move_.species.name].as_str());
+            out.push_str(format!["mov {}\n", move_.name()].as_str());
         }
 
         write!(f, "{}", out)
     }
 }
 
-impl Monster {
-    pub(crate) fn new(uid: MonsterUID, species: &'static MonsterSpecies, nickname: Option<&'static str>, moveset: MaxSizedVec<Move, 4>, ability: Ability) -> Self {
-        let level = 50;
-        // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-        let iv_in_stat = 31;
-        let ev_in_stat = 252;
-        // In-game hp-stat determination formula
-        let health_stat = ((2 * species.base_stats[Stat::Hp] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + level + 10;
-        let nature = MonsterNature::Serious;
-
-        // In-game non-hp-stat determination formula
-        let get_non_hp_stat = |stat: Stat| -> u16 {
-            // TODO: EVs and IVs are hardcoded for now. Decide what to do with this later.
-            let iv_in_stat = 31;
-            let ev_in_stat = 252;
-            let mut out = ((2 * species.base_stats[stat] + iv_in_stat + (ev_in_stat / 4)) * level) / 100 + 5;
-            out = f64::floor(out as f64 * nature[stat]) as u16;
-            out
-        };
-        
-        Monster {
-            uid,
-            nickname,
-            level,
-            max_health: health_stat,
-            nature,
-            current_health: health_stat,
-            is_fainted: false,
-            species,
-            moveset,
-            ability,
-            stats: StatSet {
-                hp: health_stat,
-                att: get_non_hp_stat(Stat::PhysicalAttack),
-                def: get_non_hp_stat(Stat::PhysicalDefense),
-                spa: get_non_hp_stat(Stat::SpecialAttack),
-                spd: get_non_hp_stat(Stat::SpecialDefense),
-                spe: get_non_hp_stat(Stat::Speed),
-            },
-            stat_modifiers: StatModifierSet {
-                att: 0,
-                def: 0,
-                spa: 0,
-                spd: 0,
-                spe: 0,
-            },
-        }
-    }
-
+impl Monster { // public
     pub fn name(&self) -> String {
         if let Some(nickname) = self.nickname {
             nickname.to_owned()
@@ -129,7 +84,161 @@ impl Monster {
         }
     }
 
-    pub fn full_name(&self) -> String {
+    pub fn is_type(&self, test_type_: Type) -> bool {
+        self.species.primary_type == test_type_ || self.species.secondary_type == Some(test_type_)
+    }
+
+    #[inline(always)]
+    pub fn max_health(&self) -> u16 {
+        // INFO: Unless this turns out to be a bad idea, we just calculate every time its 
+        // requested. The only situation I would need to change this is if the formula
+        // were to change, which I don't think will happen.
+        Monster::calculate_max_health(self.species.base_stat(Stat::Hp), self.individual_values[Stat::Hp], self.effort_values[Stat::Hp], self.level)
+    }
+
+    #[inline(always)]
+    pub fn stat(&self, stat: Stat) -> u16 {
+        match stat {
+            Stat::Hp => self.max_health(),
+            _ => {
+                // TODO: Division is supposed to be floating point here.
+                ((2 * self.species.base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5 // * self.nature[stat]
+            }
+        }
+    }
+    
+    #[inline(always)]
+    pub fn current_health(&self) -> u16 {
+        self.current_health
+    }
+
+    #[inline(always)]
+    pub fn nature(&self) -> MonsterNature {
+        self.nature
+    }
+
+    #[inline(always)]
+    pub fn is_fainted(&self) -> bool {
+        self.current_health == 0
+    }
+
+    #[inline(always)]
+    pub fn stat_modifier(&self, stat: Stat) -> i8 {
+        self.stat_modifiers[stat]
+    }
+
+    #[inline(always)]
+    pub fn ability(&self) -> &Ability {
+        &self.ability
+    }
+
+    #[inline(always)]
+    pub fn moveset(&self) -> &MaxSizedVec<Move, 4> {
+        &self.moveset
+    }
+    
+    #[inline(always)]
+    pub fn species(&self) -> &'static MonsterSpecies {
+        self.species
+    }
+
+    #[inline(always)]
+    pub fn iv_in_stat(&self, stat: Stat) -> u16 {
+        self.individual_values[stat]
+    }
+
+    #[inline(always)]
+    pub fn ev_in_stat(&self, stat: Stat) -> u16 {
+        self.effort_values[stat]
+    }
+    
+    pub(crate) fn field_position(&self) -> Option<FieldPosition> {
+        match self.board_position {
+            BoardPosition::Bench => None,
+            BoardPosition::Field(field_position) => Some(field_position),
+        }
+    }
+    
+    pub(crate) fn is_active(&self) -> bool {
+        matches!(self.board_position, BoardPosition::Field(_))
+    }
+    
+}
+
+impl Monster { // private
+
+    pub(crate) fn calculate_max_health(base_hp: u16, hp_iv: u16, hp_ev: u16, level: u16) -> u16 {
+        ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
+    }
+
+    pub(crate) fn ability_event_handler_for<E: Event>(&self, event: E) -> Option<OwnedEventHandler<E>> {
+        event.corresponding_handler(self.ability.event_handlers()) 
+            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                OwnedEventHandler {
+                    event_handler,
+                    owner_id: self.id,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: self.stat(Stat::Speed),
+                        order: self.ability.order(),
+                    },
+                    filtering_options: EventFilteringOptions::default(),
+                }
+            }
+        )
+    }
+
+    pub(crate) fn moveset_event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+        self.moveset
+            .iter()
+            .filter_map(|move_| {
+                event.corresponding_handler(move_.event_handlers()) 
+                    .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                        OwnedEventHandler {
+                            event_handler,
+                            owner_id: self.id,
+                            activation_order: ActivationOrder {
+                                priority: move_.priority(),
+                                speed: self.stat(Stat::Speed),
+                                order: 0,
+                            },
+                            filtering_options: EventFilteringOptions::default(),
+                        }
+                    })
+                })
+                .collect::<Vec<_>>()
+    }
+
+    pub(crate) fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+        let mut out = Vec::new();
+        event.corresponding_handler((self.species.event_handlers)()) 
+            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                OwnedEventHandler {
+                    event_handler,
+                    owner_id: self.id,
+                    activation_order:  ActivationOrder {
+                        priority: 0,
+                        speed: self.stat(Stat::Speed),
+                        order: 0,
+                    },
+                    filtering_options: EventFilteringOptions::default(),
+                }
+            })
+            .pipe(|optional_owned_event_handler| { // TODO: pipe_if_some
+                if let Some(owned_event_handler) = optional_owned_event_handler {
+                    out.push(owned_event_handler);
+                }
+            });
+        self.ability_event_handler_for(event).pipe(|optional_owned_event_handler| {
+            if let Some(owned_event_handler) = optional_owned_event_handler {
+                out.push(owned_event_handler)
+            }
+        });
+        out.append(&mut self.moveset_event_handlers_for(event));
+        out
+    }
+
+    pub(crate) fn full_name(&self) -> String {
         if let Some(nickname) = self.nickname {
             format!["{} the {}", nickname, self.species.name]
         } else {
@@ -137,74 +246,11 @@ impl Monster {
         }
     }
 
-    pub fn is_type(&self, test_type_: Type) -> bool {
-        self.species.primary_type == test_type_ || self.species.secondary_type == Some(test_type_)
-    }
-
-    pub fn ability_event_handler_deck_instance(&self) -> OwnedEventHandlerDeck {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: self.ability.species.order,
-        };
-        OwnedEventHandlerDeck {
-            event_handler_deck: self.ability.event_handler_deck(),
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        }
-    }
-
-    pub fn moveset_event_handler_deck_instances(&self, uid: MonsterUID) -> Vec<OwnedEventHandlerDeck> {
-        self.moveset
-            .iter()
-            .map(|it| OwnedEventHandlerDeck {
-                event_handler_deck: &it.species.event_handler_deck,
-                owner_uid: uid,
-                activation_order: ActivationOrder {
-                    priority: it.species.priority,
-                    speed: self.stats[Stat::Speed],
-                    order: 0,
-                },
-                filtering_options: EventFilteringOptions::default(),
-            })
-            .collect::<Vec<_>>()
-    }
-
-    pub fn event_handler_deck_instances(&self) -> Vec<OwnedEventHandlerDeck> {
-        let activation_order = ActivationOrder {
-            priority: 0,
-            speed: self.stats[Stat::Speed],
-            order: 0,
-        };
-        let monster_event_handler_deck_instance = OwnedEventHandlerDeck {
-            event_handler_deck: self.species.event_handler_deck,
-            owner_uid: self.uid,
-            activation_order,
-            filtering_options: EventFilteringOptions::default(),
-        };
-        let mut out = vec![monster_event_handler_deck_instance];
-        out.append(&mut self.moveset_event_handler_deck_instances(self.uid));
-        out.push(self.ability_event_handler_deck_instance());
-        out
-    }
-
-    pub(crate) fn move_uids(&self) -> Vec<MoveUID> {
-        self.moveset
-            .iter()
-            .enumerate()
-            .map(|(idx, _)| MoveUID {
-                owner_uid: self.uid,
-                move_number: MoveNumber::from(idx),
-            })
-            .collect()
-    }
-
-    pub fn status_string(&self) -> String {
+    pub(crate) fn status_string(&self) -> String {
         let mut out = String::new();
         out.push_str(&format![
             "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.uid, self.current_health, self.max_health
+            self.full_name(), self.id, self.current_health, self.max_health()
         ]);
         out
     }
@@ -212,17 +258,17 @@ impl Monster {
 
 #[derive(Clone, Copy)]
 pub struct MonsterSpecies {
-    pub dex_number: u16,
-    pub name: &'static str,
-    pub primary_type: Type,
-    pub secondary_type: Option<Type>,
-    pub base_stats: StatSet,
-    pub event_handler_deck: &'static EventHandlerDeck,
+    dex_number: u16,
+    name: &'static str,
+    primary_type: Type,
+    secondary_type: Option<Type>,
+    base_stats: StatSet,
+    event_handlers: fn() -> EventHandlerDeck,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MonsterUID {
-    pub team_uid: TeamUID,
+pub struct MonsterID {
+    pub team_id: TeamID,
     pub monster_number: MonsterNumber,
 }
 
@@ -237,60 +283,60 @@ pub enum MonsterNumber {
     _6,
 }
 
-pub const ALLY_1: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_1: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_1,
 };
-pub const ALLY_2: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_2: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_2,
 };
-pub const ALLY_3: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_3: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_3,
 };
-pub const ALLY_4: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_4: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_4,
 };
-pub const ALLY_5: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_5: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_5,
 };
-pub const ALLY_6: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Allies,
+pub const ALLY_6: MonsterID = MonsterID {
+    team_id: TeamID::Allies,
     monster_number: MonsterNumber::_6,
 };
 
-pub const OPPONENT_1: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_1: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_1,
 };
-pub const OPPONENT_2: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_2: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_2,
 };
-pub const OPPONENT_3: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_3: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_3,
 };
-pub const OPPONENT_4: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_4: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_4,
 };
-pub const OPPONENT_5: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_5: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_5,
 };
-pub const OPPONENT_6: MonsterUID = MonsterUID {
-    team_uid: TeamUID::Opponents,
+pub const OPPONENT_6: MonsterID = MonsterID {
+    team_id: TeamID::Opponents,
     monster_number: MonsterNumber::_6,
 };
 
-impl Display for MonsterUID {
+impl Display for MonsterID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self.team_uid {
-            TeamUID::Allies => match self.monster_number {
+        match self.team_id {
+            TeamID::Allies => match self.monster_number {
                 MonsterNumber::_1 => write!(f, "First Ally"),
                 MonsterNumber::_2 => write!(f, "Second Ally"),
                 MonsterNumber::_3 => write!(f, "Third Ally"),
@@ -298,7 +344,7 @@ impl Display for MonsterUID {
                 MonsterNumber::_5 => write!(f, "Fifth Ally"),
                 MonsterNumber::_6 => write!(f, "Sixth Ally"),
             },
-            TeamUID::Opponents => match self.monster_number {
+            TeamID::Opponents => match self.monster_number {
                 MonsterNumber::_1 => write!(f, "First Opponent"),
                 MonsterNumber::_2 => write!(f, "Second Opponent"),
                 MonsterNumber::_3 => write!(f, "Third Opponent"),
@@ -310,19 +356,49 @@ impl Display for MonsterUID {
     }
 }
 
-const MONSTER_DEFAULTS: MonsterSpecies = MonsterSpecies {
-    dex_number: 000,
-    name: "Unnamed",
-    primary_type: Type::Normal,
-    secondary_type: None,
-    base_stats: StatSet::new(0, 0, 0, 0, 0, 0),
-    event_handler_deck: &EventHandlerDeck::const_default(),
-};
-
 impl MonsterSpecies {
-    pub const fn const_default() -> Self {
-        MONSTER_DEFAULTS
+    pub const fn from_dex_entry(dex_entry: MonsterDexEntry) -> Self {
+        let MonsterDexEntry { dex_number, name, primary_type, secondary_type, base_stats, event_handlers } = dex_entry;
+        Self {
+            dex_number,
+            name,
+            primary_type,
+            secondary_type,
+            base_stats,
+            event_handlers,
+        }
     }
+
+    #[inline(always)]
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+    
+    #[inline(always)]
+    pub fn type_(&self) -> (Type, Option<Type>) {
+        (self.primary_type, self.secondary_type)
+    }
+
+    #[inline(always)]
+    pub fn primary_type(&self) -> Type {
+        self.primary_type
+    }
+
+    #[inline(always)]
+    pub fn secondary_type(&self) -> Option<Type> {
+        self.secondary_type
+    }
+
+    #[inline(always)]
+    pub fn base_stat(&self, stat: Stat) -> u16 {
+        self.base_stats[stat]
+    }
+    
+    #[inline(always)]
+    pub fn event_handlers(&self) -> EventHandlerDeck {
+        (self.event_handlers)()
+    }
+
 }
 
 impl From<usize> for MonsterNumber {
@@ -368,64 +444,6 @@ pub struct StatModifierSet {
     spe: i8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MonsterNature {
-    /// Neutral (+-Attack)
-    Hardy,
-    /// +Attack, -Defense
-    Lonely,
-    /// +Attack, -Speed
-    Brave,
-    /// +Attack, -Special Attack
-    Adamant,
-    /// +Attack, -Special Defense
-    Naughty,
-
-    /// Neutral (+-Defense)
-    Docile,
-    /// +Defense, -Attack
-    Bold,
-    /// +Defense, -Speed
-    Relaxed,
-    /// +Defense, -Special Attack
-    Impish, // - Special Attack
-    /// +Defense, -Special Defense
-    Lax, // - Special Defense
-
-    /// Neutral (+-Speed)
-    Serious,
-    /// +Speed, -Attack
-    Timid,
-    /// +Speed, -Defense
-    Hasty,
-    /// +Speed, -Special Attack
-    Jolly,
-    /// +Speed, -Special Defense
-    Naive,
-
-    /// Neutral (+-Special Attack)
-    Bashful,
-    /// +Special Attack, -Attack
-    Modest,
-    /// +Special Attack, -Defense
-    Mild,
-    /// +Special Attack, -Speed
-    Quiet,
-    /// +Special Attack, -Special Defense
-    Rash,
-
-    /// Neutral (+-Special Defense)
-    Quirky,
-    /// +Special Defense, -Attack
-    Calm,
-    /// +Special Defense, -Defense
-    Gentle,
-    /// +SpecialDefense, -Speed
-    Sassy,
-    /// +SpecialDefense, -Special Attack
-    Careful,
-}
-
 impl Debug for MonsterSpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -443,6 +461,16 @@ impl PartialEq for MonsterSpecies {
 }
 
 impl Eq for MonsterSpecies {}
+
+#[derive(Clone, Copy)]
+pub struct MonsterDexEntry {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub primary_type: Type,
+    pub secondary_type: Option<Type>,
+    pub base_stats: StatSet,
+    pub event_handlers: fn() -> EventHandlerDeck,
+}
 
 impl Index<Stat> for StatSet {
     type Output = u16;
@@ -530,6 +558,64 @@ impl Display for Stat {
             Stat::Speed => write!(f, "Speed"),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MonsterNature {
+    /// Neutral (+-Attack)
+    Hardy,
+    /// +Attack, -Defense
+    Lonely,
+    /// +Attack, -Speed
+    Brave,
+    /// +Attack, -Special Attack
+    Adamant,
+    /// +Attack, -Special Defense
+    Naughty,
+
+    /// Neutral (+-Defense)
+    Docile,
+    /// +Defense, -Attack
+    Bold,
+    /// +Defense, -Speed
+    Relaxed,
+    /// +Defense, -Special Attack
+    Impish, // - Special Attack
+    /// +Defense, -Special Defense
+    Lax, // - Special Defense
+
+    /// Neutral (+-Speed)
+    Serious,
+    /// +Speed, -Attack
+    Timid,
+    /// +Speed, -Defense
+    Hasty,
+    /// +Speed, -Special Attack
+    Jolly,
+    /// +Speed, -Special Defense
+    Naive,
+
+    /// Neutral (+-Special Attack)
+    Bashful,
+    /// +Special Attack, -Attack
+    Modest,
+    /// +Special Attack, -Defense
+    Mild,
+    /// +Special Attack, -Speed
+    Quiet,
+    /// +Special Attack, -Special Defense
+    Rash,
+
+    /// Neutral (+-Special Defense)
+    Quirky,
+    /// +Special Defense, -Attack
+    Calm,
+    /// +Special Defense, -Defense
+    Gentle,
+    /// +SpecialDefense, -Speed
+    Sassy,
+    /// +SpecialDefense, -Special Attack
+    Careful,
 }
 
 impl Index<Stat> for MonsterNature {

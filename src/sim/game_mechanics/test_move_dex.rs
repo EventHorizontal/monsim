@@ -4,59 +4,105 @@ use super::{
     move_::{MoveCategory, MoveSpecies},
     Type,
 };
-use crate::sim::{
-    Effect, event::EventFilteringOptions, BattleState, MonsterUID, Move, Stat
-};
+use crate::{effects::*, sim::{
+    event_dispatch::EventFilteringOptions, BattleState, MonsterID, Move, Stat
+}, BattleSimulator, EventHandlerDeck, MoveDexEntry, MoveUseContext, TargetFlags};
 
-pub const Tackle: MoveSpecies = MoveSpecies {
-    dex_number: 001,
-    name: "Tackle",
-    type_: Type::Normal,
-    category: MoveCategory::Physical,
-    base_power: 40,
-    base_accuracy: 100,
-    ..MoveSpecies::const_default()
-};
+pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
+    MoveDexEntry {
+        dex_number: 001,
+        name: "Tackle",
+        on_use_effect: DealDefaultDamage,
+        base_accuracy: 100,
+        base_power: 40,
+        category: MoveCategory::Physical,
+        max_power_points: 35,
+        priority: 0,
+        targets: TargetFlags::ANY
+                    .union(TargetFlags::ADJACENT)
+                    .union(TargetFlags::OPPONENTS)
+                    .union(TargetFlags::ALLIES),
+        type_: Type::Normal,
+        event_handlers: EventHandlerDeck::empty,
+        event_filtering_options: EventFilteringOptions::default(),
+    }
+);
 
-pub const Scratch: MoveSpecies = MoveSpecies {
-    dex_number: 002,
-    name: "Scratch",
-    type_: Type::Normal,
-    category: MoveCategory::Physical,
-    base_power: 40,
-    base_accuracy: 100,
-    ..MoveSpecies::const_default()
-};
+pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(
+    MoveDexEntry {
+        dex_number: 002,
+        name: "Scratch",
+        on_use_effect: DealDefaultDamage,
+        base_accuracy: 100,
+        base_power: 40,
+        category: MoveCategory::Physical,
+        max_power_points: 35,
+        priority: 0,
+        targets: TargetFlags::ANY
+                    .union(TargetFlags::ADJACENT)
+                    .union(TargetFlags::OPPONENTS)
+                    .union(TargetFlags::ALLIES),
+        type_: Type::Normal,
+        event_handlers: EventHandlerDeck::empty,
+        event_filtering_options: EventFilteringOptions::default(),
+    }
+);
 
-pub const Ember: MoveSpecies = MoveSpecies {
-    dex_number: 003,
-    name: "Ember",
-    type_: Type::Fire,
-    category: MoveCategory::Special,
-    base_power: 40,
-    base_accuracy: 100,
-    ..MoveSpecies::const_default()
-};
+pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(
+    MoveDexEntry {
+        dex_number: 003,
+        name: "Ember",
+        on_use_effect: DealDefaultDamage,
+        base_accuracy: 100,
+        base_power: 40,
+        category: MoveCategory::Special,
+        max_power_points: 35,
+        priority: 0,
+        targets: TargetFlags::ANY
+                    .union(TargetFlags::ADJACENT)
+                    .union(TargetFlags::OPPONENTS),
+        type_: Type::Fire,
+        event_handlers: EventHandlerDeck::empty,
+        event_filtering_options: EventFilteringOptions::default(),
+    }
+);
 
-pub const Bubble: MoveSpecies = MoveSpecies {
-    dex_number: 004,
-    name: "Bubble",
-    type_: Type::Water,
-    category: MoveCategory::Special,
-    base_power: 40,
-    base_accuracy: 100,
-    ..MoveSpecies::const_default()
-};
+pub const Bubble: MoveSpecies = MoveSpecies::from_dex_entry(
+    MoveDexEntry {
+        dex_number: 004,
+        name: "Bubble",
+        on_use_effect: DealDefaultDamage,
+        base_accuracy: 100,
+        base_power: 40,
+        category: MoveCategory::Special,
+        max_power_points: 35,
+        priority: 0,
+        targets: TargetFlags::ALL
+                    .union(TargetFlags::ADJACENT)
+                    .union(TargetFlags::OPPONENTS),
+        type_: Type::Water,
+        event_handlers: EventHandlerDeck::empty,
+        event_filtering_options: EventFilteringOptions::default(),
+    }
+);
 
-pub const Growl: MoveSpecies = MoveSpecies {
-    dex_number: 005,
-    name: "Growl",
-    type_: Type::Normal,
-    category: MoveCategory::Status,
-    base_power: 0,
-    base_accuracy: 100,
-    on_activate: Some(|battle: &mut BattleState, _attacker_uid: MonsterUID, target_uid: MonsterUID| {
-        _ = Effect::lower_stat(battle, target_uid, Stat::PhysicalAttack, 1);
-    }),
-    ..MoveSpecies::const_default()
-};
+pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(
+    MoveDexEntry {
+        dex_number: 005,
+        name: "Growl",
+        on_use_effect: Effect::from(|sim, context| { 
+            _ = LowerStat(sim, (context.target_id, Stat::PhysicalAttack, 1)); 
+        }),
+        base_accuracy: 100,
+        base_power: 0,
+        category: MoveCategory::Status,
+        max_power_points: 40,
+        priority: 0,
+        targets: TargetFlags::ALL
+                    .union(TargetFlags::ADJACENT)
+                    .union(TargetFlags::OPPONENTS),
+        type_: Type::Normal,
+        event_handlers: EventHandlerDeck::empty,
+        event_filtering_options: EventFilteringOptions::default(),
+    }
+);

@@ -37,11 +37,7 @@ impl MessageLog {
         self.last_turn_cursor = self.len()
     }
 
-    pub fn push(&mut self, message: String) {
-        self.messages.push(message);
-    }
-
-    pub fn push_str(&mut self, message: &str) {
+    pub fn push(&mut self, message: impl ToString) {
         self.messages.push(message.to_string());
     }
 

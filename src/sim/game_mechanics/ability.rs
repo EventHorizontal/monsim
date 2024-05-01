@@ -1,24 +1,67 @@
-use crate::sim::{event::EventFilteringOptions, BattleState, EventHandlerDeck, MonsterUID};
+use monsim_utils::Nothing;
+
+use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterID}, AbilityUseContext, Effect};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ability {
-    pub(crate) uid: AbilityUID, 
+    pub(crate) id: AbilityID, 
     pub(crate) species: &'static AbilitySpecies,
 }
 
-pub type AbilityUID = MonsterUID;
+impl Ability {
+
+    pub fn event_handlers(&self) -> EventHandlerDeck {
+        (self.species.event_handlers)()
+    }
+    
+    #[inline(always)]
+    pub fn species(&self) -> & 'static AbilitySpecies {
+        self.species
+    }
+    
+    #[inline(always)]
+    pub fn name(&self) -> &'static str {
+        self.species.name
+    }
+    
+    #[inline(always)]
+    pub fn order(&self) -> u16 {
+        self.species.order
+    }
+    
+    #[inline(always)]
+    pub fn dex_number(&self) -> u16 {
+        self.species.dex_number
+    }
+    
+    #[inline(always)]
+    pub fn on_activate_effect(&self) -> Effect<Nothing, AbilityUseContext> {
+        self.species.on_activate_effect
+    }
+    
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AbilityID {
+    pub owner_id: MonsterID
+}
+impl AbilityID {
+    pub(crate) fn _from_owner(ability_owner: MonsterID) -> AbilityID {
+        AbilityID { owner_id: ability_owner }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct AbilitySpecies {
-    pub dex_number: u16,
-    pub name: &'static str,
-    /// `fn(battle: &mut Battle, ability_holder: MonsterUID)`
-    pub on_activate: fn(&mut BattleState, MonsterUID),
-    pub event_handler_deck: &'static EventHandlerDeck,
-    pub filtering_options: EventFilteringOptions,
-    pub order: u16,
+    dex_number: u16,
+    name: &'static str,
+    on_activate_effect: Effect<Nothing, AbilityUseContext>,
+    event_handlers: fn() -> EventHandlerDeck,
+    event_filtering_options: EventFilteringOptions,
+    order: u16,
 }
+
 
 impl Debug for AbilitySpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -32,30 +75,59 @@ impl PartialEq for AbilitySpecies {
     }
 }
 
-const ABILITY_DEFAULTS: AbilitySpecies = AbilitySpecies {
-    dex_number: 000,
-    name: "Unnamed",
-    event_handler_deck: &EventHandlerDeck::const_default(),
-    on_activate: |_battle, _ability_holder_uid| {},
-    filtering_options: EventFilteringOptions::default(),
-    order: 0,
-};
-
-impl AbilitySpecies {
-    pub const fn const_default() -> Self {
-        ABILITY_DEFAULTS
-    }
-}
-
 impl Eq for AbilitySpecies {}
 
-impl Ability {
-
-    pub fn on_activate(&self, battle: &mut BattleState, owner_uid: MonsterUID) {
-        (self.species.on_activate)(battle, owner_uid);
+impl AbilitySpecies {
+    pub const fn from_dex_data(dex_data: AbilityDexEntry) -> Self {
+        let AbilityDexEntry { dex_number, name, on_activate_effect, event_handlers, event_filtering_options, order } = dex_data;
+        
+        Self {
+            dex_number,
+            name,
+            on_activate_effect,
+            event_handlers,
+            event_filtering_options,
+            order,
+        }
     }
 
-    pub fn event_handler_deck(&self) -> &'static EventHandlerDeck {
-        self.species.event_handler_deck
+    #[inline(always)]
+    pub fn event_handlers(&self) -> EventHandlerDeck {
+        (self.event_handlers)()
     }
+    
+    #[inline(always)]
+    pub fn on_activate_effect(&self) -> Effect<Nothing, AbilityUseContext> {
+        self.on_activate_effect
+    }
+    
+    #[inline(always)]
+    pub fn name(&self) -> & 'static str {
+        self.name
+    }
+    
+    #[inline(always)]
+    pub fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.event_filtering_options
+    }
+    
+    #[inline(always)]
+    pub fn order(&self) -> u16 {
+        self.order
+    }
+    
+    #[inline(always)]
+    pub fn dex_number(&self) -> u16 {
+        self.dex_number
+    }
+    
+}
+
+pub struct AbilityDexEntry {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub on_activate_effect: Effect<Nothing, AbilityUseContext>,
+    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_filtering_options: EventFilteringOptions,
+    pub order: u16,
 }

@@ -65,6 +65,12 @@ impl BoardPosition {
     }  
 }
 
+/**
+The way I thought about the positions, the "left" and "right" are with respect to the
+the ally team, so `AllyLeft` and `OpponentLeft` are facing each other. I know _technically_
+it "should" be that `OpponentLeft` faces `AllyRight` but I think it gets difficult
+to wrap your head around that every time.
+*/
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldPosition {
     AllyLeft,

@@ -51,6 +51,7 @@ fn main() -> MonsimResult<()> {
                         
                 )
         )
+        .with_format(BattleFormat::Double)
         .build();
 
     #[cfg(feature="macro")]

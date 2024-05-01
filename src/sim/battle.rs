@@ -5,6 +5,8 @@ use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler, TargetFlags};
 
+use self::builders::BattleFormat;
+
 use super::{prng::Prng, targetting::{BoardPosition, FieldPosition}, PartiallySpecifiedChoice, PerTeam, TeamID};
 use message_log::MessageLog;
 
@@ -14,6 +16,7 @@ pub struct BattleState {
 
     pub(crate) prng: Prng,
     pub(crate) turn_number: u16,
+    pub(crate) format: BattleFormat,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
     
@@ -22,16 +25,22 @@ pub struct BattleState {
 
 impl BattleState {
 
-    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>) -> Self {
+    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
         let teams = PerTeam::new(ally_team, opponent_team);
         Self {
             prng: Prng::from_current_time(),
             turn_number: 0,
             teams,
             message_log: MessageLog::new(),
-            
+            format,
         }
     }
+
+    #[inline(always)]
+    pub fn format(&self) -> BattleFormat {
+        self.format
+    }
+    
 
     pub fn is_finished(&self) -> bool {
         self.ally_team().monsters().iter().all(|monster| {

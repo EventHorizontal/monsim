@@ -4,7 +4,7 @@ use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
-use super::{Ability, MoveNumber, MoveID, TeamID };
+use super::{Ability, TeamID};
 use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Event, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
@@ -249,8 +249,8 @@ impl Monster { // private
     pub(crate) fn status_string(&self) -> String {
         let mut out = String::new();
         out.push_str(&format![
-            "{} ({}) [HP: {}/{}]\n",
-            self.full_name(), self.id, self.current_health, self.max_health()
+            "{} ({}) [HP: {}/{}] @ {}\n",
+            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position
         ]);
         out
     }

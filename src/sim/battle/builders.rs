@@ -58,7 +58,7 @@ impl BattleBuilder {
         let ally_board_positions = match self.format {
             BattleFormat::Single => {
                 [
-                    BoardPosition::Field(FieldPosition::AllyCentre),
+                    BoardPosition::Field(FieldPosition::AllySideCentre),
                     BoardPosition::Bench,
                     BoardPosition::Bench,
                     BoardPosition::Bench,
@@ -68,8 +68,8 @@ impl BattleBuilder {
             },
             BattleFormat::Double => {
                 [
-                    BoardPosition::Field(FieldPosition::AllyCentre),
-                    BoardPosition::Field(FieldPosition::AllyRight),
+                    BoardPosition::Field(FieldPosition::AllySideCentre),
+                    BoardPosition::Field(FieldPosition::AllySideRight),
                     BoardPosition::Bench,
                     BoardPosition::Bench,
                     BoardPosition::Bench,
@@ -78,9 +78,9 @@ impl BattleBuilder {
             },
             BattleFormat::Triple => {
                 [
-                    BoardPosition::Field(FieldPosition::AllyCentre),
-                    BoardPosition::Field(FieldPosition::AllyLeft),
-                    BoardPosition::Field(FieldPosition::AllyRight),
+                    BoardPosition::Field(FieldPosition::AllySideCentre),
+                    BoardPosition::Field(FieldPosition::AllySideLeft),
+                    BoardPosition::Field(FieldPosition::AllySideRight),
                     BoardPosition::Bench,
                     BoardPosition::Bench,
                     BoardPosition::Bench,
@@ -106,7 +106,7 @@ impl BattleBuilder {
         let opponent_board_positions = match self.format {
             BattleFormat::Single => {
                 [
-                    BoardPosition::Field(FieldPosition::OpponentCentre),
+                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
                     BoardPosition::Bench,
                     BoardPosition::Bench,
                     BoardPosition::Bench,
@@ -116,8 +116,8 @@ impl BattleBuilder {
             },
             BattleFormat::Double => {
                 [
-                    BoardPosition::Field(FieldPosition::OpponentCentre),
-                    BoardPosition::Field(FieldPosition::OpponentRight),
+                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                    BoardPosition::Field(FieldPosition::OpponentSideRight),
                     BoardPosition::Bench,
                     BoardPosition::Bench,
                     BoardPosition::Bench,
@@ -126,9 +126,9 @@ impl BattleBuilder {
             },
             BattleFormat::Triple => {
                 [
-                    BoardPosition::Field(FieldPosition::OpponentCentre),
-                    BoardPosition::Field(FieldPosition::OpponentLeft),
-                    BoardPosition::Field(FieldPosition::OpponentRight),
+                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                    BoardPosition::Field(FieldPosition::OpponentSideLeft),
+                    BoardPosition::Field(FieldPosition::OpponentSideRight),
                     BoardPosition::Bench,
                     BoardPosition::Bench,
                     BoardPosition::Bench,

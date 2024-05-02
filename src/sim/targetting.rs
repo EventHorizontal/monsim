@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 /**
 I am thinking of the Battlefield as divided into two "zones", like a tabletop 
 card game, one is the **Bench** zone where the Monsters not participating in 
@@ -9,6 +11,15 @@ they are standing on.
 pub enum BoardPosition {
     Bench,
     Field(FieldPosition),
+}
+
+impl Display for BoardPosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BoardPosition::Bench => write!(f, "Benched"),
+            BoardPosition::Field(field_position) => write!(f, "{}", field_position),
+        }
+    }
 }
 
 impl BoardPosition {
@@ -28,12 +39,20 @@ to wrap your head around that every time.
 */
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldPosition {
-    AllyLeft,
-    AllyCentre,
-    AllyRight,
-    OpponentLeft,
-    OpponentCentre,
-    OpponentRight,
+    AllySideLeft,
+    AllySideCentre,
+    AllySideRight,
+    /// Opponent's left Monster as seen from the POV of the "player", i.e. the AllySide trainer
+    OpponentSideLeft,
+    OpponentSideCentre,
+    /// Opponent's right Monster as seen from the POV of the "player", i.e. the AllySide trainer
+    OpponentSideRight,
+}
+
+impl Display for FieldPosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl FieldPosition {
@@ -59,24 +78,24 @@ impl FieldPosition {
 
     fn from_coords(value: (i8, i8)) -> Option<FieldPosition> {
         match value {
-            (0, 0) => Some(FieldPosition::AllyLeft),
-            (1, 0) => Some(FieldPosition::AllyCentre),
-            (2, 0) => Some(FieldPosition::AllyRight),
-            (0, 1) => Some(FieldPosition::OpponentLeft),
-            (1, 1) => Some(FieldPosition::OpponentCentre),
-            (2, 1) => Some(FieldPosition::OpponentRight),
+            (0, 0) => Some(FieldPosition::AllySideLeft),
+            (1, 0) => Some(FieldPosition::AllySideCentre),
+            (2, 0) => Some(FieldPosition::AllySideRight),
+            (0, 1) => Some(FieldPosition::OpponentSideLeft),
+            (1, 1) => Some(FieldPosition::OpponentSideCentre),
+            (2, 1) => Some(FieldPosition::OpponentSideRight),
             _ => None,
         }
     }
 
     fn to_coords(&self) -> (i8, i8) {
         match self {
-            FieldPosition::AllyLeft => (0, 0),
-            FieldPosition::AllyCentre => (1, 0),
-            FieldPosition::AllyRight => (2, 0),
-            FieldPosition::OpponentLeft => (0, 1),
-            FieldPosition::OpponentCentre => (1, 1),
-            FieldPosition::OpponentRight => (2, 1),
+            FieldPosition::AllySideLeft => (0, 0),
+            FieldPosition::AllySideCentre => (1, 0),
+            FieldPosition::AllySideRight => (2, 0),
+            FieldPosition::OpponentSideLeft => (0, 1),
+            FieldPosition::OpponentSideCentre => (1, 1),
+            FieldPosition::OpponentSideRight => (2, 1),
         }
     }
     

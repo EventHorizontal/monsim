@@ -92,7 +92,15 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                 }
                
                 turn_stage = TurnStage::SimulateTurn(chosen_actions_for_turn.clone());
-                actions_chosen_last_turn = Some(chosen_actions_for_turn);
+                // TEMP: For now, we clear the last turn action (for the repeat action choice) if any Monster's action
+                // was to switch out.
+                if chosen_actions_for_turn.iter().any(|action| { 
+                    matches!(action, FullySpecifiedActionChoice::SwitchOut { .. })
+                }) {
+                    actions_chosen_last_turn = None;
+                } else {
+                    actions_chosen_last_turn = Some(chosen_actions_for_turn);
+                }
             },
             TurnStage::SimulateTurn(chosen_actions_for_turn) => {
 
@@ -134,7 +142,7 @@ fn display_choices(available_actions_for_team: &AvailableChoices, locked_stdout:
         writeln!(locked_stdout, "[{}] Repeat last turn actions", next_index)?;
         next_index += 1;
     }
-    writeln!(locked_stdout, "[{}] Exit program", next_index)?;
+    writeln!(locked_stdout, "[{}] Exit monsim", next_index)?;
     write_empty_line(locked_stdout)?;
 
     Ok(NOTHING)
@@ -158,7 +166,7 @@ fn receive_user_input_and_convert_to_choice(
     
     let is_repeat_selected = choice_index == available_actions_count;
     let mut quit_offset = 0;
-    
+
     if actions_chosen_last_turn.is_some() {
         if is_repeat_selected {
             if let Some(actions_chosen_last_turn) = actions_chosen_last_turn {
@@ -177,14 +185,16 @@ fn receive_user_input_and_convert_to_choice(
     let fully_specified_action_for_monster = match partially_specified_action_for_monster {
         PartiallySpecifiedActionChoice::Move { move_id, possible_target_positions, activation_order, .. } => {
             // Target position prompt
+            write_empty_line(locked_stdout)?;
             let target_position_names = possible_target_positions.iter()
                 .map(|position| {
                     format!["{} ({:?})", battle.monster_at_position(*position).expect("This is precomputed.").full_name(), position]
                 })
                 .enumerate();
             for (index, position_name) in target_position_names {
-                let _ = writeln!(locked_stdout, "[{}] {}", index + 1, position_name);
+                writeln!(locked_stdout, "[{}] {}", index + 1, position_name)?;
             }
+            write_empty_line(locked_stdout)?;
             let chosen_target_position_index = receive_user_input_and_convert_to_choice_index(locked_stdout, possible_target_positions.count()).unwrap();
             let target_position = possible_target_positions[chosen_target_position_index];
             FullySpecifiedActionChoice::Move { move_id, target_position, activation_order }
@@ -194,8 +204,9 @@ fn receive_user_input_and_convert_to_choice(
             let switchable_benched_monster_names = switchable_benched_monster_ids.into_iter().map(|id| battle.monster(id).full_name()).enumerate();
             let _ = writeln!(locked_stdout, "Choose a benched monster to switch in");
             for (index, switchee_name) in switchable_benched_monster_names {
-                let _ = writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name);
+                writeln!(locked_stdout, "[{}] {}", index + 1, switchee_name)?;
             }
+            write_empty_line(locked_stdout)?;
             let chosen_switchable_benched_monster_choice_index = receive_user_input_and_convert_to_choice_index(locked_stdout, switchable_benched_monster_ids.count()).unwrap();
             let benched_monster_id = switchable_benched_monster_ids[chosen_switchable_benched_monster_choice_index];
             FullySpecifiedActionChoice::SwitchOut { active_monster_id, benched_monster_id, activation_order }

@@ -60,8 +60,8 @@ impl AvailableChoices {
         }
     }
     
-    pub fn move_choices(&self) -> &[PartiallySpecifiedActionChoice] {
-        &self.choices[0..self.switch_index]
+    pub fn move_choices(&self) -> impl Iterator<Item = &PartiallySpecifiedActionChoice> {
+        self.choices[0..self.switch_index].iter().flatten()
     }
 
     pub fn switch_out_choice(&self) -> Option<&PartiallySpecifiedActionChoice> {

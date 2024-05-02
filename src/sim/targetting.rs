@@ -11,6 +11,31 @@ pub enum BoardPosition {
     Field(FieldPosition),
 }
 
+impl BoardPosition {
+    pub fn field_position(&self) -> Option<FieldPosition> {
+        match self {
+            BoardPosition::Bench => None,
+            BoardPosition::Field(field_position) => Some(*field_position),
+        }
+    }  
+}
+
+/**
+The way I thought about the positions, the "left" and "right" are with respect to the
+the ally team, so `AllyLeft` and `OpponentLeft` are facing each other. I know _technically_
+it "should" be that `OpponentLeft` faces `AllyRight` but I think it gets difficult
+to wrap your head around that every time.
+*/
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FieldPosition {
+    AllyLeft,
+    AllyCentre,
+    AllyRight,
+    OpponentLeft,
+    OpponentCentre,
+    OpponentRight,
+}
+
 impl FieldPosition {
     /// Returns a vector of the positions adjacent to the position this method is called on, 
     /// including allies and opponents, but not including self.
@@ -66,31 +91,6 @@ impl FieldPosition {
         let other_position_side = other_position.to_coords().1;
         self_side == other_position_side
     }
-}
-
-impl BoardPosition {
-    pub fn field_position(&self) -> Option<FieldPosition> {
-        match self {
-            BoardPosition::Bench => None,
-            BoardPosition::Field(field_position) => Some(*field_position),
-        }
-    }  
-}
-
-/**
-The way I thought about the positions, the "left" and "right" are with respect to the
-the ally team, so `AllyLeft` and `OpponentLeft` are facing each other. I know _technically_
-it "should" be that `OpponentLeft` faces `AllyRight` but I think it gets difficult
-to wrap your head around that every time.
-*/
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FieldPosition {
-    AllyLeft,
-    AllyCentre,
-    AllyRight,
-    OpponentLeft,
-    OpponentCentre,
-    OpponentRight,
 }
 
 bitflags::bitflags! {

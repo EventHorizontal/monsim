@@ -158,7 +158,7 @@ fn receive_user_input_and_convert_to_choice(
     
     let is_repeat_selected = choice_index == available_actions_count;
     let mut quit_offset = 0;
-    if is_repeat_selected {
+    if is_repeat_selected && actions_chosen_last_turn.is_some() {
         if let Some(actions_chosen_last_turn) = actions_chosen_last_turn {
             return Ok(UIChoice::RepeatLastAction(actions_chosen_last_turn.clone()));
         }

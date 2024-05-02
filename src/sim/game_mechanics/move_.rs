@@ -52,7 +52,7 @@ impl Move {
     } 
 
     #[inline(always)]
-    pub fn targets(&self) -> TargetFlags {
+    pub fn allowed_target_flags(&self) -> TargetFlags {
         self.species.targets
     }
 

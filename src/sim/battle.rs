@@ -3,11 +3,11 @@ pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{Ability, ActivationOrder, AvailableChoicesForTeam, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler, TargetFlags};
+use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
 
 use self::builders::BattleFormat;
 
-use super::{prng::Prng, targetting::{BoardPosition, FieldPosition}, PartiallySpecifiedChoice, PerTeam, TeamID};
+use super::{prng::Prng, targetting::{BoardPosition, FieldPosition}, PerTeam, TeamID};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
@@ -128,10 +128,17 @@ impl BattleState {
         &mut team[monster_id.monster_number]
     }
 
-    pub fn active_monsters(&self) -> PerTeam<&Monster> {
-        let ally_team_active_monster = self.ally_team().map_consume(|team| { team.active_monster() });
-        let opponent_team_active_monster = self.opponent_team().map_consume(|team| team.active_monster() );
-        PerTeam::new(ally_team_active_monster, opponent_team_active_monster)
+    pub fn active_monsters_by_team(&self) -> PerTeam<Vec<&Monster>> {
+        let ally_team_active_monsters = self.ally_team().map_consume(|team| { team.active_monsters() });
+        let opponent_team_active_monsters = self.opponent_team().map_consume(|team| team.active_monsters() );
+        PerTeam::new(ally_team_active_monsters, opponent_team_active_monsters)
+    }
+
+    pub fn active_monsters(&self) -> impl Iterator<Item = &Monster> {
+        self.monsters()
+            .filter(|monster| {
+                matches!(monster.board_position, BoardPosition::Field(_))
+            })
     }
 
     // Abilities -----------------
@@ -161,41 +168,29 @@ impl BattleState {
 
     // Choice -------------------------------------
 
-    pub fn available_choices(&self) -> PerTeam<AvailableChoicesForTeam> {
-        self.teams.map_clone(|team| {
-            self.available_choices_for_team(team.id)
-        })
-    }
+    // pub fn available_choices(&self) -> PerTeam<AvailableChoicesForTeam> {
+    //     self.teams.map_clone(|team| {
+    //         self.available_choices_for(team.id)
+    //     })
+    // }
 
-    fn available_choices_for_team(&self, team_id: TeamID) -> AvailableChoicesForTeam {
-        
-        let active_monster_on_team = self.team(team_id).active_monster();
-        let active_monster_on_other_team = self.team(team_id.other()).active_monster();
+    pub(crate) fn available_choices_for(&self, monster: &Monster) -> AvailableChoices {
         
         // Move choices
         let mut move_actions = Vec::with_capacity(4);
-        for move_ in active_monster_on_team.moveset().into_iter() {
+        for move_ in monster.moveset().iter() {
             /*
             The move is only choosable if it still has power points. FEATURE: We might want to emit 
             "inactive" choices in order to show a greyed out version of the choice (in this case that 
             the monster has that move but its out of PP).
             */
             if move_.current_power_points > 0 {
-                let partially_specified_choice = PartiallySpecifiedChoice::Move { 
+                let partially_specified_choice = PartiallySpecifiedActionChoice::Move { 
                     move_id: move_.id,
-                    target_position: {
-                        // FEATURE: Double battles will require this to be more flexible.
-                        if move_.targets().contains(TargetFlags::SELF) {
-                            active_monster_on_team.board_position.field_position().expect("The monster is active.")
-                        } else if move_.targets().contains(TargetFlags::OPPONENTS) {
-                            active_monster_on_other_team.board_position.field_position().expect("The monster is active.")
-                        } else {
-                            panic!("We currently only support moves that affect self or opponents.")
-                        }
-                    },
+                    possible_target_positions: self.possible_targets_for_move(move_),
                     activation_order: ActivationOrder {
                         priority: move_.priority(),
-                        speed: active_monster_on_team.stat(Stat::Speed),
+                        speed: monster.stat(Stat::Speed),
                         order: 0, //TODO: Think about how to restrict order to be mutually exclusive
                     },
                     display_text: move_.name()  
@@ -205,15 +200,15 @@ impl BattleState {
         }
 
         // Switch choice
-        let switchable_benched_monster_ids = self.switchable_benched_monster_ids(team_id);
+        let switchable_benched_monster_ids = self.switchable_benched_monster_ids(monster.id.team_id);
         let any_switchable_monsters = not!(switchable_benched_monster_ids.is_empty());
         let switch_action = if any_switchable_monsters {
-            Some(PartiallySpecifiedChoice::SwitchOut { 
-                active_monster_id: active_monster_on_team.id, 
+            Some(PartiallySpecifiedActionChoice::SwitchOut { 
+                active_monster_id: monster.id, 
                 switchable_benched_monster_ids,
                 activation_order: ActivationOrder { 
                     priority: 8, 
-                    speed: self.monster(active_monster_on_team.id).stat(Stat::Speed), 
+                    speed: monster.stat(Stat::Speed), 
                     order: 0
                 },
                 display_text: "Switch Out",
@@ -222,7 +217,7 @@ impl BattleState {
             None
         };
 
-        AvailableChoicesForTeam::new(
+        AvailableChoices::new(
             move_actions, 
             switch_action,
         )
@@ -260,6 +255,46 @@ impl BattleState {
                     false
                 }
             })
+    }
+    
+    fn possible_targets_for_move(&self, move_: &Move) -> MaxSizedVec<FieldPosition, 6> {
+        let mut possible_targets_for_move = Vec::new();
+
+        for active_monsters_per_team in self.active_monsters_by_team() {
+            for active_monster in active_monsters_per_team {
+                let targetter_position = self.monster(
+                    move_.id.owner_id).board_position.field_position().expect("The targetter must be on the field.");
+                let targetted_position = active_monster.board_position.field_position().expect("The targetted position must be on the field.");
+                if self.is_valid_target_position(
+                    targetter_position, 
+                    move_.allowed_target_flags(), 
+                    targetted_position
+                ) {
+                    possible_targets_for_move.push(targetted_position);
+                }
+            }
+        }
+
+        MaxSizedVec::from_vec(possible_targets_for_move)
+    }
+
+    pub(crate) fn is_valid_target_position(&self, targetter_position: FieldPosition, allowed_target_flags: TargetFlags, targetted_position: FieldPosition) -> bool {
+        let mut targetted_position_flags = TargetFlags::empty();
+        // FEATURE: BENCHED adjacency flag?
+        if targetted_position.is_adjacent_to(targetter_position) {
+            targetted_position_flags |= TargetFlags::ADJACENT
+        } else {
+            targetted_position_flags |= TargetFlags::NONADJACENT
+        }
+        if targetted_position.is_on_the_opposite_side_of(targetted_position) {
+            targetted_position_flags |= TargetFlags::OPPONENTS
+        } else if targetted_position.is_on_the_same_side_as(targetted_position) {
+            targetted_position_flags |= TargetFlags::ALLIES
+        } else {
+            targetted_position_flags |= TargetFlags::SELF
+        }
+
+        allowed_target_flags.contains(targetted_position_flags)
     }
 }
 

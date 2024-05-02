@@ -37,13 +37,13 @@ impl MonsterTeam {
         }
     }
 
-    pub fn active_monster(&self) -> &Monster {
+    pub fn active_monsters(&self) -> Vec<&Monster> {
         self.monsters()
             .iter()
-            .find(|monster| {
+            .filter(|monster| {
                 if let BoardPosition::Field(_) = monster.board_position { true } else { false }
             })
-            .expect("We start the battle by assigning a single Monster as on the Field, and then we swap that value with other Monsters, but exactly one Monster should always have the BoardPosition::Field value.")
+            .collect()
     }
 
     pub fn monsters(&self) -> &MaxSizedVec<Monster, 6> {

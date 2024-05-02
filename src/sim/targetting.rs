@@ -15,7 +15,7 @@ impl FieldPosition {
     /// Returns a vector of the positions adjacent to the position this method is called on, 
     /// including allies and opponents, but not including self.
     pub fn adjacent_positions(&self) -> Vec<FieldPosition> {
-        let (x, y) = FieldPosition::to_coords(*self);
+        let (x, y) = self.to_coords();
         let mut positions = Vec::with_capacity(8);
         let compass_directions = [(-1,1), (-1, 0), (-1, -1), (0, 1), (0, -1), (1, 1), (1, 0), (1, -1)];
         for (dx, dy) in compass_directions {
@@ -44,8 +44,8 @@ impl FieldPosition {
         }
     }
 
-    fn to_coords(value: FieldPosition) -> (i8, i8) {
-        match value {
+    fn to_coords(&self) -> (i8, i8) {
+        match self {
             FieldPosition::AllyLeft => (0, 0),
             FieldPosition::AllyCentre => (1, 0),
             FieldPosition::AllyRight => (2, 0),
@@ -53,6 +53,18 @@ impl FieldPosition {
             FieldPosition::OpponentCentre => (1, 1),
             FieldPosition::OpponentRight => (2, 1),
         }
+    }
+    
+    pub(crate) fn is_on_the_opposite_side_of(&self, other_position: FieldPosition) -> bool {
+        let self_side = self.to_coords().1; // The second element tells us which side the position is on.
+        let other_position_side = other_position.to_coords().1;
+        self_side != other_position_side
+    }
+    
+    pub(crate) fn is_on_the_same_side_as(&self, other_position: FieldPosition) -> bool {
+        let self_side = self.to_coords().1; // The second element tells us which side the position is on.
+        let other_position_side = other_position.to_coords().1;
+        self_side == other_position_side
     }
 }
 

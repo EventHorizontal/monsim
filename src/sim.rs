@@ -58,7 +58,7 @@ impl BattleSimulator { // simulation
         }
     }
 
-    pub fn simulate_turn(&mut self, choices: PerTeam<FullySpecifiedChoice>) -> SimResult {
+    pub fn simulate_turn(&mut self, mut choices: Vec<FullySpecifiedActionChoice>) -> SimResult {
         
         assert!(not!(self.battle.is_finished()), "The simulator cannot be called on a finished battle.");
 
@@ -76,8 +76,6 @@ impl BattleSimulator { // simulation
             ]
         );
 
-        // TEMP: Will need to be updated when multiple Monsters per self.battle is implemented.
-        let mut choices = choices.as_array();
         ordering::sort_by_activation_order(
             &mut self.battle.prng, 
             &mut choices, 
@@ -87,7 +85,7 @@ impl BattleSimulator { // simulation
         'turn: for choice in choices.into_iter() {
             
             match choice {
-                FullySpecifiedChoice::Move { move_id, target_position, .. } => {
+                FullySpecifiedActionChoice::Move { move_id, target_position, .. } => {
                     /*
                     We evaluate the target at the position chosen at the moment the Move is actually executed. This accounts
                     for switches changing the monster at a certain position. 
@@ -100,7 +98,7 @@ impl BattleSimulator { // simulation
                         .id;
                     UseMove(self, MoveUseContext::new(move_id, target_id));
                 },
-                FullySpecifiedChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {
+                FullySpecifiedActionChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {
                     PerformSwitchOut(self, SwitchContext::new(active_monster_id, benched_monster_id))
                 }
             };

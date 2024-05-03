@@ -2,9 +2,9 @@ use std::ops::{IndexMut, Index};
 
 use monsim_utils::MaxSizedVec;
 
-use crate::ActivationOrder;
+use crate::{ActivationOrder, MonsterID};
 
-use super::{game_mechanics::{MonsterID, MoveID}, targetting::FieldPosition};
+use super::{game_mechanics::MoveID, targetting::FieldPosition};
 
 
 /// An action choice before certain details can be established, most often the target.
@@ -28,14 +28,29 @@ pub enum PartiallySpecifiedActionChoice {
 /// An action whose details have been fully specified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedActionChoice {
-    Move { move_id: MoveID, target_position: FieldPosition, activation_order: ActivationOrder },
-    SwitchOut { active_monster_id: MonsterID, benched_monster_id: MonsterID, activation_order: ActivationOrder },
+    Move { 
+        move_id: MoveID, 
+        target_position: FieldPosition, 
+        activation_order: ActivationOrder 
+    },
+    SwitchOut { 
+        active_monster_id: MonsterID, 
+        benched_monster_id: MonsterID, 
+        activation_order: ActivationOrder 
+    },
 }
 impl FullySpecifiedActionChoice {
     pub(crate) fn activation_order(&self) -> ActivationOrder {
-        match self {
-            FullySpecifiedActionChoice::Move { activation_order, .. } => *activation_order,
-            FullySpecifiedActionChoice::SwitchOut { activation_order, .. } => *activation_order,
+        match *self {
+            FullySpecifiedActionChoice::Move { activation_order, .. } => activation_order,
+            FullySpecifiedActionChoice::SwitchOut { activation_order, .. } => activation_order,
+        }
+    }
+    
+    pub(crate) fn actor_id(&self) -> MonsterID {
+        match *self {
+            FullySpecifiedActionChoice::Move { move_id, .. } => move_id.owner_id,
+            FullySpecifiedActionChoice::SwitchOut { active_monster_id, .. } => active_monster_id,
         }
     }
 }

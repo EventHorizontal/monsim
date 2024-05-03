@@ -54,6 +54,11 @@ impl BattleState {
 
     // Teams -----------------
 
+    #[inline(always)]
+    pub fn teams(&self) -> &PerTeam<MonsterTeam> {
+        &self.teams
+    }
+
     pub fn team(&self, team_id: TeamID) -> &MonsterTeam {
         & self.teams[team_id]
     }
@@ -168,13 +173,7 @@ impl BattleState {
 
     // Choice -------------------------------------
 
-    // pub fn available_choices(&self) -> PerTeam<AvailableChoicesForTeam> {
-    //     self.teams.map_clone(|team| {
-    //         self.available_choices_for(team.id)
-    //     })
-    // }
-
-    pub(crate) fn available_choices_for(&self, monster: &Monster) -> AvailableChoices {
+    pub(crate) fn available_choices_for(&self, monster: &Monster, monsters_already_chosen_for_switch: &Vec<MonsterID>) -> AvailableChoices {
         
         // Move choices
         let mut move_actions = Vec::with_capacity(4);
@@ -200,7 +199,7 @@ impl BattleState {
         }
 
         // Switch choice
-        let switchable_benched_monster_ids = self.switchable_benched_monster_ids(monster.id.team_id);
+        let switchable_benched_monster_ids = self.switchable_benched_monster_ids(monster.id.team_id, monsters_already_chosen_for_switch);
         let any_switchable_monsters = not!(switchable_benched_monster_ids.is_empty());
         let switch_action = if any_switchable_monsters {
             Some(PartiallySpecifiedActionChoice::SwitchOut { 
@@ -223,16 +222,14 @@ impl BattleState {
         )
     }
 
-    // TODO: Once we have multitargeting/multiple active monsters, if one monster has selected
-    // to switch out with a particular benched monster, that benched monster will need to be excluded.
-    // Perhaps the ui will take care of that though?
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn switchable_benched_monster_ids(&self, team_id: TeamID) -> MaxSizedVec<MonsterID, 5> {
+    pub(crate) fn switchable_benched_monster_ids(&self, team_id: TeamID, monsters_already_chosen_for_switch: &Vec<MonsterID>) -> MaxSizedVec<MonsterID, 5> {
         let mut number_of_switchees = 0;
         let mut switchable_benched_monsters = Vec::with_capacity(5);
         for monster in self.team(team_id).monsters() {
             let is_active_monster_for_team = matches!(monster.board_position, BoardPosition::Field(_));
-            let is_valid_switch_partner = not!(monster.is_fainted()) && not!(is_active_monster_for_team);
+            let already_selected_for_switch = monsters_already_chosen_for_switch.contains(&monster.id);
+            let is_valid_switch_partner = not!(monster.is_fainted()) && not!(is_active_monster_for_team) && not!(already_selected_for_switch);
             if is_valid_switch_partner {
                 switchable_benched_monsters.push(monster.id);
                 number_of_switchees += 1;

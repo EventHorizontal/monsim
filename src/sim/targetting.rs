@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::TeamID;
+
 /**
 I am thinking of the Battlefield as divided into two "zones", like a tabletop 
 card game, one is the **Bench** zone where the Monsters not participating in 
@@ -109,6 +111,13 @@ impl FieldPosition {
         let self_side = self.to_coords().1; // The second element tells us which side the position is on.
         let other_position_side = other_position.to_coords().1;
         self_side == other_position_side
+    }
+    
+    pub(crate) fn side(&self) -> TeamID {
+        match self {
+            FieldPosition::AllySideLeft | FieldPosition::AllySideCentre | FieldPosition::AllySideRight => TeamID::Allies,
+            FieldPosition::OpponentSideLeft | FieldPosition::OpponentSideCentre | FieldPosition::OpponentSideRight => TeamID::Opponents,
+        }
     }
 }
 

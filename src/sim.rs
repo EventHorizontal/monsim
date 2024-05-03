@@ -25,7 +25,7 @@ pub use game_mechanics::*;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent};
 pub(crate) use monsim_utils::{not, NOTHING, Nothing};
 pub use ordering::ActivationOrder;
-pub use targetting::TargetFlags;
+pub use targetting::{TargetFlags, BoardPosition, FieldPosition};
 
 type SimResult = Result<(), SimError>;
 
@@ -44,7 +44,10 @@ impl Display for SimError {
     }
 }
 
-/// The main engine behind `monsim`. This struct is a namespace for all the simulator functionality. It contains no data, just functions that transform a `Battle` from one state to another.
+/**
+The main engine behind `monsim`. This struct is a namespace for all the simulator functionality. It contains no data, 
+just functions that transform a `Battle` from one state to another.
+*/
 #[derive(Debug)]
 pub struct BattleSimulator {
     pub battle: BattleState,
@@ -58,15 +61,11 @@ impl BattleSimulator { // simulation
         }
     }
 
-    pub fn simulate_turn(&mut self, mut choices: Vec<FullySpecifiedActionChoice>) -> SimResult {
+    pub fn simulate_turn(&mut self, mut action_choices: Vec<FullySpecifiedActionChoice>) -> SimResult {
         
         assert!(not!(self.battle.is_finished()), "The simulator cannot be called on a finished battle.");
 
-        /*
-        INFO: Removed error on turn number increment. We are probably not going to exceed the `65535` threshold.
-        And if we do, something is wrong anyway.
-        */
-        _ = self.increment_turn_number();
+        self.battle.turn_number += 1;
         
         self.battle.message_log.extend(&[
             "---", 
@@ -78,85 +77,70 @@ impl BattleSimulator { // simulation
 
         ordering::sort_by_activation_order(
             &mut self.battle.prng, 
-            &mut choices, 
+            &mut action_choices, 
             |choice| { choice.activation_order() }
         );
 
-        'turn: for choice in choices.into_iter() {
-            
-            match choice {
+        'turn: for action_choice in action_choices.into_iter() {
+
+            // If the actor fainted we move on to the next action.
+            let actor_id = action_choice.actor_id();
+            if self.battle.monster(actor_id).is_fainted() {
+                self.push_message(
+                    format!["{} fainted so it was unable to act.", self.battle.monster(actor_id).name()]
+                );
+                continue 'turn;
+            }
+
+            // Otherwise resolve the action
+            match action_choice {
                 FullySpecifiedActionChoice::Move { move_id, target_position, .. } => {
-                    /*
-                    We evaluate the target at the position chosen at the moment the Move is actually executed. This accounts
-                    for switches changing the monster at a certain position. 
-                    TODO:/ FEATURE: We need to eventually do something for the case where a monster faints and there isn't another to replace it,
-                    in a double battle for example.
-                    */
-                    let target_id = self.battle
-                        .monster_at_position(target_position)
-                        .expect("We're assuming there is still a monster in the position since when the choice was made.")
-                        .id;
-                    UseMove(self, MoveUseContext::new(move_id, target_id));
+                    // The target position may be empty if the target fainted with no replacement, for example.
+                    let maybe_target = self.battle.monster_at_position(target_position);
+                    if let Some(target) = maybe_target {
+                        UseMove(self, MoveUseContext::new(move_id, target.id));
+                    } else {
+                        self.push_message(
+                            format!["{}'s {} has no target anymore...", self.battle.monster(move_id.owner_id).name(), self.battle.move_(move_id).name()]
+                        );
+                    }
                 },
                 FullySpecifiedActionChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {
-                    PerformSwitchOut(self, SwitchContext::new(active_monster_id, benched_monster_id))
-                }
-            };
+                    PerformSwitchOut(self, SwitchContext::new(active_monster_id, benched_monster_id));
+                },
+            }
 
-            // Check if a Monster fainted this turn
-            let maybe_fainted_active_monster = self.battle.monsters()
-                .find(|monster| monster.is_fainted() && monster.is_active());
-            
-            if let Some(fainted_active_monster) = maybe_fainted_active_monster {
-                
+            self.push_message(EMPTY_LINE);
+
+            // After each action, we check if the the battle is finished or not.
+            let ally_team_wiped = self.battle.ally_team().monsters().all(|monster| monster.is_fainted());
+            let opponent_team_wiped = self.battle.opponent_team().monsters().all(|monster| monster.is_fainted());
+
+            match (ally_team_wiped, opponent_team_wiped) {
+                (true, true) => {
+                    self.push_message("Neither team has any usable Monsters, it's a tie!")
+                },
+                (true, false) => {
+                    self.push_message("Opponent team won!")
+                },
+                (false, true) => {
+                    self.push_message("Ally team won!")
+                },
+                (false, false) => {},
+            }
+
+            if ally_team_wiped || opponent_team_wiped {
                 self.battle.message_log.extend(&[
-                    &format!["{fainted_monster} fainted!", fainted_monster = fainted_active_monster.name()], 
-                    EMPTY_LINE
+                    EMPTY_LINE, 
+                    "The battle ended.",
+                    "---",
+                    EMPTY_LINE,
                 ]);
-                
-                // Check if any of the teams is out of usable Monsters
-                let ally_team_wiped = self.battle.ally_team()
-                    .monsters()
-                    .iter()
-                    .all(|monster| { monster.is_fainted() });
-                let opponent_team_wiped = self.battle.opponent_team()
-                    .monsters()
-                    .iter()
-                    .all(|monster| { monster.is_fainted() });
-                let team_wiped = (ally_team_wiped, opponent_team_wiped);
-                match team_wiped {
-                    (true, false) => {
-                        self.battle.message_log.push("Opponent Team won!");
-                        break 'turn;
-                    },
-                    (false, true) => {
-                        self.battle.message_log.push("Ally Team won!");
-                        break 'turn;
-                    },
-                    (true, true) => {
-                        self.battle.message_log.push("The teams tied!");
-                    },
-                    (false, false) => {}
-                }
-            };
-
-            self.battle.message_log.push(EMPTY_LINE);
+                break 'turn;
+            }
         }
-
-        if self.battle.is_finished() {
-            self.battle.message_log.extend(&[EMPTY_LINE, "The battle ended."]);
-        }
-        self.battle.message_log.extend(&["---", EMPTY_LINE]);
 
         Ok(NOTHING)
-    }
-    
-    /// Fails if the turn limit (`u16::MAX`, i.e. `65535`) is exceeded. It's not expected for this to ever happen.
-    pub(crate) fn increment_turn_number(&mut self) -> Result<Nothing, &str> {
-        match self.battle.turn_number.checked_add(1) {
-            Some(turn_number) => { self.battle.turn_number = turn_number; Ok(NOTHING)},
-            None => Err("Turn limit (65535) exceeded."),
-        }
     }
     
     fn activate_move_effect(&mut self, context: MoveUseContext) {

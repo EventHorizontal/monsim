@@ -94,6 +94,16 @@ fn perform_switch_out(sim: &mut BattleSimulator, context: SwitchContext) {
     ]);
 }
 
+pub(crate) const ReplaceFaintedMonster: Effect<Nothing, (MonsterID, FieldPosition)> = Effect(replace_fainted_monster);
+
+fn replace_fainted_monster(sim: &mut BattleSimulator, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
+    mon![mut benched_monster_id].board_position = BoardPosition::Field(field_position);
+    sim.push_message(format![
+        "Go {}!",
+        mon![benched_monster_id].name()
+    ]);
+}
+
 // public `Effects` usable by users of the crate.
 
 /// The simulator simulates dealing damage of a move given by `MoveUseContext.move_used` by 
@@ -202,7 +212,9 @@ fn deal_direct_damge(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> u1
     let original_health = mon![target_id].current_health;
     mon![mut target_id].current_health = original_health.saturating_sub(damage);
     if mon![target_id].is_fainted() { 
-        damage = original_health 
+        damage = original_health;
+        sim.push_message(format!["{} fainted!", mon![target_id].name()]);
+        mon![mut target_id].board_position = BoardPosition::Bench;
     };
     damage
 }

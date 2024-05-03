@@ -52,6 +52,28 @@ fn main() -> MonsimResult<()> {
                 .add_monster(
                     Merkey.spawn(
                         (
+                            Bubble.spawn(),
+                            Some(Tackle.spawn()),
+                            None,
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )        
+                )
+                .add_monster(
+                    Merkey.spawn(
+                        (
+                            Growl.spawn(),
+                            Some(Tackle.spawn()),
+                            None,
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )        
+                )
+                .add_monster(
+                    Merkey.spawn(
+                        (
                             Growl.spawn(),
                             Some(Tackle.spawn()),
                             None,
@@ -72,7 +94,7 @@ fn main() -> MonsimResult<()> {
                     )        
                 )
         )
-        .with_format(BattleFormat::Double)
+        .with_format(BattleFormat::Triple)
         .build();
 
     #[cfg(feature="macro")]

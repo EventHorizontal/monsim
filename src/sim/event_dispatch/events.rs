@@ -132,10 +132,10 @@ pub mod contexts {
     }
 
     impl SwitchContext {
-        pub fn new(active_monster: MonsterID, benched_monster: MonsterID) -> Self {
+        pub fn new(active_monster_id: MonsterID, benched_monster_id: MonsterID) -> Self {
             Self {
-                active_monster_id: active_monster,
-                benched_monster_id: benched_monster,
+                active_monster_id,
+                benched_monster_id,
             }
         }
     }

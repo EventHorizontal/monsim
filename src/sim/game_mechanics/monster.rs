@@ -57,7 +57,11 @@ impl Display for Monster {
         let number_of_effects = self.moveset.count();
 
         out.push_str("\t│\t├── ");
-        out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, self.species.secondary_type].as_str());
+        if let Some(secondary_type) = self.species().secondary_type {
+            out.push_str(format!["type {:?}/{:?} \n", self.species.primary_type, secondary_type].as_str());
+        } else {
+            out.push_str(format!["type {:?} \n", self.species.primary_type].as_str());
+        }
 
         out.push_str("\t│\t├── ");
         out.push_str(format!["abl {}\n", self.ability.name()].as_str());

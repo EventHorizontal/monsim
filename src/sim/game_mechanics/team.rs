@@ -16,13 +16,13 @@ impl Index<MonsterNumber> for MonsterTeam {
     type Output = Monster;
 
     fn index(&self, index: MonsterNumber) -> &Self::Output {
-        &self.monsters()[index as usize]
+        &self.monsters[index as usize]
     }
 }
 
 impl IndexMut<MonsterNumber> for MonsterTeam {
     fn index_mut(&mut self, index: MonsterNumber) -> &mut Self::Output {
-        &mut self.monsters_mut()[index as usize]
+        &mut self.monsters[index as usize]
     }
 }
 
@@ -39,19 +39,18 @@ impl MonsterTeam {
 
     pub fn active_monsters(&self) -> Vec<&Monster> {
         self.monsters()
-            .iter()
             .filter(|monster| {
                 if let BoardPosition::Field(_) = monster.board_position { true } else { false }
             })
             .collect()
     }
 
-    pub fn monsters(&self) -> &MaxSizedVec<Monster, 6> {
-        &self.monsters
+    pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
+        self.monsters.iter()
     }
 
-    pub fn monsters_mut(&mut self) -> &mut MaxSizedVec<Monster, 6> {
-        &mut self.monsters
+    pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
+        self.monsters.iter_mut()
     }
 
     pub fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
@@ -64,7 +63,7 @@ impl MonsterTeam {
 
     pub(crate) fn team_status_string(&self) -> String {
         let mut out = String::new();
-        for monster in self.monsters().iter() {
+        for monster in self.monsters() {
             out.push_str(&monster.status_string());
         }
         out

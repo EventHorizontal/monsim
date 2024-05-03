@@ -43,11 +43,11 @@ impl BattleState {
     
 
     pub fn is_finished(&self) -> bool {
-        self.ally_team().monsters().iter().all(|monster| {
+        self.ally_team().monsters().all(|monster| {
             monster.is_fainted()
         })
         ||
-        self.opponent_team().monsters().iter().all(|monster| {
+        self.opponent_team().monsters().all(|monster| {
             monster.is_fainted()
         })
     }
@@ -110,12 +110,12 @@ impl BattleState {
 
     pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_ref();
-        ally_team.monsters().iter().chain(opponent_team.monsters().iter())
+        ally_team.monsters().chain(opponent_team.monsters())
     }
 
     pub(crate) fn _monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_mut();
-        ally_team.monsters_mut().iter_mut().chain(opponent_team.monsters_mut().iter_mut())
+        ally_team.monsters_mut().chain(opponent_team.monsters_mut())
     }
 
     pub fn monster(&self, monster_id: MonsterID) -> &Monster {
@@ -230,7 +230,7 @@ impl BattleState {
     pub(crate) fn switchable_benched_monster_ids(&self, team_id: TeamID) -> MaxSizedVec<MonsterID, 5> {
         let mut number_of_switchees = 0;
         let mut switchable_benched_monsters = Vec::with_capacity(5);
-        for monster in self.team(team_id).monsters().iter() {
+        for monster in self.team(team_id).monsters() {
             let is_active_monster_for_team = matches!(monster.board_position, BoardPosition::Field(_));
             let is_valid_switch_partner = not!(monster.is_fainted()) && not!(is_active_monster_for_team);
             if is_valid_switch_partner {
@@ -308,13 +308,13 @@ impl Display for BattleState {
             &mut out,
             "Ally Team\n", 
             *self.ally_team(), 
-            self.ally_team().monsters().iter().count(),
+            self.ally_team().monsters().count(),
         );
         push_pretty_tree_for_team(
             &mut out,
             "Opponent Team\n",
             *self.opponent_team(),
-            self.opponent_team().monsters().iter().count(),
+            self.opponent_team().monsters().count(),
         );
         write!(f, "{}", out)
     }
@@ -322,7 +322,7 @@ impl Display for BattleState {
 
 fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: &MonsterTeam, number_of_monsters: usize) {
     output_string.push_str(team_name);
-    for (i, monster) in team.monsters().iter().enumerate() {
+    for (i, monster) in team.monsters().enumerate() {
         let is_not_last_monster = i < number_of_monsters - 1;
         let (prefix_str, suffix_str) = if is_not_last_monster {
             ("\t│\t", "├── ")

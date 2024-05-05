@@ -201,7 +201,7 @@ fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, contex
     let mut damage = (2 * level) / 5;
     damage += 2;
     damage *= move_power;
-    damage *= attackers_attacking_stat / defenders_defense_stat;
+    damage = (damage as f64 * (attackers_attacking_stat as f64 / defenders_defense_stat as f64)) as u16;
     damage /= 50;
     damage += 2;
     damage = (damage as f64 * random_multiplier) as u16;

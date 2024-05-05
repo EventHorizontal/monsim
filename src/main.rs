@@ -13,6 +13,17 @@ fn main() -> MonsimResult<()> {
         .add_ally_team(
             MonsterTeam::spawn()
                 .add_monster(
+                    Dandyleo.spawn(
+                        (
+                            Scratch.spawn(),
+                            Some(BulletSeed.spawn()),
+                            None,
+                            None,
+                        ), 
+                        FlashFire.spawn()
+                    )
+                )
+                .add_monster(
                     Zombler.spawn(
                         (
                             Tackle.spawn()
@@ -32,17 +43,6 @@ fn main() -> MonsimResult<()> {
                             Some(Scratch.spawn()),
                             None
                         ),
-                        FlashFire.spawn()
-                    )
-                )
-                .add_monster(
-                    Dandyleo.spawn(
-                        (
-                            Scratch.spawn(),
-                            Some(BulletSeed.spawn()),
-                            None,
-                            None,
-                        ), 
                         FlashFire.spawn()
                     )
                 )
@@ -96,6 +96,8 @@ fn main() -> MonsimResult<()> {
         )
         // .with_format(BattleFormat::Triple)
         .build();
+
+    println!("{:?}", battle.format());
 
     #[cfg(feature="macro")]
     let _battle2 = battle!(

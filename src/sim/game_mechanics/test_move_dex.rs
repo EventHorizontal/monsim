@@ -140,7 +140,7 @@ pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(
         on_hit_effect: DealDefaultDamage,
         hits_per_target: Hits::RandomlyInRange { min: 2, max: 5 },
         base_accuracy: 100,
-        base_power: 0,
+        base_power: 25,
         category: MoveCategory::Physical,
         max_power_points: 20,
         priority: 0,

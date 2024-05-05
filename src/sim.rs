@@ -22,6 +22,7 @@ pub use event_dispatch::{
     contexts::*, events::*, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, Event,
 };
 pub use game_mechanics::*;
+use monsim_utils::MaxSizedVec;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent};
 pub(crate) use monsim_utils::{not, NOTHING, Nothing};
 pub use ordering::ActivationOrder;
@@ -94,19 +95,17 @@ impl BattleSimulator { // simulation
 
             // Otherwise resolve the action
             match action_choice {
-                FullySpecifiedActionChoice::Move { move_id, target_position, .. } => {
+                FullySpecifiedActionChoice::Move { move_id, target_positions, .. } => {
                     // The target position may be empty if the target fainted with no replacement, for example.
-                    let maybe_target = self.battle.monster_at_position(target_position);
-                    if let Some(target) = maybe_target {
-                        UseMove(self, MoveUseContext::new(move_id, target.id));
-                    } else {
-                        self.push_message(
-                            format!["{}'s {} has no target anymore...", self.battle.monster(move_id.owner_id).name(), self.battle.move_(move_id).name()]
-                        );
-                    }
+                    let target_ids = target_positions.into_iter()
+                        .map(|position| self.battle.monster_at_position(position) )
+                        .flatten()
+                        .map(|monster| monster.id )
+                        .collect::<Vec<_>>();
+                    UseMove(self, move_id.owner_id, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
                 },
                 FullySpecifiedActionChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {
-                    PerformSwitchOut(self, SwitchContext::new(active_monster_id, benched_monster_id));
+                    PerformSwitchOut(self, active_monster_id, SwitchContext::new(active_monster_id, benched_monster_id));
                 },
             }
 
@@ -142,11 +141,6 @@ impl BattleSimulator { // simulation
 
         Ok(NOTHING)
     }
-    
-    fn activate_move_effect(&mut self, context: MoveUseContext) {
-        (self.battle.move_(context.move_used_id).on_activate_effect())(self, context)
-    }
-
 
     fn trigger_try_event<C: Copy, E: Event<EventReturnType = Outcome, ContextType = C>>(
         &mut self, 

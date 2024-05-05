@@ -5,7 +5,7 @@ use monsim_utils::not;
 
 use super::{ability::AbilitySpecies, Type};
 use crate::{
-    effects::*, event_dex::OnTryMove, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexEntry, AbilityID, AbilityUseContext
+    effects::*, event_dex::*, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexEntry, AbilityID, AbilityUseContext, MoveHitContext
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 
@@ -14,17 +14,17 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
         name: "Flash Fire",
         event_handlers: | | {
             EventHandlerDeck::empty()
-                .add(OnTryMove, |sim, MoveUseContext { move_user_id, move_used_id, target_id}| {
+                .add(OnTryMoveHit, |sim, effector_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
                     if mov![move_used_id].is_type(Type::Fire) {
-                        let activation_succeeded = ActivateAbility(sim, AbilityUseContext::new(target_id));
+                        let activation_succeeded = ActivateAbility(sim, effector_id,AbilityUseContext::new(effector_id));
                         return not!(activation_succeeded);
                     }
                     Outcome::Success
                 }, source_code_location!())
         },
-        on_activate_effect: Effect::from(|sim, AbilityUseContext { ability_used_id, ability_owner_id }| {
-            let owner_name = mon![ability_used_id.owner_id].name();
-            sim.push_message(format!["{owner_name}'s Flash Fire activated!"]);
+        on_activate_effect: Effect::from(|sim, effector_id, AbilityUseContext { ability_used_id, ability_owner_id }| {
+            let effector_name = mon![effector_id].name();
+            sim.push_message(format!["{effector_name}'s Flash Fire activated!"]);
         }),
         event_filtering_options: EventFilteringOptions::default(),
         order: 0,

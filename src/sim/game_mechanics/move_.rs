@@ -1,6 +1,6 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveUseContext, TargetFlags};
+use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveHitContext, MoveUseContext, TargetFlags};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
@@ -17,8 +17,8 @@ impl Move {
         self.species.name
     }
 
-    pub fn on_activate_effect(&self) -> Effect<Nothing, MoveUseContext> {
-        self.species.on_use_effect
+    pub fn on_hit_effect(&self) -> Effect<Nothing, MoveHitContext> {
+        self.species.on_hit_effect
     }
 
     #[inline(always)]
@@ -81,7 +81,7 @@ impl Move {
 pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
-    on_use_effect: Effect<Nothing, MoveUseContext>,
+    on_hit_effect: Effect<Nothing, MoveHitContext>,
     base_accuracy: u16,
     base_power: u16,
     category: MoveCategory,
@@ -116,7 +116,7 @@ impl MoveSpecies {
         let MoveDexEntry { 
             dex_number, 
             name, 
-            on_use_effect, 
+            on_hit_effect, 
             base_accuracy, 
             base_power, 
             category, 
@@ -131,7 +131,7 @@ impl MoveSpecies {
         MoveSpecies {
             dex_number,
             name,
-            on_use_effect,
+            on_hit_effect,
             base_accuracy,
             base_power,
             category,
@@ -160,8 +160,8 @@ impl MoveSpecies {
     }
 
     #[inline(always)]
-    pub fn on_use_effect(&self) -> Effect<Nothing, MoveUseContext> {
-        self.on_use_effect
+    pub fn on_hit_effect(&self) -> Effect<Nothing, MoveHitContext> {
+        self.on_hit_effect
     }
     
     
@@ -198,7 +198,7 @@ pub struct MoveDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
 
-    pub on_use_effect: Effect<Nothing, MoveUseContext>,
+    pub on_hit_effect: Effect<Nothing, MoveHitContext>,
     pub base_accuracy: u16,
     pub base_power: u16,
     pub category: MoveCategory,

@@ -1,9 +1,9 @@
 use std::io::{self, StdoutLock, Write};
 
-use monsim_macros::mon;
-use monsim_utils::{Nothing, NOTHING};
+use monsim_macros::{mon, mov};
+use monsim_utils::{MaxSizedVec, Nothing, NOTHING};
 
-use crate::{sim::{AvailableChoices, BattleSimulator, BattleState, FullySpecifiedActionChoice, PartiallySpecifiedActionChoice}, BattleFormat, FieldPosition, MonsimResult, MonsterID};
+use crate::{sim::{AvailableChoices, BattleSimulator, BattleState, FullySpecifiedActionChoice, PartiallySpecifiedActionChoice}, BattleFormat, FieldPosition, MonsimResult, MonsterID, TargetFlags};
 
 enum TurnStage {
     ChooseActions,
@@ -110,7 +110,8 @@ pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
                     let chosen_switchable_benched_monster_id = switchable_benched_monster_ids[switchable_benched_monster_choice_index];
 
                     // We directly replace the empty position with the chosen Monster
-                    crate::sim::effects::ReplaceFaintedMonster(&mut sim, (chosen_switchable_benched_monster_id, field_position));
+                    // FIXME: Effects might have no originator, how to deal with this? I just passed something that passes the type check here, but the actual argument doesn't makes sense here.
+                    crate::sim::effects::ReplaceFaintedMonster(&mut sim, chosen_switchable_benched_monster_id, (chosen_switchable_benched_monster_id, field_position));
                     sim.battle.message_log.show_last_message();
                 } 
             },
@@ -182,18 +183,31 @@ fn receive_user_input_and_convert_to_choice(
         PartiallySpecifiedActionChoice::Move { move_id, possible_target_positions, activation_order, .. } => {
             // Target position prompt
             write_empty_line(locked_stdout)?;
-            let target_position_names = possible_target_positions.iter()
-                .map(|position| {
-                    format!["{} ({:?})", battle.monster_at_position(*position).expect("This is precomputed.").full_name(), position]
-                })
-                .enumerate();
-            for (index, position_name) in target_position_names {
-                writeln!(locked_stdout, "[{}] {}", index + 1, position_name)?;
+            if battle.move_(move_id).allowed_target_flags().contains(TargetFlags::ALL) {
+                let target_positions = possible_target_positions;
+                FullySpecifiedActionChoice::Move { move_id, target_positions, activation_order }
+            } else if battle.move_(move_id).allowed_target_flags().contains(TargetFlags::ANY) {
+                // Autopicks if there is only one possible target.
+                let target_position = if possible_target_positions.count() == 1 {
+                    possible_target_positions[0]
+                } else {
+                    let target_position_names = possible_target_positions.iter()
+                        .map(|position| {
+                            format!["{} ({:?})", battle.monster_at_position(*position).expect("This is precomputed.").full_name(), position]
+                        })
+                        .enumerate();
+                    for (index, position_name) in target_position_names {
+                        writeln!(locked_stdout, "[{}] {}", index + 1, position_name)?;
+                    }
+                    write_empty_line(locked_stdout)?;
+                    let chosen_target_position_index = receive_user_input_and_convert_to_choice_index(locked_stdout, possible_target_positions.count()).unwrap();
+                    possible_target_positions[chosen_target_position_index]
+                };
+                FullySpecifiedActionChoice::Move { move_id, target_positions: MaxSizedVec::from_vec(vec![target_position]), activation_order }
+            } else {
+                unreachable!("ANY and ALL should be exhaustive")
             }
-            write_empty_line(locked_stdout)?;
-            let chosen_target_position_index = receive_user_input_and_convert_to_choice_index(locked_stdout, possible_target_positions.count()).unwrap();
-            let target_position = possible_target_positions[chosen_target_position_index];
-            FullySpecifiedActionChoice::Move { move_id, target_position, activation_order }
+
         },
         PartiallySpecifiedActionChoice::SwitchOut { active_monster_id, switchable_benched_monster_ids, activation_order, .. } => {
             // Switchee prompt

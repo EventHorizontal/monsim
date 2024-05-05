@@ -29,8 +29,9 @@ pub enum PartiallySpecifiedActionChoice {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullySpecifiedActionChoice {
     Move { 
-        move_id: MoveID, 
-        target_position: FieldPosition, 
+        move_id: MoveID,
+        /// There may be 1-6 valid targets for a move. 
+        target_positions: MaxSizedVec<FieldPosition, 6>, 
         activation_order: ActivationOrder 
     },
     SwitchOut { 

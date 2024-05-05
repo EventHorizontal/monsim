@@ -11,7 +11,7 @@ use self::targetting::BoardPosition;
 use super::event_dex::*;
 use super::*;
 
-type EffectFunction<R,C> = fn(&mut BattleSimulator, C) -> R;
+pub(super) type EffectFunction<R,C> = fn(/* simulator */ &mut BattleSimulator, /* effector id, i.e. the Monster doing the effect */ MonsterID, /* context */ C) -> R;
 
 /// `R`: A type that encodes any necessary information about how the `Effect` played
 /// out, _e.g._ an `Outcome` representing whether the `Effect` succeeded.
@@ -46,28 +46,44 @@ impl<R, C> Effect<R, C> {
 /// `MoveUseContext.move_user` on `MoveUseContext.target`.
 pub(crate) const UseMove: Effect<Nothing, MoveUseContext> = Effect(use_move);
 
-fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
-    let MoveUseContext { move_user_id, move_used_id, target_id: _ } = context;
-
+fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveUseContext) {
+    let MoveUseContext { move_user_id, move_used_id, target_ids } = context;
+    assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
+    
     sim.push_message(format![
         "{attacker} used {_move}",
         attacker = mon![move_user_id].name(),
         _move = mov![move_used_id].name()
     ]);
-
-    if mov![move_used_id].current_power_points == 0 {
-        sim.push_message("but the move is out of power points!");
+    
+    // There are no remaining targets for this move. They fainted before the move was used.
+    if target_ids.is_empty() {
+        sim.push_message(
+            format!["{}'s {} has no targets...", mon!(move_user_id).name(), mov!(move_used_id).name()]
+        );
         return;
     }
-
+    
     if sim.trigger_try_event(OnTryMove, move_user_id, context).failed() {
         sim.push_message("The move failed!");
         return;
     }
 
-    sim.activate_move_effect(context);
+    /*
+    INFO: We are currently dealing with the fact moves hit 0-6 times by thinking
+    of them as having an `on_hit_effect` rather an `on_use_effect`. We may need
+    rethink this if it turns out some moves do want to control their `on_use_effect`.
+    Event multihit moves seem like they want to just have a `number_of_hits` variable
+    and just repeat its on_hit_effect 
+    */
+    for target_id in target_ids {
+        let subcontext = MoveHitContext { move_user_id, move_used_id, target_id };
+        mov![move_used_id].on_hit_effect()(&mut *sim, effector_id, subcontext);
+    }
+    
     mov![mut move_used_id].current_power_points -= 1;
-   #[cfg(feature="debug")]
+    
+    #[cfg(feature="debug")]
     sim.push_message(format![
         "{}'s {}'s PP is now {}",
         mon![move_user_id].name(),
@@ -80,7 +96,7 @@ fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
 
 pub(crate) const PerformSwitchOut: Effect<Nothing, SwitchContext> = Effect(perform_switch_out);
 
-fn perform_switch_out(sim: &mut BattleSimulator, context: SwitchContext) {
+fn perform_switch_out(sim: &mut BattleSimulator, effector_id: MonsterID, context: SwitchContext) {
     let SwitchContext { active_monster_id, benched_monster_id } = context;
 
     // Swap board positions of the two Monsters. (We just assume benched_monster_id corresponds to a benched monster at this point).
@@ -96,7 +112,7 @@ fn perform_switch_out(sim: &mut BattleSimulator, context: SwitchContext) {
 
 pub(crate) const ReplaceFaintedMonster: Effect<Nothing, (MonsterID, FieldPosition)> = Effect(replace_fainted_monster);
 
-fn replace_fainted_monster(sim: &mut BattleSimulator, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
+fn replace_fainted_monster(sim: &mut BattleSimulator, effector_id: MonsterID, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
     mon![mut benched_monster_id].board_position = BoardPosition::Field(field_position);
     sim.push_message(format![
         "Go {}!",
@@ -111,13 +127,13 @@ fn replace_fainted_monster(sim: &mut BattleSimulator, (benched_monster_id, field
 /// 
 /// This is done by calculating the damage first using the formula then calling `DealDirectDamage`
 /// with the resulting damage.
-pub const DealDefaultDamage: Effect<Nothing, MoveUseContext> = Effect(deal_default_damage);
+pub const DealDefaultDamage: Effect<Nothing, MoveHitContext> = Effect(deal_default_damage);
 
-fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
-    let MoveUseContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
+fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveHitContext) {
+    let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
 
-    if sim.trigger_try_event(OnTryMove, attacker_id, context).failed() {
-        sim.push_message("The move failed!");
+    if sim.trigger_try_event(OnTryMoveHit, attacker_id, context).failed() {
+        sim.push_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
         return;
     }
 
@@ -177,8 +193,7 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
     // TODO: Introduce more damage multipliers as we implement them.
 
     // Do the calculated damage to the target
-    DealDirectDamage(sim, (defender_id, damage));
-    sim.trigger_event(OnDamageDealt, attacker_id, NOTHING, NOTHING, None);
+    DealDirectDamage(sim, effector_id, (defender_id, damage));
 
     let type_effectiveness = match type_matchup_multiplier {
         Percent(25) | Percent(50) => "not very effective",
@@ -198,7 +213,8 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
         "{} has {num_hp} health left.",
         mon![defender_id].name(),
         num_hp = mon![defender_id].current_health
-    ]);
+    ]);  
+
 }
 
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`.
@@ -207,7 +223,7 @@ fn deal_default_damage(sim: &mut BattleSimulator, context: MoveUseContext) {
 pub const DealDirectDamage: Effect<u16, (MonsterID, u16)> = Effect(deal_direct_damge);
 
 #[must_use]
-fn deal_direct_damge(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> u16 {
+fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context: (MonsterID, u16)) -> u16 {
     let (target_id, mut damage) = context;
     let original_health = mon![target_id].current_health;
     mon![mut target_id].current_health = original_health.saturating_sub(damage);
@@ -216,6 +232,7 @@ fn deal_direct_damge(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> u1
         sim.push_message(format!["{} fainted!", mon![target_id].name()]);
         mon![mut target_id].board_position = BoardPosition::Bench;
     };
+    sim.trigger_event(OnDamageDealt, effector_id, NOTHING, NOTHING, None);
     damage
 }
 
@@ -224,12 +241,12 @@ fn deal_direct_damge(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> u1
 pub const ActivateAbility: Effect<Outcome, AbilityUseContext> = Effect(activate_ability);
 
 #[must_use]
-pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -> Outcome {
+pub fn activate_ability(sim: &mut BattleSimulator, effector_id: MonsterID, context: AbilityUseContext) -> Outcome {
     let AbilityUseContext { ability_used_id, ability_owner_id } = context;
 
     if sim.trigger_try_event(OnTryActivateAbility, ability_owner_id, context).succeeded() {
         let ability = abl![ability_used_id];
-        (ability.on_activate_effect())(sim, context);
+        (ability.on_activate_effect())(sim, effector_id, context);
         sim.trigger_event(OnAbilityActivated, ability_owner_id, context, NOTHING, None);
         Outcome::Success
     } else {
@@ -243,6 +260,7 @@ pub const RaiseStat: Effect<Outcome, (MonsterID, Stat, u8)> = Effect(raise_stat)
 #[must_use]
 pub fn raise_stat(
     sim: &mut BattleSimulator,
+    effector_id: MonsterID,
     (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
     if sim.trigger_try_event(OnTryRaiseStat, affected_monster_id, NOTHING).succeeded() {
@@ -267,8 +285,8 @@ pub const LowerStat: Effect<Outcome, (MonsterID, Stat, u8)> = Effect(lower_stat)
 #[must_use]
 pub fn lower_stat(
     sim: &mut BattleSimulator,
-    (affected_monster_id
-        , stat, number_of_stages): (MonsterID, Stat, u8), 
+    effector_id: MonsterID,
+    (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
     if sim.trigger_try_event(OnTryLowerStat, affected_monster_id, NOTHING).succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);

@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{effects::*, sim::{
     event_dispatch::EventFilteringOptions, BattleState, MonsterID, Move, Stat
-}, BattleSimulator, EventHandlerDeck, MoveDexEntry, MoveUseContext, TargetFlags};
+}, BattleSimulator, EventHandlerDeck, Hits, MoveDexEntry, MoveUseContext, TargetFlags};
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
@@ -17,6 +17,7 @@ pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 40,
         category: MoveCategory::Physical,
         max_power_points: 35,
+        hits_per_target: Hits::Once,
         priority: 0,
         targets: TargetFlags::ANY
                     .union(TargetFlags::ADJACENT)
@@ -37,6 +38,7 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 40,
         category: MoveCategory::Physical,
         max_power_points: 35,
+        hits_per_target: Hits::Once,
         priority: 0,
         targets: TargetFlags::ANY
                     .union(TargetFlags::ADJACENT)
@@ -57,6 +59,7 @@ pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 40,
         category: MoveCategory::Special,
         max_power_points: 35,
+        hits_per_target: Hits::Once,
         priority: 0,
         targets: TargetFlags::ANY
                     .union(TargetFlags::ADJACENT)
@@ -76,6 +79,7 @@ pub const Bubble: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 40,
         category: MoveCategory::Special,
         max_power_points: 35,
+        hits_per_target: Hits::Once,
         priority: 0,
         targets: TargetFlags::ALL
                     .union(TargetFlags::ADJACENT)
@@ -97,6 +101,7 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 0,
         category: MoveCategory::Status,
         max_power_points: 40,
+        hits_per_target: Hits::Once,
         priority: 0,
         targets: TargetFlags::ALL
                     .union(TargetFlags::ADJACENT)
@@ -119,9 +124,31 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(
         base_power: 0,
         category: MoveCategory::Status,
         max_power_points: 20,
+        hits_per_target: Hits::Once,
         priority: 0,
         targets: TargetFlags::SELF,
         type_: Type::Dragon,
+        event_handlers: EventHandlerDeck::empty,
+        event_filtering_options: EventFilteringOptions::default(),
+    }
+);
+
+pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(
+    MoveDexEntry {
+        dex_number: 007,
+        name: "Bullet Seed",
+        on_hit_effect: DealDefaultDamage,
+        hits_per_target: Hits::RandomlyInRange { min: 2, max: 5 },
+        base_accuracy: 100,
+        base_power: 0,
+        category: MoveCategory::Physical,
+        max_power_points: 20,
+        priority: 0,
+        targets: TargetFlags::ANY
+            .union(TargetFlags::ADJACENT)
+            .union(TargetFlags::ALLIES)
+            .union(TargetFlags::OPPONENTS),
+        type_: Type::Grass,
         event_handlers: EventHandlerDeck::empty,
         event_filtering_options: EventFilteringOptions::default(),
     }

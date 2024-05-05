@@ -78,7 +78,24 @@ fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveUseC
     */
     for target_id in target_ids {
         let subcontext = MoveHitContext { move_user_id, move_used_id, target_id };
-        mov![move_used_id].on_hit_effect()(&mut *sim, effector_id, subcontext);
+        let mut actual_number_of_hits = 0;
+        for _ in {
+            match mov![move_used_id].hits_per_target() {
+                Hits::Once => 0..1,
+                Hits::MultipleTimes(number_of_hits) => 0..number_of_hits,
+                Hits::RandomlyInRange { min, max } => {
+                    let number_of_hits = sim.generate_random_number_in_range_inclusive(min as u16..=max as u16);
+                    0..number_of_hits as u8
+                },
+            }
+        } {
+            mov![move_used_id].on_hit_effect()(&mut *sim, effector_id, subcontext);
+            actual_number_of_hits += 1;
+        } 
+
+        if actual_number_of_hits > 1 {
+            sim.push_message(format!["The move hit {} time(s)", actual_number_of_hits]);
+        }
     }
     
     mov![mut move_used_id].current_power_points -= 1;

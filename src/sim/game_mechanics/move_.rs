@@ -1,7 +1,8 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveHitContext, MoveUseContext, TargetFlags};
+use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
+use std::ops::Range;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
 pub struct Move {
@@ -75,13 +76,20 @@ impl Move {
     pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
         (self.species.event_handlers)()
     }
+    
+    pub(crate) fn hits_per_target(&self) -> Hits {
+        self.species.hits_per_target
+    }
 }
 
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
+    
     on_hit_effect: Effect<Nothing, MoveHitContext>,
+    hits_per_target: Hits,
+    
     base_accuracy: u16,
     base_power: u16,
     category: MoveCategory,
@@ -89,6 +97,7 @@ pub struct MoveSpecies {
     priority: i8,
     targets: TargetFlags,
     type_: Type,
+    
     event_handlers: fn() -> EventHandlerDeck,
     _event_filtering_options: EventFilteringOptions,
 }
@@ -126,6 +135,7 @@ impl MoveSpecies {
             type_, 
             event_handlers, 
             event_filtering_options,
+            hits_per_target,
         } = dex_entry;
         
         MoveSpecies {
@@ -141,6 +151,7 @@ impl MoveSpecies {
             type_,
             event_handlers,
             _event_filtering_options: event_filtering_options,
+            hits_per_target,
         }
     }
 
@@ -199,6 +210,8 @@ pub struct MoveDexEntry {
     pub name: &'static str,
 
     pub on_hit_effect: Effect<Nothing, MoveHitContext>,
+    pub hits_per_target: Hits,
+    
     pub base_accuracy: u16,
     pub base_power: u16,
     pub category: MoveCategory,
@@ -215,4 +228,24 @@ pub struct MoveDexEntry {
 pub struct MoveID {
     pub owner_id: MonsterID,
     pub move_number: MoveNumber,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Hits {
+    /// Hits the target once
+    Once,
+    /// Hits the target a fixed number of times, more than once.
+    MultipleTimes(u8),
+    /// Hits the target a random number of times in a range (inclusive on both ends).
+    RandomlyInRange{ min: u8, max: u8 }
+}
+
+impl Hits {
+    pub(crate) fn to_range(&self) -> Range<u8> {
+        match *self {
+            Hits::Once => 0..1,
+            Hits::MultipleTimes(number_of_hits) => 0..number_of_hits,
+            Hits::RandomlyInRange { min: start, max: end } => start..end,
+        }
+    } 
 }

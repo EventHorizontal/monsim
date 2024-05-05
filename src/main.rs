@@ -39,7 +39,7 @@ fn main() -> MonsimResult<()> {
                     Dandyleo.spawn(
                         (
                             Scratch.spawn(),
-                            None,
+                            Some(BulletSeed.spawn()),
                             None,
                             None,
                         ), 
@@ -94,7 +94,7 @@ fn main() -> MonsimResult<()> {
                     )        
                 )
         )
-        .with_format(BattleFormat::Triple)
+        // .with_format(BattleFormat::Triple)
         .build();
 
     #[cfg(feature="macro")]

@@ -49,8 +49,8 @@ fn test_if_priority_sorting_is_deterministic() {
 
         let mut prng = Prng::from_current_time();
         let sim = BattleSimulator::init(test_battle);
-        use crate::sim::event_dex::OnTryMove;
-        let mut owned_event_handlers = sim.battle.event_handlers_for(OnTryMove);
+        use crate::sim::event_dex::OnTryMoveHit;
+        let mut owned_event_handlers = sim.battle.event_handlers_for(OnTryMoveHit);
         crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, |it| it.activation_order);
 
         result[i] = owned_event_handlers
@@ -174,9 +174,9 @@ fn test_priority_sorting_with_speed_ties() {
         let mut prng = Prng::new(i as u64);
         let sim = BattleSimulator::init(test_battle);
 
-        use crate::sim::event_dex::OnTryMove;
+        use crate::sim::event_dex::OnTryMoveHit;
 
-        let mut owned_event_handlers = sim.battle.event_handlers_for(OnTryMove);
+        let mut owned_event_handlers = sim.battle.event_handlers_for(OnTryMoveHit);
 
         crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, |it| it.activation_order);
 
@@ -273,7 +273,7 @@ fn test_filtering_events_by_broadcaster_relations() {
 fn test_print_owned_event_handler() {
     use crate::sim::{test_ability_dex::FlashFire, event_dispatch::OwnedEventHandler, MonsterID};
     let owned_event_handler = OwnedEventHandler {
-        event_handler: FlashFire.event_handlers().on_try_move.unwrap(),
+        event_handler: FlashFire.event_handlers().on_try_move_hit.unwrap(),
         activation_order: crate::ActivationOrder { priority: 0, speed: 11, order: FlashFire.order() },
         owner_id: MonsterID {
             team_id: crate::sim::TeamID::Allies,

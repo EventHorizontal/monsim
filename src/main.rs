@@ -29,9 +29,20 @@ fn main() -> MonsimResult<()> {
                         (
                             Ember.spawn(),
                             Some(Growl.spawn()),
-                            None,
+                            Some(Scratch.spawn()),
                             None
                         ),
+                        FlashFire.spawn()
+                    )
+                )
+                .add_monster(
+                    Dandyleo.spawn(
+                        (
+                            Scratch.spawn(),
+                            Some(BulletSeed.spawn()),
+                            None,
+                            None,
+                        ), 
                         FlashFire.spawn()
                     )
                 )
@@ -41,16 +52,49 @@ fn main() -> MonsimResult<()> {
                 .add_monster(
                     Merkey.spawn(
                         (
+                            Bubble.spawn(),
+                            Some(Tackle.spawn()),
+                            None,
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )        
+                )
+                .add_monster(
+                    Merkey.spawn(
+                        (
                             Growl.spawn(),
                             Some(Tackle.spawn()),
                             None,
                             None
                         ),
                         FlashFire.spawn()
-                    )
-                        
+                    )        
+                )
+                .add_monster(
+                    Merkey.spawn(
+                        (
+                            Growl.spawn(),
+                            Some(Tackle.spawn()),
+                            None,
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )        
+                )
+                .add_monster(
+                    Merkey.spawn(
+                        (
+                            Growl.spawn(),
+                            Some(Tackle.spawn()),
+                            None,
+                            None
+                        ),
+                        FlashFire.spawn()
+                    )        
                 )
         )
+        // .with_format(BattleFormat::Triple)
         .build();
 
     #[cfg(feature="macro")]

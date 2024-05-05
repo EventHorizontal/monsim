@@ -33,7 +33,7 @@ impl MessageLog {
         })
     }
     
-    pub fn set_last_turn_cursor_to_log_length(&mut self) {
+    pub fn snap_last_turn_cursor_to_end(&mut self) {
         self.last_turn_cursor = self.len()
     }
 
@@ -45,5 +45,9 @@ impl MessageLog {
         for message in messages {
             self.messages.push(message.to_string());
         }
+    }
+    
+    pub(crate) fn show_last_message(&self) {
+        println!("{}", self.messages[self.len()-1]);
     }
 }

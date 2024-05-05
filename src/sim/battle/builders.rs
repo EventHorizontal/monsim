@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, DealDefaultDamage, Monster, MonsterID, MonsterNumber, MonsterTeam, Move, MoveCategory, MoveID, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, DealDefaultDamage, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 /*  
     FEATURE: Better Validation -> Some basic state validation will be done 
@@ -15,11 +15,23 @@ use crate::{sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, Monst
 pub struct BattleBuilder {
     maybe_ally_team: Option<Ally<MonsterTeamBuilder>>,
     maybe_opponent_team: Option<Opponent<MonsterTeamBuilder>>,
+    format: BattleFormat
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BattleFormat {
+    Single,
+    Double,
+    Triple,
 }
 
 impl BattleState {
     pub fn spawn() -> BattleBuilder {
-        BattleBuilder { maybe_ally_team: None, maybe_opponent_team: None }
+        BattleBuilder { 
+            maybe_ally_team: None, 
+            maybe_opponent_team: None, 
+            format: BattleFormat::Single
+        }
     }
 }
 
@@ -36,7 +48,46 @@ impl BattleBuilder {
         self
     }
 
+    pub fn with_format(mut self, battle_format: BattleFormat) -> Self {
+        self.format = battle_format;
+        self
+    }
+
     pub fn build(self) -> BattleState {
+        
+        let ally_board_positions = match self.format {
+            BattleFormat::Single => {
+                [
+                    BoardPosition::Field(FieldPosition::AllySideCentre),
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                ]
+            },
+            BattleFormat::Double => {
+                [
+                    BoardPosition::Field(FieldPosition::AllySideCentre),
+                    BoardPosition::Field(FieldPosition::AllySideRight),
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                ]
+            },
+            BattleFormat::Triple => {
+                [
+                    BoardPosition::Field(FieldPosition::AllySideCentre),
+                    BoardPosition::Field(FieldPosition::AllySideLeft),
+                    BoardPosition::Field(FieldPosition::AllySideRight),
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                ]
+            },
+        };
+        
         const ALLY_IDS: [MonsterID; 6] = [
             ALLY_1,
             ALLY_2,
@@ -49,8 +100,41 @@ impl BattleBuilder {
         let ally_team = self.maybe_ally_team
             .expect("Building the BattleState requires adding an Ally Team, found none.")
             .map_consume(|ally_team_builder| {
-                ally_team_builder.build(ALLY_IDS, TeamID::Allies)                
+                ally_team_builder.build(ALLY_IDS, ally_board_positions, TeamID::Allies)                
             });
+
+        let opponent_board_positions = match self.format {
+            BattleFormat::Single => {
+                [
+                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                ]
+            },
+            BattleFormat::Double => {
+                [
+                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                    BoardPosition::Field(FieldPosition::OpponentSideRight),
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                ]
+            },
+            BattleFormat::Triple => {
+                [
+                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                    BoardPosition::Field(FieldPosition::OpponentSideLeft),
+                    BoardPosition::Field(FieldPosition::OpponentSideRight),
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                    BoardPosition::Bench,
+                ]
+            },
+        };
 
         const OPPONENT_IDS: [MonsterID; 6] = [
             OPPONENT_1,
@@ -64,10 +148,10 @@ impl BattleBuilder {
         let opponent_team = self.maybe_opponent_team
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
             .map_consume(|opponent_team_builder| {
-                opponent_team_builder.build(OPPONENT_IDS, TeamID::Opponents)                
+                opponent_team_builder.build(OPPONENT_IDS, opponent_board_positions, TeamID::Opponents)                
             });
 
-        BattleState::new(ally_team, opponent_team)
+        BattleState::new(ally_team, opponent_team, self.format)
     }    
 }
 
@@ -96,15 +180,16 @@ impl MonsterTeamBuilder {
         self
     }
 
-    fn build(self, monster_ids: [MonsterID; 6], team_id: TeamID) -> MonsterTeam {
+    fn build(self, monster_ids: [MonsterID; 6], board_positions: [BoardPosition; 6], team_id: TeamID) -> MonsterTeam {
         self.maybe_monsters
             .expect(
                 format!["Expected {team_id} to have at least one monster, but none were given"].as_str()
             )
             .into_iter()
             .zip(monster_ids.into_iter())
-            .map(|(monster_builder, monster_id)| {
-                monster_builder.build(monster_id)
+            .zip(board_positions.into_iter())
+            .map(|((monster_builder, monster_id), board_position)| {
+                monster_builder.build(monster_id, board_position)
             })
             .collect::<Vec<_>>()
             .pipe(|monsters| MonsterTeam::new(monsters, team_id))
@@ -183,7 +268,7 @@ impl MonsterBuilder {
         self
     } 
 
-    pub fn build(self, monster_id: MonsterID) -> Monster {
+    pub fn build(self, monster_id: MonsterID, board_position: BoardPosition) -> Monster {
         
         let nickname = self.nickname;
         
@@ -224,16 +309,7 @@ impl MonsterBuilder {
             species: self.species,
             moveset,
             ability,
-            board_position: {
-                if monster_id.monster_number == MonsterNumber::_1 {
-                    match monster_id.team_id  {
-                        TeamID::Allies => BoardPosition::Field(FieldPosition::AllyCentre),
-                        TeamID::Opponents => BoardPosition::Field(FieldPosition::OpponentCentre),
-                    }
-                } else {
-                    BoardPosition::Bench
-                }
-            },
+            board_position,
         } 
     }
 }
@@ -279,7 +355,7 @@ impl MoveBuilder {
         let species = self.species;
         // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
         if species.category() == MoveCategory::Status && species.
-        on_use_effect() == DealDefaultDamage {
+        on_hit_effect() == DealDefaultDamage {
             println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
         }
         Move {

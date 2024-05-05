@@ -41,7 +41,7 @@ impl EventDispatcher {
 
         event: impl Event<EventReturnType = R, ContextType = C>,
         broadcaster_id: MonsterID,
-        calling_context: C,
+        event_context: C,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
@@ -57,11 +57,11 @@ impl EventDispatcher {
         });
 
         let mut relay = default;
-        for OwnedEventHandler { event_handler, owner_id: owner, filtering_options, .. } in owned_event_handlers.into_iter() {
-            if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner, filtering_options) {
+        for OwnedEventHandler { event_handler, owner_id, filtering_options, .. } in owned_event_handlers.into_iter() {
+            if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner_id, filtering_options) {
                 // INFO: Removed relaying the outcome of the previous handler from the event resolution. It will be
                 // reintroduced if it ever turns out to be useful. Otherwise remove this comment. 
-                relay = (event_handler.effect)(sim, calling_context);
+                relay = (event_handler.effect)(sim, owner_id, event_context);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {

@@ -214,8 +214,10 @@ impl BattleSimulator { // simulation
                 self.push_message(format!["{} is empty but {} is out of switchable Monsters!", empty_field_position, team_id]);
             } else {
                 let monster_selected_for_switch_id = ui.prompt_user_to_select_benched_monster_to_switch_in(&mut self.battle, empty_field_position, switchable_benched_monster_ids);
-                // INFO: Monsters get switched in immediately if they are replacing a Monster
-                // that fainted last turn, so we don't add them to the 'action_schedule'.
+                /*
+                INFO: Monsters get switched in immediately if they are replacing a fainted Monster
+                that fainted last turn, so we don't add them to the 'action_schedule'.
+                */
                 effects::ReplaceFaintedMonster(self, monster_selected_for_switch_id, (monster_selected_for_switch_id, empty_field_position))
             }
         }

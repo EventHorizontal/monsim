@@ -61,26 +61,27 @@ fn main() -> MonsimResult<()> {
                     )        
                 )
                 .add_monster(
-                    Merkey.spawn(
+                    Zombler.spawn(
                         (
-                            Growl.spawn(),
-                            Some(Tackle.spawn()),
-                            None,
+                            Tackle.spawn()
+                                .with_power_points(23),
+                            Some(Growl.spawn()),
+                            Some(DragonDance.spawn()),
                             None
                         ),
                         FlashFire.spawn()
-                    )        
+                    )
                 )
                 .add_monster(
-                    Merkey.spawn(
+                    Squirecoal.spawn(
                         (
-                            Growl.spawn(),
-                            Some(Tackle.spawn()),
-                            None,
+                            Ember.spawn(),
+                            Some(Growl.spawn()),
+                            Some(Scratch.spawn()),
                             None
                         ),
                         FlashFire.spawn()
-                    )        
+                    )
                 )
                 .add_monster(
                     Merkey.spawn(
@@ -94,7 +95,7 @@ fn main() -> MonsimResult<()> {
                     )        
                 )
         )
-        // .with_format(BattleFormat::Triple)
+        .with_format(BattleFormat::Triple)
         .build();
 
     println!("{:?}", battle.format());

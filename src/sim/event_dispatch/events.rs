@@ -68,7 +68,7 @@ impl EventHandlerDeck {
     }
 
     #[cfg(not(feature="debug"))]
-    pub fn add<E: Event>(&mut self, event: E, effect: fn(&mut BattleSimulator, E::ContextType) -> E::EventReturnType) -> EventHandlerDeck {
+    pub fn add<E: Event>(&mut self, event: E, effect: EffectFunction<E::EventReturnType, E::ContextType>) -> EventHandlerDeck {
         *event.corresponding_handler_mut(self) = Some(
             EventHandler {
                 event,

@@ -28,9 +28,9 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
             
             #[cfg(not(feature="debug"))]
             let out = EventHandlerDeck::empty()
-                .add(OnTryMove, |sim, MoveUseContext { move_user_id, move_used_id, target_id: target}| {
+                .add(OnTryMoveHit, |sim, effector_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
                     if mov![move_used_id].is_type(Type::Fire) {
-                        let activation_succeeded = ActivateAbility(sim, AbilityUseContext::new(target));
+                        let activation_succeeded = ActivateAbility(sim, effector_id, AbilityUseContext::new(target_id));
                         return not!(activation_succeeded);
                     }
                     Outcome::Success

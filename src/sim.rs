@@ -78,7 +78,7 @@ impl BattleSimulator { // simulation
     }
     
     pub fn simulate_turn(&mut self, ui: &mut impl SimulatorUi) -> SimResult {
-        
+
         // Beginning-of-turn Upkeep Phase
         self.battle.message_log.extend(&[
             "---", 
@@ -134,6 +134,9 @@ impl BattleSimulator { // simulation
             };
             action_schedule.push(fully_specified_action_choice);
         }
+
+        #[cfg(feature = "debug")]
+        let start_time = std::time::SystemTime::now();
     
         // Action Phase
         ordering::sort_by_activation_order(
@@ -223,6 +226,12 @@ impl BattleSimulator { // simulation
         }
 
         self.battle.message_log.show_new_messages();
+
+        #[cfg(feature = "debug")]
+        {
+            let elapsed_time = start_time.elapsed();
+            println!("The turn took {:?} to simulate.", elapsed_time.unwrap());
+        }
 
         Ok(false)
     }

@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MessageLog {
     messages: Vec<String>,
-    last_turn_cursor: usize,
+    shown_messages_cursor: usize,
 }
 
 const INITIAL_MESSAGE_LOG_CAPACITY: usize = 200;
@@ -9,7 +9,7 @@ impl MessageLog {
     pub fn new() -> Self {
         Self {
             messages: Vec::with_capacity(INITIAL_MESSAGE_LOG_CAPACITY),
-            last_turn_cursor: 0,
+            shown_messages_cursor: 0,
         }
     }
 
@@ -27,14 +27,11 @@ impl MessageLog {
         })
     }
 
-    pub fn show_last_turn_messages(&self) {
-        self.messages[self.last_turn_cursor..].iter().for_each(|message| {
+    pub fn show_new_messages(&mut self) {
+        for message in &self.messages[self.shown_messages_cursor..] {
             println!("{}", message);
-        })
-    }
-    
-    pub fn snap_last_turn_cursor_to_end(&mut self) {
-        self.last_turn_cursor = self.len()
+        }
+        self.shown_messages_cursor = self.len()
     }
 
     pub fn push(&mut self, message: impl ToString) {
@@ -45,9 +42,5 @@ impl MessageLog {
         for message in messages {
             self.messages.push(message.to_string());
         }
-    }
-    
-    pub(crate) fn show_last_message(&self) {
-        println!("{}", self.messages[self.len()-1]);
     }
 }

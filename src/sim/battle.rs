@@ -113,11 +113,13 @@ impl BattleState {
 
     // Monsters -----------------
 
+    /// The iterator yields ally monsters first, then yields opponent monsters, in id order.
     pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_ref();
         ally_team.monsters().chain(opponent_team.monsters())
     }
 
+    /// The iterator yields ally monsters first, then yields opponent monsters, in id order.
     pub(crate) fn _monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_mut();
         ally_team.monsters_mut().chain(opponent_team.monsters_mut())
@@ -139,11 +141,17 @@ impl BattleState {
         PerTeam::new(ally_team_active_monsters, opponent_team_active_monsters)
     }
 
-    pub fn active_monsters(&self) -> impl Iterator<Item = &Monster> {
+    pub fn active_monster_ids(&self) -> impl Iterator<Item = MonsterID> {
         self.monsters()
-            .filter(|monster| {
-                matches!(monster.board_position, BoardPosition::Field(_))
+            .filter_map(|monster| {
+                if matches!(monster.board_position, BoardPosition::Field(_)) {
+                    Some(monster.id)
+                } else {
+                    None
+                }
             })
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     // Abilities -----------------
@@ -173,7 +181,9 @@ impl BattleState {
 
     // Choice -------------------------------------
 
-    pub(crate) fn available_choices_for(&self, monster: &Monster, monsters_already_chosen_for_switch: &Vec<MonsterID>) -> AvailableChoices {
+    const MAX_SWITCHES_PER_TURN: usize = 3;
+
+    pub(crate) fn available_choices_for(&self, monster: &Monster, monsters_already_selected_for_switch: &MaxSizedVec<MonsterID, {Self::MAX_SWITCHES_PER_TURN}>) -> AvailableChoices {
         
         // Move choices
         let mut move_actions = Vec::with_capacity(4);
@@ -192,14 +202,13 @@ impl BattleState {
                         speed: monster.stat(Stat::Speed),
                         order: 0, //TODO: Think about how to restrict order to be mutually exclusive
                     },
-                    display_text: move_.name()  
                 };
                 move_actions.push(partially_specified_choice);
             }
         }
 
         // Switch choice
-        let switchable_benched_monster_ids = self.switchable_benched_monster_ids(monster.id.team_id, monsters_already_chosen_for_switch);
+        let switchable_benched_monster_ids = self.switchable_benched_monster_ids(monster.id.team_id, monsters_already_selected_for_switch);
         let any_switchable_monsters = not!(switchable_benched_monster_ids.is_empty());
         let switch_action = if any_switchable_monsters {
             Some(PartiallySpecifiedActionChoice::SwitchOut { 
@@ -210,7 +219,6 @@ impl BattleState {
                     speed: monster.stat(Stat::Speed), 
                     order: 0
                 },
-                display_text: "Switch Out",
             })
         } else {
             None
@@ -223,13 +231,13 @@ impl BattleState {
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn switchable_benched_monster_ids(&self, team_id: TeamID, monsters_already_chosen_for_switch: &Vec<MonsterID>) -> MaxSizedVec<MonsterID, 5> {
+    pub(crate) fn switchable_benched_monster_ids(&self, team_id: TeamID, monsters_already_selected_for_switch: &MaxSizedVec<MonsterID, {Self::MAX_SWITCHES_PER_TURN}>) -> MaxSizedVec<MonsterID, 5> {
         let mut number_of_switchees = 0;
         let mut switchable_benched_monsters = Vec::with_capacity(5);
         for monster in self.team(team_id).monsters() {
             let is_active_monster_for_team = matches!(monster.board_position, BoardPosition::Field(_));
-            let already_selected_for_switch = monsters_already_chosen_for_switch.contains(&monster.id);
-            let is_valid_switch_partner = not!(monster.is_fainted()) && not!(is_active_monster_for_team) && not!(already_selected_for_switch);
+            let is_already_selected_for_switch = monsters_already_selected_for_switch.contains(&monster.id);
+            let is_valid_switch_partner = not!(monster.is_fainted()) && not!(is_active_monster_for_team) && not!(is_already_selected_for_switch);
             if is_valid_switch_partner {
                 switchable_benched_monsters.push(monster.id);
                 number_of_switchees += 1;
@@ -294,6 +302,21 @@ impl BattleState {
             }
         }
         allowed_target_flags.contains(targetted_position_flags)
+    }
+
+    pub(crate) fn valid_positions_in_format(&self) -> Vec<FieldPosition> {
+        match self.format {
+            BattleFormat::Single => {
+                vec![FieldPosition::AllySideCentre, FieldPosition::OpponentSideCentre]
+            
+            },
+            BattleFormat::Double => {
+                vec![FieldPosition::AllySideCentre, FieldPosition::AllySideRight, FieldPosition::OpponentSideCentre, FieldPosition::OpponentSideRight]
+            },
+            BattleFormat::Triple => {
+                vec![FieldPosition::AllySideLeft, FieldPosition::AllySideCentre, FieldPosition::AllySideRight, FieldPosition::OpponentSideLeft, FieldPosition::OpponentSideCentre, FieldPosition::OpponentSideRight]
+            },
+        }
     }
 }
 

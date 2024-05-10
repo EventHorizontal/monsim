@@ -2,9 +2,19 @@ use std::ops::{IndexMut, Index};
 
 use monsim_utils::MaxSizedVec;
 
-use crate::{ActivationOrder, MonsterID};
+use crate::{ActivationOrder, BattleState, MonsterID};
 
 use super::{game_mechanics::MoveID, targetting::FieldPosition};
+
+pub trait SimulatorUi {
+    fn update_battle_status(&self, battle: &mut BattleState);
+    
+    fn prompt_user_to_select_action_for_monster(&self, battle: &mut BattleState, monster_id: MonsterID, available_choices_for_monster: AvailableChoices) -> PartiallySpecifiedActionChoice;
+    
+    fn prompt_user_to_select_target_position(&self, battle: &mut BattleState, move_id: MoveID, possible_targets: MaxSizedVec<FieldPosition, 6>) -> FieldPosition;
+    
+    fn prompt_user_to_select_benched_monster_to_switch_in(&self, battle: &mut BattleState, switch_position: FieldPosition, switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>) -> MonsterID;
+}
 
 
 /// An action choice before certain details can be established, most often the target.
@@ -12,17 +22,21 @@ use super::{game_mechanics::MoveID, targetting::FieldPosition};
 pub enum PartiallySpecifiedActionChoice {
     Move{ 
         move_id: MoveID, 
+        /**
+        Only the positions with Monsters in them (at the time of calculation) are included. 
+        So there is no chance of targetting an empty position (A position can be empty if one 
+        of the teams has less Monsters than the total required battlers per side for the format).
+        */
         possible_target_positions: MaxSizedVec<FieldPosition, 6>,
         activation_order: ActivationOrder, 
-        display_text: &'static str
     },
     /// A switch out action before we know which monster to switch with.
     SwitchOut { 
         active_monster_id: MonsterID, 
         switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>,
         activation_order: ActivationOrder, 
-        display_text: &'static str 
     },
+    CancelSimulation
 }
 
 /// An action whose details have been fully specified.

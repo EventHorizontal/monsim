@@ -1,13 +1,13 @@
 use monsim_utils::MaxSizedVec;
-use crate::{sim::{AvailableChoices, BattleState, PartiallySpecifiedActionChoice}, FieldPosition, MonsimResult, MonsterID, MoveID, SimulatorUi};
+use crate::{sim::{AvailableChoices, BattleState, PartiallySpecifiedActionChoice}, FieldPosition, MonsterID, MoveID, SimulatorUi};
 use std::io::{stdout, Write};
 
+// TODO: We might eventually want to handle io::errors somehow?
 pub struct Cli;
 
 impl SimulatorUi for Cli {
     fn update_battle_status(&self, battle: &mut BattleState) {
         let mut locked_stdout = stdout().lock();
-        // TODO: Handle the possible error on writelns
         _ = writeln![locked_stdout];
         _ = writeln![locked_stdout,  "Current Battle Status:"];
         _ = writeln![locked_stdout];
@@ -38,7 +38,7 @@ impl SimulatorUi for Cli {
         let total_choice_count = exit_index;
 
         _ = writeln![locked_stdout];
-        let user_choice_index = self.prompt_user_for_choice_index(total_choice_count).unwrap();
+        let user_choice_index = self.prompt_user_for_choice_index(total_choice_count);
 
         if user_choice_index < available_choice_count {
             available_choices_for_monster[user_choice_index]
@@ -58,8 +58,7 @@ impl SimulatorUi for Cli {
             _ = writeln![locked_stdout,  "[{}] {}", index + 1, target_name];
         }
         _ = writeln![locked_stdout];
-        // FIXME: Using unwrap here until the logic is done.
-        let user_choice_index = self.prompt_user_for_choice_index(possible_target_positions.count()).unwrap();
+        let user_choice_index = self.prompt_user_for_choice_index(possible_target_positions.count());
         let selected_target_position = possible_target_positions[user_choice_index];
         selected_target_position
     }
@@ -79,8 +78,7 @@ impl SimulatorUi for Cli {
             _ = writeln![locked_stdout,  "[{}] {}", index + 1, benched_monster_name];
         }
         _ = writeln![locked_stdout];
-        // FIXME: Using unwrap here until the logic is done.
-        let user_choice_index = self.prompt_user_for_choice_index(switchable_benched_monster_ids.count()).unwrap();
+        let user_choice_index = self.prompt_user_for_choice_index(switchable_benched_monster_ids.count());
         let selected_benched_monster_id = switchable_benched_monster_ids[user_choice_index];
         selected_benched_monster_id
     }
@@ -91,12 +89,12 @@ impl Cli {
         Cli 
     }
     
-    fn prompt_user_for_choice_index(&self, total_action_choice_count: usize) -> MonsimResult<usize> {
+    fn prompt_user_for_choice_index(&self, total_action_choice_count: usize) -> usize {
         let mut locked_stdout = stdout().lock();
         loop { // We keep asking until the input is valid.
             _ = writeln![locked_stdout,  "Please enter the number corresponding to the choice you would like to make."];
             let mut input = String::new();
-            let _ = std::io::stdin().read_line(&mut input)?;
+            let _ = std::io::stdin().read_line(&mut input);
             // INFO: Windows uses \r\n. Linux uses only \n, so we use `trim()` which accounts for both.
             let input = input.trim();
             let chosen_action_index = input.chars().next();
@@ -104,7 +102,7 @@ impl Cli {
                 let maybe_action_choice_index = chosen_action_index.map(|char| { char.to_digit(10) }).flatten();
                 if let Some(action_choice_index) = maybe_action_choice_index {
                     if 0 < action_choice_index && action_choice_index <= total_action_choice_count as u32 {
-                        return Ok(action_choice_index as usize - 1); // The -1 converts back to zero based counting 
+                        return action_choice_index as usize - 1; // The -1 converts back to zero based counting 
                     }
                 }
             };

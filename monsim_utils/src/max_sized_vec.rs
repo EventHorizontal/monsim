@@ -45,6 +45,18 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
             self.push(element.clone());
         }
     }
+   
+}
+
+impl<T: PartialEq, const CAP: usize> MaxSizedVec<T, CAP> {
+    pub fn contains(&self, item: &T) -> bool {
+        self.elements.iter()
+            .any(|element| { if let Some(element) = element {
+                *element == *item
+            } else {
+                false
+            } })
+    }
 }
 
 impl<T, const CAP: usize> MaxSizedVec<T, CAP> {

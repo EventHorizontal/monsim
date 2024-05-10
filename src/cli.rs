@@ -54,7 +54,7 @@ impl SimulatorUi for Cli {
         let mut locked_stdout = stdout().lock();
         _ = writeln![locked_stdout,  "Please choose a target for {}", battle.move_(move_id).name()];
         for (index, possible_target_position) in possible_target_positions.into_iter().enumerate() {
-            let target_name = battle.monster_at_position(possible_target_position).expect("Only positions with Monsters are passed to this function.").name();
+            let target_name = battle.monster_at_position(possible_target_position).expect("Only positions with Monsters are passed to this function.").full_name();
             _ = writeln![locked_stdout,  "[{}] {}", index + 1, target_name];
         }
         _ = writeln![locked_stdout];
@@ -67,7 +67,7 @@ impl SimulatorUi for Cli {
         let mut locked_stdout = stdout().lock();
         match battle.monster_at_position(switch_position) {
             Some(active_monster) => {
-                _ = writeln![locked_stdout,  "Please choose a Monster to switch in for {}", active_monster.name()];
+                _ = writeln![locked_stdout,  "Please choose a Monster to switch in for {}", active_monster.full_name()];
             },
             None => {
                 _ = writeln![locked_stdout,  "Please choose a Monster to switch in to {}", switch_position];

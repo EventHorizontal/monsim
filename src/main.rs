@@ -22,6 +22,7 @@ fn main() -> MonsimResult<()> {
                         ), 
                         FlashFire.spawn()
                     )
+                    .with_nickname("Clover")
                 )
                 .add_monster(
                     Zombler.spawn(
@@ -34,6 +35,7 @@ fn main() -> MonsimResult<()> {
                         ),
                         FlashFire.spawn()
                     )
+                    .with_nickname("Rick")
                 )
                 .add_monster(
                     Squirecoal.spawn(
@@ -45,6 +47,7 @@ fn main() -> MonsimResult<()> {
                         ),
                         FlashFire.spawn()
                     )
+                    .with_nickname("Lancelot")
                 )
         )
         .add_opponent_team(
@@ -58,7 +61,8 @@ fn main() -> MonsimResult<()> {
                             None
                         ),
                         FlashFire.spawn()
-                    )        
+                    )
+                    .with_nickname("Shrimp")        
                 )
                 .add_monster(
                     Zombler.spawn(
@@ -71,6 +75,7 @@ fn main() -> MonsimResult<()> {
                         ),
                         FlashFire.spawn()
                     )
+                    .with_nickname("Cordy")
                 )
                 .add_monster(
                     Squirecoal.spawn(
@@ -82,6 +87,7 @@ fn main() -> MonsimResult<()> {
                         ),
                         FlashFire.spawn()
                     )
+                    .with_nickname("Epona")
                 )
                 .add_monster(
                     Merkey.spawn(

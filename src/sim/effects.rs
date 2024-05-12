@@ -51,19 +51,23 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
         let mut actual_number_of_hits = 0;
         for _ in {
             match mov![move_used_id].hits_per_target() {
-                Hits::Once => 0..1,
-                Hits::MultipleTimes(number_of_hits) => 0..number_of_hits,
+                Hits::Once => 1..=1,
+                Hits::MultipleTimes(number_of_hits) => 1..=number_of_hits,
                 Hits::RandomlyInRange { min, max } => {
                     let number_of_hits = sim.generate_random_number_in_range_inclusive(min as u16..=max as u16);
-                    0..number_of_hits as u8
+                    1..=number_of_hits as u8
                 },
             }
         } {
             mov![move_used_id].on_hit_effect()(&mut *sim, effector_id, subcontext);
             actual_number_of_hits += 1;
+            if mon![target_id].is_fainted() {
+                sim.push_message(format!["{} fainted!", mon![target_id].name()]);
+                break;
+            }
         } 
 
-        if actual_number_of_hits > 1 {
+        if matches!(mov![move_used_id].hits_per_target(), Hits::MultipleTimes(_) | Hits::RandomlyInRange { min: _, max: _ }) {
             sim.push_message(format!["The move hit {} time(s)", actual_number_of_hits]);
         }
     }
@@ -190,6 +194,20 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
             unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
         }
     };
+    /*
+    TODO: I was wondering if I could move the "it was __ effective" text out to `use_move` but I encountered two
+    problems:
+        1. type_effectiveness only exists within this context so we in order to 
+        push the message in `use_move` we would at the very least need to return
+        it if not recalculate it. It also wouldn't make sense in all contexts (such
+        as if the move were a status move).
+        2. we do need in general to be able to display messages at the _end_ of all 
+        the hits of a move, and upon thinking about it for 5 minutes I realise we 
+        need to have an `on_use` and an `on_hit` (they should have reasonable defaults 
+        so that most of the time they don't need to be re-implemented). 
+    Taking this stuff inot account, we need a better separation of "move use" and "move hit" if not just
+    so that one can do something after (and before) of all of the hits.
+    */
     sim.push_message(format!["It was {type_effectiveness}!"]);
     sim.push_message(format![
         "{} took {damage} damage!", 
@@ -199,8 +217,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
         "{} has {num_hp} health left.",
         mon![defender_id].name(),
         num_hp = mon![defender_id].current_health
-    ]);  
-
+    ]);
 }
 
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`.
@@ -214,7 +231,6 @@ fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context:
     mon![mut target_id].current_health = original_health.saturating_sub(damage);
     if mon![target_id].is_fainted() { 
         damage = original_health;
-        sim.push_message(format!["{} fainted!", mon![target_id].name()]);
         mon![mut target_id].board_position = BoardPosition::Bench;
     };
     sim.trigger_event(OnDamageDealt, effector_id, NOTHING, NOTHING, None);

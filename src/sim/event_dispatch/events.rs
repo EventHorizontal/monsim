@@ -1,6 +1,6 @@
 use super::*;
 pub use generated::*;
-use crate::sim::{Effect, ActivationOrder, EffectFunction};
+use crate::sim::{Effect, ActivationOrder};
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -56,7 +56,7 @@ impl EventHandlerDeck {
     }
 
     #[cfg(feature="debug")]
-    pub fn add<E: Event>(&mut self, event: E, effect: EffectFunction<E::EventReturnType, E::ContextType>, source_code_location: &'static str) -> EventHandlerDeck {
+    pub fn add<E: Event>(&mut self, event: E, effect: Effect<E::EventReturnType, E::ContextType>, source_code_location: &'static str) -> EventHandlerDeck {
         *event.corresponding_handler_mut(self) = Some(
             EventHandler {
                 event,
@@ -68,7 +68,7 @@ impl EventHandlerDeck {
     }
 
     #[cfg(not(feature="debug"))]
-    pub fn add<E: Event>(&mut self, event: E, effect: EffectFunction<E::EventReturnType, E::ContextType>) -> EventHandlerDeck {
+    pub fn add<E: Event>(&mut self, event: E, effect: Effect<E::EventReturnType, E::ContextType>) -> EventHandlerDeck {
         *event.corresponding_handler_mut(self) = Some(
             EventHandler {
                 event,

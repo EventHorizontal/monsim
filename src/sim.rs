@@ -165,10 +165,10 @@ impl BattleSimulator { // simulation
                         .flatten()
                         .map(|monster| monster.id )
                         .collect::<Vec<_>>();
-                    effects::UseMove(self, move_id.owner_id, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
+                    effects::use_move(self, move_id.owner_id, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
                 },
                 FullySpecifiedActionChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {
-                    effects::PerformSwitchOut(self, active_monster_id, SwitchContext::new(active_monster_id, benched_monster_id));
+                    effects::switch_monsters(self, active_monster_id, SwitchContext::new(active_monster_id, benched_monster_id));
                 },
             }
 
@@ -221,7 +221,7 @@ impl BattleSimulator { // simulation
                 INFO: Monsters get switched in immediately if they are replacing a fainted Monster
                 that fainted last turn, so we don't add them to the 'action_schedule'.
                 */
-                effects::ReplaceFaintedMonster(self, monster_selected_for_switch_id, (monster_selected_for_switch_id, empty_field_position))
+                effects::switch_in_monster(self, monster_selected_for_switch_id, (monster_selected_for_switch_id, empty_field_position))
             }
         }
 

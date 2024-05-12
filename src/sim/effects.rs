@@ -1,17 +1,8 @@
-#![allow(non_upper_case_globals)]
-
-use std::ops::Deref;
-
 use monsim_macros::{abl, mon, mov};
-
 use crate::matchup;
-
 use self::targetting::BoardPosition;
-
 use super::event_dex::*;
 use super::*;
-
-pub(super) type EffectFunction<R,C> = fn(/* simulator */ &mut BattleSimulator, /* effector id, i.e. the Monster doing the effect */ MonsterID, /* context */ C) -> R;
 
 /// `R`: A type that encodes any necessary information about how the `Effect` played
 /// out, _e.g._ an `Outcome` representing whether the `Effect` succeeded.
@@ -19,34 +10,13 @@ pub(super) type EffectFunction<R,C> = fn(/* simulator */ &mut BattleSimulator, /
 /// `C`: Any information necessary for the resolution of the effect, provided 
 /// directly, such as the user of the move, the move used and the target 
 /// in case of a move's effect. 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Effect<R, C>(EffectFunction<R, C>);
+pub type Effect<R,C> = fn(/* simulator */ &mut BattleSimulator, /* effector id, i.e. the Monster doing the effect */ MonsterID, /* context */ C) -> R;
 
-impl<R, C> Deref for Effect<R, C> {
-    type Target = EffectFunction<R, C>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<R, C> Effect<R, C> {
-    pub const fn from(effect: EffectFunction<R, C>) -> Self {
-        Self(effect)
-    }
-}
-
-// TODO: / INFO: Removed the `SimResult` return type on Actions. This we 
-// be added back in if/when it is actually needed, when the simulator could actually
-// throw an error.
-
-// internal `Effects` that are only supposed to be used by the engine.
+// internal `Effects` that are only supposed to be used by the engine -----------------------------------------
 
 /// The simulator simulates the use of a move `MoveUseContext.move_used` by 
 /// `MoveUseContext.move_user` on `MoveUseContext.target`.
-pub(crate) const UseMove: Effect<Nothing, MoveUseContext> = Effect(use_move);
-
-fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveUseContext) {
+pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveUseContext) {
     let MoveUseContext { move_user_id, move_used_id, target_ids } = context;
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
     
@@ -111,9 +81,9 @@ fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveUseC
     sim.trigger_event(OnMoveUsed, move_user_id, context, NOTHING, None);
 }
 
-pub(crate) const PerformSwitchOut: Effect<Nothing, SwitchContext> = Effect(perform_switch_out);
-
-fn perform_switch_out(sim: &mut BattleSimulator, effector_id: MonsterID, context: SwitchContext) {
+/// The simulator switches out the Monster given by `context.active_monster_id` and switches in 
+/// the Monster given by `context.benched_monster_id`
+pub(crate) fn switch_monsters(sim: &mut BattleSimulator, _effector_id: MonsterID, context: SwitchContext) {
     let SwitchContext { active_monster_id, benched_monster_id } = context;
 
     // Swap board positions of the two Monsters. (We just assume benched_monster_id corresponds to a benched monster at this point).
@@ -127,9 +97,9 @@ fn perform_switch_out(sim: &mut BattleSimulator, effector_id: MonsterID, context
     ]);
 }
 
-pub(crate) const ReplaceFaintedMonster: Effect<Nothing, (MonsterID, FieldPosition)> = Effect(replace_fainted_monster);
-
-fn replace_fainted_monster(sim: &mut BattleSimulator, effector_id: MonsterID, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
+/// The simulator switchees in the Monster given by `context.0` into a presumed empty field position given by `context.1`. The caller is expected
+/// to check that the field position is indeed empty. 
+pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, _effector_id: MonsterID, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
     mon![mut benched_monster_id].board_position = BoardPosition::Field(field_position);
     sim.push_message(format![
         "Go {}!",
@@ -137,16 +107,15 @@ fn replace_fainted_monster(sim: &mut BattleSimulator, effector_id: MonsterID, (b
     ]);
 }
 
-// public `Effects` usable by users of the crate.
+// public `Effects` usable by users of the crate. ------------------------------------------
 
 /// The simulator simulates dealing damage of a move given by `MoveUseContext.move_used` by 
 /// `MoveUseContext.move_user` on `MoveUseContext.target` using the default damage formula.
 /// 
-/// This is done by calculating the damage first using the formula then calling `DealDirectDamage`
+/// This is done by calculating the damage first using the formula then calling `deal_direct_damage`
 /// with the resulting damage.
-pub const DealDefaultDamage: Effect<Nothing, MoveHitContext> = Effect(deal_default_damage);
 
-fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveHitContext) {
+pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveHitContext) {
     let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
 
     if sim.trigger_try_event(OnTryMoveHit, attacker_id, context).failed() {
@@ -210,7 +179,7 @@ fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, contex
     // TODO: Introduce more damage multipliers as we implement them.
 
     // Do the calculated damage to the target
-    DealDirectDamage(sim, effector_id, (defender_id, damage));
+    let _ = deal_direct_damge(sim, effector_id, (defender_id, damage));
 
     let type_effectiveness = match type_matchup_multiplier {
         Percent(25) | Percent(50) => "not very effective",
@@ -237,7 +206,6 @@ fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, contex
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`.
 /// 
 /// Returns the actual damage dealt.
-pub const DealDirectDamage: Effect<u16, (MonsterID, u16)> = Effect(deal_direct_damge);
 
 #[must_use]
 fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context: (MonsterID, u16)) -> u16 {
@@ -255,8 +223,6 @@ fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context:
 
 /// The simulator simulates the activation of the ability `AbilityUseContext.ability_used` owned by
 /// the monster `AbilityUseContext.abilty_owner`.
-pub const ActivateAbility: Effect<Outcome, AbilityUseContext> = Effect(activate_ability);
-
 #[must_use]
 pub fn activate_ability(sim: &mut BattleSimulator, effector_id: MonsterID, context: AbilityUseContext) -> Outcome {
     let AbilityUseContext { ability_used_id, ability_owner_id } = context;
@@ -272,12 +238,10 @@ pub fn activate_ability(sim: &mut BattleSimulator, effector_id: MonsterID, conte
 }
 
 /// The simulator simulates the raising of stat `Context.1` of monster `Context.0` by `Context.2` stages
-pub const RaiseStat: Effect<Outcome, (MonsterID, Stat, u8)> = Effect(raise_stat);
-
 #[must_use]
 pub fn raise_stat(
     sim: &mut BattleSimulator,
-    effector_id: MonsterID,
+    _effector_id: MonsterID,
     (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
     if sim.trigger_try_event(OnTryRaiseStat, affected_monster_id, NOTHING).succeeded() {
@@ -297,12 +261,10 @@ pub fn raise_stat(
 }
 
 /// The simulator simulates the lowering of stat `Context.1` of monster `Context.0` by `Context.2` stages
-pub const LowerStat: Effect<Outcome, (MonsterID, Stat, u8)> = Effect(lower_stat);
-
 #[must_use]
 pub fn lower_stat(
     sim: &mut BattleSimulator,
-    effector_id: MonsterID,
+    _effector_id: MonsterID,
     (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
     if sim.trigger_try_event(OnTryLowerStat, affected_monster_id, NOTHING).succeeded() {

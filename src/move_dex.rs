@@ -1,12 +1,12 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{effects::*, sim::{BattleState, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type}, EventHandlerDeck, Hits, MoveDexEntry, TargetFlags};
+use monsim::{effects, sim::{BattleState, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type}, EventHandlerDeck, Hits, MoveDexEntry, TargetFlags};
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 001,
         name: "Tackle",
-        on_hit_effect: DealDefaultDamage,
+        on_hit_effect: effects::deal_default_damage,
         base_accuracy: 100,
         base_power: 40,
         category: MoveCategory::Physical,
@@ -27,7 +27,7 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 002,
         name: "Scratch",
-        on_hit_effect: DealDefaultDamage,
+        on_hit_effect: effects::deal_default_damage,
         base_accuracy: 100,
         base_power: 40,
         category: MoveCategory::Physical,
@@ -48,7 +48,7 @@ pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 003,
         name: "Ember",
-        on_hit_effect: DealDefaultDamage,
+        on_hit_effect: effects::deal_default_damage,
         base_accuracy: 100,
         base_power: 40,
         category: MoveCategory::Special,
@@ -68,7 +68,7 @@ pub const Bubble: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 004,
         name: "Bubble",
-        on_hit_effect: DealDefaultDamage,
+        on_hit_effect: effects::deal_default_damage,
         base_accuracy: 100,
         base_power: 40,
         category: MoveCategory::Special,
@@ -88,9 +88,9 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 005,
         name: "Growl",
-        on_hit_effect: Effect::from(|sim, effector_id, context| { 
-            _ = LowerStat(sim, context.move_user_id, (context.target_id, Stat::PhysicalAttack, 1)); 
-        }),
+        on_hit_effect: |sim, effector_id, context| { 
+            _ = effects::lower_stat(sim, context.move_user_id, (context.target_id, Stat::PhysicalAttack, 1)); 
+        },
         base_accuracy: 100,
         base_power: 0,
         category: MoveCategory::Status,
@@ -110,10 +110,10 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 006,
         name: "Dragon Dance",
-        on_hit_effect: Effect::from(|sim, effector_id, context| {
-            RaiseStat(sim, context.move_user_id, (context.target_id, Stat::PhysicalAttack, 1));
-            RaiseStat(sim, context.move_user_id, (context.target_id, Stat::Speed,          1));
-        }),
+        on_hit_effect: |sim, effector_id, context| {
+            effects::raise_stat(sim, context.move_user_id, (context.target_id, Stat::PhysicalAttack, 1));
+            effects::raise_stat(sim, context.move_user_id, (context.target_id, Stat::Speed,          1));
+        },
         base_accuracy: 100,
         base_power: 0,
         category: MoveCategory::Status,
@@ -131,7 +131,7 @@ pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 007,
         name: "Bullet Seed",
-        on_hit_effect: DealDefaultDamage,
+        on_hit_effect: effects::deal_default_damage,
         hits_per_target: Hits::RandomlyInRange { min: 2, max: 5 },
         base_accuracy: 100,
         base_power: 25,

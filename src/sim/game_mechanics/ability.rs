@@ -1,6 +1,6 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterID}, AbilityUseContext, Effect};
+use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterID}, AbilityUseContext, effects::Effect};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -33,7 +33,7 @@ fn main() -> MonsimResult<()> {
                             Some(DragonDance.spawn()),
                             None
                         ),
-                        FlashFire.spawn()
+                        Spiteful.spawn()
                     )
                     .with_nickname("Rick")
                 )

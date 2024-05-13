@@ -82,7 +82,14 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
         mov![move_used_id].current_power_points()
     ]);
 
-    events::trigger_move_used_event(sim, move_user_id, context);
+    match mov![move_used_id].category() {
+        MoveCategory::Physical | MoveCategory::Special => {
+            events::trigger_damaging_move_used_event(sim, move_user_id, context);
+        },
+        MoveCategory::Status => {
+            events::trigger_status_move_used_event(sim, move_user_id, context)
+        }
+    }
 }
 
 /// The simulator switches out the Monster given by `context.active_monster_id` and switches in 

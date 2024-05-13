@@ -20,7 +20,7 @@ impl EventDispatcher {
         sim: &mut BattleSimulator,
 
         broadcaster_id: MonsterID,
-        event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<Outcome, C>>,
+        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<Outcome, C>>>,
         event_context: C,
     ) -> Outcome {
         EventDispatcher::dispatch_event(
@@ -40,12 +40,12 @@ impl EventDispatcher {
         sim: &mut BattleSimulator,
 
         broadcaster_id: MonsterID,
-        event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<R, C>>,
+        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C>>>,
         event_context: C,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        
+
         let mut owned_event_handlers = sim.battle.owned_event_handlers(event_handler_selector);
 
         if owned_event_handlers.is_empty() {

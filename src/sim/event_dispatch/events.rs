@@ -174,7 +174,7 @@ mod event_dex {
             sim,
             broadcaster_id, 
             |event_handler_deck| {
-                event_handler_deck.on_try_move
+                vec![event_handler_deck.on_try_move]
             },
             event_context
         )
@@ -188,9 +188,9 @@ mod event_dex {
     ) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
-                event_handler_deck.on_move_used
+                vec![event_handler_deck.on_move_used]
             },
             event_context,
             NOTHING,
@@ -206,9 +206,9 @@ mod event_dex {
     ) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
-                event_handler_deck.on_damaging_move_used
+                vec![event_handler_deck.on_damaging_move_used, event_handler_deck.on_move_used]
             },
             event_context,
             NOTHING,
@@ -224,9 +224,9 @@ mod event_dex {
     ) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
-                event_handler_deck.on_status_move_used
+                vec![event_handler_deck.on_status_move_used, event_handler_deck.on_move_used]
             },
             event_context,
             NOTHING,
@@ -242,9 +242,9 @@ mod event_dex {
     ) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
-                event_handler_deck.on_try_move_hit
+                vec![event_handler_deck.on_try_move_hit]
             },
             event_context
         )
@@ -258,9 +258,9 @@ mod event_dex {
     ) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
-                event_handler_deck.on_move_hit
+                vec![event_handler_deck.on_move_hit]
             },
             event_context,
             NOTHING,
@@ -278,7 +278,7 @@ mod event_dex {
             sim,
             broadcaster_id, 
             |event_handler_deck| {
-                event_handler_deck.on_damage_dealt
+                vec![event_handler_deck.on_damage_dealt]
             },
             NOTHING,
             NOTHING,
@@ -296,7 +296,7 @@ mod event_dex {
             sim,
             broadcaster_id, 
             |event_handler_deck| {
-                event_handler_deck.on_try_activate_ability
+                vec![event_handler_deck.on_try_activate_ability]
             },
             event_context
         )
@@ -312,7 +312,7 @@ mod event_dex {
             sim,
             broadcaster_id, 
             |event_handler_deck| {
-                event_handler_deck.on_ability_activated
+                vec![event_handler_deck.on_ability_activated]
             },
             event_context,
             NOTHING,
@@ -330,7 +330,7 @@ mod event_dex {
             sim,
             broadcaster_id, 
             |event_handler_deck| {
-                event_handler_deck.on_modify_accuracy
+                vec![event_handler_deck.on_modify_accuracy]
             },
             event_context,
             Percent(100),
@@ -348,7 +348,7 @@ mod event_dex {
             sim,
             broadcaster_id, 
             |event_handler_deck| {
-                event_handler_deck.on_try_raise_stat
+                vec![event_handler_deck.on_try_raise_stat]
             },
             event_context
         )
@@ -362,9 +362,9 @@ mod event_dex {
     ) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
-                event_handler_deck.on_try_lower_stat
+                vec![event_handler_deck.on_try_lower_stat]
             },
             event_context
         )

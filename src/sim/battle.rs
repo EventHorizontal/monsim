@@ -104,7 +104,7 @@ impl BattleState {
         }
     }
 
-    pub fn owned_event_handlers<R: Copy, C: Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<R,C>>) -> Vec<OwnedEventHandler<R, C>> {
+    pub fn owned_event_handlers<R: Copy, C: Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R,C>>>) -> Vec<OwnedEventHandler<R, C>> {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
         out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));

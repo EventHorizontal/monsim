@@ -3,7 +3,7 @@ pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Event, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
+use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, EventHandler, EventHandlerDeck, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
 
 use self::builders::BattleFormat;
 
@@ -104,10 +104,10 @@ impl BattleState {
         }
     }
 
-    pub fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+    pub fn owned_event_handlers<R: Copy, C: Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<R,C>>) -> Vec<OwnedEventHandler<R, C>> {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team().event_handlers_for(event));
-        out.append(&mut self.opponent_team().event_handlers_for(event));
+        out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
+        out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));
         out
     }
 

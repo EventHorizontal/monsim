@@ -1,22 +1,20 @@
 use super::*;
-pub use generated::*;
 use crate::sim::{Effect, ActivationOrder};
+pub use event_dex::*;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EventHandler<E: Event> {
-    pub event: E,
-    pub effect: Effect<E::EventReturnType, E::ContextType>,
+pub struct EventHandler<R: Copy, C: Copy> {
+    pub effect: Effect<R, C>,
     #[cfg(feature = "debug")]
     pub source_code_location: &'static str,
 }
 
-impl<'a, E: Event + Debug> Debug for EventHandler<E> {
+impl<R: Copy, C: Copy> Debug for EventHandler<R,C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[cfg(feature = "debug")]
         let out = {
             f.debug_struct("EventHandler")
-                .field("event", &self.event)
                 .field("source_code_location", &self.source_code_location)
                 .finish()
         };
@@ -29,53 +27,16 @@ impl<'a, E: Event + Debug> Debug for EventHandler<E> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandler<E: Event> {
-    pub event_handler: EventHandler<E>,
+pub struct OwnedEventHandler<R: Copy, C: Copy> {
+    pub event_handler: EventHandler<R, C>,
     pub owner_id: MonsterID,
     pub activation_order: ActivationOrder,
     pub filtering_options: EventFilteringOptions,
 }
 
-pub trait Event: Clone + Copy + PartialEq + Eq {
-    type EventReturnType: Sized + Clone + Copy + PartialEq + Eq;
-    type ContextType: Sized + Clone + Copy + PartialEq + Eq;
-
-    fn corresponding_handler(
-        &self,
-        event_handler_deck: EventHandlerDeck,
-    ) -> Option<EventHandler<Self>>;
-
-    fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>>;
-
-    fn name(&self) -> &'static str;
-}
-
 impl EventHandlerDeck {
     pub const fn empty() -> Self {
         DEFAULT_EVENT_HANDLERS
-    }
-
-    #[cfg(feature="debug")]
-    pub fn add<E: Event>(&mut self, event: E, effect: Effect<E::EventReturnType, E::ContextType>, source_code_location: &'static str) -> EventHandlerDeck {
-        *event.corresponding_handler_mut(self) = Some(
-            EventHandler {
-                event,
-                effect: Effect::from(effect),
-                source_code_location,
-            }
-        );
-        *self 
-    }
-
-    #[cfg(not(feature="debug"))]
-    pub fn add<E: Event>(&mut self, event: E, effect: Effect<E::EventReturnType, E::ContextType>) -> EventHandlerDeck {
-        *event.corresponding_handler_mut(self) = Some(
-            EventHandler {
-                event,
-                effect: Effect::from(effect),
-            }
-        );
-        *self 
     }
 }
 
@@ -167,18 +128,17 @@ pub mod contexts {
 
 // Generated.
 #[cfg(feature="event_gen")]
-mod generated {
+mod event_dex {
     use super::*;
     use monsim_macros::generate_events;
-    use event_dex::*;
+    use monsim_utils::NOTHING;
     
     generate_events!{
         event OnTryMove(MoveUseContext) => Outcome,
         event OnMoveUsed(MoveUseContext) => Nothing,
-
+        event OnDamagingMoveUsed(MoveUseContext) => Nothing,
         event OnTryMoveHit(MoveHitContext) => Outcome,
-        event OnHit(Nothing) => Nothing,
-
+        event OnMoveHit(MoveHitContext) => Nothing,
         event OnDamageDealt(Nothing) => Nothing,
         event OnTryActivateAbility(AbilityUseContext) => Outcome,
         event OnAbilityActivated(AbilityUseContext) => Nothing,
@@ -186,6 +146,228 @@ mod generated {
         event OnTryRaiseStat(Nothing) => Outcome,
         event OnTryLowerStat(Nothing) => Outcome,
         event OnStatusMoveUsed(MoveUseContext) => Nothing,
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum EventID {
+        OnTryMove,
+        OnMoveUsed,
+        OnDamagingMoveUsed,
+        OnStatusMoveUsed,
+        OnTryMoveHit,
+        OnMoveHit,
+        OnDamageDealt,
+        OnTryActivateAbility,
+        OnAbilityActivated,
+        OnModifyAccuracy,
+        OnTryRaiseStat,
+        OnTryLowerStat,
+    }
+
+    pub(crate) fn trigger_try_move_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: MoveUseContext,
+    ) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_try_move
+            },
+            event_context
+        )
+    }
+
+    pub(crate) fn trigger_move_used_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: MoveUseContext,
+    ) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_move_used
+            },
+            event_context,
+            NOTHING,
+            None
+        )
+    }
+
+    pub(crate) fn trigger_damaging_move_used_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: MoveUseContext,
+    ) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_damaging_move_used
+            },
+            event_context,
+            NOTHING,
+            None,
+        )
+    }
+
+    pub(crate) fn trigger_status_move_used_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: MoveUseContext,
+    ) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_status_move_used
+            },
+            event_context,
+            NOTHING,
+            None
+        )
+    }
+
+    pub(crate) fn trigger_try_move_hit_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: MoveHitContext,
+    ) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_try_move_hit
+            },
+            event_context
+        )
+    }
+
+    pub(crate) fn trigger_move_hit_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: MoveHitContext,
+    ) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_move_hit
+            },
+            event_context,
+            NOTHING,
+            None
+        )
+    }
+
+    pub(crate) fn trigger_damage_dealt_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: Nothing,
+    ) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_damage_dealt
+            },
+            NOTHING,
+            NOTHING,
+            None
+        )
+    }
+
+    pub(crate) fn trigger_try_activate_ability_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: AbilityUseContext,
+    ) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_try_activate_ability
+            },
+            event_context
+        )
+    }
+
+    pub(crate) fn trigger_ability_activated_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: AbilityUseContext,
+    ) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_ability_activated
+            },
+            event_context,
+            NOTHING,
+            None
+        )
+    }
+
+    pub(crate) fn trigger_modify_accuracy_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: MoveUseContext,
+    ) -> Percent {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_modify_accuracy
+            },
+            event_context,
+            Percent(100),
+            None
+        )
+    }
+
+    pub(crate) fn trigger_try_raise_stat_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: Nothing,
+    ) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_try_raise_stat
+            },
+            event_context
+        )
+    }
+    
+    pub(crate) fn trigger_try_lower_stat_event(
+        sim: &mut BattleSimulator,
+    
+        broadcaster_id: MonsterID,
+        event_context: Nothing,
+    ) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id, 
+            |event_handler_deck| {
+                event_handler_deck.on_try_lower_stat
+            },
+            event_context
+        )
     }
 }
 

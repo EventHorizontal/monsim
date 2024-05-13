@@ -19,7 +19,7 @@ pub use monsim_macros::*;
 pub use battle_constants::*;
 pub use choice::*;
 pub use event_dispatch::{
-    contexts::*, events::*, EventHandlerDeck, EventFilteringOptions, EventDispatcher, EventHandler, Event,
+    contexts::*, events::{self, *}, EventFilteringOptions, EventDispatcher, EventHandler, EventHandlerDeck
 };
 pub use game_mechanics::*;
 use monsim_utils::MaxSizedVec;
@@ -234,26 +234,6 @@ impl BattleSimulator { // simulation
         }
 
         Ok(false)
-    }
-
-    fn trigger_try_event<C: Copy, E: Event<EventReturnType = Outcome, ContextType = C>>(
-        &mut self, 
-        event: E, 
-        broadcaster_id: MonsterID,
-        event_context: C,
-    ) -> Outcome {
-        EventDispatcher::dispatch_event(self, event, broadcaster_id, event_context, Outcome::Success, Some(Outcome::Failure))
-    }
-    
-    fn trigger_event<R: Copy + PartialEq, C: Copy, E: Event<EventReturnType = R, ContextType = C>>(
-        &mut self, 
-        event: E, 
-        broadcaster_id: MonsterID,
-        event_context: C,
-        default: R,
-        short_circuit: Option<R>,
-    ) -> R {
-        EventDispatcher::dispatch_event(self, event, broadcaster_id, event_context, default, short_circuit)
     }
 }
 

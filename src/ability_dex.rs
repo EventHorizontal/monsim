@@ -2,7 +2,7 @@
 
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
-use monsim::{effects, event_dex::*, move_, sim::{
+use monsim::{effects, move_, sim::{
         Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveUseContext, Type
 }, AbilityDexEntry, AbilityID, AbilityUseContext, MoveHitContext};
 
@@ -14,27 +14,20 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
         dex_number: 001,
         name: "Flash Fire",
         event_handlers: | | {
-            // HACK: Keeping this here until I think of better long-term solution.
-            #[cfg(feature="debug")]
-            let out = EventHandlerDeck::empty()
-                .add(OnTryMoveHit, |sim, effector_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
-                    if mov![move_used_id].is_type(Type::Fire) {
-                        let activation_succeeded = effects::activate_ability(sim, effector_id,AbilityUseContext::new(effector_id));
-                        return not!(activation_succeeded);
-                    }
-                    Outcome::Success
-                }, source_code_location!());
-            
-            #[cfg(not(feature="debug"))]
-            let out = EventHandlerDeck::empty()
-                .add(OnTryMoveHit, |sim, effector_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
-                    if mov![move_used_id].is_type(Type::Fire) {
-                        let activation_succeeded = effects::activate_ability(sim, effector_id, AbilityUseContext::new(target_id));
-                        return not!(activation_succeeded);
-                    }
-                    Outcome::Success
-                });
-            out
+            EventHandlerDeck {
+                on_try_move_hit: Some(EventHandler { 
+                    #[cfg(feature = "debug")]
+                    source_code_location: source_code_location![],
+                    effect: |sim, effector_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
+                        if mov![move_used_id].is_type(Type::Fire) {
+                            let activation_succeeded = effects::activate_ability(sim, effector_id,AbilityUseContext::new(effector_id));
+                            return not!(activation_succeeded);
+                        }
+                        Outcome::Success
+                    },
+                }),
+                ..EventHandlerDeck::empty()
+            }
         },
         on_activate_effect: |sim, effector_id, AbilityUseContext { ability_used_id, ability_owner_id }| {
             let effector_name = mon![effector_id].name();

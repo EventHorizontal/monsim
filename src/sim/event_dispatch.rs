@@ -19,14 +19,14 @@ impl EventDispatcher {
     pub fn dispatch_trial_event<C: Copy>(
         sim: &mut BattleSimulator,
 
-        event: impl Event<EventReturnType = Outcome, ContextType = C>,
         broadcaster_id: MonsterID,
+        event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<Outcome, C>>,
         event_context: C,
     ) -> Outcome {
         EventDispatcher::dispatch_event(
             sim, 
-            event, 
-            broadcaster_id, 
+            broadcaster_id,
+            event_handler_selector, 
             event_context, 
             Outcome::Success, 
             Some(Outcome::Failure)
@@ -39,14 +39,14 @@ impl EventDispatcher {
     pub fn dispatch_event<R: PartialEq + Copy, C: Copy>(
         sim: &mut BattleSimulator,
 
-        event: impl Event<EventReturnType = R, ContextType = C>,
         broadcaster_id: MonsterID,
+        event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<R, C>>,
         event_context: C,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
         
-        let mut owned_event_handlers = sim.battle.event_handlers_for(event);
+        let mut owned_event_handlers = sim.battle.owned_event_handlers(event_handler_selector);
 
         if owned_event_handlers.is_empty() {
             return default;

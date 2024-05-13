@@ -1,7 +1,6 @@
 use monsim_macros::{abl, mon, mov};
-use crate::matchup;
+use crate::{events, matchup};
 use self::targetting::BoardPosition;
-use super::event_dex::*;
 use super::*;
 
 /// `R`: A type that encodes any necessary information about how the `Effect` played
@@ -21,20 +20,21 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
     
     sim.push_message(format![
-        "{attacker} used {_move}",
+        "{attacker} used {move_}",
         attacker = mon![move_user_id].name(),
-        _move = mov![move_used_id].name()
+        move_ = mov![move_used_id].name()
     ]);
     
     // There are no remaining targets for this move. They fainted before the move was used.
     if target_ids.is_empty() {
         sim.push_message(
-            format!["{}'s {} has no targets...", mon!(move_user_id).name(), mov!(move_used_id).name()]
+            format!["{}'s {} has no targets...", mon![move_user_id].name(), mov![move_used_id].name()]
         );
         return;
     }
     
-    if sim.trigger_try_event(OnTryMove, move_user_id, context).failed() {
+    let try_use_move_outcome = events::trigger_try_move_event(sim, move_user_id, context);
+    if try_use_move_outcome.failed() {
         sim.push_message("The move failed!");
         return;
     }
@@ -82,7 +82,7 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
         mov![move_used_id].current_power_points()
     ]);
 
-    sim.trigger_event(OnMoveUsed, move_user_id, context, NOTHING, None);
+    events::trigger_move_used_event(sim, move_user_id, context);
 }
 
 /// The simulator switches out the Monster given by `context.active_monster_id` and switches in 
@@ -122,7 +122,8 @@ pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, _effector_id: Monster
 pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveHitContext) {
     let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
 
-    if sim.trigger_try_event(OnTryMoveHit, attacker_id, context).failed() {
+    let try_move_hit_outcome = events::trigger_try_move_hit_event(sim, attacker_id, context);
+    if try_move_hit_outcome.failed() {
         sim.push_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
         return;
     }
@@ -233,7 +234,7 @@ fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context:
         damage = original_health;
         mon![mut target_id].board_position = BoardPosition::Bench;
     };
-    sim.trigger_event(OnDamageDealt, effector_id, NOTHING, NOTHING, None);
+    events::trigger_damage_dealt_event(sim, effector_id, NOTHING);
     damage
 }
 
@@ -243,10 +244,11 @@ fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context:
 pub fn activate_ability(sim: &mut BattleSimulator, effector_id: MonsterID, context: AbilityUseContext) -> Outcome {
     let AbilityUseContext { ability_used_id, ability_owner_id } = context;
 
-    if sim.trigger_try_event(OnTryActivateAbility, ability_owner_id, context).succeeded() {
+    let try_activate_ability_outcome = events::trigger_try_activate_ability_event(sim, ability_owner_id, context);
+    if try_activate_ability_outcome.succeeded() {
         let ability = abl![ability_used_id];
         (ability.on_activate_effect())(sim, effector_id, context);
-        sim.trigger_event(OnAbilityActivated, ability_owner_id, context, NOTHING, None);
+        events::trigger_ability_activated_event(sim, ability_owner_id, context);
         Outcome::Success
     } else {
         Outcome::Failure
@@ -260,7 +262,8 @@ pub fn raise_stat(
     _effector_id: MonsterID,
     (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
-    if sim.trigger_try_event(OnTryRaiseStat, affected_monster_id, NOTHING).succeeded() {
+    let try_raise_stat_outcome = events::trigger_try_raise_stat_event(sim, affected_monster_id, NOTHING);
+    if try_raise_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, number_of_stages);
 
         sim.push_message(format![
@@ -283,7 +286,8 @@ pub fn lower_stat(
     _effector_id: MonsterID,
     (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
-    if sim.trigger_try_event(OnTryLowerStat, affected_monster_id, NOTHING).succeeded() {
+    let try_lower_stat_outcome = events::trigger_try_lower_stat_event(sim, affected_monster_id, NOTHING);
+    if try_lower_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);
 
         sim.push_message(format![

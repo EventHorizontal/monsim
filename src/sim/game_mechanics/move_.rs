@@ -2,7 +2,6 @@ use monsim_utils::Nothing;
 
 use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
-use std::ops::Range;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
 pub struct Move {
@@ -238,14 +237,4 @@ pub enum Hits {
     MultipleTimes(u8),
     /// Hits the target a random number of times in a range (inclusive on both ends).
     RandomlyInRange{ min: u8, max: u8 }
-}
-
-impl Hits {
-    pub(crate) fn to_range(&self) -> Range<u8> {
-        match *self {
-            Hits::Once => 0..1,
-            Hits::MultipleTimes(number_of_hits) => 0..number_of_hits,
-            Hits::RandomlyInRange { min: start, max: end } => start..end,
-        }
-    } 
 }

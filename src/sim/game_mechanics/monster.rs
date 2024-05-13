@@ -5,7 +5,7 @@ use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, TeamID};
-use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, Event, Move, OwnedEventHandler};
+use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, EventHandler, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -175,8 +175,8 @@ impl Monster { // private
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn ability_event_handler_for<E: Event>(&self, event: E) -> Option<OwnedEventHandler<E>> {
-        event.corresponding_handler(self.ability.event_handlers()) 
+    pub(crate) fn ability_owned_event_handlers<R: Copy, C: Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<R, C>>) -> Option<OwnedEventHandler<R, C>> {
+        event_handler_selector(self.ability.event_handlers()) 
             .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
@@ -192,11 +192,11 @@ impl Monster { // private
         )
     }
 
-    pub(crate) fn moveset_event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+    pub(crate) fn moveset_owned_handlers<R: Copy, C: Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<R, C>>) -> Vec<OwnedEventHandler<R, C>> {
         self.moveset
             .iter()
             .filter_map(|move_| {
-                event.corresponding_handler(move_.event_handlers()) 
+                event_handler_selector(move_.event_handlers()) 
                     .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                         OwnedEventHandler {
                             event_handler,
@@ -213,9 +213,9 @@ impl Monster { // private
                 .collect::<Vec<_>>()
     }
 
-    pub(crate) fn event_handlers_for<E: Event>(&self, event: E) -> Vec<OwnedEventHandler<E>> {
+    pub(crate) fn owned_event_handlers<R: Copy, C: Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Option<EventHandler<R, C>>) -> Vec<OwnedEventHandler<R, C>> {
         let mut out = Vec::new();
-        event.corresponding_handler((self.species.event_handlers)()) 
+        event_handler_selector((self.species.event_handlers)()) 
             .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
@@ -233,12 +233,13 @@ impl Monster { // private
                     out.push(owned_event_handler);
                 }
             });
-        self.ability_event_handler_for(event).pipe(|optional_owned_event_handler| {
+        self.ability_owned_event_handlers(event_handler_selector)
+            .pipe(|optional_owned_event_handler| {
             if let Some(owned_event_handler) = optional_owned_event_handler {
                 out.push(owned_event_handler)
             }
         });
-        out.append(&mut self.moveset_event_handlers_for(event));
+        out.append(&mut self.moveset_owned_handlers(event_handler_selector));
         out
     }
 

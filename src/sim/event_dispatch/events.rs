@@ -134,20 +134,56 @@ mod event_dex {
     use monsim_utils::NOTHING;
     
     generate_events!{
-        event OnTryMove(MoveUseContext) => Outcome,
-        event OnMoveUsed(MoveUseContext) => Nothing,
-        event OnDamagingMoveUsed(MoveUseContext) => Nothing,
-        event OnTryMoveHit(MoveHitContext) => Outcome,
-        event OnMoveHit(MoveHitContext) => Nothing,
-        event OnDamageDealt(Nothing) => Nothing,
-        event OnTryActivateAbility(AbilityUseContext) => Outcome,
-        event OnAbilityActivated(AbilityUseContext) => Nothing,
-        event OnModifyAccuracy(MoveUseContext) => Percent,
-        event OnTryRaiseStat(Nothing) => Outcome,
-        event OnTryLowerStat(Nothing) => Outcome,
-        event OnStatusMoveUsed(MoveUseContext) => Nothing,
+        try event OnTryMove(MoveUseContext) => Outcome,
+            event OnMoveUsed(MoveUseContext) => Nothing,
+            event OnDamagingMoveUsed(MoveUseContext) => Nothing; Settings { inherits: on_move_used },
+            event OnStatusMoveUsed(MoveUseContext) => Nothing; Settings { inherits: on_move_used }, 
+        try event OnTryMoveHit(MoveHitContext) => Outcome,
+            event OnMoveHit(MoveHitContext) => Nothing,
+            event OnDamageDealt(Nothing) => Nothing,
+        try event OnTryActivateAbility(AbilityUseContext) => Outcome,
+            event OnAbilityActivated(AbilityUseContext) => Nothing,
+            event OnModifyAccuracy(MoveUseContext) => Percent; Settings { default: Percent(100) },
+        try event OnTryRaiseStat(Nothing) => Outcome,
+        try event OnTryLowerStat(Nothing) => Outcome,
     }
+}
 
+// This module is mostly to improve build times when working on the engine in a way that doesn't
+// touch the event generation.
+#[cfg(not(feature="event_gen"))] 
+mod event_dex {
+    use super::*;
+    use monsim_utils::NOTHING;
+    #[derive(Debug, Clone, Copy)]
+    pub struct EventHandlerDeck {
+        pub on_try_move: Option<EventHandler<Outcome, MoveUseContext>>,
+        pub on_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
+        pub on_damaging_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
+        pub on_status_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
+        pub on_try_move_hit: Option<EventHandler<Outcome, MoveHitContext>>,
+        pub on_move_hit: Option<EventHandler<Nothing, MoveHitContext>>,
+        pub on_damage_dealt: Option<EventHandler<Nothing, Nothing>>,
+        pub on_try_activate_ability: Option<EventHandler<Outcome, AbilityUseContext>>,
+        pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext>>,
+        pub on_modify_accuracy: Option<EventHandler<Percent, MoveUseContext>>,
+        pub on_try_raise_stat: Option<EventHandler<Outcome, Nothing>>,
+        pub on_try_lower_stat: Option<EventHandler<Outcome, Nothing>>,
+    }
+    pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
+        on_try_move: None,
+        on_move_used: None,
+        on_damaging_move_used: None,
+        on_status_move_used: None,
+        on_try_move_hit: None,
+        on_move_hit: None,
+        on_damage_dealt: None,
+        on_try_activate_ability: None,
+        on_ability_activated: None,
+        on_modify_accuracy: None,
+        on_try_raise_stat: None,
+        on_try_lower_stat: None,
+    };
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum EventID {
         OnTryMove,
@@ -163,29 +199,17 @@ mod event_dex {
         OnTryRaiseStat,
         OnTryLowerStat,
     }
-
-    pub(crate) fn trigger_try_move_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: MoveUseContext,
-    ) -> Outcome {
+    pub(crate) fn trigger_on_try_move_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_try_move]
             },
-            event_context
+            event_context,
         )
     }
-
-    pub(crate) fn trigger_move_used_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: MoveUseContext,
-    ) -> Nothing {
+    pub(crate) fn trigger_on_move_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
             broadcaster_id,
@@ -194,16 +218,10 @@ mod event_dex {
             },
             event_context,
             NOTHING,
-            None
+            None,
         )
     }
-
-    pub(crate) fn trigger_damaging_move_used_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: MoveUseContext,
-    ) -> Nothing {
+    pub(crate) fn trigger_on_damaging_move_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
             broadcaster_id,
@@ -215,13 +233,7 @@ mod event_dex {
             None,
         )
     }
-
-    pub(crate) fn trigger_status_move_used_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: MoveUseContext,
-    ) -> Nothing {
+    pub(crate) fn trigger_on_status_move_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
             broadcaster_id,
@@ -230,32 +242,20 @@ mod event_dex {
             },
             event_context,
             NOTHING,
-            None
+            None,
         )
     }
-
-    pub(crate) fn trigger_try_move_hit_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: MoveHitContext,
-    ) -> Outcome {
+    pub(crate) fn trigger_on_try_move_hit_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_try_move_hit]
             },
-            event_context
+            event_context,
         )
     }
-
-    pub(crate) fn trigger_move_hit_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: MoveHitContext,
-    ) -> Nothing {
+    pub(crate) fn trigger_on_move_hit_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
             broadcaster_id,
@@ -264,323 +264,73 @@ mod event_dex {
             },
             event_context,
             NOTHING,
-            None
+            None,
         )
     }
-
-    pub(crate) fn trigger_damage_dealt_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: Nothing,
-    ) -> Nothing {
+    pub(crate) fn trigger_on_damage_dealt_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_damage_dealt]
             },
+            event_context,
             NOTHING,
-            NOTHING,
-            None
+            None,
         )
     }
-
-    pub(crate) fn trigger_try_activate_ability_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: AbilityUseContext,
-    ) -> Outcome {
+    pub(crate) fn trigger_on_try_activate_ability_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_try_activate_ability]
             },
-            event_context
+            event_context,
         )
     }
-
-    pub(crate) fn trigger_ability_activated_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: AbilityUseContext,
-    ) -> Nothing {
+    pub(crate) fn trigger_on_ability_activated_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_ability_activated]
             },
             event_context,
             NOTHING,
-            None
+            None,
         )
     }
-
-    pub(crate) fn trigger_modify_accuracy_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: MoveUseContext,
-    ) -> Percent {
+    pub(crate) fn trigger_on_modify_accuracy_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Percent {
         EventDispatcher::dispatch_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_modify_accuracy]
             },
             event_context,
             Percent(100),
-            None
+            None,
         )
     }
-
-    pub(crate) fn trigger_try_raise_stat_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: Nothing,
-    ) -> Outcome {
+    pub(crate) fn trigger_on_try_raise_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
-            broadcaster_id, 
+            broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_try_raise_stat]
             },
-            event_context
+            event_context,
         )
     }
-    
-    pub(crate) fn trigger_try_lower_stat_event(
-        sim: &mut BattleSimulator,
-    
-        broadcaster_id: MonsterID,
-        event_context: Nothing,
-    ) -> Outcome {
+    pub(crate) fn trigger_on_try_lower_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
             |event_handler_deck| {
                 vec![event_handler_deck.on_try_lower_stat]
             },
-            event_context
+            event_context,
         )
-    }
-}
-
-// This module is mostly to improve build times when working on the engine in a way that doesn't
-// touch the event generation.
-#[cfg(not(feature="event_gen"))] 
-mod generated {
-    use super::*;
-    use event_dex::*;
-    #[derive(Debug, Clone, Copy)]
-    pub struct EventHandlerDeck {
-        pub on_try_move: Option<EventHandler<OnTryMove>>,
-        pub on_move_used: Option<EventHandler<OnMoveUsed>>,
-        pub on_try_move_hit: Option<EventHandler<OnTryMoveHit>>,
-        pub on_hit: Option<EventHandler<OnHit>>,
-        pub on_damage_dealt: Option<EventHandler<OnDamageDealt>>,
-        pub on_try_activate_ability: Option<EventHandler<OnTryActivateAbility>>,
-        pub on_ability_activated: Option<EventHandler<OnAbilityActivated>>,
-        pub on_modify_accuracy: Option<EventHandler<OnModifyAccuracy>>,
-        pub on_try_raise_stat: Option<EventHandler<OnTryRaiseStat>>,
-        pub on_try_lower_stat: Option<EventHandler<OnTryLowerStat>>,
-        pub on_status_move_used: Option<EventHandler<OnStatusMoveUsed>>,
-    }
-    pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
-        on_try_move: None,
-        on_move_used: None,
-        on_try_move_hit: None,
-        on_hit: None,
-        on_damage_dealt: None,
-        on_try_activate_ability: None,
-        on_ability_activated: None,
-        on_modify_accuracy: None,
-        on_try_raise_stat: None,
-        on_try_lower_stat: None,
-        on_status_move_used: None,
-    };
-    pub mod event_dex {
-        use super::*;
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnTryMove;
-
-        impl Event for OnTryMove {
-            type EventReturnType = Outcome;
-            type ContextType = MoveUseContext;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_try_move
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_try_move
-            }
-            fn name(&self) -> &'static str {
-                "OnTryMove"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnMoveUsed;
-
-        impl Event for OnMoveUsed {
-            type EventReturnType = Nothing;
-            type ContextType = MoveUseContext;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_move_used
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_move_used
-            }
-            fn name(&self) -> &'static str {
-                "OnMoveUsed"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnTryMoveHit;
-
-        impl Event for OnTryMoveHit {
-            type EventReturnType = Outcome;
-            type ContextType = MoveHitContext;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_try_move_hit
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_try_move_hit
-            }
-            fn name(&self) -> &'static str {
-                "OnTryMoveHit"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnHit;
-
-        impl Event for OnHit {
-            type EventReturnType = Nothing;
-            type ContextType = Nothing;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_hit
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_hit
-            }
-            fn name(&self) -> &'static str {
-                "OnHit"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnDamageDealt;
-
-        impl Event for OnDamageDealt {
-            type EventReturnType = Nothing;
-            type ContextType = Nothing;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_damage_dealt
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_damage_dealt
-            }
-            fn name(&self) -> &'static str {
-                "OnDamageDealt"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnTryActivateAbility;
-
-        impl Event for OnTryActivateAbility {
-            type EventReturnType = Outcome;
-            type ContextType = AbilityUseContext;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_try_activate_ability
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_try_activate_ability
-            }
-            fn name(&self) -> &'static str {
-                "OnTryActivateAbility"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnAbilityActivated;
-
-        impl Event for OnAbilityActivated {
-            type EventReturnType = Nothing;
-            type ContextType = AbilityUseContext;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_ability_activated
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_ability_activated
-            }
-            fn name(&self) -> &'static str {
-                "OnAbilityActivated"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnModifyAccuracy;
-
-        impl Event for OnModifyAccuracy {
-            type EventReturnType = Percent;
-            type ContextType = MoveUseContext;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_modify_accuracy
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_modify_accuracy
-            }
-            fn name(&self) -> &'static str {
-                "OnModifyAccuracy"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnTryRaiseStat;
-
-        impl Event for OnTryRaiseStat {
-            type EventReturnType = Outcome;
-            type ContextType = Nothing;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_try_raise_stat
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_try_raise_stat
-            }
-            fn name(&self) -> &'static str {
-                "OnTryRaiseStat"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnTryLowerStat;
-
-        impl Event for OnTryLowerStat {
-            type EventReturnType = Outcome;
-            type ContextType = Nothing;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_try_lower_stat
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_try_lower_stat
-            }
-            fn name(&self) -> &'static str {
-                "OnTryLowerStat"
-            }
-        }
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        pub struct OnStatusMoveUsed;
-
-        impl Event for OnStatusMoveUsed {
-            type EventReturnType = Nothing;
-            type ContextType = MoveUseContext;
-            fn corresponding_handler(&self, event_handler_deck: EventHandlerDeck) -> Option<EventHandler<Self>> {
-                event_handler_deck.on_status_move_used
-            }
-            fn corresponding_handler_mut<'a>(&self, event_handler_deck: &'a mut EventHandlerDeck) -> &'a mut Option<EventHandler<Self>> {
-                &mut event_handler_deck.on_status_move_used
-            }
-            fn name(&self) -> &'static str {
-                "OnStatusMoveUsed"
-            }
-        }
     }
 }

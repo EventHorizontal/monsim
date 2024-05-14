@@ -16,6 +16,6 @@ convert_case = "0.6.0"
 
 [features]
 default = ["entity_fetchers"]
-event_gen = []
+event_gen = ["syn/full"]
 entity_fetchers = []
 battle_builder = []

@@ -33,7 +33,7 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
         return;
     }
     
-    let try_use_move_outcome = events::trigger_try_move_event(sim, move_user_id, context);
+    let try_use_move_outcome = events::trigger_on_try_move_event(sim, move_user_id, context);
     if try_use_move_outcome.failed() {
         sim.push_message("The move failed!");
         return;
@@ -84,10 +84,10 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
 
     match mov![move_used_id].category() {
         MoveCategory::Physical | MoveCategory::Special => {
-            events::trigger_damaging_move_used_event(sim, move_user_id, context);
+            events::trigger_on_damaging_move_used_event(sim, move_user_id, context);
         },
         MoveCategory::Status => {
-            events::trigger_status_move_used_event(sim, move_user_id, context)
+            events::trigger_on_status_move_used_event(sim, move_user_id, context)
         }
     }
 }
@@ -129,7 +129,7 @@ pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, _effector_id: Monster
 pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveHitContext) {
     let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
 
-    let try_move_hit_outcome = events::trigger_try_move_hit_event(sim, attacker_id, context);
+    let try_move_hit_outcome = events::trigger_on_try_move_hit_event(sim, attacker_id, context);
     if try_move_hit_outcome.failed() {
         sim.push_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
         return;
@@ -241,7 +241,7 @@ fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context:
         damage = original_health;
         mon![mut target_id].board_position = BoardPosition::Bench;
     };
-    events::trigger_damage_dealt_event(sim, effector_id, NOTHING);
+    events::trigger_on_damage_dealt_event(sim, effector_id, NOTHING);
     damage
 }
 
@@ -251,11 +251,11 @@ fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context:
 pub fn activate_ability(sim: &mut BattleSimulator, effector_id: MonsterID, context: AbilityUseContext) -> Outcome {
     let AbilityUseContext { ability_used_id, ability_owner_id } = context;
 
-    let try_activate_ability_outcome = events::trigger_try_activate_ability_event(sim, ability_owner_id, context);
+    let try_activate_ability_outcome = events::trigger_on_try_activate_ability_event(sim, ability_owner_id, context);
     if try_activate_ability_outcome.succeeded() {
         let ability = abl![ability_used_id];
         (ability.on_activate_effect())(sim, effector_id, context);
-        events::trigger_ability_activated_event(sim, ability_owner_id, context);
+        events::trigger_on_ability_activated_event(sim, ability_owner_id, context);
         Outcome::Success
     } else {
         Outcome::Failure
@@ -269,7 +269,7 @@ pub fn raise_stat(
     _effector_id: MonsterID,
     (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
-    let try_raise_stat_outcome = events::trigger_try_raise_stat_event(sim, affected_monster_id, NOTHING);
+    let try_raise_stat_outcome = events::trigger_on_try_raise_stat_event(sim, affected_monster_id, NOTHING);
     if try_raise_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, number_of_stages);
 
@@ -293,7 +293,7 @@ pub fn lower_stat(
     _effector_id: MonsterID,
     (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
 ) -> Outcome {
-    let try_lower_stat_outcome = events::trigger_try_lower_stat_event(sim, affected_monster_id, NOTHING);
+    let try_lower_stat_outcome = events::trigger_on_try_lower_stat_event(sim, affected_monster_id, NOTHING);
     if try_lower_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);
 

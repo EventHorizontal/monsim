@@ -76,9 +76,18 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
     let mut trait_enum_tokens = quote![];
     let mut event_handler_deck_field_tokens = quote![];
     let mut event_handler_deck_defaults_tokens = quote![];
+    let mut trigger_event_function_tokens = quote![];
 
     for event_expr in event_exprs {
-        let EventExpr { event_name_pascal_case, event_context_type_name_pascal_case, event_return_type_name } = event_expr;
+        let EventExpr { 
+            event_name_pascal_case, 
+            event_context_type_name_pascal_case, 
+            event_return_type_name, 
+            superevent_name_snake_case, 
+            is_trial_event, 
+            default_expr 
+        } = event_expr;
+        
         let event_name_snake_case = event_name_pascal_case.to_string().to_case(convert_case::Case::Snake);
         let event_name_snake_case = Ident::new(&event_name_snake_case, event_name_pascal_case.span());
 
@@ -97,6 +106,63 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
         event_handler_deck_defaults_tokens.extend(quote![
             #event_name_snake_case: None,
         ]);
+
+        let function_name_snake_case = event_name_snake_case.to_string();
+        let function_name_snake_case = Ident::new(&(String::from("trigger_") + &function_name_snake_case + "_event"), event_name_snake_case.span());
+        let mut vec_of_event_handler_deck_fields_tokens = quote![
+            event_handler_deck.#event_name_snake_case
+        ];
+        if let Some(event_name) = superevent_name_snake_case {
+            vec_of_event_handler_deck_fields_tokens.extend(quote![
+                , event_handler_deck.#event_name
+            ]);
+        };
+        let default_tokens = if let Some(default) = default_expr {
+            quote![#default]
+        } else {
+            quote![NOTHING]
+        };
+
+        if is_trial_event {
+            trigger_event_function_tokens.extend(quote![
+                pub(crate) fn #function_name_snake_case(
+                    sim: &mut BattleSimulator,
+                
+                    broadcaster_id: MonsterID,
+                    event_context: #event_context_type_name_pascal_case,
+                ) -> #event_return_type_name {
+                    EventDispatcher::dispatch_trial_event(
+                        sim,
+                        broadcaster_id,
+                        |event_handler_deck| {
+                            vec![#vec_of_event_handler_deck_fields_tokens]
+                        },
+                        event_context,
+                    )
+                }
+            ]);
+        } else {
+            trigger_event_function_tokens.extend(quote![
+                pub(crate) fn #function_name_snake_case(
+                    sim: &mut BattleSimulator,
+                
+                    broadcaster_id: MonsterID,
+                    event_context: #event_context_type_name_pascal_case,
+                ) -> #event_return_type_name {
+                    EventDispatcher::dispatch_event(
+                        sim,
+                        broadcaster_id,
+                        |event_handler_deck| {
+                            vec![#vec_of_event_handler_deck_fields_tokens]
+                        },
+                        event_context,
+                        #default_tokens,
+                        None
+                    )
+                }
+            ]);
+        }
+        
     }
 
     let output = quote![
@@ -108,6 +174,13 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
         pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
             #event_handler_deck_defaults_tokens
         };
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        pub enum EventID {
+            #trait_enum_tokens
+        }
+
+        #trigger_event_function_tokens
     ];
 
     output.into()

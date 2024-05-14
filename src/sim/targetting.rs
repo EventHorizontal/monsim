@@ -107,7 +107,7 @@ impl FieldPosition {
         self_side != other_position_side
     }
     
-    pub(crate) fn is_on_the_same_side_as(&self, other_position: FieldPosition) -> bool {
+    pub(crate) fn _is_on_the_same_side_as(&self, other_position: FieldPosition) -> bool {
         let self_side = self.to_coords().1; // The second element tells us which side the position is on.
         let other_position_side = other_position.to_coords().1;
         self_side == other_position_side

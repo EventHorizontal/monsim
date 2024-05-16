@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::ops::{Index, IndexMut, Range};
+use std::{fmt::{Display, Debug}, ops::{Index, IndexMut, Range}};
 use crate::NOTHING;
 
 /// It's an array-backed vector (importantly for our use case it implements Copy) of capacity `CAP` where the elements are guaranteed to be at the beginning. _This may change in the future_ but panics if indexed outside of valid elements. It is meant for use cases with up to ~100 elements. 
@@ -11,6 +11,20 @@ use crate::NOTHING;
 pub struct MaxSizedVec<T, const CAP: usize> {
     elements: [Option<T>; CAP],
     count: usize,
+}
+
+impl<T: Display, const CAP: usize> Display for MaxSizedVec<T, CAP> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write![f, "["]?;
+        for maybe_element in self.elements.iter() {
+            if let Some(element) = maybe_element {
+                write![f, " {},", element]?;
+            } else {
+                break;
+            }
+        }
+        write![f, "]"]
+    }
 }
 
 impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
@@ -44,6 +58,16 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
         for element in new_elements.into_iter() {
             self.push(element.clone());
         }
+    }
+    
+    // Removes the element at `index` and shifts over the rest of the elements.
+    pub fn remove(&mut self, index: usize) {
+        assert!(index <= self.count, "Expected index to be less than element count, {}, found {} instead", self.count, index);
+        for index2 in index..self.count {
+            self.elements[index2] = self.elements[index2 + 1].clone();
+        }
+        self.elements[self.count] = None;
+        self.count -= 1;
     }
    
 }

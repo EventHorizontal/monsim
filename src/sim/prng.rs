@@ -29,13 +29,13 @@ impl Prng {
         }
     }
 
-    /// Returns each u16 in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
-    pub(crate) fn generate_random_u16_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
+    /// Returns each number in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
+    pub(crate) fn generate_random_number_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
         let start = range.next().expect("The range given to generate_number_in_range must have a first element.");
         let end = range
             .next_back()
             .expect("The range given to generate_number_in_range must have a last element.");
-        assert!(end >= 1u16, "The end of the range should be 1 or higher");
+        assert!(end >= 1, "The end of the range should be 1 or higher");
         if end == start {
             return start;
         }
@@ -52,10 +52,9 @@ impl Prng {
         self.current_seed
     }
 
-    #[cfg(test)]
     pub fn chance(&mut self, num: u16, denom: u16) -> bool {
         assert!(denom != 0);
-        self.generate_random_u16_in_range(1..=denom) <= num
+        self.generate_random_number_in_range(1..=denom) <= num
     }
 
     fn seed_from_current_time() -> u64 {

@@ -243,7 +243,7 @@ impl BattleSimulator { // public
         self.battle.message_log.push(message);
     }
 
-    fn generate_random_number_in_range_inclusive(&mut self, range: RangeInclusive<u16>) -> u16 {
-        self.battle.prng.generate_random_u16_in_range(range)
+    pub fn generate_random_number_in_range_inclusive(&mut self, range: RangeInclusive<u16>) -> u16 {
+        self.battle.prng.generate_random_number_in_range(range)
     }
 }

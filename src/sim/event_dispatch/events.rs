@@ -146,6 +146,7 @@ mod event_dex {
             event OnModifyAccuracy(MoveUseContext) => Percent; Settings { default: Percent(100) },
         try event OnTryRaiseStat(Nothing) => Outcome,
         try event OnTryLowerStat(Nothing) => Outcome,
+        try event OnTryAddStatus(Nothing) => Outcome,
     }
 }
 

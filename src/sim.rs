@@ -23,7 +23,7 @@ pub use event_dispatch::{
 };
 pub use game_mechanics::*;
 use monsim_utils::MaxSizedVec;
-pub use monsim_utils::{Outcome, Percent, ClampedPercent};
+pub use monsim_utils::{Outcome, Percent, ClampedPercent, Count};
 pub(crate) use monsim_utils::{not, NOTHING, Nothing};
 pub use ordering::ActivationOrder;
 use tap::Pipe;
@@ -233,6 +233,23 @@ impl BattleSimulator { // simulation
             println!("The turn took {:?} to simulate.", elapsed_time.unwrap());
         }
 
+        // Turn end
+
+        // Update volatile status state
+        for monster in self.battle.monsters_mut() {
+            let mut deletion_queue = Vec::new();
+            for (index, volatile_status) in monster.volatile_statuses.iter_mut().enumerate() {
+                if volatile_status.remaining_turns == 0 {
+                    deletion_queue.push(index);
+                } else {
+                    volatile_status.remaining_turns -= 1;
+                }
+            }
+            for index in deletion_queue {
+                monster.volatile_statuses.remove(index);
+            }
+        }
+
         Ok(false)
     }
 }
@@ -243,6 +260,10 @@ impl BattleSimulator { // public
         self.battle.message_log.push(message);
     }
 
+    pub fn chance(&mut self, num: u16, denom: u16) -> bool {
+        self.battle.prng.chance(num, denom)
+    }
+    
     pub fn generate_random_number_in_range_inclusive(&mut self, range: RangeInclusive<u16>) -> u16 {
         self.battle.prng.generate_random_number_in_range(range)
     }

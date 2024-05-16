@@ -310,6 +310,7 @@ impl MonsterBuilder {
             moveset,
             ability,
             board_position,
+            volatile_statuses: MaxSizedVec::empty(),
         } 
     }
 }

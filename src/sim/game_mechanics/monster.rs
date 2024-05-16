@@ -5,11 +5,12 @@ use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, TeamID};
-use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, EventHandler, Move, OwnedEventHandler};
+use crate::{status::{VolatileStatus, VolatileStatusSpecies}, sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, EventHandler, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
     pub(crate) id: MonsterID,
+    pub(crate) species: &'static MonsterSpecies,
     
     pub(crate) nickname: Option<&'static str>,
     pub(crate) effort_values: StatSet,
@@ -19,10 +20,10 @@ pub struct Monster {
     pub(crate) nature: MonsterNature,
     pub(crate) board_position: BoardPosition,
     pub(crate) stat_modifiers: StatModifierSet,
-    pub(crate) species: &'static MonsterSpecies,
     
     pub(crate) moveset: MaxSizedVec<Move, 4>,
     pub(crate) ability: Ability,
+    pub(crate) volatile_statuses: MaxSizedVec<VolatileStatus, 16>,
 }
 
 impl PartialEq for Monster {
@@ -156,15 +157,31 @@ impl Monster { // public
         self.effort_values[stat]
     }
     
-    pub(crate) fn field_position(&self) -> Option<FieldPosition> {
+    pub fn field_position(&self) -> Option<FieldPosition> {
         match self.board_position {
             BoardPosition::Bench => None,
             BoardPosition::Field(field_position) => Some(field_position),
         }
     }
     
-    pub(crate) fn is_active(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         matches!(self.board_position, BoardPosition::Field(_))
+    }
+
+    /// Returns the `VolatileStatus` of Monster of corresponding to a particular `VolatileStatusSpecies`, if the Monster
+    /// has that particular status.
+    pub fn volatile_status(&self, marker_species: VolatileStatusSpecies) -> Option<&VolatileStatus> {
+        self.volatile_statuses.iter()
+            .find(|marker| {
+                *marker.species == marker_species
+            })
+    }
+
+    pub(crate) fn volatile_status_mut(&mut self, marker_species: VolatileStatusSpecies) -> Option<&mut VolatileStatus> {
+        self.volatile_statuses.iter_mut()
+            .find(|marker| {
+                *marker.species == marker_species
+            })
     }
     
 }
@@ -246,6 +263,26 @@ impl Monster { // private
             .for_each(|owned_event_handlers| {
                 out.extend(owned_event_handlers);
             });
+        self.volatile_statuses
+            .into_iter()
+            .for_each(|volatile_status| {
+                let owned_event_handlers = event_handler_selector(volatile_status.event_handlers())
+                    .into_iter()
+                    .flatten()
+                    .map(|event_handler| {
+                        OwnedEventHandler {
+                            event_handler,
+                            owner_id: self.id,
+                            activation_order:  ActivationOrder {
+                                priority: 0,
+                                speed: self.stat(Stat::Speed),
+                                order: 0,
+                            },
+                            filtering_options: volatile_status.event_filtering_options(),
+                        }
+                    });
+                out.extend(owned_event_handlers)
+            });
         out
     }
 
@@ -260,8 +297,8 @@ impl Monster { // private
     pub(crate) fn status_string(&self) -> String {
         let mut out = String::new();
         out.push_str(&format![
-            "{} ({}) [HP: {}/{}] @ {}\n",
-            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position
+            "{} ({}) [HP: {}/{}] @ {} Status: {}\n",
+            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position, self.volatile_statuses
         ]);
         out
     }

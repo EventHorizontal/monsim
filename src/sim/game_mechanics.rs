@@ -8,6 +8,7 @@ pub mod move_;
 #[cfg(feature = "debug")]
 pub(crate) mod test_move_dex;
 pub mod team;
+pub mod status;
 
 pub use ability::*;
 pub use monster::*;

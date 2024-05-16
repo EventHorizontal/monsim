@@ -3,6 +3,7 @@ use monsim::*;
 mod ability_dex;
 mod monster_dex;
 mod move_dex;
+mod status_dex;
 
 use ability_dex::*;
 use monster_dex::*;
@@ -17,7 +18,7 @@ fn main() -> MonsimResult<()> {
                         (
                             Scratch.spawn(),
                             Some(BulletSeed.spawn()),
-                            None,
+                            Some(Confusion.spawn()),
                             None,
                         ), 
                         FlashFire.spawn()
@@ -101,7 +102,7 @@ fn main() -> MonsimResult<()> {
                     )        
                 )
         )
-        .with_format(BattleFormat::Triple)
+        // .with_format(BattleFormat::Triple)
         .build();
 
     println!("{:?}", battle.format());

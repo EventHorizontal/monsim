@@ -120,7 +120,7 @@ impl BattleState {
     }
 
     /// The iterator yields ally monsters first, then yields opponent monsters, in id order.
-    pub(crate) fn _monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
+    pub(crate) fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_mut();
         ally_team.monsters_mut().chain(opponent_team.monsters_mut())
     }
@@ -317,7 +317,7 @@ impl BattleState {
                 vec![FieldPosition::AllySideLeft, FieldPosition::AllySideCentre, FieldPosition::AllySideRight, FieldPosition::OpponentSideLeft, FieldPosition::OpponentSideCentre, FieldPosition::OpponentSideRight]
             },
         }
-    }
+    }   
 }
 
 impl Display for BattleState {

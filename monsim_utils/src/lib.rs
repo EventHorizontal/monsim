@@ -391,3 +391,9 @@ impl<T: Clone> Deref for TeamAffl<T> {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub enum Count {
+    Fixed(u8),
+    RandomInRange{ min: u8, max: u8 }
+}

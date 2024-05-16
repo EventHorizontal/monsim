@@ -1,6 +1,6 @@
 use monsim_macros::{abl, mon, mov};
 use crate::{events, matchup};
-use self::targetting::BoardPosition;
+use self::{status::{VolatileStatus, VolatileStatusSpecies}, targetting::BoardPosition};
 use super::*;
 
 /// `R`: A type that encodes any necessary information about how the `Effect` played
@@ -19,6 +19,12 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
     let MoveUseContext { move_user_id, move_used_id, target_ids } = context;
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
     
+    let try_use_move_outcome = events::trigger_on_try_move_event(sim, move_user_id, context);
+    if try_use_move_outcome.failed() {
+        sim.push_message("The move failed!");
+        return;
+    }
+   
     sim.push_message(format![
         "{attacker} used {move_}",
         attacker = mon![move_user_id].name(),
@@ -30,12 +36,6 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
         sim.push_message(
             format!["{}'s {} has no targets...", mon![move_user_id].name(), mov![move_used_id].name()]
         );
-        return;
-    }
-    
-    let try_use_move_outcome = events::trigger_on_try_move_event(sim, move_user_id, context);
-    if try_use_move_outcome.failed() {
-        sim.push_message("The move failed!");
         return;
     }
 
@@ -51,9 +51,8 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
         let mut actual_number_of_hits = 0;
         for _ in {
             match mov![move_used_id].hits_per_target() {
-                Hits::Once => 1..=1,
-                Hits::MultipleTimes(number_of_hits) => 1..=number_of_hits,
-                Hits::RandomlyInRange { min, max } => {
+                Count::Fixed(number_of_hits) => 1..=number_of_hits,
+                Count::RandomInRange { min, max } => {
                     let number_of_hits = sim.generate_random_number_in_range_inclusive(min as u16..=max as u16);
                     1..=number_of_hits as u8
                 },
@@ -67,9 +66,16 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
             }
         } 
 
-        if matches!(mov![move_used_id].hits_per_target(), Hits::MultipleTimes(_) | Hits::RandomlyInRange { min: _, max: _ }) {
-            sim.push_message(format!["The move hit {} time(s)", actual_number_of_hits]);
+        match mov![move_used_id].hits_per_target() {
+            Count::Fixed(n) if n > 1 => {
+                sim.push_message(format!["The move hit {} time(s)", n]);
+            },
+            Count::RandomInRange { min: _, max: _ } => {
+                sim.push_message(format!["The move hit {} time(s)", actual_number_of_hits]);
+            },
+            _ => {}
         }
+
     }
     
     mov![mut move_used_id].current_power_points -= 1;
@@ -191,7 +197,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
     // TODO: Introduce more damage multipliers as we implement them.
 
     // Do the calculated damage to the target
-    let _ = deal_direct_damge(sim, effector_id, (defender_id, damage));
+    let _ = deal_direct_damage(sim, effector_id, (defender_id, damage));
 
     let type_effectiveness = match type_matchup_multiplier {
         Percent(25) | Percent(50) => "not very effective",
@@ -233,7 +239,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
 /// Returns the actual damage dealt.
 
 #[must_use]
-fn deal_direct_damge(sim: &mut BattleSimulator, effector_id: MonsterID, context: (MonsterID, u16)) -> u16 {
+pub fn deal_direct_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: (MonsterID, u16)) -> u16 {
     let (target_id, mut damage) = context;
     let original_health = mon![target_id].current_health;
     mon![mut target_id].current_health = original_health.saturating_sub(damage);
@@ -306,6 +312,37 @@ pub fn lower_stat(
     } else {
         sim.push_message(format!["{monster}'s stats were not lowered.", monster = mon![affected_monster_id].name()]);
 
+        Outcome::Failure
+    }
+}
+
+/// Returns an `Outcome` representing whether adding the status succeeded.
+#[must_use]
+pub fn add_status(
+    sim: &mut BattleSimulator,
+    effector_id: MonsterID,
+    (affected_monster_id, status_species): (MonsterID, &'static VolatileStatusSpecies)
+) -> Outcome {
+    // conflict. A structural change is needed to resolve this correctly.
+    let try_add_status = events::trigger_on_try_add_status_event(sim, effector_id, NOTHING);
+    if try_add_status.succeeded() {
+        let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
+        if affected_monster_does_not_already_have_status {
+            
+            // HACK: We currently pass in the remaining turns because `prng` is inside `battle` so it causes multiple mutable references into `sim`.
+            // Resolving this will require some structural changes. Prng and Battle are too tightly coupled I think.
+            let lifetime_in_turns = match status_species.lifetime_in_turns {
+                Count::Fixed(n) => n,
+                Count::RandomInRange { min, max } => sim.battle.prng.generate_random_number_in_range(min as u16..=max as u16) as u8,
+            };
+            
+            mon![mut affected_monster_id].volatile_statuses.push(VolatileStatus::new(lifetime_in_turns, status_species));
+            sim.push_message((status_species.message)(mon![affected_monster_id]));
+            Outcome::Success
+        } else {
+            Outcome::Failure
+        }
+    } else {
         Outcome::Failure
     }
 }

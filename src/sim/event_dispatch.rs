@@ -101,24 +101,28 @@ impl EventDispatcher {
             .board_position
             .field_position()
             .expect("We assume broadcasters must be on the field.");
+        // This is an optional value because it may be that the event receiver is benched.
         let event_receiver_field_position = battle.monster(event_receiver_id)
             .board_position
             .field_position();
-        // The event receiver might be benched.
-        if let Some(event_receiver_field_position) = event_receiver_field_position {
-            if event_broadcaster_field_position.is_adjacent_to(event_receiver_field_position) {
-                broadcaster_relation_flags |= TargetFlags::ADJACENT
-            } else {
-                broadcaster_relation_flags |= TargetFlags::NONADJACENT
-            }
-            // FEATURE: BENCHED adjacency flag?
-        }
+        
         if battle.are_opponents(event_broadcaster_id, event_receiver_id) {
-            broadcaster_relation_flags |= TargetFlags::OPPONENTS
+            broadcaster_relation_flags |= TargetFlags::OPPONENTS;
         } else if battle.are_allies(event_broadcaster_id, event_receiver_id) {
-            broadcaster_relation_flags |= TargetFlags::ALLIES
+            broadcaster_relation_flags |= TargetFlags::ALLIES;
         } else {
-            broadcaster_relation_flags |= TargetFlags::SELF
+            broadcaster_relation_flags |= TargetFlags::SELF;
+        }
+
+        // Adjacency doesn't apply to self
+        if not!(broadcaster_relation_flags.contains(TargetFlags::SELF)) {
+            if let Some(event_receiver_field_position) = event_receiver_field_position {
+                if event_broadcaster_field_position.is_adjacent_to(event_receiver_field_position) {
+                    broadcaster_relation_flags |= TargetFlags::ADJACENT;
+                } else {
+                    broadcaster_relation_flags |= TargetFlags::NONADJACENT;
+                }
+            }
         }
 
         passes_filter = allowed_broadcaster_relation_flags.contains(broadcaster_relation_flags);

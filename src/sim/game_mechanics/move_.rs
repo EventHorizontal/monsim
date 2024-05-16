@@ -1,4 +1,4 @@
-use monsim_utils::Nothing;
+use monsim_utils::{Count, Nothing};
 
 use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
@@ -76,7 +76,7 @@ impl Move {
         (self.species.event_handlers)()
     }
     
-    pub(crate) fn hits_per_target(&self) -> Hits {
+    pub(crate) fn hits_per_target(&self) -> Count {
         self.species.hits_per_target
     }
 }
@@ -87,7 +87,7 @@ pub struct MoveSpecies {
     name: &'static str,
     
     on_hit_effect: Effect<Nothing, MoveHitContext>,
-    hits_per_target: Hits,
+    hits_per_target: Count,
     
     base_accuracy: u16,
     base_power: u16,
@@ -209,7 +209,7 @@ pub struct MoveDexEntry {
     pub name: &'static str,
 
     pub on_hit_effect: Effect<Nothing, MoveHitContext>,
-    pub hits_per_target: Hits,
+    pub hits_per_target: Count,
     
     pub base_accuracy: u16,
     pub base_power: u16,
@@ -227,14 +227,4 @@ pub struct MoveDexEntry {
 pub struct MoveID {
     pub owner_id: MonsterID,
     pub move_number: MoveNumber,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Hits {
-    /// Hits the target once
-    Once,
-    /// Hits the target a fixed number of times, more than once.
-    MultipleTimes(u8),
-    /// Hits the target a random number of times in a range (inclusive on both ends).
-    RandomlyInRange{ min: u8, max: u8 }
 }

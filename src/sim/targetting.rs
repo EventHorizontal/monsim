@@ -126,14 +126,14 @@ bitflags::bitflags! {
     pub struct TargetFlags: u8 {
         const _           = 0b1111_1111;
         
-        const ANY         = 0b0000_0000;
-        const ALL         = 0b0000_0001;
+        const ANY         = 0b0000_0001; 
+        const ALL         = 0b0000_0001; //  1
         
-        const ADJACENT    = 0b0000_0010;
-        const NONADJACENT = 0b0000_0100;
+        const ADJACENT    = 0b0000_0010; //  2
+        const NONADJACENT = 0b0000_0100; //  4
         
-        const SELF        = 0b0000_1000;
-        const ALLIES      = 0b0001_0000;
-        const OPPONENTS   = 0b0010_0000;
+        const SELF        = 0b0000_1000; //  8
+        const ALLIES      = 0b0001_0000; // 16
+        const OPPONENTS   = 0b0010_0000; // 32
     }
 }

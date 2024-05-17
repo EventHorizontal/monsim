@@ -3,6 +3,47 @@ use monsim_utils::Count;
 
 use crate::{EventFilteringOptions, EventHandlerDeck, Monster};
 
+// Permanent Statuses
+#[derive(Debug, Clone, Copy)]
+pub struct PersistentStatus {
+    pub(crate) species: & 'static PersistentStatusSpecies,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PersistentStatusSpecies {
+    pub(crate) dex_number: u16,
+    pub(crate) on_acquired_message: fn(&Monster) -> String,
+    pub(crate) event_handlers: fn() -> EventHandlerDeck,
+    pub(crate) event_filtering_options: EventFilteringOptions,
+}
+
+impl PersistentStatusSpecies {
+    pub const fn from_dex_entry(dex_entry: PersistentStatusDexEntry) -> PersistentStatusSpecies {
+        let PersistentStatusDexEntry { 
+            dex_number, 
+            on_acquired_message, 
+            event_handlers, 
+            event_filtering_options 
+        } = dex_entry;
+
+        PersistentStatusSpecies {
+            dex_number,
+            on_acquired_message,
+            event_handlers,
+            event_filtering_options,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PersistentStatusDexEntry {
+    pub dex_number: u16,
+    pub on_acquired_message: fn(&Monster) -> String,
+    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_filtering_options: EventFilteringOptions,
+}
+
+// Volatile Statuses
 #[derive(Debug, Clone, Copy)]
 pub struct VolatileStatus {
     pub(crate) species: & 'static VolatileStatusSpecies,

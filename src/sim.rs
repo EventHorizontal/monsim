@@ -26,6 +26,7 @@ use monsim_utils::MaxSizedVec;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent, Count};
 pub(crate) use monsim_utils::{not, NOTHING, Nothing};
 pub use ordering::ActivationOrder;
+pub use status::{VolatileStatusDexEntry, VolatileStatusSpecies, PersistentStatusDexEntry, PersistentStatusSpecies};
 use tap::Pipe;
 pub use targetting::{TargetFlags, BoardPosition, FieldPosition};
 

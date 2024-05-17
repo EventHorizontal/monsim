@@ -1,8 +1,28 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::zero_prefixed_literal)]
 
-use monsim::{effects, source_code_location, status::{VolatileStatusDexEntry, VolatileStatusSpecies}, Count, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome, TargetFlags};
+use monsim::{effects, source_code_location, Count, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome, TargetFlags, VolatileStatusDexEntry, VolatileStatusSpecies, PersistentStatusSpecies, PersistentStatusDexEntry};
 use monsim_macros::mon;
+
+pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_entry(PersistentStatusDexEntry {
+    dex_number: 001,
+    on_acquired_message: |affected_monster| {
+        format!["{} was burned!", affected_monster.name()]
+    },
+    event_handlers: || {
+        EventHandlerDeck {
+            // TODO:
+            // on_calculate_attack_stat: Some(EventHandler { halve_your_attack_stat })
+            // on_turn_end: Some(EventHandler { take damage 1/8th of the users max damage })
+            ..EventHandlerDeck::empty()
+        }
+    },
+    event_filtering_options: EventFilteringOptions {
+        allowed_broadcaster_relation_flags: TargetFlags::SELF,
+        ..EventFilteringOptions::default()
+    },
+}); 
+
 
 pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entry(VolatileStatusDexEntry {
     dex_number: 001,

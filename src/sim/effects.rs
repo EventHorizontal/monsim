@@ -100,18 +100,12 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
 
 /// The simulator switches out the Monster given by `context.active_monster_id` and switches in 
 /// the Monster given by `context.benched_monster_id`
-pub(crate) fn switch_monsters(sim: &mut BattleSimulator, _effector_id: MonsterID, context: SwitchContext) {
+pub(crate) fn switch_monsters(sim: &mut BattleSimulator, effector_id: MonsterID, context: SwitchContext) {
     let SwitchContext { active_monster_id, benched_monster_id } = context;
-
-    // Swap board positions of the two Monsters. (We just assume benched_monster_id corresponds to a benched monster at this point).
-    mon![mut benched_monster_id].board_position = mon![active_monster_id].board_position;
-    mon![mut active_monster_id].board_position = BoardPosition::Bench; 
-    
-    sim.push_message(format![
-        "{} switched out! Go {}!", 
-        mon![active_monster_id].name(),
-        mon![benched_monster_id].name()
-    ]);
+    let active_monster_field_position = mon![active_monster_id].field_position()
+        .expect("Expected the monster to be switched out to be on the field.");
+    switch_out_monster(sim, effector_id, active_monster_id);
+    switch_in_monster(sim, effector_id, (benched_monster_id, active_monster_field_position));
 }
 
 /// The simulator switchees in the Monster given by `context.0` into a presumed empty field position given by `context.1`. The caller is expected
@@ -121,6 +115,18 @@ pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, _effector_id: Monster
     sim.push_message(format![
         "Go {}!",
         mon![benched_monster_id].name()
+    ]);
+}
+
+pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, _effector_id: MonsterID, active_monster_id: MonsterID) {
+    {
+        let active_monster = mon![mut active_monster_id];
+        active_monster.board_position = BoardPosition::Bench; 
+        active_monster.volatile_statuses = MaxSizedVec::empty();
+    }
+    sim.push_message(format![
+        "{} switched out!",
+        mon![active_monster_id].name()
     ]);
 }
 

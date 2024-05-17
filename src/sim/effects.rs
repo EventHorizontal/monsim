@@ -61,7 +61,6 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
             mov![move_used_id].on_hit_effect()(&mut *sim, effector_id, subcontext);
             actual_number_of_hits += 1;
             if mon![target_id].is_fainted() {
-                sim.push_message(format!["{} fainted!", mon![target_id].name()]);
                 break;
             }
         } 
@@ -125,7 +124,7 @@ pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, _effector_id: Monste
         active_monster.volatile_statuses = MaxSizedVec::empty();
     }
     sim.push_message(format![
-        "{} switched out!",
+        "Come back {}!",
         mon![active_monster_id].name()
     ]);
 }
@@ -201,19 +200,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
     damage = (damage as f64 * stab_multiplier) as u16;
     damage = (damage as f64 * type_matchup_multiplier) as u16;
     // TODO: Introduce more damage multipliers as we implement them.
-
-    // Do the calculated damage to the target
-    let _ = deal_direct_damage(sim, effector_id, (defender_id, damage));
-
-    let type_effectiveness = match type_matchup_multiplier {
-        Percent(25) | Percent(50) => "not very effective",
-        Percent(100) => "effective",
-        Percent(200) | Percent(400) => "super effective",
-        value => {
-            let type_multiplier_as_float = value.0 as f64 / 100.0f64;
-            unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
-        }
-    };
+    
     /*
     TODO: I was wondering if I could move the "it was __ effective" text out to `use_move` but I encountered two
     problems:
@@ -225,33 +212,48 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
         the hits of a move, and upon thinking about it for 5 minutes I realise we 
         need to have an `on_use` and an `on_hit` (they should have reasonable defaults 
         so that most of the time they don't need to be re-implemented). 
-    Taking this stuff inot account, we need a better separation of "move use" and "move hit" if not just
+    Taking this stuff into account, we need a better separation of "move use" and "move hit" if not just
     so that one can do something after (and before) of all of the hits.
     */
+    let type_effectiveness = match type_matchup_multiplier {
+        Percent(25) | Percent(50) => "not very effective",
+        Percent(100) => "effective",
+        Percent(200) | Percent(400) => "super effective",
+        value => {
+            let type_multiplier_as_float = value.0 as f64 / 100.0f64;
+            unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
+        }
+    };
     sim.push_message(format!["It was {type_effectiveness}!"]);
-    sim.push_message(format![
-        "{} took {damage} damage!", 
-        mon![defender_id].name()
-    ]);
-    sim.push_message(format![
-        "{} has {num_hp} health left.",
-        mon![defender_id].name(),
-        num_hp = mon![defender_id].current_health
-    ]);
+
+    let _ = deal_raw_damage(sim, effector_id, (defender_id, damage));
+    
 }
 
-/// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`.
+/// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`. The simulator currently
+///  assumes that the only way to faint a monster is by dealing damage equal to its max health, i.e. through this
+/// function. So the fainting logic is in this function.
 /// 
 /// Returns the actual damage dealt.
 
 #[must_use]
-pub fn deal_direct_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: (MonsterID, u16)) -> u16 {
+pub fn deal_raw_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: (MonsterID, u16)) -> u16 {
     let (target_id, mut damage) = context;
     let original_health = mon![target_id].current_health;
     mon![mut target_id].current_health = original_health.saturating_sub(damage);
+    sim.push_message(format![
+        "{} took {damage} damage!", 
+        mon![target_id].name()
+    ]);
+    sim.push_message(format![
+        "{} has {num_hp} health left.",
+        mon![target_id].name(),
+        num_hp = mon![target_id].current_health
+    ]);
     if mon![target_id].is_fainted() { 
         damage = original_health;
-        mon![mut target_id].board_position = BoardPosition::Bench;
+        sim.push_message(format!["{} fainted!", mon![target_id].name()]);
+        switch_out_monster(sim, effector_id, target_id);
     };
     events::trigger_on_damage_dealt_event(sim, effector_id, NOTHING);
     damage

@@ -24,7 +24,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies {
                     } else if sim.chance(1, 3) {
                         sim.push_message(format!["{} hit itself in confusion!", mon![self_id].name()]);
                         let one_eight_of_max_hp = (mon![self_id].max_health() as f64 * 1.0/8.0) as u16;  
-                        let _damage = effects::deal_direct_damage(sim, self_id, (self_id, one_eight_of_max_hp));
+                        let _damage = effects::deal_raw_damage(sim, self_id, (self_id, one_eight_of_max_hp));
                         return Outcome::Failure;
                     }
                     Outcome::Success

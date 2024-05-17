@@ -318,7 +318,7 @@ pub fn lower_stat(
 
         Outcome::Success
     } else {
-        sim.push_message(format!["{monster}'s stats were not lowered.", monster = mon![affected_monster_id].name()]);
+        sim.push_message(format!["{monster}'s stats cannot get any lower.", monster = mon![affected_monster_id].name()]);
 
         Outcome::Failure
     }

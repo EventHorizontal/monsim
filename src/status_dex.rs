@@ -1,10 +1,11 @@
 #![allow(non_upper_case_globals)]
+#![allow(clippy::zero_prefixed_literal)]
 
-use monsim::{effects, source_code_location, status::{VolatileStatusSpecies, VolatileStatusSpeciesID}, Count, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome, TargetFlags};
+use monsim::{effects, source_code_location, status::{VolatileStatusDexEntry, VolatileStatusSpecies}, Count, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome, TargetFlags};
 use monsim_macros::mon;
 
-pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies {
-    id: VolatileStatusSpeciesID::new(1),
+pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entry(VolatileStatusDexEntry {
+    dex_number: 001,
     name: "Confused",
     lifetime_in_turns: Count::RandomInRange { min: 2, max: 4 },
     event_handlers: || {
@@ -12,7 +13,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies {
             on_try_move: Some(EventHandler {
                 #[cfg(feature="debug")]
                 source_code_location: source_code_location!(),
-                effect: |sim, self_id, _context | {
+                effect: |sim, self_id, _context| {
                     
                     sim.push_message(format!["{} is confused!", mon![self_id].name()]);
                     
@@ -37,7 +38,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies {
         allowed_broadcaster_relation_flags: TargetFlags::SELF,
         ..EventFilteringOptions::default()
     },
-    message: |affected_monster| {
+    on_acquired_message: |affected_monster| {
         format!["{} became confused!", affected_monster.name()]
     },
-};
+});

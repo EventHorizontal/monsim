@@ -40,38 +40,58 @@ impl VolatileStatus {
     
 }
 
-// TODO: make these pub crate and make a data struct called `StatusDexEntry`
 #[derive(Debug, Clone, Copy)]
 pub struct VolatileStatusSpecies {
-    pub id: VolatileStatusSpeciesID,
-    pub name: &'static str,
-    pub message: fn(&Monster) -> String,
-    pub lifetime_in_turns: Count,
-    pub event_handlers: fn() -> EventHandlerDeck,
-    pub event_filtering_options: EventFilteringOptions,
+    pub(crate) dex_number: u16,
+    pub(crate) name: &'static str,
+    pub(crate) on_acquired_message: fn(&Monster) -> String,
+    pub(crate) lifetime_in_turns: Count,
+    pub(crate) event_handlers: fn() -> EventHandlerDeck,
+    pub(crate) event_filtering_options: EventFilteringOptions,
 }
 
 impl PartialEq for VolatileStatusSpecies {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
+        self.dex_number == other.dex_number
     }
 }
 
 impl Eq for VolatileStatusSpecies {}
 
 impl VolatileStatusSpecies {
+    pub const fn from_dex_entry(dex_entry: VolatileStatusDexEntry) -> VolatileStatusSpecies {
+        let VolatileStatusDexEntry { 
+            dex_number,
+            name, 
+            on_acquired_message, 
+            lifetime_in_turns, 
+            event_handlers, 
+            event_filtering_options 
+        } = dex_entry;
+
+        VolatileStatusSpecies {
+            dex_number,
+            name,
+            on_acquired_message,
+            lifetime_in_turns,
+            event_handlers,
+            event_filtering_options,
+        }
+    }
+
     #[inline(always)]
     pub fn event_handlers(&self) -> EventHandlerDeck {
         (self.event_handlers)()
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VolatileStatusSpeciesID(u16);
-
-impl VolatileStatusSpeciesID {
-    pub const fn new(number: u16) -> VolatileStatusSpeciesID {
-        VolatileStatusSpeciesID(number)
-    }
+#[derive(Debug)]
+pub struct VolatileStatusDexEntry {
+    pub dex_number: u16,
+    pub name: &'static str,
+    /// fn(affected_monster: &Monster) -> message: String 
+    pub on_acquired_message: fn(&Monster) -> String,
+    pub lifetime_in_turns: Count,
+    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_filtering_options: EventFilteringOptions,
 }
-

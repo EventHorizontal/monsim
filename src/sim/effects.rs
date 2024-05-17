@@ -345,7 +345,7 @@ pub fn add_status(
             };
             
             mon![mut affected_monster_id].volatile_statuses.push(VolatileStatus::new(lifetime_in_turns, status_species));
-            sim.push_message((status_species.message)(mon![affected_monster_id]));
+            sim.push_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             Outcome::Success
         } else {
             Outcome::Failure

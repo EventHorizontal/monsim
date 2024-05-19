@@ -1,4 +1,4 @@
-use std::ops::{Add, Deref, DerefMut, Mul, Not, Sub};
+use std::ops::{Add, BitAnd, Deref, DerefMut, Mul, Not, Sub};
 
 mod max_sized_vec;
 pub use max_sized_vec::MaxSizedVec;
@@ -39,6 +39,18 @@ impl Not for Outcome {
         match self {
             Outcome::Success => Outcome::Failure,
             Outcome::Failure => Outcome::Success,
+        }
+    }
+}
+
+impl BitAnd for Outcome {
+    type Output = Outcome;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        if self.succeeded() && rhs.succeeded() {
+            Outcome::Success
+        } else {
+            Outcome::Failure
         }
     }
 }

@@ -56,12 +56,22 @@ impl BitAnd for Outcome {
 }
 
 impl Outcome {
+    #[inline(always)]
     pub fn succeeded(self) -> bool {
         self.into()
     }
 
+    #[inline(always)]
     pub fn failed(self) -> bool {
         not!(self.succeeded())
+    }
+
+    #[inline(always)]
+    pub fn opposite(self) -> Outcome {
+        match self {
+            Outcome::Success => Outcome::Failure,
+            Outcome::Failure => Outcome::Success,
+        }
     }
 }
 

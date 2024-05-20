@@ -1,6 +1,6 @@
 use monsim_macros::{abl, mon, mov};
 use crate::{events, matchup};
-use self::{status::{VolatileStatus, VolatileStatusSpecies}, targetting::BoardPosition};
+use self::{status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, targetting::BoardPosition};
 use super::*;
 
 /// `R`: A type that encodes any necessary information about how the `Effect` played
@@ -9,13 +9,16 @@ use super::*;
 /// `C`: Any information necessary for the resolution of the effect, provided 
 /// directly, such as the user of the move, the move used and the target 
 /// in case of a move's effect. 
-pub type Effect<R,C> = fn(/* simulator */ &mut BattleSimulator, /* effector id, i.e. the Monster doing the effect */ MonsterID, /* context */ C) -> R;
+pub type Effect<R,C> = fn(/* simulator */ &mut BattleSimulator, /* context */ C) -> R;
+
+pub type EventResponse<R,C> =  fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ MonsterID, /* receiver_id */ MonsterID, /* context */ C) -> R;
+
 
 // internal `Effects` that are only supposed to be used by the engine -----------------------------------------
 
 /// The simulator simulates the use of a move `MoveUseContext.move_used` by 
 /// `MoveUseContext.move_user` on `MoveUseContext.target`.
-pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveUseContext) {
+pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
     let MoveUseContext { move_user_id, move_used_id, target_ids } = context;
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
     
@@ -58,7 +61,7 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
                 },
             }
         } {
-            mov![move_used_id].on_hit_effect()(&mut *sim, effector_id, subcontext);
+            mov![move_used_id].on_hit_effect()(sim, subcontext);
             actual_number_of_hits += 1;
             if mon![target_id].is_fainted() {
                 break;
@@ -99,17 +102,17 @@ pub fn use_move(sim: &mut BattleSimulator, effector_id: MonsterID, context: Move
 
 /// The simulator switches out the Monster given by `context.active_monster_id` and switches in 
 /// the Monster given by `context.benched_monster_id`
-pub(crate) fn switch_monsters(sim: &mut BattleSimulator, effector_id: MonsterID, context: SwitchContext) {
+pub(crate) fn switch_monsters(sim: &mut BattleSimulator, context: SwitchContext) {
     let SwitchContext { active_monster_id, benched_monster_id } = context;
     let active_monster_field_position = mon![active_monster_id].field_position()
         .expect("Expected the monster to be switched out to be on the field.");
-    switch_out_monster(sim, effector_id, active_monster_id);
-    switch_in_monster(sim, effector_id, (benched_monster_id, active_monster_field_position));
+    switch_out_monster(sim, active_monster_id);
+    switch_in_monster(sim, (benched_monster_id, active_monster_field_position));
 }
 
 /// The simulator switchees in the Monster given by `context.0` into a presumed empty field position given by `context.1`. The caller is expected
 /// to check that the field position is indeed empty. 
-pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, _effector_id: MonsterID, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
+pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
     mon![mut benched_monster_id].board_position = BoardPosition::Field(field_position);
     sim.push_message(format![
         "Go {}!",
@@ -117,12 +120,12 @@ pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, _effector_id: Monster
     ]);
 }
 
-pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, _effector_id: MonsterID, active_monster_id: MonsterID) {
-    {
-        let active_monster = mon![mut active_monster_id];
-        active_monster.board_position = BoardPosition::Bench; 
-        active_monster.volatile_statuses = MaxSizedVec::empty();
-    }
+pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, active_monster_id: MonsterID) {
+    
+    let active_monster = mon![mut active_monster_id];
+    active_monster.board_position = BoardPosition::Bench; 
+    active_monster.volatile_statuses = MaxSizedVec::empty();
+    
     sim.push_message(format![
         "Come back {}!",
         mon![active_monster_id].name()
@@ -136,14 +139,16 @@ pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, _effector_id: Monste
 /// 
 /// This is done by calculating the damage first using the formula then calling `deal_direct_damage`
 /// with the resulting damage.
+/// 
+/// Returns an `Outcome` signifying whether the move succeeded.
 
-pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: MoveHitContext) {
+pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -> Outcome {
     let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
 
     let try_move_hit_outcome = events::trigger_on_try_move_hit_event(sim, attacker_id, context);
     if try_move_hit_outcome.failed() {
         sim.push_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
-        return;
+        return Outcome::Failure;
     }
 
     let level = mon![attacker_id].level;
@@ -186,7 +191,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
     // If the opponent is immune, damage calculation is skipped.
     if type_matchup_multiplier.is_matchup_ineffective() {
         sim.push_message("It was ineffective...");
-        return;
+        return Outcome::Failure;
     }
 
     // The (WIP) bona-fide damage formula.
@@ -226,8 +231,9 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
     };
     sim.push_message(format!["It was {type_effectiveness}!"]);
 
-    let _ = deal_raw_damage(sim, effector_id, (defender_id, damage));
-    
+    let _ = deal_raw_damage(sim, (defender_id, damage));
+
+    Outcome::Success
 }
 
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`. The simulator currently
@@ -237,7 +243,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, effector_id: MonsterID, co
 /// Returns the actual damage dealt.
 
 #[must_use]
-pub fn deal_raw_damage(sim: &mut BattleSimulator, effector_id: MonsterID, context: (MonsterID, u16)) -> u16 {
+pub fn deal_raw_damage(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> u16 {
     let (target_id, mut damage) = context;
     let original_health = mon![target_id].current_health;
     mon![mut target_id].current_health = original_health.saturating_sub(damage);
@@ -253,22 +259,22 @@ pub fn deal_raw_damage(sim: &mut BattleSimulator, effector_id: MonsterID, contex
     if mon![target_id].is_fainted() { 
         damage = original_health;
         sim.push_message(format!["{} fainted!", mon![target_id].name()]);
-        switch_out_monster(sim, effector_id, target_id);
+        switch_out_monster(sim, target_id);
     };
-    events::trigger_on_damage_dealt_event(sim, effector_id, NOTHING);
+    events::trigger_on_damage_dealt_event(sim, target_id, NOTHING);
     damage
 }
 
 /// The simulator simulates the activation of the ability `AbilityUseContext.ability_used` owned by
 /// the monster `AbilityUseContext.abilty_owner`.
 #[must_use]
-pub fn activate_ability(sim: &mut BattleSimulator, effector_id: MonsterID, context: AbilityUseContext) -> Outcome {
+pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -> Outcome {
     let AbilityUseContext { ability_used_id, ability_owner_id } = context;
 
     let try_activate_ability_outcome = events::trigger_on_try_activate_ability_event(sim, ability_owner_id, context);
     if try_activate_ability_outcome.succeeded() {
         let ability = abl![ability_used_id];
-        (ability.on_activate_effect())(sim, effector_id, context);
+        (ability.on_activate_effect())(sim, context);
         events::trigger_on_ability_activated_event(sim, ability_owner_id, context);
         Outcome::Success
     } else {
@@ -278,11 +284,7 @@ pub fn activate_ability(sim: &mut BattleSimulator, effector_id: MonsterID, conte
 
 /// The simulator simulates the raising of stat `Context.1` of monster `Context.0` by `Context.2` stages
 #[must_use]
-pub fn raise_stat(
-    sim: &mut BattleSimulator,
-    _effector_id: MonsterID,
-    (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
-) -> Outcome {
+pub fn raise_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8)) -> Outcome {
     let try_raise_stat_outcome = events::trigger_on_try_raise_stat_event(sim, affected_monster_id, NOTHING);
     if try_raise_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, number_of_stages);
@@ -302,11 +304,7 @@ pub fn raise_stat(
 
 /// The simulator simulates the lowering of stat `Context.1` of monster `Context.0` by `Context.2` stages
 #[must_use]
-pub fn lower_stat(
-    sim: &mut BattleSimulator,
-    _effector_id: MonsterID,
-    (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8), 
-) -> Outcome {
+pub fn lower_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8)) -> Outcome {
     let try_lower_stat_outcome = events::trigger_on_try_lower_stat_event(sim, affected_monster_id, NOTHING);
     if try_lower_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);
@@ -326,13 +324,9 @@ pub fn lower_stat(
 
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
-pub fn add_status(
-    sim: &mut BattleSimulator,
-    effector_id: MonsterID,
-    (affected_monster_id, status_species): (MonsterID, &'static VolatileStatusSpecies)
-) -> Outcome {
+pub fn add_volatile_status(sim: &mut BattleSimulator, (affected_monster_id, status_species): (MonsterID, &'static VolatileStatusSpecies)) -> Outcome {
     // conflict. A structural change is needed to resolve this correctly.
-    let try_add_status = events::trigger_on_try_add_status_event(sim, effector_id, NOTHING);
+    let try_add_status = events::trigger_on_try_add_volatile_status_event(sim, affected_monster_id, NOTHING);
     if try_add_status.succeeded() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
@@ -345,6 +339,23 @@ pub fn add_status(
             };
             
             mon![mut affected_monster_id].volatile_statuses.push(VolatileStatus::new(lifetime_in_turns, status_species));
+            sim.push_message((status_species.on_acquired_message)(mon![affected_monster_id]));
+            Outcome::Success
+        } else {
+            Outcome::Failure
+        }
+    } else {
+        Outcome::Failure
+    }
+}
+
+#[must_use]
+pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, status_species): (MonsterID, &'static PersistentStatusSpecies)) -> Outcome {
+    let try_add_status = events::trigger_on_try_add_permanent_status_event(sim, affected_monster_id, NOTHING);
+    if try_add_status.succeeded() {
+        let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
+        if affected_monster_does_not_already_have_status {
+            mon![mut affected_monster_id].persistent_status = Some(PersistentStatus::new(&status_species));
             sim.push_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             Outcome::Success
         } else {

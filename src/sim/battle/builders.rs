@@ -299,17 +299,18 @@ impl MonsterBuilder {
         
         Monster {
             id: monster_id,
+            species: self.species,
             nickname,
             effort_values: EVS,
             current_health: Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level),
             individual_values: IVS,
             level,
             nature,
+            board_position,
             stat_modifiers: StatModifierSet::new(0, 0, 0, 0, 0),
-            species: self.species,
             moveset,
             ability,
-            board_position,
+            persistent_status: None,
             volatile_statuses: MaxSizedVec::empty(),
         } 
     }

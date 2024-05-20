@@ -1,11 +1,11 @@
 use super::*;
-use crate::sim::{Effect, ActivationOrder};
+use crate::{sim::ActivationOrder, EventResponse};
 pub use event_dex::*;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct EventHandler<R: Copy, C: Copy> {
-    pub effect: Effect<R, C>,
+    pub response: EventResponse<R, C>,
     #[cfg(feature = "debug")]
     pub source_code_location: &'static str,
 }
@@ -146,7 +146,9 @@ mod event_dex {
             event OnModifyAccuracy(MoveUseContext) => Percent; Settings { default: Percent(100) },
         try event OnTryRaiseStat(Nothing) => Outcome,
         try event OnTryLowerStat(Nothing) => Outcome,
-        try event OnTryAddStatus(Nothing) => Outcome,
+        try event OnTryAddVolatileStatus(Nothing) => Outcome,
+        try event OnTryAddPermanentStatus(Nothing) => Outcome,
+            event OnTurnEnd(Nothing) => Nothing,
     }
 }
 

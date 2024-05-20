@@ -50,7 +50,13 @@ pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 003,
         name: "Ember",
-        on_hit_effect: effects::deal_default_damage,
+        on_hit_effect: |sim, context| {
+            let hit_outcome = effects::deal_default_damage(sim, context);
+            if sim.chance(9, 10) && hit_outcome.succeeded() {
+                effects::add_persistent_status(sim, (context.target_id, &Burned));
+            }
+            hit_outcome
+        },
         base_accuracy: 100,
         base_power: 40,
         category: MoveCategory::Special,
@@ -90,8 +96,9 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 005,
         name: "Growl",
-        on_hit_effect: |sim, effector_id, context| { 
-            _ = effects::lower_stat(sim, context.move_user_id, (context.target_id, Stat::PhysicalAttack, 1)); 
+        on_hit_effect: |sim, context| { 
+            let stat_lowering_succeeded = effects::lower_stat(sim, (context.target_id, Stat::PhysicalAttack, 1)); 
+            stat_lowering_succeeded
         },
         base_accuracy: 100,
         base_power: 0,
@@ -112,9 +119,10 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 006,
         name: "Dragon Dance",
-        on_hit_effect: |sim, effector_id, context| {
-            effects::raise_stat(sim, context.move_user_id, (context.target_id, Stat::PhysicalAttack, 1));
-            effects::raise_stat(sim, context.move_user_id, (context.target_id, Stat::Speed,          1));
+        on_hit_effect: |sim, context| {
+            let first_stat_raise_succeeded = effects::raise_stat(sim, (context.target_id, Stat::PhysicalAttack, 1));
+            let second_stat_raise_succeeded = effects::raise_stat(sim, (context.target_id, Stat::Speed,         1));
+            first_stat_raise_succeeded & second_stat_raise_succeeded
         },
         base_accuracy: 100,
         base_power: 0,
@@ -154,11 +162,12 @@ pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(
     MoveDexEntry {
         dex_number: 008,
         name: "Confusion",
-        on_hit_effect: |sim, self_id, context| {
-            effects::deal_default_damage(sim, self_id, context);
-            if sim.chance(1, 10) {
-                effects::add_status(sim, self_id, (context.target_id, &Confused));
+        on_hit_effect: |sim, context| {
+            let hit_outcome = effects::deal_default_damage(sim, context);
+            if sim.chance(1, 10) && hit_outcome.succeeded() {
+                effects::add_volatile_status(sim, (context.target_id, &Confused));
             }
+            hit_outcome
         },
         hits_per_target: Count::Fixed(1),
         base_accuracy: 100,

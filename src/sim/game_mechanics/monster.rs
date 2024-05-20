@@ -5,7 +5,7 @@ use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, TeamID};
-use crate::{status::{VolatileStatus, VolatileStatusSpecies}, sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, EventHandler, Move, OwnedEventHandler};
+use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, EventHandler, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -23,6 +23,7 @@ pub struct Monster {
     
     pub(crate) moveset: MaxSizedVec<Move, 4>,
     pub(crate) ability: Ability,
+    pub(crate) persistent_status: Option<PersistentStatus>, 
     pub(crate) volatile_statuses: MaxSizedVec<VolatileStatus, 16>,
 }
 
@@ -176,14 +177,6 @@ impl Monster { // public
                 *marker.species == marker_species
             })
     }
-
-    pub(crate) fn volatile_status_mut(&mut self, marker_species: VolatileStatusSpecies) -> Option<&mut VolatileStatus> {
-        self.volatile_statuses.iter_mut()
-            .find(|marker| {
-                *marker.species == marker_species
-            })
-    }
-    
 }
 
 impl Monster { // private
@@ -235,7 +228,9 @@ impl Monster { // private
     }
 
     pub(crate) fn owned_event_handlers<R: Copy, C: Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C>>>) -> Vec<OwnedEventHandler<R, C>> {
-        let mut out = Vec::new();
+        let mut output_owned_event_handlers = Vec::new();
+        
+        // of the Monster itself
         event_handler_selector((self.species.event_handlers)())
             .into_iter()
             .flatten() 
@@ -252,17 +247,23 @@ impl Monster { // private
                 }
             })
             .pipe(|owned_event_handlers| { 
-                out.extend(owned_event_handlers);
+                output_owned_event_handlers.extend(owned_event_handlers);
             });
+        
+        // from the Monster's ability
         self.ability_owned_event_handlers(event_handler_selector)
             .pipe(|owned_event_handlers| {
-                out.extend(owned_event_handlers);
+                output_owned_event_handlers.extend(owned_event_handlers);
             });
+        
+        // from the Monster's moveset
         self.moveset_owned_handlers(event_handler_selector)
             .into_iter()
             .for_each(|owned_event_handlers| {
-                out.extend(owned_event_handlers);
+                output_owned_event_handlers.extend(owned_event_handlers);
             });
+        
+        // from the Monster's volatile statuses
         self.volatile_statuses
             .into_iter()
             .for_each(|volatile_status| {
@@ -281,9 +282,30 @@ impl Monster { // private
                             filtering_options: volatile_status.event_filtering_options(),
                         }
                     });
-                out.extend(owned_event_handlers)
+                output_owned_event_handlers.extend(owned_event_handlers)
             });
-        out
+        
+        // from the Monster's persistent status
+        if let Some(persistent_status) = self.persistent_status {
+            event_handler_selector(persistent_status.event_handlers())
+                .into_iter()
+                .flatten()
+                .for_each(|event_handler| {
+                    let owned_event_handler = OwnedEventHandler {
+                        event_handler,
+                        owner_id: self.id,
+                        activation_order:  ActivationOrder {
+                            priority: 0,
+                            speed: self.stat(Stat::Speed),
+                            order: 0,
+                        },
+                        filtering_options: persistent_status.event_filtering_options(),
+                    };
+                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
+                });
+        }  
+
+        output_owned_event_handlers
     }
 
     pub(crate) fn full_name(&self) -> String {
@@ -296,9 +318,13 @@ impl Monster { // private
 
     pub(crate) fn status_string(&self) -> String {
         let mut out = String::new();
+        let persistent_status = match self.persistent_status {
+            Some(persistent_status) => persistent_status.name(),
+            None => "None",
+        };
         out.push_str(&format![
-            "{} ({}) [HP: {}/{}] @ {} Status: {}\n",
-            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position, self.volatile_statuses
+            "{} ({}) [HP: {}/{}] | Position: {} | Persistent Status: {} | Volatile Statuses: {}\n",
+            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position, persistent_status, self.volatile_statuses
         ]);
         out
     }

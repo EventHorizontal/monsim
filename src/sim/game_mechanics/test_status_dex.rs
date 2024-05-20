@@ -1,7 +1,9 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
-use monsim::{effects, source_code_location, Count, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome, TargetFlags, VolatileStatusDexEntry, VolatileStatusSpecies, PersistentStatusSpecies, PersistentStatusDexEntry};
 use monsim_macros::mon;
+use monsim_utils::{Count, Outcome};
+
+use crate::{effects, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, PersistentStatusDexEntry, PersistentStatusSpecies, TargetFlags, VolatileStatusDexEntry, VolatileStatusSpecies};
 
 pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_entry(PersistentStatusDexEntry {
     dex_number: 001,

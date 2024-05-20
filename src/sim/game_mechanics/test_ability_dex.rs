@@ -17,10 +17,10 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                 on_try_move_hit: Some(EventHandler { 
                     #[cfg(feature = "debug")]
                     source_code_location: source_code_location![],
-                    effect: |sim, effector_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
+                    response: |sim, broadcaster_id, receiver_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
                         if mov![move_used_id].is_type(Type::Fire) {
-                            let activation_succeeded = effects::activate_ability(sim, effector_id,AbilityUseContext::new(effector_id));
-                            return not!(activation_succeeded);
+                            let activation_outcome = effects::activate_ability(sim, AbilityUseContext::new(receiver_id));
+                            return activation_outcome.opposite();
                         }
                         Outcome::Success
                     },
@@ -28,8 +28,8 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                 ..EventHandlerDeck::empty()
             }
         },
-        on_activate_effect: |sim, effector_id, AbilityUseContext { ability_used_id, ability_owner_id }| {
-            let effector_name = mon![effector_id].name();
+        on_activate_effect: |sim, AbilityUseContext { ability_used_id, ability_owner_id }| {
+            let effector_name = mon![ability_owner_id].name();
             sim.push_message(format!["{effector_name}'s Flash Fire activated!"]);
         },
         event_filtering_options: EventFilteringOptions::default(),

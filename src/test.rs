@@ -53,21 +53,21 @@ mod battle {
             format!["{}", test_battle],
             String::from(
                 "Ally Team
-\t├── Ruby the Squirecoal (First Ally) [HP: 152/152] @ AllySideCentre Status: []
+\t├── Ruby the Squirecoal (First Ally) [HP: 152/152] | Position: AllySideCentre | Persistent Status: None | Volatile Statuses: []
 \t│\t│
 \t│\t├──    type: Fire
 \t│\t├── ability: Flash Fire
 \t│\t├──    move: Ember
 \t│\t└──    move: Scratch
 \t│\t
-\t├── Merkey (Second Ally) [HP: 157/157] @ Benched Status: []
+\t├── Merkey (Second Ally) [HP: 157/157] | Position: Benched | Persistent Status: None | Volatile Statuses: []
 \t│\t│
 \t│\t├──    type: Water/Bug
 \t│\t├── ability: Flash Fire
 \t│\t├──    move: Tackle
 \t│\t└──    move: Bubble
 \t│\t
-\t└── Emerald the Dandyleo (Third Ally) [HP: 147/147] @ Benched Status: []
+\t└── Emerald the Dandyleo (Third Ally) [HP: 147/147] | Position: Benched | Persistent Status: None | Volatile Statuses: []
 \t \t│
 \t \t├──    type: Grass
 \t \t├── ability: Flash Fire
@@ -75,7 +75,7 @@ mod battle {
 \t \t└──    move: Ember
 \t \t
 Opponent Team
-\t└── Cheerio the Zombler (First Opponent) [HP: 197/197] @ OpponentSideCentre Status: []
+\t└── Cheerio the Zombler (First Opponent) [HP: 197/197] | Position: OpponentSideCentre | Persistent Status: None | Volatile Statuses: []
 \t \t│
 \t \t├──    type: Ghost/Dark
 \t \t├── ability: Flash Fire

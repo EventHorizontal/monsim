@@ -166,10 +166,10 @@ impl BattleSimulator { // simulation
                         .flatten()
                         .map(|monster| monster.id )
                         .collect::<Vec<_>>();
-                    effects::use_move(self, move_id.owner_id, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
+                    effects::use_move(self, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
                 },
                 FullySpecifiedActionChoice::SwitchOut { active_monster_id, benched_monster_id, .. } => {
-                    effects::switch_monsters(self, active_monster_id, SwitchContext::new(active_monster_id, benched_monster_id));
+                    effects::switch_monsters(self, SwitchContext::new(active_monster_id, benched_monster_id));
                 },
             }
 
@@ -222,7 +222,7 @@ impl BattleSimulator { // simulation
                 INFO: Monsters get switched in immediately if they are replacing a fainted Monster
                 that fainted last turn, so we don't add them to the 'action_schedule'.
                 */
-                effects::switch_in_monster(self, monster_selected_for_switch_id, (monster_selected_for_switch_id, empty_field_position))
+                effects::switch_in_monster(self, (monster_selected_for_switch_id, empty_field_position))
             }
         }
 
@@ -250,6 +250,10 @@ impl BattleSimulator { // simulation
                 monster.volatile_statuses.remove(index);
             }
         }
+
+        // FIXME: The event_dispatcher breaks because it tries to find the relation flags of the receiver with ALLY_6
+        // but ALLY_6 doesn't exist, and even if it did, this would be wrong.
+        // events::trigger_on_turn_end_event(self, ALLY_6, NOTHING);
 
         Ok(false)
     }

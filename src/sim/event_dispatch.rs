@@ -61,7 +61,7 @@ impl EventDispatcher {
             if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner_id, filtering_options) {
                 // INFO: Removed relaying the outcome of the previous handler from the event resolution. It will be
                 // reintroduced if it ever turns out to be useful. Otherwise remove this comment. 
-                relay = (event_handler.effect)(sim, owner_id, event_context);
+                relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {

@@ -9,9 +9,30 @@ pub struct PersistentStatus {
     pub(crate) species: & 'static PersistentStatusSpecies,
 }
 
+impl PersistentStatus {
+    pub(crate) fn new(species: &'static PersistentStatusSpecies) -> PersistentStatus {
+        PersistentStatus {
+            species,
+        }
+    }
+    
+    pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
+        (self.species.event_handlers)()
+    }
+    
+    pub(crate) fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.species.event_filtering_options
+    }
+    
+    pub(crate) fn name(&self) -> &'static str {
+        self.species.name
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct PersistentStatusSpecies {
     pub(crate) dex_number: u16,
+    pub(crate) name: &'static str,
     pub(crate) on_acquired_message: fn(&Monster) -> String,
     pub(crate) event_handlers: fn() -> EventHandlerDeck,
     pub(crate) event_filtering_options: EventFilteringOptions,
@@ -21,6 +42,7 @@ impl PersistentStatusSpecies {
     pub const fn from_dex_entry(dex_entry: PersistentStatusDexEntry) -> PersistentStatusSpecies {
         let PersistentStatusDexEntry { 
             dex_number, 
+            name,
             on_acquired_message, 
             event_handlers, 
             event_filtering_options 
@@ -28,6 +50,7 @@ impl PersistentStatusSpecies {
 
         PersistentStatusSpecies {
             dex_number,
+            name,
             on_acquired_message,
             event_handlers,
             event_filtering_options,
@@ -38,6 +61,7 @@ impl PersistentStatusSpecies {
 #[derive(Debug)]
 pub struct PersistentStatusDexEntry {
     pub dex_number: u16,
+    pub name: &'static str,
     pub on_acquired_message: fn(&Monster) -> String,
     pub event_handlers: fn() -> EventHandlerDeck,
     pub event_filtering_options: EventFilteringOptions,

@@ -10,6 +10,10 @@ use monster_dex::*;
 use move_dex::*;
 
 fn main() -> MonsimResult<()> {
+    
+    #[cfg(feature="debug")]
+    std::env::set_var("RUST_BACKTRACE", "1");
+    
     let battle = BattleState::spawn()
         .add_ally_team(
             MonsterTeam::spawn()

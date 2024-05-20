@@ -9,6 +9,8 @@ pub mod move_;
 pub(crate) mod test_move_dex;
 pub mod team;
 pub mod status;
+#[cfg(feature = "debug")]
+pub(crate) mod test_status_dex;
 
 pub use ability::*;
 pub use monster::*;

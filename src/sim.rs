@@ -251,9 +251,9 @@ impl BattleSimulator { // simulation
             }
         }
 
-        // FIXME: The event_dispatcher breaks because it tries to find the relation flags of the receiver with ALLY_6
-        // but ALLY_6 doesn't exist, and even if it did, this would be wrong.
-        // events::trigger_on_turn_end_event(self, ALLY_6, NOTHING);
+        events::trigger_on_turn_end_event(self, NOTHING, NOTHING);
+
+        self.battle.message_log.show_new_messages();
 
         Ok(false)
     }

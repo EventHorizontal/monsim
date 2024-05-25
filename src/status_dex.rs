@@ -16,7 +16,8 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             on_turn_end: Some(EventHandler {
                 #[cfg(feature = "debug")]
                 source_code_location: source_code_location!(),
-                response: |sim, _broadcaster_id, receiver_id, _context| {
+                response: |sim, _, receiver_id, _context| {
+                    sim.push_message(format!["{} is burned.", mon![receiver_id].name()]);
                     let damage = (mon![receiver_id].max_health() as f64 * 1.0/8.0) as u16;
                     let _ = effects::deal_raw_damage(sim, (receiver_id, damage));
                 },

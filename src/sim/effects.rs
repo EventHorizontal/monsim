@@ -11,9 +11,6 @@ use super::*;
 /// in case of a move's effect. 
 pub type Effect<R,C> = fn(/* simulator */ &mut BattleSimulator, /* context */ C) -> R;
 
-pub type EventResponse<R,C> =  fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ MonsterID, /* receiver_id */ MonsterID, /* context */ C) -> R;
-
-
 // internal `Effects` that are only supposed to be used by the engine -----------------------------------------
 
 /// The simulator simulates the use of a move `MoveUseContext.move_used` by 

@@ -16,11 +16,11 @@ pub struct EventDispatcher;
 
 impl EventDispatcher {
 
-    pub fn dispatch_trial_event<C: Copy>(
+    pub fn dispatch_trial_event<C: Copy, B: Broadcaster + Copy>(
         sim: &mut BattleSimulator,
 
-        broadcaster_id: MonsterID,
-        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<Outcome, C>>>,
+        broadcaster_id: B,
+        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<Outcome, C, B>>>,
         event_context: C,
     ) -> Outcome {
         EventDispatcher::dispatch_event(
@@ -36,11 +36,11 @@ impl EventDispatcher {
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
-    pub fn dispatch_event<R: PartialEq + Copy, C: Copy>(
+    pub fn dispatch_event<R: PartialEq + Copy, C: Copy, B: Broadcaster + Copy>(
         sim: &mut BattleSimulator,
 
-        broadcaster_id: MonsterID,
-        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C>>>,
+        broadcaster_id: B,
+        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>,
         event_context: C,
         default: R,
         short_circuit: Option<R>,
@@ -59,8 +59,7 @@ impl EventDispatcher {
         let mut relay = default;
         for OwnedEventHandler { event_handler, owner_id, filtering_options, .. } in owned_event_handlers.into_iter() {
             if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner_id, filtering_options) {
-                // INFO: Removed relaying the outcome of the previous handler from the event resolution. It will be
-                // reintroduced if it ever turns out to be useful. Otherwise remove this comment. 
+                
                 relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
@@ -75,7 +74,7 @@ impl EventDispatcher {
 
     fn does_event_pass_event_receivers_filtering_options(
         battle: &BattleState,
-        event_broadcaster_id: MonsterID,
+        event_broadcaster_id: impl Broadcaster,
         event_receiver_id: MonsterID,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
@@ -94,38 +93,38 @@ impl EventDispatcher {
         // Skip the rest of the calculation if it doesn't pass.
         if not!(passes_filter) { return false };
 
-        // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster
-        // within the allowed relations to the event receiver?
-        let mut broadcaster_relation_flags = TargetFlags::empty();
-        let event_broadcaster_field_position = battle.monster(event_broadcaster_id)
-            .board_position
-            .field_position()
-            .expect("We assume broadcasters must be on the field.");
-        // This is an optional value because it may be that the event receiver is benched.
-        let event_receiver_field_position = battle.monster(event_receiver_id)
-            .board_position
-            .field_position();
-        
-        if battle.are_opponents(event_broadcaster_id, event_receiver_id) {
-            broadcaster_relation_flags |= TargetFlags::OPPONENTS;
-        } else if battle.are_allies(event_broadcaster_id, event_receiver_id) {
-            broadcaster_relation_flags |= TargetFlags::ALLIES;
-        } else {
-            broadcaster_relation_flags |= TargetFlags::SELF;
-        }
-
-        // Adjacency doesn't apply to self
-        if not!(broadcaster_relation_flags.contains(TargetFlags::SELF)) {
-            if let Some(event_receiver_field_position) = event_receiver_field_position {
-                if event_broadcaster_field_position.is_adjacent_to(event_receiver_field_position) {
-                    broadcaster_relation_flags |= TargetFlags::ADJACENT;
-                } else {
-                    broadcaster_relation_flags |= TargetFlags::NONADJACENT;
+        if let Some(event_broadcaster_id) = event_broadcaster_id.sourced() {
+            // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster
+            // within the allowed relations to the event receiver?
+            let mut broadcaster_relation_flags = TargetFlags::empty();
+            let event_broadcaster_field_position = battle.monster(event_broadcaster_id)
+                .board_position
+                .field_position()
+                .expect("We assume broadcasters must be on the field.");
+            // This is an optional value because it may be that the event receiver is benched.
+            let event_receiver_field_position = battle.monster(event_receiver_id)
+                .board_position
+                .field_position();
+            
+            if battle.are_opponents(event_broadcaster_id, event_receiver_id) {
+                broadcaster_relation_flags |= TargetFlags::OPPONENTS;
+            } else if battle.are_allies(event_broadcaster_id, event_receiver_id) {
+                broadcaster_relation_flags |= TargetFlags::ALLIES;
+            } else {
+                broadcaster_relation_flags |= TargetFlags::SELF;
+            }
+            // Adjacency doesn't apply to self
+            if not!(broadcaster_relation_flags.contains(TargetFlags::SELF)) {
+                if let Some(event_receiver_field_position) = event_receiver_field_position {
+                    if event_broadcaster_field_position.is_adjacent_to(event_receiver_field_position) {
+                        broadcaster_relation_flags |= TargetFlags::ADJACENT;
+                    } else {
+                        broadcaster_relation_flags |= TargetFlags::NONADJACENT;
+                    }
                 }
             }
+            passes_filter = allowed_broadcaster_relation_flags.contains(broadcaster_relation_flags);
         }
-
-        passes_filter = allowed_broadcaster_relation_flags.contains(broadcaster_relation_flags);
 
         passes_filter
     }  

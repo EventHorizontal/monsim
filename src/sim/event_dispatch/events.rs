@@ -1,16 +1,34 @@
 use super::*;
-use crate::{sim::ActivationOrder, EventResponse};
+use crate::sim::ActivationOrder;
 pub use event_dex::*;
+
+pub type EventResponse<R, C, B> =  fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EventHandler<R: Copy, C: Copy> {
-    pub response: EventResponse<R, C>,
+pub struct EventHandler<R: Copy, C: Copy, B: Broadcaster + Clone + Copy> {
+    pub response: EventResponse<R, C, B>,
     #[cfg(feature = "debug")]
     pub source_code_location: &'static str,
 }
 
-impl<R: Copy, C: Copy> Debug for EventHandler<R,C> {
+pub trait Broadcaster {
+    fn sourced(&self) -> Option<MonsterID>;
+}
+
+impl Broadcaster for MonsterID {
+    fn sourced(&self) -> Option<MonsterID> {
+        Some(*self)
+    }
+}
+
+impl Broadcaster for Nothing {
+    fn sourced(&self) -> Option<MonsterID> {
+        None
+    }
+}
+
+impl<R: Copy, C: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, B> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[cfg(feature = "debug")]
         let out = {
@@ -27,8 +45,8 @@ impl<R: Copy, C: Copy> Debug for EventHandler<R,C> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandler<R: Copy, C: Copy> {
-    pub event_handler: EventHandler<R, C>,
+pub struct OwnedEventHandler<R: Copy, C: Copy, B: Broadcaster + Copy> {
+    pub event_handler: EventHandler<R, C, B>,
     pub owner_id: MonsterID,
     pub activation_order: ActivationOrder,
     pub filtering_options: EventFilteringOptions,
@@ -160,21 +178,21 @@ mod event_dex {
     use monsim_utils::NOTHING;
     #[derive(Debug, Clone, Copy)]
     pub struct EventHandlerDeck {
-        pub on_try_move: Option<EventHandler<Outcome, MoveUseContext>>,
-        pub on_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
-        pub on_damaging_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
-        pub on_status_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
-        pub on_try_move_hit: Option<EventHandler<Outcome, MoveHitContext>>,
-        pub on_move_hit: Option<EventHandler<Nothing, MoveHitContext>>,
-        pub on_damage_dealt: Option<EventHandler<Nothing, Nothing>>,
-        pub on_try_activate_ability: Option<EventHandler<Outcome, AbilityUseContext>>,
-        pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext>>,
-        pub on_modify_accuracy: Option<EventHandler<Percent, MoveUseContext>>,
-        pub on_try_raise_stat: Option<EventHandler<Outcome, Nothing>>,
-        pub on_try_lower_stat: Option<EventHandler<Outcome, Nothing>>,
-        pub on_try_add_volatile_status: Option<EventHandler<Outcome, Nothing>>,
-        pub on_try_add_permanent_status: Option<EventHandler<Outcome, Nothing>>,
-        pub on_turn_end: Option<EventHandler<Nothing, Nothing>>,
+        pub on_try_move: Option<EventHandler<Outcome, MoveUseContext, MonsterID>>,
+        pub on_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
+        pub on_damaging_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
+        pub on_status_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
+        pub on_try_move_hit: Option<EventHandler<Outcome, MoveHitContext, MonsterID>>,
+        pub on_move_hit: Option<EventHandler<Nothing, MoveHitContext, MonsterID>>,
+        pub on_damage_dealt: Option<EventHandler<Nothing, Nothing, MonsterID>>,
+        pub on_try_activate_ability: Option<EventHandler<Outcome, AbilityUseContext, MonsterID>>,
+        pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext, MonsterID>>,
+        pub on_modify_accuracy: Option<EventHandler<Percent, MoveUseContext, MonsterID>>,
+        pub on_try_raise_stat: Option<EventHandler<Outcome, Nothing, MonsterID>>,
+        pub on_try_lower_stat: Option<EventHandler<Outcome, Nothing, MonsterID>>,
+        pub on_try_add_volatile_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
+        pub on_try_add_permanent_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
+        pub on_turn_end: Option<EventHandler<Nothing, Nothing, Nothing>>,
     }
     pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
         on_try_move: None,
@@ -365,7 +383,7 @@ mod event_dex {
             event_context,
         )
     }
-    pub(crate) fn trigger_on_turn_end_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Nothing {
+    pub(crate) fn trigger_on_turn_end_event(sim: &mut BattleSimulator, broadcaster_id: Nothing, event_context: Nothing) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
             broadcaster_id,

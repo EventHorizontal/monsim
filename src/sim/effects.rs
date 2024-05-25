@@ -167,6 +167,9 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
         _ => unreachable!("Expected physical or special move."),
     };
 
+    let attackers_attacking_stat = trigger_on_calculate_attack_stat_event(sim, attacker_id, context, attackers_attacking_stat);
+    let defenders_defense_stat = trigger_on_calculate_defense_stat_event(sim, attacker_id, context, defenders_defense_stat);
+
     let random_multiplier = sim.generate_random_number_in_range_inclusive(85..=100);
     let random_multiplier = ClampedPercent::from(random_multiplier);
 

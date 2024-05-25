@@ -2,7 +2,7 @@ use super::*;
 use crate::sim::ActivationOrder;
 pub use event_dex::*;
 
-pub type EventResponse<R, C, B> =  fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C) -> R;
+pub type EventResponse<R, C, B> =  fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C, /* relay */ R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -184,6 +184,8 @@ mod event_dex {
         pub on_status_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
         pub on_try_move_hit: Option<EventHandler<Outcome, MoveHitContext, MonsterID>>,
         pub on_move_hit: Option<EventHandler<Nothing, MoveHitContext, MonsterID>>,
+        pub on_calculate_attack_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
+        pub on_calculate_defense_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
         pub on_damage_dealt: Option<EventHandler<Nothing, Nothing, MonsterID>>,
         pub on_try_activate_ability: Option<EventHandler<Outcome, AbilityUseContext, MonsterID>>,
         pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext, MonsterID>>,
@@ -201,6 +203,8 @@ mod event_dex {
         on_status_move_used: None,
         on_try_move_hit: None,
         on_move_hit: None,
+        on_calculate_attack_stat: None,
+        on_calculate_defense_stat: None,
         on_damage_dealt: None,
         on_try_activate_ability: None,
         on_ability_activated: None,
@@ -219,6 +223,8 @@ mod event_dex {
         OnStatusMoveUsed,
         OnTryMoveHit,
         OnMoveHit,
+        OnCalculateAttackStat,
+        OnCalculateDefenseStat,
         OnDamageDealt,
         OnTryActivateAbility,
         OnAbilityActivated,
@@ -294,6 +300,30 @@ mod event_dex {
             },
             event_context,
             NOTHING,
+            None,
+        )
+    }
+    pub(crate) fn trigger_on_calculate_attack_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_calculate_attack_stat)]
+            },
+            event_context,
+            default,
+            None,
+        )
+    }
+    pub(crate) fn trigger_on_calculate_defense_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_calculate_defense_stat)]
+            },
+            event_context,
+            default,
             None,
         )
     }

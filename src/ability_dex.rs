@@ -18,7 +18,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                 on_try_move_hit: Some(EventHandler { 
                     #[cfg(feature = "debug")]
                     source_code_location: source_code_location![],
-                    response: |sim, broadcaster_id, receiver_id, MoveHitContext { move_user_id, move_used_id, target_id}| {
+                    response: |sim, broadcaster_id, receiver_id, MoveHitContext { move_user_id, move_used_id, target_id}, _| {
                         if mov![move_used_id].is_type(Type::Fire) {
                             let activation_succeeded = effects::activate_ability(sim, AbilityUseContext::new(receiver_id));
                             return not!(activation_succeeded);
@@ -50,7 +50,7 @@ pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_data(
                 on_damaging_move_used: Some(EventHandler {
                     #[cfg(feature = "debug")]
                     source_code_location: source_code_location!(),
-                    response: |sim, broadcaster_id, receiver_id, MoveUseContext { move_user_id, move_used_id, target_ids }| {
+                    response: |sim, broadcaster_id, receiver_id, MoveUseContext { move_user_id, move_used_id, target_ids }, _| {
                         effects::activate_ability(sim, AbilityUseContext::new(receiver_id));
                     },
                 }),

@@ -60,7 +60,7 @@ impl EventDispatcher {
         for OwnedEventHandler { event_handler, owner_id, filtering_options, .. } in owned_event_handlers.into_iter() {
             if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner_id, filtering_options) {
                 
-                relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context);
+                relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {

@@ -172,6 +172,9 @@ mod event_dex {
         pub on_modify_accuracy: Option<EventHandler<Percent, MoveUseContext>>,
         pub on_try_raise_stat: Option<EventHandler<Outcome, Nothing>>,
         pub on_try_lower_stat: Option<EventHandler<Outcome, Nothing>>,
+        pub on_try_add_volatile_status: Option<EventHandler<Outcome, Nothing>>,
+        pub on_try_add_permanent_status: Option<EventHandler<Outcome, Nothing>>,
+        pub on_turn_end: Option<EventHandler<Nothing, Nothing>>,
     }
     pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
         on_try_move: None,
@@ -186,6 +189,9 @@ mod event_dex {
         on_modify_accuracy: None,
         on_try_raise_stat: None,
         on_try_lower_stat: None,
+        on_try_add_volatile_status: None,
+        on_try_add_permanent_status: None,
+        on_turn_end: None,
     };
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum EventID {
@@ -201,13 +207,16 @@ mod event_dex {
         OnModifyAccuracy,
         OnTryRaiseStat,
         OnTryLowerStat,
+        OnTryAddVolatileStatus,
+        OnTryAddPermanentStatus,
+        OnTurnEnd,
     }
     pub(crate) fn trigger_on_try_move_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_try_move]
+                vec![(event_handler_deck.on_try_move)]
             },
             event_context,
         )
@@ -217,7 +226,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_move_used]
+                vec![(event_handler_deck.on_move_used)]
             },
             event_context,
             NOTHING,
@@ -229,7 +238,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_damaging_move_used, event_handler_deck.on_move_used]
+                vec![(event_handler_deck.on_damaging_move_used), (event_handler_deck.on_move_used)]
             },
             event_context,
             NOTHING,
@@ -241,7 +250,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_status_move_used, event_handler_deck.on_move_used]
+                vec![(event_handler_deck.on_status_move_used), (event_handler_deck.on_move_used)]
             },
             event_context,
             NOTHING,
@@ -253,7 +262,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_try_move_hit]
+                vec![(event_handler_deck.on_try_move_hit)]
             },
             event_context,
         )
@@ -263,7 +272,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_move_hit]
+                vec![(event_handler_deck.on_move_hit)]
             },
             event_context,
             NOTHING,
@@ -275,7 +284,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_damage_dealt]
+                vec![(event_handler_deck.on_damage_dealt)]
             },
             event_context,
             NOTHING,
@@ -287,7 +296,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_try_activate_ability]
+                vec![(event_handler_deck.on_try_activate_ability)]
             },
             event_context,
         )
@@ -297,7 +306,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_ability_activated]
+                vec![(event_handler_deck.on_ability_activated)]
             },
             event_context,
             NOTHING,
@@ -309,7 +318,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_modify_accuracy]
+                vec![(event_handler_deck.on_modify_accuracy)]
             },
             event_context,
             Percent(100),
@@ -321,7 +330,7 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_try_raise_stat]
+                vec![(event_handler_deck.on_try_raise_stat)]
             },
             event_context,
         )
@@ -331,9 +340,41 @@ mod event_dex {
             sim,
             broadcaster_id,
             |event_handler_deck| {
-                vec![event_handler_deck.on_try_lower_stat]
+                vec![(event_handler_deck.on_try_lower_stat)]
             },
             event_context,
+        )
+    }
+    pub(crate) fn trigger_on_try_add_volatile_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_try_add_volatile_status)]
+            },
+            event_context,
+        )
+    }
+    pub(crate) fn trigger_on_try_add_permanent_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_try_add_permanent_status)]
+            },
+            event_context,
+        )
+    }
+    pub(crate) fn trigger_on_turn_end_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_turn_end)]
+            },
+            event_context,
+            NOTHING,
+            None,
         )
     }
 }

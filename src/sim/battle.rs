@@ -3,7 +3,7 @@ pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Broadcaster, EventHandler, EventHandlerDeck, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
+use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Broadcaster, EventHandler, EventHandlerDeck, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
 
 use self::builders::BattleFormat;
 
@@ -177,6 +177,20 @@ impl BattleState {
     pub(crate) fn move_mut(&mut self, move_id: MoveID) -> &mut Move {
         &mut self.monster_mut(move_id.owner_id)
             .moveset[move_id.move_number as usize]
+    }
+
+    // Items --- --- --- --- ---
+
+    pub fn item(&self, item_id: ItemID) -> Option<&Item> {
+        self.monster(item_id.owner_id)
+            .held_item
+            .as_ref()
+    }
+
+    pub fn item_mut(&mut self, item_id: ItemID) -> Option<&mut Item> {
+        self.monster_mut(item_id.owner_id)
+            .held_item
+            .as_mut()
     }
 
     // Choice -------------------------------------

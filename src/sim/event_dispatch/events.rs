@@ -186,7 +186,7 @@ mod event_dex {
         pub on_move_hit: Option<EventHandler<Nothing, MoveHitContext, MonsterID>>,
         pub on_calculate_attack_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
         pub on_calculate_defense_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
-        pub on_modify_damage: Option<EventHandler<u16, Nothing, MonsterID>>,
+        pub on_modify_damage: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
         pub on_damage_dealt: Option<EventHandler<Nothing, Nothing, MonsterID>>,
         pub on_try_activate_ability: Option<EventHandler<Outcome, AbilityUseContext, MonsterID>>,
         pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext, MonsterID>>,
@@ -428,7 +428,7 @@ mod event_dex {
             None,
         )
     }
-    pub(crate) fn trigger_on_modify_damage_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing, current_damage: u16) -> u16 {
+    pub(crate) fn trigger_on_modify_damage_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, current_damage: u16) -> u16 {
         EventDispatcher::dispatch_event(
             sim,
             broadcaster_id,

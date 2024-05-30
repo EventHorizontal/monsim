@@ -126,7 +126,7 @@ bitflags::bitflags! {
     pub struct TargetFlags: u8 {
         const _           = 0b1111_1111;
         
-        const ANY         = 0b0000_0001; 
+        const ANY         = 0b0000_0000; 
         const ALL         = 0b0000_0001; //  1
         
         const ADJACENT    = 0b0000_0010; //  2

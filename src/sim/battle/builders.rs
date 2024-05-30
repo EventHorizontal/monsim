@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{effects, sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{effects, sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 /*  
     FEATURE: Better Validation -> Some basic state validation will be done 
@@ -201,6 +201,7 @@ pub struct MonsterBuilder {
     species: &'static MonsterSpecies,
     moves: MaxSizedVec<MoveBuilder, 4>,
     ability: AbilityBuilder,
+    item: Option<ItemBuilder>,
     nickname: Option<&'static str>,
     _level: Option<u16>,
     _nature: Option<MonsterNature>,
@@ -257,7 +258,8 @@ impl Monster {
             _level: None,
             _nature: None,
             _stat_modifiers: None,
-            _current_health: None, 
+            _current_health: None,
+            item: None, 
         }
     }
 }
@@ -266,17 +268,22 @@ impl MonsterBuilder {
     pub fn with_nickname(mut self, nickname: &'static str) -> Self {
         self.nickname = Some(nickname);
         self
-    } 
+    }
+
+    pub fn with_item(mut self, item: ItemBuilder) -> Self {
+        self.item = Some(item);
+        self
+    }  
 
     pub fn build(self, monster_id: MonsterID, board_position: BoardPosition) -> Monster {
         
         let nickname = self.nickname;
         
         let move_ids: [MoveID; 4] = [
-            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_1 },
-            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_2 },
-            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_3 },
-            MoveID { owner_id: monster_id, move_number: crate::MoveNumber::_4 },
+            MoveID { owner_id: monster_id, move_number: MoveNumber::_1 },
+            MoveID { owner_id: monster_id, move_number: MoveNumber::_2 },
+            MoveID { owner_id: monster_id, move_number: MoveNumber::_3 },
+            MoveID { owner_id: monster_id, move_number: MoveNumber::_4 },
         ];
 
         let moveset = self.moves
@@ -296,6 +303,11 @@ impl MonsterBuilder {
         const EVS: StatSet = StatSet::new(252, 252, 252, 252, 252, 252);
         // In-game hp-stat determination formula
         let nature = MonsterNature::Serious;
+
+        let held_item = self.item
+            .map(|item| {
+                item.build(ItemID { owner_id: monster_id })
+            });
         
         Monster {
             id: monster_id,
@@ -312,6 +324,7 @@ impl MonsterBuilder {
             ability,
             persistent_status: None,
             volatile_statuses: MaxSizedVec::empty(),
+            held_item,
         } 
     }
 }
@@ -402,4 +415,36 @@ impl AbilityBuilder {
             species: self.species,
         }
     }
+}
+
+#[derive(Clone)]
+pub struct ItemBuilder {
+    pub species: & 'static ItemSpecies,
+}
+
+pub trait ItemBuilderExt {
+    fn spawn(&'static self) -> ItemBuilder;
+}
+
+impl ItemBuilderExt for ItemSpecies {
+    fn spawn(&'static self) -> ItemBuilder {
+        Item::builder(self)
+    }
+}
+
+impl Item {
+    pub fn builder(species: &'static ItemSpecies) -> ItemBuilder {
+        ItemBuilder {
+            species,
+        }
+    }
+}
+
+impl ItemBuilder {
+    pub fn build(self, id: ItemID) -> Item {
+        Item {
+            id, 
+            species: self.species,
+        }
+    } 
 }

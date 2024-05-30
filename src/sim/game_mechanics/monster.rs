@@ -5,7 +5,7 @@ use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, TeamID};
-use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, Broadcaster, EventHandler, Move, OwnedEventHandler};
+use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, Broadcaster, EventHandler, Move, OwnedEventHandler, Item};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -25,6 +25,7 @@ pub struct Monster {
     pub(crate) ability: Ability,
     pub(crate) persistent_status: Option<PersistentStatus>, 
     pub(crate) volatile_statuses: MaxSizedVec<VolatileStatus, 16>,
+    pub(crate) held_item: Option<Item>,
 }
 
 impl PartialEq for Monster {
@@ -157,6 +158,12 @@ impl Monster { // public
     pub fn ev_in_stat(&self, stat: Stat) -> u16 {
         self.effort_values[stat]
     }
+
+    #[inline(always)]
+    pub fn held_item(&self) -> Option<&Item> {
+        self.held_item.as_ref()
+    }
+    
     
     pub fn field_position(&self) -> Option<FieldPosition> {
         match self.board_position {
@@ -185,48 +192,6 @@ impl Monster { // private
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn ability_owned_event_handlers<'a, R: Copy + 'a, C: Copy + 'a,B: Broadcaster + Copy + 'a>(&'a self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> impl Iterator<Item = OwnedEventHandler<R, C, B>> + 'a {
-        event_handler_selector(self.ability.event_handlers())
-            .into_iter()
-            .flatten()
-            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
-                OwnedEventHandler {
-                    event_handler,
-                    owner_id: self.id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: self.ability.order(),
-                    },
-                    filtering_options: EventFilteringOptions::default(),
-                }
-            }
-        )
-    }
-
-    pub(crate) fn moveset_owned_handlers<'a, R: Copy + 'a , C: Copy + 'a, B: Broadcaster + Copy + 'a>(&'a self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<impl Iterator<Item = OwnedEventHandler<R, C, B>> + 'a>  {
-        self.moveset
-            .iter()
-            .map(|move_| {
-                event_handler_selector(move_.event_handlers()) 
-                    .into_iter()
-                    .flatten()
-                    .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
-                        OwnedEventHandler {
-                            event_handler,
-                            owner_id: self.id,
-                            activation_order: ActivationOrder {
-                                priority: move_.priority(),
-                                speed: self.stat(Stat::Speed),
-                                order: 0,
-                            },
-                            filtering_options: EventFilteringOptions::default(),
-                        }
-                    })
-                })
-                .collect::<Vec<_>>()
-    }
-
     pub(crate) fn owned_event_handlers<R: Copy, C: Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut output_owned_event_handlers = Vec::new();
         
@@ -250,15 +215,46 @@ impl Monster { // private
                 output_owned_event_handlers.extend(owned_event_handlers);
             });
         
-        // from the Monster's ability
-        self.ability_owned_event_handlers(event_handler_selector)
+        // from the Monster's ability  
+        event_handler_selector((&self).ability.event_handlers())
+            .into_iter()
+            .flatten()
+            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                OwnedEventHandler {
+                    event_handler,
+                    owner_id: (&self).id,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: (&self).stat(Stat::Speed),
+                        order: (&self).ability.order(),
+                    },
+                    filtering_options: EventFilteringOptions::default(),
+                }
+            })        
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
             });
         
         // from the Monster's moveset
-        self.moveset_owned_handlers(event_handler_selector)
-            .into_iter()
+        self.moveset
+            .iter()
+            .map(|move_| {
+                event_handler_selector(move_.event_handlers()) 
+                    .into_iter()
+                    .flatten()
+                    .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+                        OwnedEventHandler {
+                            event_handler,
+                            owner_id: (&self).id,
+                            activation_order: ActivationOrder {
+                                priority: move_.priority(),
+                                speed: (&self).stat(Stat::Speed),
+                                order: 0,
+                            },
+                            filtering_options: EventFilteringOptions::default(),
+                        }
+                    })
+                })
             .for_each(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
             });
@@ -303,6 +299,27 @@ impl Monster { // private
                     };
                     output_owned_event_handlers.extend([owned_event_handler].into_iter());
                 });
+        }
+
+        // from the Monster's held item
+        if let Some(held_item) = self.held_item {
+            event_handler_selector(held_item.event_handlers())
+                .into_iter()
+                .flatten()
+                .for_each(|event_handler| {
+                    let owned_event_handler = OwnedEventHandler {
+                        event_handler,
+                        owner_id: self.id,
+                        activation_order:  ActivationOrder {
+                            priority: 0,
+                            speed: self.stat(Stat::Speed),
+                            order: 0,
+                        },
+                        filtering_options: held_item.event_filtering_options(),
+                    };
+                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
+                }
+            );
         }  
 
         output_owned_event_handlers
@@ -322,9 +339,13 @@ impl Monster { // private
             Some(persistent_status) => persistent_status.name(),
             None => "None",
         };
+        let held_item = match self.held_item {
+            Some(held_item) => held_item.name(),
+            None => "None",
+        };
         out.push_str(&format![
-            "{} ({}) [HP: {}/{}] | Position: {} | Persistent Status: {} | Volatile Statuses: {}\n",
-            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position, persistent_status, self.volatile_statuses
+            "{} ({}) [HP: {}/{}] | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
+            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position, persistent_status, self.volatile_statuses, held_item
         ]);
         out
     }

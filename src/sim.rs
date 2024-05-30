@@ -13,7 +13,7 @@ use std::{error::Error, fmt::Display, ops::RangeInclusive};
 
 pub use effects::*;
 pub use battle::*;
-pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt, BattleFormat};
+pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt, ItemBuilderExt, BattleFormat};
 #[cfg(feature="macros")]
 pub use monsim_macros::*;
 pub use battle_constants::*;

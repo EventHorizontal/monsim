@@ -4,10 +4,12 @@ mod ability_dex;
 mod monster_dex;
 mod move_dex;
 mod status_dex;
+mod item_dex;
 
 use ability_dex::*;
 use monster_dex::*;
 use move_dex::*;
+use item_dex::*;
 
 fn main() -> MonsimResult<()> {
     
@@ -28,6 +30,7 @@ fn main() -> MonsimResult<()> {
                         FlashFire.spawn()
                     )
                     .with_nickname("Clover")
+                    .with_item(LifeOrb.spawn())
                 )
                 .add_monster(
                     Zombler.spawn(

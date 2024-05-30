@@ -20,6 +20,7 @@ pub use ability::*;
 pub use monster::*;
 pub use move_::*;
 pub use team::*;
+pub use item::*;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {

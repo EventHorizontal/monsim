@@ -231,6 +231,8 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
     };
     sim.push_message(format!["It was {type_effectiveness}!"]);
 
+    let damage = events::trigger_on_modify_damage_event(sim, attacker_id, context, damage);
+
     let _ = deal_raw_damage(sim, (defender_id, damage));
 
     Outcome::Success

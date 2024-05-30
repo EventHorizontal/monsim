@@ -186,6 +186,7 @@ mod event_dex {
         pub on_move_hit: Option<EventHandler<Nothing, MoveHitContext, MonsterID>>,
         pub on_calculate_attack_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
         pub on_calculate_defense_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
+        pub on_modify_damage: Option<EventHandler<u16, Nothing, MonsterID>>,
         pub on_damage_dealt: Option<EventHandler<Nothing, Nothing, MonsterID>>,
         pub on_try_activate_ability: Option<EventHandler<Outcome, AbilityUseContext, MonsterID>>,
         pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext, MonsterID>>,
@@ -195,7 +196,6 @@ mod event_dex {
         pub on_try_add_volatile_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
         pub on_try_add_permanent_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
         pub on_turn_end: Option<EventHandler<Nothing, Nothing, Nothing>>,
-        pub on_modify_damage: Option<EventHandler<u16, Nothing, Nothing>>,
     }
     pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
         on_try_move: None,
@@ -206,6 +206,7 @@ mod event_dex {
         on_move_hit: None,
         on_calculate_attack_stat: None,
         on_calculate_defense_stat: None,
+        on_modify_damage: None,
         on_damage_dealt: None,
         on_try_activate_ability: None,
         on_ability_activated: None,
@@ -215,7 +216,6 @@ mod event_dex {
         on_try_add_volatile_status: None,
         on_try_add_permanent_status: None,
         on_turn_end: None,
-        on_modify_damage: None,
     };
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum EventID {
@@ -227,6 +227,7 @@ mod event_dex {
         OnMoveHit,
         OnCalculateAttackStat,
         OnCalculateDefenseStat,
+        OnModifyDamage,
         OnDamageDealt,
         OnTryActivateAbility,
         OnAbilityActivated,
@@ -424,6 +425,18 @@ mod event_dex {
             },
             event_context,
             NOTHING,
+            None,
+        )
+    }
+    pub(crate) fn trigger_on_modify_damage_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing, current_damage: u16) -> u16 {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_modify_damage)]
+            },
+            event_context,
+            current_damage,
             None,
         )
     }

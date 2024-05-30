@@ -19,7 +19,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                     #[cfg(feature = "debug")]
                     source_code_location: source_code_location![],
                     response: |sim, broadcaster_id, receiver_id, MoveHitContext { move_user_id, move_used_id, target_id}, _| {
-                        if mov![move_used_id].is_type(Type::Fire) {
+                        if mov![move_used_id].is_type(Type::Fire) && target_id == receiver_id {
                             let activation_succeeded = effects::activate_ability(sim, AbilityUseContext::new(receiver_id));
                             return not!(activation_succeeded);
                         }

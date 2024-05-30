@@ -195,6 +195,7 @@ mod event_dex {
         pub on_try_add_volatile_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
         pub on_try_add_permanent_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
         pub on_turn_end: Option<EventHandler<Nothing, Nothing, Nothing>>,
+        pub on_modify_damage: Option<EventHandler<u16, Nothing, Nothing>>,
     }
     pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
         on_try_move: None,
@@ -214,6 +215,7 @@ mod event_dex {
         on_try_add_volatile_status: None,
         on_try_add_permanent_status: None,
         on_turn_end: None,
+        on_modify_damage: None,
     };
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum EventID {

@@ -12,6 +12,10 @@ pub mod status;
 #[cfg(feature = "debug")]
 pub(crate) mod test_status_dex;
 
+#[cfg(feature = "debug")]
+pub(crate) mod test_item_dex;
+pub mod item;
+
 pub use ability::*;
 pub use monster::*;
 pub use move_::*;

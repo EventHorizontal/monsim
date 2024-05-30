@@ -10,12 +10,13 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_data(
         dex_number: 001,
         name: "Life Orb",
         kind: ItemKind::Misc,
-        event_handlers: || {
+        event_handlers: || { 
             EventHandlerDeck {
                 on_modify_damage: Some(EventHandler {
                     #[cfg(feature = "debug")]
                     source_code_location: source_code_location!(),
                     response: |_sim, _broadcaster_id, _receiver_id, _, damage| {
+                        _sim.push_message("Life orb boost!");
                         damage * Percent(130)
                     },
                 }),

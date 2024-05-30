@@ -16,30 +16,12 @@ pub(crate) mod test_status_dex;
 pub(crate) mod test_item_dex;
 pub mod item;
 
+pub(crate) mod types;
+
 pub use ability::*;
 pub use monster::*;
 pub use move_::*;
 pub use team::*;
 pub use item::*;
+pub use types::*;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum Type {
-    Bug,
-    Dark,
-    Dragon,
-    Electric,
-    Fairy,
-    Fighting,
-    Fire,
-    Flying,
-    Ghost,
-    Grass,
-    Ground,
-    Ice,
-    Normal,
-    Poison,
-    Psychic,
-    Rock,
-    Steel,
-    Water,
-}

@@ -1,5 +1,5 @@
 use monsim_macros::{abl, mon, mov};
-use crate::{events, matchup};
+use crate::events;
 use self::{status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, targetting::BoardPosition};
 use super::*;
 
@@ -179,20 +179,17 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
     };
 
     let move_type = mov![move_used_id].type_();
-    let target_primary_type = mon![defender_id].species.primary_type();
-    let target_secondary_type = mon![defender_id].species.secondary_type();
+    let target_type = mon![defender_id].species.type_();
 
-    let type_matchup_multiplier = if let Some(target_secondary_type) = target_secondary_type {
-        matchup!(move_type against target_primary_type / target_secondary_type)
-    } else {
-        matchup!(move_type against target_primary_type)
-    };
+    let type_effectiveness = dual_type_matchup(move_type, target_type);
 
     // If the opponent is immune, damage calculation is skipped.
-    if type_matchup_multiplier.is_matchup_ineffective() {
+    if type_effectiveness.is_matchup_ineffective() {
         sim.push_message("It was ineffective...");
         return Outcome::Failure;
     }
+
+    let type_matchup_multiplier: Percent = type_effectiveness.into();
 
     // The (WIP) bona-fide damage formula.
     let mut damage = (2 * level) / 5;
@@ -220,16 +217,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
     Taking this stuff into account, we need a better separation of "move use" and "move hit" if not just
     so that one can do something after (and before) of all of the hits.
     */
-    let type_effectiveness = match type_matchup_multiplier {
-        Percent(25) | Percent(50) => "not very effective",
-        Percent(100) => "effective",
-        Percent(200) | Percent(400) => "super effective",
-        value => {
-            let type_multiplier_as_float = value.0 as f64 / 100.0f64;
-            unreachable!("Type Effectiveness Multiplier is unexpectedly {type_multiplier_as_float}")
-        }
-    };
-    sim.push_message(format!["It was {type_effectiveness}!"]);
+    sim.push_message(format!["It was {}!", type_effectiveness.as_text()]);
 
     let damage = events::trigger_on_modify_damage_event(sim, attacker_id, context, damage);
 

@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{effects, matchup, type_matchup, MoveHitContext, MoveUseContext, Type};
+use monsim::{dual_type_matchup, effects, MoveHitContext, MoveUseContext, Type};
 use monsim_utils::Percent;
 
 use crate::{item::{ItemDexData, ItemFlags, ItemSpecies}, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, TargetFlags};
@@ -53,12 +53,7 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_data(
                     response: |sim, broadcaster_id, _receiver_id, MoveHitContext { move_user_id, move_used_id, target_id }, damage| {
                         let move_type = sim.battle.move_(move_used_id).type_();
                         let target_type = sim.battle.monster(target_id).type_();
-                        // TODO: Tidy up the type matchup api. 
-                        let type_matchup_multiplier = if let Some(target_secondary_type) = target_type.1 {
-                            type_matchup(move_type, target_type.0) * type_matchup(move_type, target_secondary_type)
-                        } else {
-                            type_matchup(move_type, target_type.0)
-                        };
+                        let type_matchup_multiplier = dual_type_matchup(move_type, target_type);
                         if move_type == Type::Water && type_matchup_multiplier.is_matchup_super_effective() {
                             damage * Percent(50)
                         } else {

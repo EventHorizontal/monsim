@@ -184,6 +184,13 @@ impl Monster { // public
                 *marker.species == marker_species
             })
     }
+    
+    // TODO: We might change this if we decide that we want the current type of the 
+    // monster to be different from the species' type.
+    #[inline(always)]
+    pub fn type_(&self) -> (Type, Option<Type>) {
+        self.species.type_()
+    }
 }
 
 impl Monster { // private

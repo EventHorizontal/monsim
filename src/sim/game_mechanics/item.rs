@@ -29,7 +29,7 @@ pub struct ItemID {
 pub struct ItemSpecies {
     pub(crate) dex_number: u16,
     pub(crate) name: & 'static str,
-    pub(crate) kind:  ItemKind,
+    pub(crate) kind: ItemFlags,
     pub(crate) event_handlers: fn() -> EventHandlerDeck,
     pub(crate) event_filtering_options: EventFilteringOptions,
 }
@@ -54,16 +54,20 @@ impl ItemSpecies {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum ItemKind {
-    Misc,
-    Berry
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct ItemFlags: u8 {
+        const _     = 0b1111_1111;
+        
+        const NONE  = 0b0000_0000; 
+        const BERRY = 0b0000_0001; 
+    }
 }
 
 pub struct ItemDexData {
     pub dex_number: u16,
     pub name: & 'static str,
-    pub kind: ItemKind,
+    pub kind: ItemFlags,
     pub event_handlers: fn() -> EventHandlerDeck,
     pub event_filtering_options: EventFilteringOptions,
 }

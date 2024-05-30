@@ -3,14 +3,14 @@
 use monsim::{effects, MoveUseContext};
 use monsim_utils::Percent;
 
-use crate::{item::{ItemDexData, ItemKind, ItemSpecies}, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, TargetFlags};
+use crate::{item::{ItemDexData, ItemFlags, ItemSpecies}, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, TargetFlags};
 
 
 pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_data(
     ItemDexData {
         dex_number: 001,
         name: "Life Orb",
-        kind: ItemKind::Misc,
+        kind: ItemFlags::NONE,
         event_handlers: || { 
             EventHandlerDeck {
                 on_modify_damage: Some(EventHandler {

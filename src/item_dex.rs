@@ -53,8 +53,8 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_data(
                     response: |sim, broadcaster_id, _receiver_id, MoveHitContext { move_user_id, move_used_id, target_id }, damage| {
                         let move_type = sim.battle.move_(move_used_id).type_();
                         let target_type = sim.battle.monster(target_id).type_();
-                        let type_matchup_multiplier = dual_type_matchup(move_type, target_type);
-                        if move_type == Type::Water && type_matchup_multiplier.is_matchup_super_effective() {
+                        let type_effectiveness = dual_type_matchup(move_type, target_type);
+                        if move_type == Type::Water && type_effectiveness.is_matchup_super_effective() {
                             damage * Percent(50)
                         } else {
                             damage

@@ -163,35 +163,6 @@ pub mod contexts {
     }
 }
 
-// Generated.
-#[cfg(feature="event_gen")]
-mod event_dex {
-    use super::*;
-    use monsim_macros::generate_events;
-    use monsim_utils::NOTHING;
-    
-    generate_events!{
-        try event OnTryMove(MoveUseContext) => Outcome<Nothing>,
-            event OnMoveUsed(MoveUseContext) => Nothing,
-            event OnDamagingMoveUsed(MoveUseContext) => Nothing; Settings { inherits: on_move_used },
-            event OnStatusMoveUsed(MoveUseContext) => Nothing; Settings { inherits: on_move_used }, 
-        try event OnTryMoveHit(MoveHitContext) => Outcome<Nothing>,
-            event OnMoveHit(MoveHitContext) => Nothing,
-            event OnDamageDealt(Nothing) => Nothing,
-        try event OnTryActivateAbility(AbilityUseContext) => Outcome<Nothing>,
-            event OnAbilityActivated(AbilityUseContext) => Nothing,
-            event OnModifyAccuracy(MoveUseContext) => Percent; Settings { default: Percent(100) },
-        try event OnTryRaiseStat(Nothing) => Outcome<Nothing>,
-        try event OnTryLowerStat(Nothing) => Outcome<Nothing>,
-        try event OnTryAddVolatileStatus(Nothing) => Outcome<Nothing>,
-        try event OnTryAddPermanentStatus(Nothing) => Outcome<Nothing>,
-            event OnTurnEnd(Nothing) => Nothing,
-    }
-}
-
-// This module is mostly to improve build times when working on the engine in a way that doesn't
-// touch the event generation.
-#[cfg(not(feature="event_gen"))] 
 mod event_dex {
     use super::*;
     use monsim_utils::NOTHING;

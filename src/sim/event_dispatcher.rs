@@ -36,13 +36,13 @@ for that particular Event at the moment.
 
 use core::fmt::Debug;
 
-mod event_dex;
+mod events;
 #[cfg(all(test, feature = "debug"))]
 mod tests ;
 
 use crate::{sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent}, ActivationOrder, BattleSimulator};
 use contexts::*;
-pub use event_dex::*;
+pub use events::*;
 use monsim_utils::{not, NOTHING};
 
 use super::targetting::TargetFlags;
@@ -364,7 +364,7 @@ pub mod contexts {
     }
 
     impl AbilityUseContext {
-        pub fn new(ability_owner: MonsterID) -> Self {
+        pub fn from_owner(ability_owner: MonsterID) -> Self {
             Self {
                 ability_used_id: AbilityID { owner_id: ability_owner },
                 ability_owner_id: ability_owner,

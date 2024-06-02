@@ -34,12 +34,6 @@ impl Ability {
     pub fn dex_number(&self) -> u16 {
         self.species.dex_number
     }
-    
-    #[inline(always)]
-    pub fn on_activate_effect(&self) -> Effect<Nothing, AbilityUseContext> {
-        self.species.on_activate_effect
-    }
-    
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -56,7 +50,6 @@ impl AbilityID {
 pub struct AbilitySpecies {
     dex_number: u16,
     name: &'static str,
-    on_activate_effect: Effect<Nothing, AbilityUseContext>,
     event_handlers: fn() -> EventHandlerDeck,
     order: u16,
 }
@@ -81,7 +74,6 @@ impl AbilitySpecies {
         let AbilityDexEntry { 
             dex_number, 
             name, 
-            on_activate_effect, 
             event_handlers, 
             order 
         } = dex_entry;
@@ -89,7 +81,6 @@ impl AbilitySpecies {
         Self {
             dex_number,
             name,
-            on_activate_effect,
             event_handlers,
             order,
         }
@@ -98,11 +89,6 @@ impl AbilitySpecies {
     #[inline(always)]
     pub fn event_handlers(&self) -> EventHandlerDeck {
         (self.event_handlers)()
-    }
-    
-    #[inline(always)]
-    pub fn on_activate_effect(&self) -> Effect<Nothing, AbilityUseContext> {
-        self.on_activate_effect
     }
     
     #[inline(always)]
@@ -125,7 +111,6 @@ impl AbilitySpecies {
 pub struct AbilityDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub on_activate_effect: Effect<Nothing, AbilityUseContext>,
     pub event_handlers: fn() -> EventHandlerDeck,
     pub order: u16,
 }

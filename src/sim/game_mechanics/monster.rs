@@ -256,28 +256,7 @@ impl Monster { // private
                 output_owned_event_handlers.extend(owned_event_handlers);
             });
         
-        // from the Monster's moveset
-        self.moveset
-            .iter()
-            .map(|move_| {
-                event_handler_selector(move_.event_handlers()) 
-                    .into_iter()
-                    .flatten()
-                    .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
-                        OwnedEventHandler {
-                            event_handler,
-                            owner_id: (&self).id,
-                            activation_order: ActivationOrder {
-                                priority: move_.priority(),
-                                speed: (&self).stat(Stat::Speed),
-                                order: 0,
-                            },
-                        }
-                    })
-                })
-            .for_each(|owned_event_handlers| {
-                output_owned_event_handlers.extend(owned_event_handlers);
-            });
+        // INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
         
         // from the Monster's volatile statuses
         self.volatile_statuses

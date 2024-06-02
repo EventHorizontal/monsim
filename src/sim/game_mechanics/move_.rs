@@ -1,6 +1,6 @@
 use monsim_utils::{Count, Nothing, Outcome};
 
-use crate::{sim::{EventHandlerDeck, Type}, Effect, MonsterID, MoveHitContext, TargetFlags};
+use crate::{sim::Type, Effect, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
@@ -71,16 +71,12 @@ impl Move {
         self.species
     }
     
-    #[inline(always)]
-    pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
-        (self.species.event_handlers)()
-    }
-    
     pub(crate) fn hits_per_target(&self) -> Count {
         self.species.hits_per_target
     }
 }
 
+// INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
 #[derive(Clone, Copy)]
 pub struct MoveSpecies {
     dex_number: u16,
@@ -96,8 +92,6 @@ pub struct MoveSpecies {
     priority: i8,
     targets: TargetFlags,
     type_: Type,
-    
-    event_handlers: fn() -> EventHandlerDeck,
 }
 
 impl Debug for MoveSpecies {
@@ -131,7 +125,6 @@ impl MoveSpecies {
             priority, 
             targets, 
             type_, 
-            event_handlers, 
             hits_per_target,
         } = dex_entry;
         
@@ -146,7 +139,6 @@ impl MoveSpecies {
             priority,
             targets,
             type_,
-            event_handlers,
             hits_per_target,
         }
     }
@@ -214,9 +206,7 @@ pub struct MoveDexEntry {
     pub max_power_points: u8,
     pub priority: i8,
     pub targets: TargetFlags,
-    pub type_: Type,
-     
-    pub event_handlers: fn() -> EventHandlerDeck,
+    pub type_: Type,    
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

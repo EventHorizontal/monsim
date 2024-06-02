@@ -272,15 +272,16 @@ pub fn deal_raw_damage(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> 
 /// The simulator simulates the activation of the ability `AbilityUseContext.ability_used` owned by
 /// the monster `AbilityUseContext.abilty_owner`.
 #[must_use]
-pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -> Outcome<Nothing> {
-    let AbilityUseContext { ability_used_id, ability_owner_id } = context;
+pub fn activate_ability<F>(sim: &mut BattleSimulator, context: AbilityUseContext, on_activate_effect: F) -> Outcome<Nothing> 
+    where F: FnOnce(&mut BattleSimulator, AbilityUseContext) -> Outcome<Nothing>
+{
+    let AbilityUseContext { ability_used_id: _, ability_owner_id } = context;
 
     let try_activate_ability_outcome = event_dispatcher::trigger_on_try_activate_ability_event(sim, ability_owner_id, context);
     if try_activate_ability_outcome.succeeded() {
-        let ability = abl![ability_used_id];
-        (ability.on_activate_effect())(sim, context);
+        let activation_outcome = on_activate_effect(sim, context);
         event_dispatcher::trigger_on_ability_activated_event(sim, ability_owner_id, context);
-        Outcome::Success(NOTHING)
+        activation_outcome
     } else {
         Outcome::Failure
     }

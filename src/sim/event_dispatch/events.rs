@@ -61,7 +61,7 @@ impl EventHandlerDeck {
 pub mod contexts {
     use monsim_utils::MaxSizedVec;
 
-    use crate::{sim::{MonsterID, MoveID}, AbilityID};
+    use crate::{sim::{MonsterID, MoveID}, AbilityID, ItemID};
 
     /// `move_user_id`: MonsterID of the Monster using the move.
     /// 
@@ -142,6 +142,25 @@ pub mod contexts {
             }
         }
     }
+
+    /// `active_monster_id`: MonsterID of the Monster to be switched out.
+    /// 
+    /// `benched_monster_id`: MonsterID of the Monster to be switched in.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct ItemUseContext {
+        pub item_id: ItemID,
+        pub item_holder_id: MonsterID,
+    }
+
+    impl ItemUseContext {
+        pub fn from_holder(item_holder_id: MonsterID) -> Self {
+            let item_id = ItemID::from_holder(item_holder_id);
+            Self {
+                item_id,
+                item_holder_id,
+            }
+        }
+    }
 }
 
 // Generated.
@@ -176,6 +195,7 @@ mod event_dex {
 mod event_dex {
     use super::*;
     use monsim_utils::NOTHING;
+
     #[derive(Debug, Clone, Copy)]
     pub struct EventHandlerDeck {
         pub on_try_move: Option<EventHandler<Outcome, MoveUseContext, MonsterID>>,
@@ -195,8 +215,11 @@ mod event_dex {
         pub on_try_lower_stat: Option<EventHandler<Outcome, Nothing, MonsterID>>,
         pub on_try_add_volatile_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
         pub on_try_add_permanent_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
+        pub on_try_use_held_item: Option<EventHandler<Outcome, ItemUseContext, MonsterID>>,
+        pub on_held_item_used: Option<EventHandler<Nothing, ItemUseContext, MonsterID>>,
         pub on_turn_end: Option<EventHandler<Nothing, Nothing, Nothing>>,
     }
+    
     pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
         on_try_move: None,
         on_move_used: None,
@@ -215,8 +238,11 @@ mod event_dex {
         on_try_lower_stat: None,
         on_try_add_volatile_status: None,
         on_try_add_permanent_status: None,
+        on_try_use_held_item: None,
+        on_held_item_used: None,
         on_turn_end: None,
     };
+
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum EventID {
         OnTryMove,
@@ -236,8 +262,11 @@ mod event_dex {
         OnTryLowerStat,
         OnTryAddVolatileStatus,
         OnTryAddPermanentStatus,
+        OnTryUseHeldItem,
+        OnHeldItemUsed,
         OnTurnEnd,
     }
+
     pub(crate) fn trigger_on_try_move_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
@@ -248,6 +277,7 @@ mod event_dex {
             event_context,
         )
     }
+
     pub(crate) fn trigger_on_move_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
@@ -260,6 +290,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_damaging_move_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
@@ -272,6 +303,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_status_move_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
@@ -284,6 +316,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_try_move_hit_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
@@ -294,6 +327,7 @@ mod event_dex {
             event_context,
         )
     }
+
     pub(crate) fn trigger_on_move_hit_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
@@ -306,6 +340,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_calculate_attack_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
         EventDispatcher::dispatch_event(
             sim,
@@ -318,6 +353,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_calculate_defense_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
         EventDispatcher::dispatch_event(
             sim,
@@ -330,6 +366,20 @@ mod event_dex {
             None,
         )
     }
+
+    pub(crate) fn trigger_on_modify_damage_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, current_damage: u16) -> u16 {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_modify_damage)]
+            },
+            event_context,
+            current_damage,
+            None,
+        )
+    }
+
     pub(crate) fn trigger_on_damage_dealt_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
@@ -342,6 +392,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_try_activate_ability_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
@@ -352,6 +403,7 @@ mod event_dex {
             event_context,
         )
     }
+
     pub(crate) fn trigger_on_ability_activated_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
@@ -364,6 +416,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_modify_accuracy_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Percent {
         EventDispatcher::dispatch_event(
             sim,
@@ -376,6 +429,7 @@ mod event_dex {
             None,
         )
     }
+
     pub(crate) fn trigger_on_try_raise_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
@@ -386,6 +440,7 @@ mod event_dex {
             event_context,
         )
     }
+
     pub(crate) fn trigger_on_try_lower_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
@@ -396,6 +451,7 @@ mod event_dex {
             event_context,
         )
     }
+
     pub(crate) fn trigger_on_try_add_volatile_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
@@ -406,6 +462,7 @@ mod event_dex {
             event_context,
         )
     }
+
     pub(crate) fn trigger_on_try_add_permanent_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
         EventDispatcher::dispatch_trial_event(
             sim,
@@ -416,6 +473,31 @@ mod event_dex {
             event_context,
         )
     }
+    
+    pub(crate) fn trigger_on_try_use_held_item_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Outcome {
+        EventDispatcher::dispatch_trial_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_try_use_held_item)]
+            },
+            event_context,
+        )
+    }
+
+    pub(crate) fn trigger_on_held_item_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Nothing {
+        EventDispatcher::dispatch_event(
+            sim,
+            broadcaster_id,
+            |event_handler_deck| {
+                vec![(event_handler_deck.on_held_item_used)]
+            },
+            event_context,
+            NOTHING,
+            None,
+        )
+    }
+
     pub(crate) fn trigger_on_turn_end_event(sim: &mut BattleSimulator, broadcaster_id: Nothing, event_context: Nothing) -> Nothing {
         EventDispatcher::dispatch_event(
             sim,
@@ -425,18 +507,6 @@ mod event_dex {
             },
             event_context,
             NOTHING,
-            None,
-        )
-    }
-    pub(crate) fn trigger_on_modify_damage_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, current_damage: u16) -> u16 {
-        EventDispatcher::dispatch_event(
-            sim,
-            broadcaster_id,
-            |event_handler_deck| {
-                vec![(event_handler_deck.on_modify_damage)]
-            },
-            event_context,
-            current_damage,
             None,
         )
     }

@@ -58,12 +58,26 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
                 },
             }
         } {
-            mov![move_used_id].on_hit_effect()(sim, subcontext);
-            actual_number_of_hits += 1;
+            let move_hit_outcome = mov![move_used_id].on_hit_effect()(sim, subcontext);
+            if move_hit_outcome.succeeded() {
+                actual_number_of_hits += 1;  
+            }
             if mon![target_id].is_fainted() {
                 break;
             }
         } 
+
+        if actual_number_of_hits == 0 {
+            match target_ids.count() {
+                1 => {
+                    sim.push_message("But the move failed!")
+                },
+                2.. => {
+                    sim.push_message(format!["But the move failed on {}!", sim.battle.monster(target_id).name()]);
+                }
+                _ => {}
+            } 
+        }
 
         match mov![move_used_id].hits_per_target() {
             Count::Fixed(n) if n > 1 => {

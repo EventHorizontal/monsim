@@ -18,18 +18,12 @@ pub type Effect<R,C> = fn(/* simulator */ &mut BattleSimulator, /* context */ C)
 pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
     let MoveUseContext { move_user_id, move_used_id, target_ids } = context;
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
-    
+
     let try_use_move_outcome = event_dispatcher::trigger_on_try_move_event(sim, move_user_id, context);
     if try_use_move_outcome.failed() {
         sim.push_message("The move failed!");
         return;
     }
-   
-    sim.push_message(format![
-        "{attacker} used {move_}",
-        attacker = mon![move_user_id].name(),
-        move_ = mov![move_used_id].name()
-    ]);
     
     // There are no remaining targets for this move. They fainted before the move was used.
     if target_ids.is_empty() {
@@ -58,22 +52,36 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
                 },
             }
         } {
+            {
+                let target = if move_user_id == target_id {
+                    "itself".to_owned()
+                } else {
+                    mon![target_id].name()
+                };
+                sim.push_message(format![
+                    "{attacker} used {move_} on {target}",
+                    attacker = mon![move_user_id].name(),
+                    move_ = mov![move_used_id].name(),
+                ]);
+            }
+
+            if mon![target_id].is_fainted() {
+                continue;
+            }
+            
             let move_hit_outcome = mov![move_used_id].on_hit_effect()(sim, subcontext);
             if move_hit_outcome.succeeded() {
                 actual_number_of_hits += 1;  
-            }
-            if mon![target_id].is_fainted() {
-                break;
             }
         } 
 
         if actual_number_of_hits == 0 {
             match target_ids.count() {
                 1 => {
-                    sim.push_message("But the move failed!")
+                    sim.push_message("The move failed!")
                 },
                 2.. => {
-                    sim.push_message(format!["But the move failed on {}!", sim.battle.monster(target_id).name()]);
+                    sim.push_message(format!["The move failed on {}!", sim.battle.monster(target_id).name()]);
                 }
                 _ => {}
             } 
@@ -158,7 +166,6 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
 
     let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(sim, attacker_id, context);
     if try_move_hit_outcome.failed() {
-        sim.push_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
         return Outcome::Failure;
     }
 
@@ -218,18 +225,9 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
     // TODO: Introduce more damage multipliers as we implement them.
     
     /*
-    TODO: I was wondering if I could move the "it was __ effective" text out to `use_move` but I encountered two
-    problems:
-        1. type_effectiveness only exists within this context so we in order to 
-        push the message in `use_move` we would at the very least need to return
-        it if not recalculate it. It also wouldn't make sense in all contexts (such
-        as if the move were a status move).
-        2. we do need in general to be able to display messages at the _end_ of all 
-        the hits of a move, and upon thinking about it for 5 minutes I realise we 
-        need to have an `on_use` and an `on_hit` (they should have reasonable defaults 
-        so that most of the time they don't need to be re-implemented). 
-    Taking this stuff into account, we need a better separation of "move use" and "move hit" if not just
-    so that one can do something after (and before) of all of the hits.
+    TODO: There was quite a bit written here about trying to organise multiple hits so that type effectiveness can be printed
+    after the last hit. I think this only applies to multihit moves like Bullet Seed, and not multitarget moves like Growl or
+    Bubble. So that will make it interesting to try to tackle this issue.
     */
     sim.push_message(format!["It was {}!", type_effectiveness.as_text()]);
 

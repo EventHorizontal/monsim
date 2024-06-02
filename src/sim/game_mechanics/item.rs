@@ -7,7 +7,7 @@ pub struct Item {
 }
 
 impl Item {
-    pub(crate) fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         &self.species.name
     }
     

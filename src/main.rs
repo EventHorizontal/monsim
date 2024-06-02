@@ -51,7 +51,7 @@ fn main() -> MonsimResult<()> {
                             Ember.spawn(),
                             Some(Growl.spawn()),
                             Some(Scratch.spawn()),
-                            None
+                            Some(Recycle.spawn())
                         ),
                         FlashFire.spawn()
                     )

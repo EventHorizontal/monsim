@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{effects, sim::{BattleState, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type}, Count, EventHandlerDeck, MoveDexEntry, MoveHitContext, TargetFlags};
+use monsim::{effects, sim::{BattleState, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type}, Count, EventHandlerDeck, MoveDexEntry, MoveHitContext, Outcome, TargetFlags};
 
 use super::status_dex::*;
 
@@ -180,6 +180,39 @@ pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(
             .union(TargetFlags::ALLIES)
             .union(TargetFlags::OPPONENTS),
         type_: Type::Psychic,
+        event_handlers: EventHandlerDeck::empty,
+        event_filtering_options: EventFilteringOptions::default(),
+    }
+);
+
+pub const Recycle: MoveSpecies = MoveSpecies::from_dex_entry(
+    MoveDexEntry {
+        dex_number: 009,
+        name: "Recycle",
+        on_hit_effect: |sim, MoveHitContext { move_user_id, move_used_id, target_id }| {
+            let consumed_item = sim.battle.monster(move_user_id).consumed_item().clone();
+            // Recycle only works if there exists a consumed item and no held item.
+            if let Some(consumed_item) = consumed_item {
+                if sim.battle.monster_mut(move_user_id).held_item_mut().is_none() {
+                    sim.push_message(format!["Recycle replenished {}'s {}", sim.battle.monster(move_user_id).name(), consumed_item.name()]);
+                    *sim.battle.monster_mut(move_user_id).held_item_mut() = Some(consumed_item);
+                    *sim.battle.monster_mut(move_user_id).consumed_item_mut() = None;
+                    Outcome::Success
+                } else {
+                    Outcome::Failure
+                }
+            } else {
+                Outcome::Failure
+            }
+        },
+        hits_per_target: Count::Fixed(1),
+        base_accuracy: 100,
+        base_power: 0,
+        category: MoveCategory::Status,
+        max_power_points: 10,
+        priority: 0,
+        targets: TargetFlags::SELF,
+        type_: Type::Normal,
         event_handlers: EventHandlerDeck::empty,
         event_filtering_options: EventFilteringOptions::default(),
     }

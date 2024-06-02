@@ -130,7 +130,13 @@ impl BattleState {
         &team[monster_id.monster_number]
     }
 
-    pub(crate) fn monster_mut(&mut self, monster_id: MonsterID) -> &mut Monster {
+    /**
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    we would need to be able to predict and provide a helper function for any niche manipulation of a
+    Monster's data, which borders on impossible.
+    */
+    pub fn monster_mut(&mut self, monster_id: MonsterID) -> &mut Monster {
         let team = self.team_mut(monster_id.team_id);
         &mut team[monster_id.monster_number]
     }
@@ -161,7 +167,13 @@ impl BattleState {
             .ability
     }
 
-    pub(crate) fn _ability_mut(&mut self, owner_id: MonsterID) -> &mut Ability {
+    /**
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    we would need to be able to predict and provide a helper function for any niche manipulation of a
+    Monster's data, which borders on impossible.
+    */
+    pub fn ability_mut(&mut self, owner_id: MonsterID) -> &mut Ability {
         &mut self
             .monster_mut(owner_id)
             .ability
@@ -174,7 +186,13 @@ impl BattleState {
             .moveset[move_id.move_number as usize]
     }
 
-    pub(crate) fn move_mut(&mut self, move_id: MoveID) -> &mut Move {
+    /**
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    we would need to be able to predict and provide a helper function for any niche manipulation of a
+    Monster's data, which borders on impossible.
+    */
+    pub fn move_mut(&mut self, move_id: MoveID) -> &mut Move {
         &mut self.monster_mut(move_id.owner_id)
             .moveset[move_id.move_number as usize]
     }
@@ -187,6 +205,12 @@ impl BattleState {
             .as_ref()
     }
 
+    /**
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    we would need to be able to predict and provide a helper function for any niche manipulation of a
+    Monster's data, which borders on impossible.
+    */
     pub fn item_mut(&mut self, item_id: ItemID) -> Option<&mut Item> {
         self.monster_mut(item_id.item_holder_id)
             .held_item

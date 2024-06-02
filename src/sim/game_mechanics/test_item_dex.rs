@@ -2,10 +2,10 @@
 
 use monsim_utils::Percent;
 
-use crate::{dual_type_matchup, effects, item::{ItemDexData, ItemFlags, ItemSpecies}, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveHitContext, MoveUseContext, TargetFlags, Type};
+use crate::{dual_type_matchup, effects, item::{ItemDexEntry, ItemFlags, ItemSpecies}, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveHitContext, MoveUseContext, TargetFlags, Type};
 
-pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_data(
-    ItemDexData {
+pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(
+    ItemDexEntry {
         dex_number: 001,
         name: "Life Orb",
         kind: ItemFlags::NONE,
@@ -39,8 +39,8 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_data(
     }
 );
 
-pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_data(
-    ItemDexData {
+pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(
+    ItemDexEntry {
         dex_number: 002,
         name: "Passho Berry",
         kind: ItemFlags::BERRY,

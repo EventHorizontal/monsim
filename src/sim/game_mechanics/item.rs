@@ -44,15 +44,15 @@ pub struct ItemSpecies {
 }
 
 impl ItemSpecies {
-    pub const fn from_dex_data(dex_data: ItemDexData) -> ItemSpecies {
-        let ItemDexData { 
+    pub const fn from_dex_entry(dex_entry: ItemDexEntry) -> ItemSpecies {
+        let ItemDexEntry { 
             dex_number,
             name, 
             event_handlers, 
             event_filtering_options, 
             kind,
             is_consumable, 
-        } = dex_data;
+        } = dex_entry;
 
         ItemSpecies {
             dex_number,
@@ -75,7 +75,7 @@ bitflags::bitflags! {
     }
 }
 
-pub struct ItemDexData {
+pub struct ItemDexEntry {
     pub dex_number: u16,
     pub name: & 'static str,
     pub kind: ItemFlags,

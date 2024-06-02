@@ -23,7 +23,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                             let activation_succeeded = effects::activate_ability(sim, AbilityUseContext::new(receiver_id));
                             return not!(activation_succeeded);
                         }
-                        Outcome::Success
+                        Outcome::Success(())
                     },
                 }),
                 ..EventHandlerDeck::empty()

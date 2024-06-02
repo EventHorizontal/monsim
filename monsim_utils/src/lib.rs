@@ -1,7 +1,9 @@
-use std::ops::{BitAnd, Deref, DerefMut, Not};
+use std::ops::{Deref, DerefMut};
 
 mod max_sized_vec;
 pub use max_sized_vec::MaxSizedVec;
+mod outcome;
+pub use outcome::Outcome;
 mod percentage;
 pub use percentage::{ClampedPercent, Percent};
 
@@ -9,73 +11,6 @@ pub use percentage::{ClampedPercent, Percent};
 pub type Nothing = ();
 /// Type alias for readability of parentheses
 pub const NOTHING: () = ();
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Outcome {
-    Success,
-    Failure,
-}
-
-impl From<bool> for Outcome {
-    fn from(value: bool) -> Self {
-        match value {
-            true => Self::Success,
-            false => Self::Failure,
-        }
-    }
-}
-
-impl From<Outcome> for bool {
-    fn from(value: Outcome) -> Self {
-        match value {
-            Outcome::Success => true,
-            Outcome::Failure => false,
-        }
-    }
-}
-
-impl Not for Outcome {
-    type Output = Outcome;
-
-    fn not(self) -> Self::Output {
-        match self {
-            Outcome::Success => Outcome::Failure,
-            Outcome::Failure => Outcome::Success,
-        }
-    }
-}
-
-impl BitAnd for Outcome {
-    type Output = Outcome;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        if self.succeeded() && rhs.succeeded() {
-            Outcome::Success
-        } else {
-            Outcome::Failure
-        }
-    }
-}
-
-impl Outcome {
-    #[inline(always)]
-    pub fn succeeded(self) -> bool {
-        self.into()
-    }
-
-    #[inline(always)]
-    pub fn failed(self) -> bool {
-        not!(self.succeeded())
-    }
-
-    #[inline(always)]
-    pub fn opposite(self) -> Outcome {
-        match self {
-            Outcome::Success => Outcome::Failure,
-            Outcome::Failure => Outcome::Success,
-        }
-    }
-}
 
 #[macro_export]
 macro_rules! collection {

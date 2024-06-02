@@ -153,7 +153,7 @@ pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, active_monster_id: M
 /// 
 /// Returns an `Outcome` signifying whether the move succeeded.
 
-pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -> Outcome {
+pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -> Outcome<Nothing> {
     let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
 
     let try_move_hit_outcome = events::trigger_on_try_move_hit_event(sim, attacker_id, context);
@@ -237,7 +237,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
 
     let _ = deal_raw_damage(sim, (defender_id, damage));
 
-    Outcome::Success
+    Outcome::Success(NOTHING)
 }
 
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`. The simulator currently
@@ -272,7 +272,7 @@ pub fn deal_raw_damage(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> 
 /// The simulator simulates the activation of the ability `AbilityUseContext.ability_used` owned by
 /// the monster `AbilityUseContext.abilty_owner`.
 #[must_use]
-pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -> Outcome {
+pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -> Outcome<Nothing> {
     let AbilityUseContext { ability_used_id, ability_owner_id } = context;
 
     let try_activate_ability_outcome = events::trigger_on_try_activate_ability_event(sim, ability_owner_id, context);
@@ -280,7 +280,7 @@ pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -
         let ability = abl![ability_used_id];
         (ability.on_activate_effect())(sim, context);
         events::trigger_on_ability_activated_event(sim, ability_owner_id, context);
-        Outcome::Success
+        Outcome::Success(NOTHING)
     } else {
         Outcome::Failure
     }
@@ -288,7 +288,7 @@ pub fn activate_ability(sim: &mut BattleSimulator, context: AbilityUseContext) -
 
 /// The simulator simulates the raising of stat `Context.1` of monster `Context.0` by `Context.2` stages
 #[must_use]
-pub fn raise_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8)) -> Outcome {
+pub fn raise_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8)) -> Outcome<Nothing> {
     let try_raise_stat_outcome = events::trigger_on_try_raise_stat_event(sim, affected_monster_id, NOTHING);
     if try_raise_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, number_of_stages);
@@ -298,7 +298,7 @@ pub fn raise_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_
             monster = mon![affected_monster_id].name(),
         ]);
 
-        Outcome::Success
+        Outcome::Success(NOTHING)
     } else {
         sim.push_message(format!["{monster}'s stats cannot get any higher.", monster = mon![affected_monster_id].name()]);
 
@@ -308,7 +308,7 @@ pub fn raise_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_
 
 /// The simulator simulates the lowering of stat `Context.1` of monster `Context.0` by `Context.2` stages
 #[must_use]
-pub fn lower_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8)) -> Outcome {
+pub fn lower_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8)) -> Outcome<Nothing> {
     let try_lower_stat_outcome = events::trigger_on_try_lower_stat_event(sim, affected_monster_id, NOTHING);
     if try_lower_stat_outcome.succeeded() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);
@@ -318,7 +318,7 @@ pub fn lower_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_
             monster = mon![affected_monster_id].name(),
         ]);
 
-        Outcome::Success
+        Outcome::Success(NOTHING)
     } else {
         sim.push_message(format!["{monster}'s stats cannot get any lower.", monster = mon![affected_monster_id].name()]);
 
@@ -328,7 +328,7 @@ pub fn lower_stat(sim: &mut BattleSimulator, (affected_monster_id, stat, number_
 
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
-pub fn add_volatile_status(sim: &mut BattleSimulator, (affected_monster_id, status_species): (MonsterID, &'static VolatileStatusSpecies)) -> Outcome {
+pub fn add_volatile_status(sim: &mut BattleSimulator, (affected_monster_id, status_species): (MonsterID, &'static VolatileStatusSpecies)) -> Outcome<Nothing> {
     // conflict. A structural change is needed to resolve this correctly.
     let try_add_status = events::trigger_on_try_add_volatile_status_event(sim, affected_monster_id, NOTHING);
     if try_add_status.succeeded() {
@@ -344,7 +344,7 @@ pub fn add_volatile_status(sim: &mut BattleSimulator, (affected_monster_id, stat
             
             mon![mut affected_monster_id].volatile_statuses.push(VolatileStatus::new(lifetime_in_turns, status_species));
             sim.push_message((status_species.on_acquired_message)(mon![affected_monster_id]));
-            Outcome::Success
+            Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
         }
@@ -354,14 +354,14 @@ pub fn add_volatile_status(sim: &mut BattleSimulator, (affected_monster_id, stat
 }
 
 #[must_use]
-pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, status_species): (MonsterID, &'static PersistentStatusSpecies)) -> Outcome {
+pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, status_species): (MonsterID, &'static PersistentStatusSpecies)) -> Outcome<Nothing> {
     let try_add_status = events::trigger_on_try_add_permanent_status_event(sim, affected_monster_id, NOTHING);
     if try_add_status.succeeded() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
             mon![mut affected_monster_id].persistent_status = Some(PersistentStatus::new(&status_species));
             sim.push_message((status_species.on_acquired_message)(mon![affected_monster_id]));
-            Outcome::Success
+            Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
         }
@@ -370,7 +370,7 @@ pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, st
     }
 }
 
-pub fn use_item<T, F>(sim: &mut BattleSimulator, item_holder_id: MonsterID, on_use_effect: F) -> Option<T> 
+pub fn use_item<T, F>(sim: &mut BattleSimulator, item_holder_id: MonsterID, on_use_effect: F) -> Outcome<T> 
     where F: FnOnce(&mut BattleSimulator, MonsterID) -> T
 {
     let context = ItemUseContext::from_holder(item_holder_id);
@@ -386,11 +386,11 @@ pub fn use_item<T, F>(sim: &mut BattleSimulator, item_holder_id: MonsterID, on_u
             }
             let on_use_outcome = on_use_effect(sim, item_holder_id);
             events::trigger_on_held_item_used_event(sim, item_holder_id, context);
-            Some(on_use_outcome)
+            Outcome::Success(on_use_outcome)
         } else {
-            None
+            Outcome::Failure
         }
     } else {
-        None
+        Outcome::Failure
     }
 }

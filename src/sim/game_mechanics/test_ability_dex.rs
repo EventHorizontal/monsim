@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim_macros::{mon, mov};
-use monsim_utils::not;
+use monsim_utils::{not, NOTHING};
 
 use super::{ability::AbilitySpecies, Type};
 use crate::{
@@ -22,7 +22,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                             let activation_outcome = effects::activate_ability(sim, AbilityUseContext::new(receiver_id));
                             return activation_outcome.opposite();
                         }
-                        Outcome::Success
+                        Outcome::Success(NOTHING)
                     },
                 }),
                 ..EventHandlerDeck::empty()

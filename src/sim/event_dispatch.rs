@@ -7,7 +7,7 @@ mod tests ;
 use crate::{sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent}, BattleSimulator};
 use contexts::*;
 pub use events::*;
-use monsim_utils::not;
+use monsim_utils::{not, NOTHING};
 
 use super::targetting::TargetFlags;
 
@@ -20,15 +20,15 @@ impl EventDispatcher {
         sim: &mut BattleSimulator,
 
         broadcaster_id: B,
-        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<Outcome, C, B>>>,
+        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<Outcome<Nothing>, C, B>>>,
         event_context: C,
-    ) -> Outcome {
+    ) -> Outcome<Nothing> {
         EventDispatcher::dispatch_event(
             sim, 
             broadcaster_id,
             event_handler_selector, 
             event_context, 
-            Outcome::Success, 
+            Outcome::Success(NOTHING), 
             Some(Outcome::Failure)
         )
     }

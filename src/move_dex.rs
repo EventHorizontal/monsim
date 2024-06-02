@@ -197,7 +197,7 @@ pub const Recycle: MoveSpecies = MoveSpecies::from_dex_entry(
                     sim.push_message(format!["Recycle replenished {}'s {}", sim.battle.monster(move_user_id).name(), consumed_item.name()]);
                     *sim.battle.monster_mut(move_user_id).held_item_mut() = Some(consumed_item);
                     *sim.battle.monster_mut(move_user_id).consumed_item_mut() = None;
-                    Outcome::Success
+                    Outcome::Success(())
                 } else {
                     Outcome::Failure
                 }

@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use monsim_macros::mon;
-use monsim_utils::{Count, Outcome, Percent};
+use monsim_utils::{Count, Outcome, Percent, NOTHING};
 
 use crate::{effects, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, PersistentStatusDexEntry, PersistentStatusSpecies, TargetFlags, VolatileStatusDexEntry, VolatileStatusSpecies};
 
@@ -56,14 +56,14 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
                         .expect("self must have confused for this function to be called.")
                         .remaining_turns() == 0 {
                         sim.push_message(format!["{} snapped out of confusion!", mon![receiver_id].name()]);
-                        return Outcome::Success;
+                        return Outcome::Success(NOTHING);
                     } else if sim.chance(1, 3) {
                         sim.push_message(format!["{} hit itself in confusion!", mon![receiver_id].name()]);
                         let one_eight_of_max_hp = (mon![receiver_id].max_health() as f64 * 1.0/8.0) as u16;  
                         let _damage = effects::deal_raw_damage(sim, (receiver_id, one_eight_of_max_hp));
                         return Outcome::Failure;
                     }
-                    Outcome::Success
+                    Outcome::Success(NOTHING)
                 },
             }),
             ..EventHandlerDeck::empty()

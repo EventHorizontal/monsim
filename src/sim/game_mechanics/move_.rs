@@ -1,4 +1,4 @@
-use monsim_utils::{Count, Outcome};
+use monsim_utils::{Count, Nothing, Outcome};
 
 use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
@@ -17,7 +17,7 @@ impl Move {
         self.species.name
     }
 
-    pub fn on_hit_effect(&self) -> Effect<Outcome, MoveHitContext> {
+    pub fn on_hit_effect(&self) -> Effect<Outcome<Nothing>, MoveHitContext> {
         self.species.on_hit_effect
     }
 
@@ -86,7 +86,7 @@ pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
     
-    on_hit_effect: Effect<Outcome, MoveHitContext>,
+    on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
     hits_per_target: Count,
     
     base_accuracy: u16,
@@ -170,7 +170,7 @@ impl MoveSpecies {
     }
 
     #[inline(always)]
-    pub fn on_hit_effect(&self) -> Effect<Outcome, MoveHitContext> {
+    pub fn on_hit_effect(&self) -> Effect<Outcome<Nothing>, MoveHitContext> {
         self.on_hit_effect
     }
     
@@ -208,7 +208,7 @@ pub struct MoveDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
 
-    pub on_hit_effect: Effect<Outcome, MoveHitContext>,
+    pub on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
     pub hits_per_target: Count,
     
     pub base_accuracy: u16,

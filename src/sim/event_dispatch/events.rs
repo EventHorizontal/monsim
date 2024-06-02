@@ -171,20 +171,20 @@ mod event_dex {
     use monsim_utils::NOTHING;
     
     generate_events!{
-        try event OnTryMove(MoveUseContext) => Outcome,
+        try event OnTryMove(MoveUseContext) => Outcome<Nothing>,
             event OnMoveUsed(MoveUseContext) => Nothing,
             event OnDamagingMoveUsed(MoveUseContext) => Nothing; Settings { inherits: on_move_used },
             event OnStatusMoveUsed(MoveUseContext) => Nothing; Settings { inherits: on_move_used }, 
-        try event OnTryMoveHit(MoveHitContext) => Outcome,
+        try event OnTryMoveHit(MoveHitContext) => Outcome<Nothing>,
             event OnMoveHit(MoveHitContext) => Nothing,
             event OnDamageDealt(Nothing) => Nothing,
-        try event OnTryActivateAbility(AbilityUseContext) => Outcome,
+        try event OnTryActivateAbility(AbilityUseContext) => Outcome<Nothing>,
             event OnAbilityActivated(AbilityUseContext) => Nothing,
             event OnModifyAccuracy(MoveUseContext) => Percent; Settings { default: Percent(100) },
-        try event OnTryRaiseStat(Nothing) => Outcome,
-        try event OnTryLowerStat(Nothing) => Outcome,
-        try event OnTryAddVolatileStatus(Nothing) => Outcome,
-        try event OnTryAddPermanentStatus(Nothing) => Outcome,
+        try event OnTryRaiseStat(Nothing) => Outcome<Nothing>,
+        try event OnTryLowerStat(Nothing) => Outcome<Nothing>,
+        try event OnTryAddVolatileStatus(Nothing) => Outcome<Nothing>,
+        try event OnTryAddPermanentStatus(Nothing) => Outcome<Nothing>,
             event OnTurnEnd(Nothing) => Nothing,
     }
 }
@@ -198,24 +198,24 @@ mod event_dex {
 
     #[derive(Debug, Clone, Copy)]
     pub struct EventHandlerDeck {
-        pub on_try_move: Option<EventHandler<Outcome, MoveUseContext, MonsterID>>,
+        pub on_try_move: Option<EventHandler<Outcome<Nothing>, MoveUseContext, MonsterID>>,
         pub on_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
         pub on_damaging_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
         pub on_status_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
-        pub on_try_move_hit: Option<EventHandler<Outcome, MoveHitContext, MonsterID>>,
+        pub on_try_move_hit: Option<EventHandler<Outcome<Nothing>, MoveHitContext, MonsterID>>,
         pub on_move_hit: Option<EventHandler<Nothing, MoveHitContext, MonsterID>>,
         pub on_calculate_attack_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
         pub on_calculate_defense_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
         pub on_modify_damage: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
         pub on_damage_dealt: Option<EventHandler<Nothing, Nothing, MonsterID>>,
-        pub on_try_activate_ability: Option<EventHandler<Outcome, AbilityUseContext, MonsterID>>,
+        pub on_try_activate_ability: Option<EventHandler<Outcome<Nothing>, AbilityUseContext, MonsterID>>,
         pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext, MonsterID>>,
         pub on_modify_accuracy: Option<EventHandler<Percent, MoveUseContext, MonsterID>>,
-        pub on_try_raise_stat: Option<EventHandler<Outcome, Nothing, MonsterID>>,
-        pub on_try_lower_stat: Option<EventHandler<Outcome, Nothing, MonsterID>>,
-        pub on_try_add_volatile_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
-        pub on_try_add_permanent_status: Option<EventHandler<Outcome, Nothing, MonsterID>>,
-        pub on_try_use_held_item: Option<EventHandler<Outcome, ItemUseContext, MonsterID>>,
+        pub on_try_raise_stat: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
+        pub on_try_lower_stat: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
+        pub on_try_add_volatile_status: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
+        pub on_try_add_permanent_status: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
+        pub on_try_use_held_item: Option<EventHandler<Outcome<Nothing>, ItemUseContext, MonsterID>>,
         pub on_held_item_used: Option<EventHandler<Nothing, ItemUseContext, MonsterID>>,
         pub on_turn_end: Option<EventHandler<Nothing, Nothing, Nothing>>,
     }
@@ -267,7 +267,7 @@ mod event_dex {
         OnTurnEnd,
     }
 
-    pub(crate) fn trigger_on_try_move_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome {
+    pub(crate) fn trigger_on_try_move_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
@@ -317,7 +317,7 @@ mod event_dex {
         )
     }
 
-    pub(crate) fn trigger_on_try_move_hit_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Outcome {
+    pub(crate) fn trigger_on_try_move_hit_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
@@ -393,7 +393,7 @@ mod event_dex {
         )
     }
 
-    pub(crate) fn trigger_on_try_activate_ability_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Outcome {
+    pub(crate) fn trigger_on_try_activate_ability_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
@@ -430,7 +430,7 @@ mod event_dex {
         )
     }
 
-    pub(crate) fn trigger_on_try_raise_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
+    pub(crate) fn trigger_on_try_raise_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
@@ -441,7 +441,7 @@ mod event_dex {
         )
     }
 
-    pub(crate) fn trigger_on_try_lower_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
+    pub(crate) fn trigger_on_try_lower_stat_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
@@ -452,7 +452,7 @@ mod event_dex {
         )
     }
 
-    pub(crate) fn trigger_on_try_add_volatile_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
+    pub(crate) fn trigger_on_try_add_volatile_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
@@ -463,7 +463,7 @@ mod event_dex {
         )
     }
 
-    pub(crate) fn trigger_on_try_add_permanent_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome {
+    pub(crate) fn trigger_on_try_add_permanent_status_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,
@@ -474,7 +474,7 @@ mod event_dex {
         )
     }
     
-    pub(crate) fn trigger_on_try_use_held_item_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Outcome {
+    pub(crate) fn trigger_on_try_use_held_item_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Outcome<Nothing> {
         EventDispatcher::dispatch_trial_event(
             sim,
             broadcaster_id,

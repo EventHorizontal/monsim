@@ -367,9 +367,23 @@ impl Monster { // private
             None => "None".to_string(),
         };
 
+        let health_fraction = self.current_health() as f64 / self.max_health() as f64;
+        let health_fraction = (health_fraction * 10.0).round() as usize;
+
+        use colored::Colorize;
+        let mut health_bar_filled = String::new();
+        let mut health_bar_empty = String::new();
+        for i in 1..=10 {
+            if i <= health_fraction {
+                health_bar_filled += "▓"
+            } else {
+                health_bar_empty += "░"
+            }
+        }
+
         out.push_str(&format![
-            "{} ({}) [HP: {}/{}] | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
-            self.full_name(), self.id, self.current_health, self.max_health(), self.board_position, persistent_status, self.volatile_statuses, held_item
+            "{} ({}) HP:[{}{}] {}/{} | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
+            self.full_name(), self.id, health_bar_filled.green(), health_bar_empty.red(), self.current_health, self.max_health(), self.board_position, persistent_status, self.volatile_statuses, held_item
         ]);
         out
     }

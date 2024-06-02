@@ -161,8 +161,23 @@ impl Monster { // public
     }
 
     #[inline(always)]
-    pub fn held_item(&self) -> Option<&Item> {
-        self.held_item.as_ref()
+    pub fn held_item(&self) -> &Option<Item> {
+        &self.held_item
+    }
+
+    #[inline(always)]
+    pub fn held_item_mut(&mut self) -> &mut Option<Item> {
+        &mut self.held_item
+    }
+    
+    #[inline(always)]
+    pub fn consumed_item(&self) -> &Option<Item> {
+        &self.consumed_item
+    }
+    
+    #[inline(always)]
+    pub fn consumed_item_mut(&mut self) -> &mut Option<Item> {
+        &mut self.consumed_item
     }
     
     

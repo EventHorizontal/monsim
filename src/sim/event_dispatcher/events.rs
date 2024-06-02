@@ -5,6 +5,7 @@ use monsim_utils::NOTHING;
 pub struct EventHandlerDeck {
     pub on_try_move: Option<EventHandler<Outcome<Nothing>, MoveUseContext, MonsterID>>,
     pub on_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
+    /// This is meant only to be a base event for `on_damaging_move_used` and `on_status_move_used`.
     pub on_damaging_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
     pub on_status_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
     pub on_try_move_hit: Option<EventHandler<Outcome<Nothing>, MoveHitContext, MonsterID>>,
@@ -86,19 +87,6 @@ pub(crate) fn trigger_on_try_move_event(sim: &mut BattleSimulator, broadcaster_i
             vec![(event_handler_deck.on_try_move)]
         },
         event_context,
-    )
-}
-
-pub(crate) fn trigger_on_move_used_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
-    EventDispatcher::dispatch_event(
-        sim,
-        broadcaster_id,
-        |event_handler_deck| {
-            vec![(event_handler_deck.on_move_used)]
-        },
-        event_context,
-        NOTHING,
-        None,
     )
 }
 

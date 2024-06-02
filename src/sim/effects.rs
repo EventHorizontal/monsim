@@ -161,10 +161,10 @@ pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, active_monster_id: M
 /// 
 /// Returns an `Outcome` signifying whether the move succeeded.
 
-pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -> Outcome<Nothing> {
-    let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = context;
+pub fn deal_default_damage(sim: &mut BattleSimulator, move_use_context: MoveHitContext) -> Outcome<Nothing> {
+    let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = move_use_context;
 
-    let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(sim, attacker_id, context);
+    let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(sim, attacker_id, move_use_context);
     if try_move_hit_outcome.failed() {
         return Outcome::Failure;
     }
@@ -188,8 +188,8 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
         _ => unreachable!("Expected physical or special move."),
     };
 
-    let attackers_attacking_stat = event_dispatcher::trigger_on_calculate_attack_stat_event(sim, attacker_id, context, attackers_attacking_stat);
-    let defenders_defense_stat = event_dispatcher::trigger_on_calculate_defense_stat_event(sim, attacker_id, context, defenders_defense_stat);
+    let attackers_attacking_stat = event_dispatcher::trigger_on_calculate_attack_stat_event(sim, attacker_id, move_use_context, attackers_attacking_stat);
+    let defenders_defense_stat = event_dispatcher::trigger_on_calculate_defense_stat_event(sim, attacker_id, move_use_context, defenders_defense_stat);
 
     let random_multiplier = sim.generate_random_number_in_range_inclusive(85..=100);
     let random_multiplier = ClampedPercent::from(random_multiplier);
@@ -231,9 +231,11 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, context: MoveHitContext) -
     */
     sim.push_message(format!["It was {}!", type_effectiveness.as_text()]);
 
-    let damage = event_dispatcher::trigger_on_modify_damage_event(sim, attacker_id, context, damage);
+    let damage = event_dispatcher::trigger_on_modify_damage_event(sim, attacker_id, move_use_context, damage);
 
     let _ = deal_raw_damage(sim, (defender_id, damage));
+
+    event_dispatcher::trigger_on_move_hit_event(sim, attacker_id, move_use_context);
 
     Outcome::Success(NOTHING)
 }

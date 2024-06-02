@@ -355,3 +355,28 @@ pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, st
         Outcome::Failure
     }
 }
+
+pub fn use_item<T, F>(sim: &mut BattleSimulator, item_holder_id: MonsterID, on_use_effect: F) -> Option<T> 
+    where F: FnOnce(&mut BattleSimulator, MonsterID) -> T
+{
+    let context = ItemUseContext::from_holder(item_holder_id);
+    let try_use_item = events::trigger_on_try_use_held_item_event(sim, item_holder_id, context);
+    if try_use_item.succeeded() {
+        let held_item = sim.battle.monster(item_holder_id).held_item.clone();
+        if let Some(held_item) = held_item {
+            if held_item.species.is_consumable {
+                // If an item is marked as consumable, it is remembered as a "consumed item" for the sake of moves like Recycle.
+                // Canonically, only one item can be remembered in this way, hence `consumed_item` being an `Option<Item>`.
+                sim.battle.monster_mut(item_holder_id).consumed_item = sim.battle.monster(item_holder_id).held_item;
+                sim.battle.monster_mut(item_holder_id).held_item = None;
+            }
+            let on_use_outcome = on_use_effect(sim, item_holder_id);
+            events::trigger_on_held_item_used_event(sim, item_holder_id, context);
+            Some(on_use_outcome)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}

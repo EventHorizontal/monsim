@@ -1,7 +1,7 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{effects, sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, Item, ItemID, ItemSpecies, ItemState, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{effects, sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
 
 /*  
     FEATURE: Better Validation -> Some basic state validation will be done 
@@ -306,7 +306,7 @@ impl MonsterBuilder {
 
         let held_item = self.item
             .map(|item| {
-                item.build(ItemID { owner_id: monster_id })
+                item.build(ItemID { item_holder_id: monster_id })
             });
         
         Monster {
@@ -325,6 +325,7 @@ impl MonsterBuilder {
             persistent_status: None,
             volatile_statuses: MaxSizedVec::empty(),
             held_item,
+            consumed_item: None,
         } 
     }
 }
@@ -445,7 +446,6 @@ impl ItemBuilder {
         Item {
             id, 
             species: self.species,
-            state: ItemState::Active,
         }
     } 
 }

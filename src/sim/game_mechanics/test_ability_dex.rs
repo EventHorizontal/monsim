@@ -5,7 +5,7 @@ use monsim_utils::not;
 
 use super::{ability::AbilitySpecies, Type};
 use crate::{
-    effects, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexEntry, AbilityID, AbilityUseContext, BattleSimulator, EventID, MoveHitContext
+    effects, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexEntry, AbilityID, AbilityUseContext, BattleSimulator, MoveHitContext
 };
 
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 

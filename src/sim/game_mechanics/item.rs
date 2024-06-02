@@ -1,28 +1,14 @@
-use std::default;
-
-use monsim_utils::Outcome;
-
 use crate::{EventFilteringOptions, EventHandlerDeck, MonsterID};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
     pub(crate) id: ItemID,
-    pub(crate) state: ItemState,
     pub(crate) species: & 'static ItemSpecies
 }
 
 impl Item {
     pub(crate) fn name(&self) -> &'static str {
         &self.species.name
-    }
-
-    pub fn consume(&mut self) -> Outcome {
-        if self.species.consumable && self.state == ItemState::Active {
-            self.state = ItemState::Consumed;
-            Outcome::Success
-        } else {
-            Outcome::Failure
-        }
     }
     
     pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
@@ -34,31 +20,15 @@ impl Item {
     }
 }
 
-/*
-    Maybe we will want to replace "Destroyed" with just setting item to None? I mean if
-    the item is destroyed it can't be recycled anyway. I'm also thinking of moving consumed
-    items to a "consumption history" rather than showing the Monster as having a consumed item.
-    The thought process behind this is basically, "what if you give the Monster a different item
-    via Trick or something else and then override the item slot?". So then Recycle should fail
-        if the tricked item
-*/
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ItemState {
-    #[default]
-    Active,
-    Consumed,
-    Destroyed
-}
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ItemID {
-    pub owner_id: MonsterID,
+    pub item_holder_id: MonsterID,
 }
 
 impl ItemID {
-    pub fn from_owner(owner_id: MonsterID) -> ItemID {
+    pub fn from_holder(item_holder_id: MonsterID) -> ItemID {
         ItemID {
-            owner_id,
+            item_holder_id,
         }
     } 
 }
@@ -68,7 +38,7 @@ pub struct ItemSpecies {
     pub(crate) dex_number: u16,
     pub(crate) name: & 'static str,
     pub(crate) kind: ItemFlags,
-    pub(crate) consumable: bool,
+    pub(crate) is_consumable: bool,
     pub(crate) event_handlers: fn() -> EventHandlerDeck,
     pub(crate) event_filtering_options: EventFilteringOptions,
 }
@@ -81,14 +51,14 @@ impl ItemSpecies {
             event_handlers, 
             event_filtering_options, 
             kind,
-            consumable, 
+            is_consumable, 
         } = dex_data;
 
         ItemSpecies {
             dex_number,
             name,
             kind,
-            consumable,
+            is_consumable,
             event_handlers,
             event_filtering_options,
         }
@@ -109,7 +79,7 @@ pub struct ItemDexData {
     pub dex_number: u16,
     pub name: & 'static str,
     pub kind: ItemFlags,
-    pub consumable: bool,
+    pub is_consumable: bool,
     pub event_handlers: fn() -> EventHandlerDeck,
     pub event_filtering_options: EventFilteringOptions,
 }

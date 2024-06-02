@@ -182,13 +182,13 @@ impl BattleState {
     // Items --- --- --- --- ---
 
     pub fn item(&self, item_id: ItemID) -> Option<&Item> {
-        self.monster(item_id.owner_id)
+        self.monster(item_id.item_holder_id)
             .held_item
             .as_ref()
     }
 
     pub fn item_mut(&mut self, item_id: ItemID) -> Option<&mut Item> {
-        self.monster_mut(item_id.owner_id)
+        self.monster_mut(item_id.item_holder_id)
             .held_item
             .as_mut()
     }

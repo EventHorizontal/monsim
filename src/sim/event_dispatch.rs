@@ -93,7 +93,7 @@ impl EventDispatcher {
         // Skip the rest of the calculation if it doesn't pass.
         if not!(passes_filter) { return false };
 
-        if let Some(event_broadcaster_id) = event_broadcaster_id.sourced() {
+        if let Some(event_broadcaster_id) = event_broadcaster_id.is_sourced() {
             // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster
             // within the allowed relations to the event receiver?
             let mut broadcaster_relation_flags = TargetFlags::empty();

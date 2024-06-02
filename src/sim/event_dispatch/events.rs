@@ -13,17 +13,17 @@ pub struct EventHandler<R: Copy, C: Copy, B: Broadcaster + Clone + Copy> {
 }
 
 pub trait Broadcaster {
-    fn sourced(&self) -> Option<MonsterID>;
+    fn is_sourced(&self) -> Option<MonsterID>;
 }
 
 impl Broadcaster for MonsterID {
-    fn sourced(&self) -> Option<MonsterID> {
+    fn is_sourced(&self) -> Option<MonsterID> {
         Some(*self)
     }
 }
 
 impl Broadcaster for Nothing {
-    fn sourced(&self) -> Option<MonsterID> {
+    fn is_sourced(&self) -> Option<MonsterID> {
         None
     }
 }

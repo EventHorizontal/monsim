@@ -67,12 +67,18 @@ impl Mul<Percent> for u16 {
 pub struct ClampedPercent(u16);
 
 impl ClampedPercent {
-    pub fn from(value: u16) -> Self {
+    pub const fn from(value: u16) -> Self {
         assert!(
             value <= 100,
             "ClampedPercent only takes values between 0 and 100. If you want unbound percentages, use Percent instead."
         );
         Self(value)
+    }
+}
+
+impl Into<u16> for ClampedPercent {
+    fn into(self) -> u16 {
+        self.0
     }
 }
 

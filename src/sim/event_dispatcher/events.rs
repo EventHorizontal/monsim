@@ -16,7 +16,7 @@ pub struct EventHandlerDeck {
     pub on_damage_dealt: Option<EventHandler<Nothing, Nothing, MonsterID>>,
     pub on_try_activate_ability: Option<EventHandler<Outcome<Nothing>, AbilityUseContext, MonsterID>>,
     pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext, MonsterID>>,
-    pub on_modify_accuracy: Option<EventHandler<Percent, MoveUseContext, MonsterID>>,
+    pub on_modify_accuracy: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
     pub on_try_raise_stat: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
     pub on_try_lower_stat: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
     pub on_try_add_volatile_status: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
@@ -216,7 +216,7 @@ pub(crate) fn trigger_on_ability_activated_event(sim: &mut BattleSimulator, broa
     )
 }
 
-pub(crate) fn trigger_on_modify_accuracy_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Percent {
+pub(crate) fn trigger_on_modify_accuracy_event(sim: &mut BattleSimulator, broadcaster_id: MonsterID, event_context: MoveHitContext, base_accuracy: u16) -> u16 {
     EventDispatcher::dispatch_event(
         sim,
         broadcaster_id,
@@ -224,7 +224,7 @@ pub(crate) fn trigger_on_modify_accuracy_event(sim: &mut BattleSimulator, broadc
             vec![(event_handler_deck.on_modify_accuracy)]
         },
         event_context,
-        Percent(100),
+        base_accuracy,
         None,
     )
 }

@@ -66,7 +66,7 @@ fn main() -> MonsimResult<()> {
                         (
                             Bubble.spawn(),
                             Some(Tackle.spawn()),
-                            None,
+                            Some(Swift.spawn()),
                             None
                         ),
                         FlashFire.spawn()

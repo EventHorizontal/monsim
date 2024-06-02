@@ -32,7 +32,7 @@ impl Move {
     }
 
     #[inline(always)]
-    pub fn base_accuracy(&self) -> u16 {
+    pub fn base_accuracy(&self) -> Option<u16> {
         self.species.base_accuracy
     }
 
@@ -85,7 +85,7 @@ pub struct MoveSpecies {
     on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
     hits_per_target: Count,
     
-    base_accuracy: u16,
+    base_accuracy: Option<u16>,
     base_power: u16,
     category: MoveCategory,
     max_power_points: u8,
@@ -98,7 +98,7 @@ impl Debug for MoveSpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "#{:03} {},\n\t type: {:?},\n\t base accuracy: {}",
+            "#{:03} {},\n\t type: {:?},\n\t base accuracy: {:?}",
             self.dex_number, self.name, self.type_, self.base_accuracy
         )
     }
@@ -200,7 +200,7 @@ pub struct MoveDexEntry {
     pub on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
     pub hits_per_target: Count,
     
-    pub base_accuracy: u16,
+    pub base_accuracy: Option<u16>,
     pub base_power: u16,
     pub category: MoveCategory,
     pub max_power_points: u8,

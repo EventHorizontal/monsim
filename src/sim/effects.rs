@@ -1,5 +1,5 @@
 use monsim_macros::{abl, mon, mov};
-use monsim_utils::{ClampedPercent, Count, MaxSizedVec, Nothing, Outcome, Percent, NOTHING};
+use monsim_utils::{not, ClampedPercent, Count, MaxSizedVec, Nothing, Outcome, Percent, NOTHING};
 
 use crate::{dual_type_matchup, sim::event_dispatcher, status::{PersistentStatus, VolatileStatus}, AbilityUseContext, BattleSimulator, BoardPosition, FieldPosition, ItemUseContext, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, SwitchContext, VolatileStatusSpecies};
 
@@ -74,18 +74,6 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
                 actual_number_of_hits += 1;  
             }
         } 
-
-        if actual_number_of_hits == 0 {
-            match target_ids.count() {
-                1 => {
-                    sim.push_message("The move failed!")
-                },
-                2.. => {
-                    sim.push_message(format!["The move failed on {}!", sim.battle.monster(target_id).name()]);
-                }
-                _ => {}
-            } 
-        }
 
         match mov![move_used_id].hits_per_target() {
             Count::Fixed(n) if n > 1 => {
@@ -166,7 +154,23 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, move_use_context: MoveHitC
 
     let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(sim, attacker_id, move_use_context);
     if try_move_hit_outcome.failed() {
+        sim.push_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
         return Outcome::Failure;
+    }
+
+    let base_accuracy = mov![move_used_id].base_accuracy();
+
+    // If base_accuracy is `None`, the move is never-miss.
+    if let Some(base_accuracy) = base_accuracy {
+        // TODO: More sophisticated accuracy calculation
+        let modified_accuracy = event_dispatcher::trigger_on_modify_accuracy_event(sim, attacker_id, move_use_context, base_accuracy);
+        if not!(sim.chance(modified_accuracy, 100)) {
+            sim.push_message("The move missed!");
+            return Outcome::Failure;
+        }
+    } else {
+        #[cfg(feature = "debug")]
+        sim.push_message(format!["{} bypassed accuracy check!", mov![move_used_id].name()]);
     }
 
     let level = mon![attacker_id].level;

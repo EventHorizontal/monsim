@@ -1,7 +1,7 @@
 use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 
-use crate::{sim::{targetting::BoardPosition, MonsterNumber}, Broadcaster, EventHandler, EventHandlerDeck, OwnedEventHandler};
+use crate::{sim::{event_dispatcher::EventContext, targetting::BoardPosition, MonsterNumber}, Broadcaster, EventHandler, EventHandlerDeck, OwnedEventHandler};
 use super::Monster;
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
@@ -53,7 +53,7 @@ impl MonsterTeam {
         self.monsters.iter_mut()
     }
 
-    pub fn owned_event_handlers<R: Copy, C: Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
+    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut out = Vec::new();
         for monster in self.monsters.iter() {
             out.append(&mut monster.owned_event_handlers(event_handler_selector))

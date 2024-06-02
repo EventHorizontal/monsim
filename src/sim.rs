@@ -5,7 +5,7 @@ pub(crate) mod choice;
 pub mod game_mechanics;
 pub(crate) mod prng;
 
-mod event_dispatch;
+mod event_dispatcher;
 mod ordering;
 mod targetting;
 
@@ -18,9 +18,10 @@ pub use builders::{MonsterBuilderExt, MoveBuilderExt, AbilityBuilderExt, ItemBui
 pub use monsim_macros::*;
 pub use battle_constants::*;
 pub use choice::*;
-pub use event_dispatch::{
-    contexts::*, events::{self, *}, EventFilteringOptions, EventDispatcher, EventHandler, EventHandlerDeck
+pub use event_dispatcher::{
+    contexts::*, EventFilteringOptions, EventHandler, EventHandlerDeck
 };
+pub(crate) use event_dispatcher::{Broadcaster, OwnedEventHandler};
 pub use game_mechanics::*;
 use monsim_utils::MaxSizedVec;
 pub use monsim_utils::{Outcome, Percent, ClampedPercent, Count};
@@ -250,7 +251,7 @@ impl BattleSimulator { // simulation
             }
         }
 
-        events::trigger_on_turn_end_event(self, NOTHING, NOTHING);
+        event_dispatcher::trigger_on_turn_end_event(self, NOTHING, NOTHING);
 
         self.battle.message_log.show_new_messages();
 

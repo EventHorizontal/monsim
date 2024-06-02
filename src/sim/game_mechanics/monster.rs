@@ -5,7 +5,7 @@ use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, TeamID};
-use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, Broadcaster, EventHandler, Item, Move, OwnedEventHandler};
+use crate::{sim::{event_dispatcher::EventContext, targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, Broadcaster, EventHandler, Item, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -215,7 +215,7 @@ impl Monster { // private
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn owned_event_handlers<R: Copy, C: Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
+    pub(crate) fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut output_owned_event_handlers = Vec::new();
         
         // of the Monster itself

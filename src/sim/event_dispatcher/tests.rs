@@ -203,6 +203,8 @@ fn test_priority_sorting_with_speed_ties() {
 #[cfg(feature = "debug")]
 fn test_filtering_events_by_broadcaster_relations() {
     extern crate self as monsim;
+    use event_dispatcher::EventDispatcher;
+
     use crate::sim::*;
     use crate::sim::{
         test_ability_dex::FlashFire,
@@ -246,6 +248,10 @@ fn test_filtering_events_by_broadcaster_relations() {
             team_id: TeamID::Allies,
             monster_number: MonsterNumber::_1,
         },
+        Some(MonsterID {
+            team_id: TeamID::Opponents,
+            monster_number: MonsterNumber::_1,
+        }),
         MonsterID {
             team_id: TeamID::Opponents,
             monster_number: MonsterNumber::_1,
@@ -260,6 +266,10 @@ fn test_filtering_events_by_broadcaster_relations() {
             team_id: TeamID::Allies,
             monster_number: MonsterNumber::_1,
         },
+        Some(MonsterID {
+            team_id: TeamID::Opponents,
+            monster_number: MonsterNumber::_1,
+        }),
         MonsterID {
             team_id: TeamID::Allies,
             monster_number: MonsterNumber::_1,
@@ -272,7 +282,7 @@ fn test_filtering_events_by_broadcaster_relations() {
 #[test]
 #[cfg(feature = "debug")]
 fn test_print_owned_event_handler() {
-    use crate::sim::{test_ability_dex::FlashFire, event_dispatch::OwnedEventHandler, MonsterID};
+    use crate::sim::{test_ability_dex::FlashFire, event_dispatcher::OwnedEventHandler, MonsterID};
     let owned_event_handler = OwnedEventHandler {
         event_handler: FlashFire.event_handlers().on_try_move_hit.unwrap(),
         activation_order: crate::ActivationOrder { priority: 0, speed: 11, order: FlashFire.order() },

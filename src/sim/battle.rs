@@ -7,7 +7,7 @@ use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID
 
 use self::builders::BattleFormat;
 
-use super::{prng::Prng, targetting::{BoardPosition, FieldPosition}, PerTeam, TeamID};
+use super::{event_dispatcher::EventContext, prng::Prng, targetting::{BoardPosition, FieldPosition}, PerTeam, TeamID};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
@@ -104,7 +104,7 @@ impl BattleState {
         }
     }
 
-    pub fn owned_event_handlers<R: Copy, C: Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
+    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
         out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));

@@ -5,7 +5,7 @@ use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, TeamID};
-use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, Broadcaster, EventHandler, Move, OwnedEventHandler, Item};
+use crate::{sim::{targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventFilteringOptions, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, Broadcaster, EventHandler, Item, ItemState, Move, OwnedEventHandler};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
@@ -308,26 +308,28 @@ impl Monster { // private
                 });
         }
 
-        // from the Monster's held item
+        // from the Monster's held item (but only if it's active)
         if let Some(held_item) = self.held_item {
-            event_handler_selector(held_item.event_handlers())
-                .into_iter()
-                .flatten()
-                .for_each(|event_handler| {
-                    let owned_event_handler = OwnedEventHandler {
-                        event_handler,
-                        owner_id: self.id,
-                        activation_order:  ActivationOrder {
-                            priority: 0,
-                            speed: self.stat(Stat::Speed),
-                            order: 0,
-                        },
-                        filtering_options: held_item.event_filtering_options(),
-                    };
-                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
-                }
-            );
-        }  
+                if held_item.state == ItemState::Active {
+                    event_handler_selector(held_item.event_handlers())
+                        .into_iter()
+                        .flatten()
+                        .for_each(|event_handler| {
+                            let owned_event_handler = OwnedEventHandler {
+                                event_handler,
+                                owner_id: self.id,
+                                activation_order:  ActivationOrder {
+                                    priority: 0,
+                                    speed: self.stat(Stat::Speed),
+                                    order: 0,
+                                },
+                                filtering_options: held_item.event_filtering_options(),
+                            };
+                            output_owned_event_handlers.extend([owned_event_handler].into_iter());
+                        }
+                    );
+            }  
+        }
 
         output_owned_event_handlers
     }
@@ -347,9 +349,18 @@ impl Monster { // private
             None => "None",
         };
         let held_item = match self.held_item {
-            Some(held_item) => held_item.name(),
-            None => "None",
+            Some(held_item) => {
+                let name = held_item.name().to_string();
+                let suffix = match held_item.state {
+                    ItemState::Active => "",
+                    ItemState::Consumed => " (Consumed)",
+                    ItemState::Destroyed => " (Destroyed)",
+                };
+                name + suffix
+            },
+            None => "None".to_string(),
         };
+
         out.push_str(&format![
             "{} ({}) [HP: {}/{}] | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
             self.full_name(), self.id, self.current_health, self.max_health(), self.board_position, persistent_status, self.volatile_statuses, held_item

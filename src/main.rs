@@ -56,6 +56,7 @@ fn main() -> MonsimResult<()> {
                         FlashFire.spawn()
                     )
                     .with_nickname("Lancelot")
+                    .with_item(PasshoBerry.spawn())
                 )
         )
         .add_opponent_team(

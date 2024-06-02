@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{dual_type_matchup, effects, MoveHitContext, MoveUseContext, Type};
+use monsim::{dual_type_matchup, effects, ItemID, ItemState, MoveHitContext, MoveUseContext, Type};
 use monsim_utils::Percent;
 
 use crate::{item::{ItemDexData, ItemFlags, ItemSpecies}, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, TargetFlags};
@@ -11,6 +11,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_data(
         dex_number: 001,
         name: "Life Orb",
         kind: ItemFlags::NONE,
+        consumable: false,
         event_handlers: || { 
             EventHandlerDeck {
                 on_modify_damage: Some(EventHandler {
@@ -45,17 +46,25 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_data(
         dex_number: 002,
         name: "Passho Berry",
         kind: ItemFlags::BERRY,
+        consumable: true,
         event_handlers: || { 
             EventHandlerDeck {
                 on_modify_damage: Some(EventHandler {
                     #[cfg(feature = "debug")]
                     source_code_location: source_code_location!(),
-                    response: |sim, broadcaster_id, _receiver_id, MoveHitContext { move_user_id, move_used_id, target_id }, damage| {
+                    response: |sim, broadcaster_id, receiver_id, MoveHitContext { move_user_id, move_used_id, target_id }, damage| {
                         let move_type = sim.battle.move_(move_used_id).type_();
                         let target_type = sim.battle.monster(target_id).type_();
+
                         let type_effectiveness = dual_type_matchup(move_type, target_type);
                         if move_type == Type::Water && type_effectiveness.is_matchup_super_effective() {
-                            damage * Percent(50)
+                            // TODO: There should be an easier way to obtain the entity from which the event handler has been called.
+                            if sim.battle.item_mut(ItemID::from_owner(receiver_id)).expect("This should be the item we are currently.").consume().succeeded() {
+                                sim.push_message("Passho Berry activated! The damage was reduced.");
+                                damage * Percent(50)
+                            } else {
+                                damage
+                            }
                         } else {
                             damage
                         }
@@ -64,9 +73,6 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_data(
                 ..EventHandlerDeck::empty()
             }
         },
-        event_filtering_options: EventFilteringOptions {
-            allowed_broadcaster_relation_flags: TargetFlags::SELF,
-            ..EventFilteringOptions::default()
-        },
+        event_filtering_options: EventFilteringOptions::default(),
     }
 );

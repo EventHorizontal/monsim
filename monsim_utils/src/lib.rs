@@ -7,9 +7,9 @@ pub use outcome::Outcome;
 mod percentage;
 pub use percentage::{ClampedPercent, Percent};
 
-/// Type alias for readability of parentheses
+/// Type alias for readability.
 pub type Nothing = ();
-/// Type alias for readability of parentheses
+/// Type alias for readability.
 pub const NOTHING: () = ();
 
 #[macro_export]

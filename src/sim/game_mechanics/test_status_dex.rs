@@ -16,25 +16,33 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             on_calculate_attack_stat: Some(EventHandler {
                 #[cfg(feature = "debug")]
                 source_code_location: source_code_location!(),
+                
                 response: |_sim, _, _receiver_id, _context, current_attack_stat| {
                     current_attack_stat * Percent(50)
+                },
+                
+                event_filtering_options: EventFilteringOptions {
+                    only_if_broadcaster_is: TargetFlags::SELF,
+                    ..EventFilteringOptions::default()
                 },
             }),
             on_turn_end: Some(EventHandler {
                 #[cfg(feature = "debug")]
                 source_code_location: source_code_location!(),
+                
                 response: |sim, _, receiver_id, _context, _| {
                     sim.push_message(format!["{} is burned.", mon![receiver_id].name()]);
                     let damage = (mon![receiver_id].max_health() as f64 * 1.0/8.0) as u16;
                     let _ = effects::deal_raw_damage(sim, (receiver_id, damage));
                 },
+                
+                event_filtering_options: EventFilteringOptions {
+                    only_if_broadcaster_is: TargetFlags::SELF,
+                    ..EventFilteringOptions::default()
+                },
             }),
             ..EventHandlerDeck::empty()
         }
-    },
-    event_filtering_options: EventFilteringOptions {
-        allowed_broadcaster_relation_flags: TargetFlags::SELF,
-        ..EventFilteringOptions::default()
     },
 });
 
@@ -48,6 +56,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
             on_try_move: Some(EventHandler {
                 #[cfg(feature="debug")]
                 source_code_location: source_code_location!(),
+                
                 response: |sim, _broadcaster_id, receiver_id, _context, _relay| {
                     
                     sim.push_message(format!["{} is confused!", mon![receiver_id].name()]);
@@ -65,14 +74,16 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
                     }
                     Outcome::Success(NOTHING)
                 },
+
+                event_filtering_options: EventFilteringOptions {
+                    only_if_broadcaster_is: TargetFlags::SELF,
+                    ..EventFilteringOptions::default()
+                },
             }),
             ..EventHandlerDeck::empty()
         }
     },
-    event_filtering_options: EventFilteringOptions {
-        allowed_broadcaster_relation_flags: TargetFlags::SELF,
-        ..EventFilteringOptions::default()
-    },
+  
     on_acquired_message: |affected_monster| {
         format!["{} became confused!", affected_monster.name()]
     },

@@ -57,8 +57,8 @@ impl EventDispatcher {
         });
 
         let mut relay = default;
-        for OwnedEventHandler { event_handler, owner_id, filtering_options, .. } in owned_event_handlers.into_iter() {
-            if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner_id, filtering_options) {
+        for OwnedEventHandler { event_handler, owner_id, .. } in owned_event_handlers.into_iter() {
+            if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner_id, event_handler.event_filtering_options) {
                 
                 relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
@@ -81,7 +81,11 @@ impl EventDispatcher {
 
         let mut passes_filter;
         
-        let EventFilteringOptions { allowed_broadcaster_relation_flags, requires_being_active } = receiver_filtering_options;
+        let EventFilteringOptions { 
+            only_if_broadcaster_is: allowed_broadcaster_relation_flags, 
+            only_if_target_is: allowed_target_relation_flags,
+            only_if_receiver_is_active: requires_being_active 
+        } = receiver_filtering_options;
 
         // First check - does the event receiver require themselves to be active? If so check if they are actually active.
         passes_filter = if requires_being_active {
@@ -134,21 +138,27 @@ impl EventDispatcher {
 /// in response to a certain kind of Event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventFilteringOptions {
-    /// This field dictates which Monsters' event broadcasts for the EventHandler to
-    /// respond to.
-    pub allowed_broadcaster_relation_flags: TargetFlags,
+    /// The EventHandler will only activate if the broadcaster is within the allowed
+    /// relations to the owner of the EventHandler, e.g. if `only_if_broadcaster_is
+    /// = TargetFlags::OPPONENTS` then the EventHandler only procs if its owner (the 
+    /// receiver) is an opponent of the broadcaster of the event.
+    pub only_if_broadcaster_is: TargetFlags,
+    /// Filters the EventHandler based on the relationship between the target and the
+    /// receiver. Does nothing if context of the event has no specific target.
+    pub only_if_target_is: TargetFlags,
     /// If `true` the EventHandler only responds to the Event if its owner is active.
     /// 
     /// If `false`, the EventHandler ignores the whether the owner is active or not. 
     /// (This could useful for abilities like Regenerator).
-    pub requires_being_active: bool,
+    pub only_if_receiver_is_active: bool,
 }
 
 impl EventFilteringOptions {
     pub const fn default() -> EventFilteringOptions {
         EventFilteringOptions {
-            allowed_broadcaster_relation_flags: TargetFlags::ADJACENT.union(TargetFlags::NONADJACENT).union(TargetFlags::OPPONENTS),
-            requires_being_active: true,
+            only_if_broadcaster_is: TargetFlags::ADJACENT.union(TargetFlags::NONADJACENT).union(TargetFlags::OPPONENTS),
+            only_if_target_is: TargetFlags::SELF,
+            only_if_receiver_is_active: true,
         }
     }
 }

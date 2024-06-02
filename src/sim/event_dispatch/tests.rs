@@ -280,7 +280,6 @@ fn test_print_owned_event_handler() {
             team_id: crate::sim::TeamID::Allies,
             monster_number: crate::sim::MonsterNumber::_1,
         },
-        filtering_options: crate::sim::EventFilteringOptions::default(),
     };
     println!("{:#?}", owned_event_handler);
 }

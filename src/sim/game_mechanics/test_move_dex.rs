@@ -25,7 +25,6 @@ pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(
                     .union(TargetFlags::ALLIES),
         type_: Type::Normal,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );
 
@@ -46,7 +45,6 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(
                     .union(TargetFlags::ALLIES),
         type_: Type::Normal,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );
 
@@ -72,7 +70,6 @@ pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(
                     .union(TargetFlags::OPPONENTS),
         type_: Type::Fire,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );
 
@@ -92,7 +89,6 @@ pub const Bubble: MoveSpecies = MoveSpecies::from_dex_entry(
                     .union(TargetFlags::OPPONENTS),
         type_: Type::Water,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );
 
@@ -115,7 +111,6 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(
                     .union(TargetFlags::OPPONENTS),
         type_: Type::Normal,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );
 
@@ -137,7 +132,6 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(
         targets: TargetFlags::SELF,
         type_: Type::Dragon,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );
 
@@ -158,7 +152,6 @@ pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(
             .union(TargetFlags::OPPONENTS),
         type_: Type::Grass,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );
 
@@ -185,6 +178,5 @@ pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(
             .union(TargetFlags::OPPONENTS),
         type_: Type::Psychic,
         event_handlers: EventHandlerDeck::empty,
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );

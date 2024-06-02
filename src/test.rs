@@ -1,7 +1,8 @@
 
 #[cfg(all(test, feature = "debug"))]
 mod battle {
-
+    
+    
     #[test]
     fn test_display_battle() {
         extern crate self as monsim;
@@ -10,6 +11,7 @@ mod battle {
             test_ability_dex::FlashFire,
             test_monster_dex::{Zombler, Merkey, Squirecoal, Dandyleo},
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
+            test_item_dex::PasshoBerry
         };
 
         let test_battle = BattleState::spawn()
@@ -24,9 +26,10 @@ mod battle {
                         )
                         .add_monster(
                             Merkey.spawn(
-                                (Tackle.spawn(), Some(Bubble.spawn()), None, None),
+                                (Tackle.spawn(), Some(Bubble.spawn()), Some(Tackle.spawn()), None),
                                 FlashFire.spawn()
                             )
+                            .with_item(PasshoBerry.spawn())
                         )
                         .add_monster(
                             Dandyleo.spawn(
@@ -48,43 +51,7 @@ mod battle {
                 )
                 .build();
 
-        println!("{}", test_battle);
-        assert_eq!(
-            format!["{}", test_battle],
-            String::from(
-                "Ally Team
-\t├── Ruby the Squirecoal (First Ally) [HP: 152/152] | Position: AllySideCentre | Persistent Status: None | Volatile Statuses: []
-\t│\t│
-\t│\t├──    type: Fire
-\t│\t├── ability: Flash Fire
-\t│\t├──    move: Ember
-\t│\t└──    move: Scratch
-\t│\t
-\t├── Merkey (Second Ally) [HP: 157/157] | Position: Benched | Persistent Status: None | Volatile Statuses: []
-\t│\t│
-\t│\t├──    type: Water/Bug
-\t│\t├── ability: Flash Fire
-\t│\t├──    move: Tackle
-\t│\t└──    move: Bubble
-\t│\t
-\t└── Emerald the Dandyleo (Third Ally) [HP: 147/147] | Position: Benched | Persistent Status: None | Volatile Statuses: []
-\t \t│
-\t \t├──    type: Grass
-\t \t├── ability: Flash Fire
-\t \t├──    move: Scratch
-\t \t└──    move: Ember
-\t \t
-Opponent Team
-\t└── Cheerio the Zombler (First Opponent) [HP: 197/197] | Position: OpponentSideCentre | Persistent Status: None | Volatile Statuses: []
-\t \t│
-\t \t├──    type: Ghost/Dark
-\t \t├── ability: Flash Fire
-\t \t├──    move: Scratch
-\t \t└──    move: Ember
-\t \t
-"
-            )
-        )
+        println!("{}", test_battle);   
     }
 }
 

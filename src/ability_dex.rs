@@ -9,7 +9,7 @@ use monsim::{effects, move_, sim::{
 #[cfg(feature = "debug")]
 use monsim::source_code_location;
 
-pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 
+pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry( 
     AbilityDexEntry {
         dex_number: 001,
         name: "Flash Fire",
@@ -25,6 +25,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                         }
                         Outcome::Success(())
                     },
+                    event_filtering_options: EventFilteringOptions::default(),
                 }),
                 ..EventHandlerDeck::empty()
             }
@@ -33,12 +34,11 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
             let ability_owner_name = mon![ability_owner_id].name();
             sim.push_message(format!["{ability_owner_name}'s Flash Fire activated!"]);
         },
-        event_filtering_options: EventFilteringOptions::default(),
         order: 0,
     }
 );
 
-pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_data(
+pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_entry(
     AbilityDexEntry {
         dex_number: 002,
         name: "Spiteful",
@@ -53,11 +53,11 @@ pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_data(
                     response: |sim, broadcaster_id, receiver_id, MoveUseContext { move_user_id, move_used_id, target_ids }, _| {
                         effects::activate_ability(sim, AbilityUseContext::new(receiver_id));
                     },
+                    event_filtering_options: EventFilteringOptions::default(),
                 }),
                 ..EventHandlerDeck::empty()
             }
         },
-        event_filtering_options: EventFilteringOptions::default(),
         order: 1,
     }
 );

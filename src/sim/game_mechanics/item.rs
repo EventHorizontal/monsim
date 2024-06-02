@@ -1,4 +1,4 @@
-use crate::{EventFilteringOptions, EventHandlerDeck, MonsterID};
+use crate::{EventHandlerDeck, MonsterID};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
@@ -13,11 +13,7 @@ impl Item {
     
     pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
         (self.species.event_handlers)()
-    }
-    
-    pub(crate) fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.species.event_filtering_options
-    }
+    }   
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,7 +36,6 @@ pub struct ItemSpecies {
     pub(crate) kind: ItemFlags,
     pub(crate) is_consumable: bool,
     pub(crate) event_handlers: fn() -> EventHandlerDeck,
-    pub(crate) event_filtering_options: EventFilteringOptions,
 }
 
 impl ItemSpecies {
@@ -48,10 +43,9 @@ impl ItemSpecies {
         let ItemDexEntry { 
             dex_number,
             name, 
+            kind, 
+            is_consumable,
             event_handlers, 
-            event_filtering_options, 
-            kind,
-            is_consumable, 
         } = dex_entry;
 
         ItemSpecies {
@@ -60,7 +54,6 @@ impl ItemSpecies {
             kind,
             is_consumable,
             event_handlers,
-            event_filtering_options,
         }
     }
 }
@@ -81,5 +74,4 @@ pub struct ItemDexEntry {
     pub kind: ItemFlags,
     pub is_consumable: bool,
     pub event_handlers: fn() -> EventHandlerDeck,
-    pub event_filtering_options: EventFilteringOptions,
 }

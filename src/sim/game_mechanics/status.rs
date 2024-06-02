@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use monsim_utils::Count;
 
-use crate::{EventFilteringOptions, EventHandlerDeck, Monster};
+use crate::{EventHandlerDeck, Monster};
 
 // Permanent Statuses
 #[derive(Debug, Clone, Copy)]
@@ -20,10 +20,6 @@ impl PersistentStatus {
         (self.species.event_handlers)()
     }
     
-    pub(crate) fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.species.event_filtering_options
-    }
-    
     pub(crate) fn name(&self) -> &'static str {
         self.species.name
     }
@@ -35,7 +31,6 @@ pub struct PersistentStatusSpecies {
     pub(crate) name: &'static str,
     pub(crate) on_acquired_message: fn(&Monster) -> String,
     pub(crate) event_handlers: fn() -> EventHandlerDeck,
-    pub(crate) event_filtering_options: EventFilteringOptions,
 }
 
 impl PersistentStatusSpecies {
@@ -45,7 +40,6 @@ impl PersistentStatusSpecies {
             name,
             on_acquired_message, 
             event_handlers, 
-            event_filtering_options 
         } = dex_entry;
 
         PersistentStatusSpecies {
@@ -53,7 +47,6 @@ impl PersistentStatusSpecies {
             name,
             on_acquired_message,
             event_handlers,
-            event_filtering_options,
         }
     }
 }
@@ -64,7 +57,6 @@ pub struct PersistentStatusDexEntry {
     pub name: &'static str,
     pub on_acquired_message: fn(&Monster) -> String,
     pub event_handlers: fn() -> EventHandlerDeck,
-    pub event_filtering_options: EventFilteringOptions,
 }
 
 // Volatile Statuses
@@ -95,10 +87,7 @@ impl VolatileStatus {
         self.species.event_handlers()
     }
     
-    pub(crate) fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.species.event_filtering_options
-    }
-    
+    #[inline(always)]
     pub fn remaining_turns(&self) -> u8 {
         self.remaining_turns
     }
@@ -112,7 +101,6 @@ pub struct VolatileStatusSpecies {
     pub(crate) on_acquired_message: fn(&Monster) -> String,
     pub(crate) lifetime_in_turns: Count,
     pub(crate) event_handlers: fn() -> EventHandlerDeck,
-    pub(crate) event_filtering_options: EventFilteringOptions,
 }
 
 impl PartialEq for VolatileStatusSpecies {
@@ -131,7 +119,6 @@ impl VolatileStatusSpecies {
             on_acquired_message, 
             lifetime_in_turns, 
             event_handlers, 
-            event_filtering_options 
         } = dex_entry;
 
         VolatileStatusSpecies {
@@ -140,7 +127,6 @@ impl VolatileStatusSpecies {
             on_acquired_message,
             lifetime_in_turns,
             event_handlers,
-            event_filtering_options,
         }
     }
 
@@ -158,5 +144,4 @@ pub struct VolatileStatusDexEntry {
     pub on_acquired_message: fn(&Monster) -> String,
     pub lifetime_in_turns: Count,
     pub event_handlers: fn() -> EventHandlerDeck,
-    pub event_filtering_options: EventFilteringOptions,
 }

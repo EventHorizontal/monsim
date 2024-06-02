@@ -1,6 +1,6 @@
 use monsim_utils::{Count, Nothing, Outcome};
 
-use crate::{sim::{event_dispatch::{EventFilteringOptions, EventHandlerDeck}, Type}, Effect, MonsterID, MoveHitContext, TargetFlags};
+use crate::{sim::{EventHandlerDeck, Type}, Effect, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
@@ -98,7 +98,6 @@ pub struct MoveSpecies {
     type_: Type,
     
     event_handlers: fn() -> EventHandlerDeck,
-    _event_filtering_options: EventFilteringOptions,
 }
 
 impl Debug for MoveSpecies {
@@ -133,7 +132,6 @@ impl MoveSpecies {
             targets, 
             type_, 
             event_handlers, 
-            event_filtering_options,
             hits_per_target,
         } = dex_entry;
         
@@ -149,7 +147,6 @@ impl MoveSpecies {
             targets,
             type_,
             event_handlers,
-            _event_filtering_options: event_filtering_options,
             hits_per_target,
         }
     }
@@ -220,7 +217,6 @@ pub struct MoveDexEntry {
     pub type_: Type,
      
     pub event_handlers: fn() -> EventHandlerDeck,
-    pub event_filtering_options: EventFilteringOptions,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

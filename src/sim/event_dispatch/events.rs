@@ -43,9 +43,10 @@ pub type EventResponse<R, C, B> =  fn(/* simulator */ &mut BattleSimulator, /* b
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct EventHandler<R: Copy, C: Copy, B: Broadcaster + Clone + Copy> {
-    pub response: EventResponse<R, C, B>,
     #[cfg(feature = "debug")]
     pub source_code_location: &'static str,
+    pub response: EventResponse<R, C, B>,
+    pub event_filtering_options: EventFilteringOptions,
 }
 
 pub trait Broadcaster {
@@ -85,7 +86,6 @@ pub struct OwnedEventHandler<R: Copy, C: Copy, B: Broadcaster + Copy> {
     pub event_handler: EventHandler<R, C, B>,
     pub owner_id: MonsterID,
     pub activation_order: ActivationOrder,
-    pub filtering_options: EventFilteringOptions,
 }
 
 impl EventHandlerDeck {

@@ -21,6 +21,10 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(
                         sim.push_message(format!["Life orb boosted the damage of {}'s attack!", sim.battle.monster(broadcaster_id).name()]);
                         damage * Percent(130)
                     },
+                    event_filtering_options: EventFilteringOptions {
+                        only_if_broadcaster_is: TargetFlags::SELF,
+                        ..EventFilteringOptions::default()
+                    },
                 }),
                 on_move_used: Some(EventHandler {
                     #[cfg(feature = "debug")]
@@ -30,13 +34,13 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(
                         sim.push_message(format!["Life orb drained some of {}'s life force!", sim.battle.monster(broadcaster_id).name()]);
                         let damage_dealt = effects::deal_raw_damage(sim, (move_user_id, one_tenth_of_total_hp));
                     },
+                    event_filtering_options: EventFilteringOptions {
+                        only_if_broadcaster_is: TargetFlags::SELF,
+                        ..EventFilteringOptions::default()
+                    },
                 }),
                 ..EventHandlerDeck::empty()
             }
-        },
-        event_filtering_options: EventFilteringOptions {
-            allowed_broadcaster_relation_flags: TargetFlags::SELF,
-            ..EventFilteringOptions::default()
         },
     }
 );
@@ -70,10 +74,10 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(
                             damage
                         }
                     },
+                    event_filtering_options: EventFilteringOptions::default(),
                 }),
                 ..EventHandlerDeck::empty()
             }
         },
-        event_filtering_options: EventFilteringOptions::default(),
     }
 );

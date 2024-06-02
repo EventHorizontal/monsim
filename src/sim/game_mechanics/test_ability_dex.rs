@@ -8,7 +8,7 @@ use crate::{
     effects, sim::{event_dispatch::contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck, Outcome}, source_code_location, AbilityDexEntry, AbilityID, AbilityUseContext, BattleSimulator, MoveHitContext
 };
 
-pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data( 
+pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry( 
     AbilityDexEntry {
         dex_number: 001,
         name: "Flash Fire",
@@ -24,6 +24,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
                         }
                         Outcome::Success(NOTHING)
                     },
+                    event_filtering_options: EventFilteringOptions::default(),
                 }),
                 ..EventHandlerDeck::empty()
             }
@@ -32,7 +33,6 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_data(
             let effector_name = mon![ability_owner_id].name();
             sim.push_message(format!["{effector_name}'s Flash Fire activated!"]);
         },
-        event_filtering_options: EventFilteringOptions::default(),
         order: 0,
     }
 );

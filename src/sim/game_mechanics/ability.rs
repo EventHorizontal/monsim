@@ -1,6 +1,6 @@
 use monsim_utils::Nothing;
 
-use crate::{sim::{event_dispatch::EventFilteringOptions, EventHandlerDeck, MonsterID}, AbilityUseContext, effects::Effect};
+use crate::{sim::{EventHandlerDeck, MonsterID}, AbilityUseContext, effects::Effect};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,7 +58,6 @@ pub struct AbilitySpecies {
     name: &'static str,
     on_activate_effect: Effect<Nothing, AbilityUseContext>,
     event_handlers: fn() -> EventHandlerDeck,
-    event_filtering_options: EventFilteringOptions,
     order: u16,
 }
 
@@ -78,15 +77,20 @@ impl PartialEq for AbilitySpecies {
 impl Eq for AbilitySpecies {}
 
 impl AbilitySpecies {
-    pub const fn from_dex_data(dex_data: AbilityDexEntry) -> Self {
-        let AbilityDexEntry { dex_number, name, on_activate_effect, event_handlers, event_filtering_options, order } = dex_data;
+    pub const fn from_dex_entry(dex_entry: AbilityDexEntry) -> Self {
+        let AbilityDexEntry { 
+            dex_number, 
+            name, 
+            on_activate_effect, 
+            event_handlers, 
+            order 
+        } = dex_entry;
         
         Self {
             dex_number,
             name,
             on_activate_effect,
             event_handlers,
-            event_filtering_options,
             order,
         }
     }
@@ -107,11 +111,6 @@ impl AbilitySpecies {
     }
     
     #[inline(always)]
-    pub fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.event_filtering_options
-    }
-    
-    #[inline(always)]
     pub fn order(&self) -> u16 {
         self.order
     }
@@ -128,6 +127,5 @@ pub struct AbilityDexEntry {
     pub name: &'static str,
     pub on_activate_effect: Effect<Nothing, AbilityUseContext>,
     pub event_handlers: fn() -> EventHandlerDeck,
-    pub event_filtering_options: EventFilteringOptions,
     pub order: u16,
 }

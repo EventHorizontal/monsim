@@ -231,7 +231,6 @@ impl Monster { // private
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
-                    filtering_options: EventFilteringOptions::default(),
                 }
             })
             .pipe(|owned_event_handlers| { 
@@ -251,7 +250,6 @@ impl Monster { // private
                         speed: (&self).stat(Stat::Speed),
                         order: (&self).ability.order(),
                     },
-                    filtering_options: EventFilteringOptions::default(),
                 }
             })        
             .pipe(|owned_event_handlers| {
@@ -274,7 +272,6 @@ impl Monster { // private
                                 speed: (&self).stat(Stat::Speed),
                                 order: 0,
                             },
-                            filtering_options: EventFilteringOptions::default(),
                         }
                     })
                 })
@@ -298,7 +295,6 @@ impl Monster { // private
                                 speed: self.stat(Stat::Speed),
                                 order: 0,
                             },
-                            filtering_options: volatile_status.event_filtering_options(),
                         }
                     });
                 output_owned_event_handlers.extend(owned_event_handlers)
@@ -318,7 +314,6 @@ impl Monster { // private
                             speed: self.stat(Stat::Speed),
                             order: 0,
                         },
-                        filtering_options: persistent_status.event_filtering_options(),
                     };
                     output_owned_event_handlers.extend([owned_event_handler].into_iter());
                 });
@@ -338,7 +333,6 @@ impl Monster { // private
                             speed: self.stat(Stat::Speed),
                             order: 0,
                         },
-                        filtering_options: held_item.event_filtering_options(),
                     };
                     output_owned_event_handlers.extend([owned_event_handler].into_iter());
                 }

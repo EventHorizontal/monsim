@@ -1,6 +1,4 @@
-use monsim_utils::Nothing;
-
-use crate::{sim::{EventHandlerDeck, MonsterID}, AbilityUseContext, effects::Effect};
+use crate::sim::{EventHandlerDeck, MonsterID};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

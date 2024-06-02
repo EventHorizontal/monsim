@@ -136,10 +136,11 @@ impl BattleSimulator { // simulation
             action_schedule.push(fully_specified_action_choice);
         }
 
-        #[cfg(feature = "debug")]
-        let start_time = std::time::SystemTime::now();
-    
         // Action Phase
+        
+        #[cfg(feature = "debug")]
+        let action_phase_start_time = std::time::SystemTime::now();
+    
         ordering::sort_by_activation_order(
             &mut self.battle.prng, 
             &mut action_schedule, 
@@ -204,6 +205,9 @@ impl BattleSimulator { // simulation
             }
         }
 
+        #[cfg(feature = "debug")]
+        let action_phase_phase_elapsed_time = action_phase_start_time.elapsed().expect("Expected to always get duration");
+
         self.battle.message_log.show_new_messages();
 
         // Monster Replacement Phase
@@ -226,15 +230,10 @@ impl BattleSimulator { // simulation
             }
         }
 
-        self.battle.message_log.show_new_messages();
+        // End-of-Turn Upkeep Phase
 
         #[cfg(feature = "debug")]
-        {
-            let elapsed_time = start_time.elapsed();
-            println!("The turn took {:?} to simulate.", elapsed_time.unwrap());
-        }
-
-        // Turn end
+        let end_of_turn_phase_start_time = std::time::SystemTime::now();
 
         // Update volatile status state
         for monster in self.battle.monsters_mut() {
@@ -254,6 +253,12 @@ impl BattleSimulator { // simulation
         events::trigger_on_turn_end_event(self, NOTHING, NOTHING);
 
         self.battle.message_log.show_new_messages();
+
+        #[cfg(feature = "debug")]
+        {
+            let elapsed_time = end_of_turn_phase_start_time.elapsed().expect("Expected to always get duration.") + action_phase_phase_elapsed_time;
+            println!("The turn took {:?} to simulate.", elapsed_time);
+        }
 
         Ok(false)
     }

@@ -50,20 +50,26 @@ pub struct EventHandler<R: Copy, C: Copy, B: Broadcaster + Clone + Copy> {
 }
 
 pub trait Broadcaster {
-    fn is_sourced(&self) -> Option<MonsterID>;
+    fn source(&self) -> Option<MonsterID> {
+        None
+    }
 }
 
 impl Broadcaster for MonsterID {
-    fn is_sourced(&self) -> Option<MonsterID> {
+    fn source(&self) -> Option<MonsterID> {
         Some(*self)
     }
 }
 
-impl Broadcaster for Nothing {
-    fn is_sourced(&self) -> Option<MonsterID> {
+impl Broadcaster for Nothing {}
+
+pub trait EventContext {
+    fn target(&self) -> Option<MonsterID> {
         None
     }
 }
+
+impl EventContext for Nothing {}
 
 impl<R: Copy, C: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, B> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -97,7 +103,7 @@ impl EventHandlerDeck {
 pub mod contexts {
     use monsim_utils::MaxSizedVec;
 
-    use crate::{sim::{MonsterID, MoveID}, AbilityID, ItemID};
+    use crate::{sim::{MonsterID, MoveID}, AbilityID, EventContext, ItemID};
 
     /// `move_user_id`: MonsterID of the Monster using the move.
     /// 
@@ -110,6 +116,8 @@ pub mod contexts {
         pub move_used_id: MoveID,
         pub target_ids: MaxSizedVec<MonsterID, 6>,
     }
+
+    impl EventContext for MoveUseContext {}
 
     impl MoveUseContext {
         pub fn new(move_used_id: MoveID, target_ids: MaxSizedVec<MonsterID, 6>) -> Self {
@@ -143,6 +151,12 @@ pub mod contexts {
         }
     }
 
+    impl EventContext for MoveHitContext {
+        fn target(&self) -> Option<MonsterID> {
+            Some(self.target_id)
+        }
+    }
+
     /// `ability_owner_id`: MonsterID of the Monster whose ability is being used.
     /// 
     /// `ability_used_id`: AbilityID of the Ability being used.
@@ -160,6 +174,8 @@ pub mod contexts {
             }
         }
     }
+
+    impl EventContext for AbilityUseContext {}
 
     /// `active_monster_id`: MonsterID of the Monster to be switched out.
     /// 
@@ -179,6 +195,8 @@ pub mod contexts {
         }
     }
 
+    impl EventContext for SwitchContext {}
+
     /// `active_monster_id`: MonsterID of the Monster to be switched out.
     /// 
     /// `benched_monster_id`: MonsterID of the Monster to be switched in.
@@ -197,6 +215,8 @@ pub mod contexts {
             }
         }
     }
+
+    impl EventContext for ItemUseContext {}
 }
 
 mod event_dex {

@@ -5,6 +5,7 @@ pub mod events;
 mod tests ;
 
 use crate::{sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent}, BattleSimulator};
+use bitflags::Flags;
 use contexts::*;
 pub use events::*;
 use monsim_utils::{not, NOTHING};
@@ -16,7 +17,7 @@ pub struct EventDispatcher;
 
 impl EventDispatcher {
 
-    pub fn dispatch_trial_event<C: Copy, B: Broadcaster + Copy>(
+    pub fn dispatch_trial_event<C: EventContext + Copy, B: Broadcaster + Copy>(
         sim: &mut BattleSimulator,
 
         broadcaster_id: B,
@@ -36,7 +37,7 @@ impl EventDispatcher {
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
-    pub fn dispatch_event<R: PartialEq + Copy, C: Copy, B: Broadcaster + Copy>(
+    pub fn dispatch_event<R: PartialEq + Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
         sim: &mut BattleSimulator,
 
         broadcaster_id: B,
@@ -58,7 +59,13 @@ impl EventDispatcher {
 
         let mut relay = default;
         for OwnedEventHandler { event_handler, owner_id, .. } in owned_event_handlers.into_iter() {
-            if EventDispatcher::does_event_pass_event_receivers_filtering_options(&sim.battle, broadcaster_id, owner_id, event_handler.event_filtering_options) {
+            if EventDispatcher::does_event_pass_event_receivers_filtering_options(
+                &sim.battle, 
+                broadcaster_id, 
+                event_context.target(),
+                owner_id, 
+                event_handler.event_filtering_options
+            ) {
                 
                 relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
@@ -74,7 +81,8 @@ impl EventDispatcher {
 
     fn does_event_pass_event_receivers_filtering_options(
         battle: &BattleState,
-        event_broadcaster_id: impl Broadcaster,
+        event_broadcaster: impl Broadcaster,
+        event_target_id: Option<MonsterID>,
         event_receiver_id: MonsterID,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
@@ -97,7 +105,7 @@ impl EventDispatcher {
         // Skip the rest of the calculation if it doesn't pass.
         if not!(passes_filter) { return false };
 
-        if let Some(event_broadcaster_id) = event_broadcaster_id.is_sourced() {
+        if let Some(event_broadcaster_id) = event_broadcaster.source() {
             // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster
             // within the allowed relations to the event receiver?
             let mut broadcaster_relation_flags = TargetFlags::empty();
@@ -128,6 +136,43 @@ impl EventDispatcher {
                 }
             }
             passes_filter = allowed_broadcaster_relation_flags.contains(broadcaster_relation_flags);
+        }
+
+        if not!(passes_filter) { return false };
+
+        // The event target is the contextual target for the action associated with this event. For example, 
+        // this could be the target of the current move.
+        if let Some(event_target_id) = event_target_id {
+            let mut target_relation_flags = TargetFlags::empty();
+            let event_target_field_position = battle.monster(event_target_id)
+                .board_position
+                .field_position()
+                .expect("We assume targets must be on the field.");
+            
+            // This is an optional value because it may be that the event receiver is benched.
+            let event_receiver_field_position = battle.monster(event_receiver_id)
+                .board_position
+                .field_position();
+
+            if battle.are_opponents(event_target_id, event_receiver_id) {
+                target_relation_flags |= TargetFlags::OPPONENTS;
+            } else if battle.are_allies(event_target_id, event_receiver_id) {
+                target_relation_flags |= TargetFlags::ALLIES;
+            } else {
+                target_relation_flags |= TargetFlags::SELF;
+            }
+            // Adjacency doesn't apply to self
+            if not!(target_relation_flags.contains(TargetFlags::SELF)) {
+                if let Some(event_receiver_field_position) = event_receiver_field_position {
+                    if event_target_field_position.is_adjacent_to(event_receiver_field_position) {
+                        target_relation_flags |= TargetFlags::ADJACENT;
+                    } else {
+                        target_relation_flags |= TargetFlags::NONADJACENT;
+                    }
+                }
+            }
+
+            passes_filter = allowed_target_relation_flags.contains(target_relation_flags);
         }
 
         passes_filter

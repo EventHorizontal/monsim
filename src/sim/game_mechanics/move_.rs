@@ -84,7 +84,7 @@ pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
 
-    on_hit_effect: fn(/* simulator */ &mut Battle, /* context */ MoveHitContext) -> Outcome<Nothing>,
+    on_hit_effect: OnHitEffect,
     hits_per_target: Count,
 
     base_accuracy: Option<u16>,

@@ -5,6 +5,7 @@ use monsim::{
     sim::{BattleState, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type},
     Count, EventHandlerDeck, MoveDexEntry, MoveHitContext, Outcome, TargetFlags,
 };
+use monsim_macros::mon;
 
 use super::status_dex::*;
 
@@ -45,10 +46,10 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
 pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 003,
     name: "Ember",
-    on_hit_effect: |sim, context| {
-        let hit_outcome = effects::deal_default_damage(sim, context);
-        if sim.chance(9, 10) && hit_outcome.succeeded() {
-            effects::add_persistent_status(sim, (context.target_id, &Burned));
+    on_hit_effect: |battle, context| {
+        let hit_outcome = effects::deal_default_damage(battle, context);
+        if battle.roll_chance(1, 10) && hit_outcome.succeeded() {
+            effects::add_persistent_status(battle, (context.target_id, &Burned));
         }
         hit_outcome
     },
@@ -131,10 +132,10 @@ pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
 pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 008,
     name: "Confusion",
-    on_hit_effect: |sim, context| {
-        let hit_outcome = effects::deal_default_damage(sim, context);
-        if sim.chance(1, 10) && hit_outcome.succeeded() {
-            effects::add_volatile_status(sim, (context.target_id, &Confused));
+    on_hit_effect: |battle, context| {
+        let hit_outcome = effects::deal_default_damage(battle, context);
+        if battle.roll_chance(1, 10) && hit_outcome.succeeded() {
+            effects::add_volatile_status(battle, (context.target_id, &Confused));
         }
         hit_outcome
     },
@@ -154,23 +155,23 @@ pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
 pub const Recycle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 009,
     name: "Recycle",
-    on_hit_effect: |sim,
+    on_hit_effect: |battle,
                     MoveHitContext {
                         move_user_id,
                         move_used_id,
                         target_id,
                     }| {
-        let consumed_item = sim.battle.monster_mut(move_user_id).consumed_item_mut().take();
+        let consumed_item = mon![mut move_user_id].consumed_item_mut().take();
         // Recycle only works if there exists a consumed item and no held item.
         if let Some(consumed_item) = consumed_item {
-            if sim.battle.monster_mut(move_user_id).held_item_mut().is_none() {
-                sim.push_message(format![
+            if mon![mut move_user_id].held_item_mut().is_none() {
+                battle.queue_message(format![
                     "Recycle replenished {}'s {}",
-                    sim.battle.monster(move_user_id).name(),
+                    battle.monster(move_user_id).name(),
                     consumed_item.name()
                 ]);
-                *sim.battle.monster_mut(move_user_id).held_item_mut() = Some(consumed_item);
-                *sim.battle.monster_mut(move_user_id).consumed_item_mut() = None;
+                *mon![mut move_user_id].held_item_mut() = Some(consumed_item);
+                *mon![mut move_user_id].consumed_item_mut() = None;
                 Outcome::Success(())
             } else {
                 Outcome::Failure

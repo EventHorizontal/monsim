@@ -28,10 +28,10 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
 
-            response: |sim, _, receiver_id, _context, _| {
-                sim.push_message(format!["{} is burned.", mon![receiver_id].name()]);
+            response: |battle, _, receiver_id, _context, _| {
+                battle.queue_message(format!["{} is burned.", mon![receiver_id].name()]);
                 let damage = (mon![receiver_id].max_health() as f64 * 1.0 / 8.0) as u16;
-                let _ = effects::deal_raw_damage(sim, (receiver_id, damage));
+                let _ = effects::deal_raw_damage(battle, (receiver_id, damage));
             },
 
             event_filtering_options: EventFilteringOptions {
@@ -52,8 +52,8 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
 
-            response: |sim, _broadcaster_id, receiver_id, _context, _relay| {
-                sim.push_message(format!["{} is confused!", mon![receiver_id].name()]);
+            response: |battle, _broadcaster_id, receiver_id, _context, _relay| {
+                battle.queue_message(format!["{} is confused!", mon![receiver_id].name()]);
 
                 if mon![receiver_id]
                     .volatile_status(Confused)
@@ -61,12 +61,12 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
                     .remaining_turns()
                     == 0
                 {
-                    sim.push_message(format!["{} snapped out of confusion!", mon![receiver_id].name()]);
+                    battle.queue_message(format!["{} snapped out of confusion!", mon![receiver_id].name()]);
                     return Outcome::Success(NOTHING);
-                } else if sim.chance(1, 3) {
-                    sim.push_message(format!["{} hit itself in confusion!", mon![receiver_id].name()]);
+                } else if battle.roll_chance(1, 3) {
+                    battle.queue_message(format!["{} hit itself in confusion!", mon![receiver_id].name()]);
                     let one_eight_of_max_hp = (mon![receiver_id].max_health() as f64 * 1.0 / 8.0) as u16;
-                    let _damage = effects::deal_raw_damage(sim, (receiver_id, one_eight_of_max_hp));
+                    let _damage = effects::deal_raw_damage(battle, (receiver_id, one_eight_of_max_hp));
                     return Outcome::Failure;
                 }
                 Outcome::Success(NOTHING)

@@ -103,7 +103,7 @@ mod prng {
 
         let mut success = 0.0;
         for _ in 0..=10_000_000 {
-            if prng.chance(33, 100) {
+            if prng.roll_chance(33, 100) {
                 success += 1.0;
             }
         }

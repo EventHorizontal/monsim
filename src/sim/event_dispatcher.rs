@@ -42,7 +42,7 @@ mod tests;
 
 use crate::{
     sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, EventHandlerSelector, Nothing, Outcome},
-    ActivationOrder, BattleSimulator,
+    ActivationOrder,
 };
 use contexts::*;
 pub use events::*;
@@ -55,14 +55,14 @@ pub struct EventDispatcher;
 
 impl EventDispatcher {
     pub fn dispatch_trial_event<C: EventContext + Copy, B: Broadcaster + Copy>(
-        sim: &mut BattleSimulator,
+        battle: &mut BattleState,
 
         broadcaster_id: B,
         event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, B>,
         event_context: C,
     ) -> Outcome<Nothing> {
         EventDispatcher::dispatch_event(
-            sim,
+            battle,
             broadcaster_id,
             event_handler_selector,
             event_context,
@@ -75,7 +75,7 @@ impl EventDispatcher {
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
     pub fn dispatch_event<R: PartialEq + Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
-        sim: &mut BattleSimulator,
+        battle: &mut BattleState,
 
         broadcaster_id: B,
         event_handler_selector: EventHandlerSelector<R, C, B>,
@@ -83,26 +83,26 @@ impl EventDispatcher {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let mut owned_event_handlers = sim.battle.owned_event_handlers(event_handler_selector);
+        let mut owned_event_handlers = battle.owned_event_handlers(event_handler_selector);
 
         if owned_event_handlers.is_empty() {
             return default;
         }
 
-        sort_by_activation_order(&mut sim.battle.prng, &mut owned_event_handlers, |owned_event_handler| {
+        sort_by_activation_order(&mut battle.prng, &mut owned_event_handlers, |owned_event_handler| {
             owned_event_handler.activation_order
         });
 
         let mut relay = default;
         for OwnedEventHandler { event_handler, owner_id, .. } in owned_event_handlers.into_iter() {
             if EventDispatcher::does_event_pass_event_receivers_filtering_options(
-                &sim.battle,
+                &battle,
                 broadcaster_id,
                 event_context.target(),
                 owner_id,
                 event_handler.event_filtering_options,
             ) {
-                relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context, relay);
+                relay = (event_handler.response)(battle, broadcaster_id, owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -243,7 +243,7 @@ impl EventFilteringOptions {
 }
 
 pub type EventResponse<R, C, B> =
-    fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C, /* relay */ R) -> R;
+    fn(/* battle */ &mut BattleState, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C, /* relay */ R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]

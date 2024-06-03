@@ -48,10 +48,10 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
 pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 003,
     name: "Ember",
-    on_hit_effect: |sim, context| {
-        let hit_outcome = effects::deal_default_damage(sim, context);
-        if sim.chance(9, 10) && hit_outcome.succeeded() {
-            effects::add_persistent_status(sim, (context.target_id, &Burned));
+    on_hit_effect: |battle, context| {
+        let hit_outcome = effects::deal_default_damage(battle, context);
+        if battle.roll_chance(9, 10) && hit_outcome.succeeded() {
+            effects::add_persistent_status(battle, (context.target_id, &Burned));
         }
         hit_outcome
     },
@@ -134,10 +134,10 @@ pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
 pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 008,
     name: "Confusion",
-    on_hit_effect: |sim, context| {
-        let hit_outcome = effects::deal_default_damage(sim, context);
-        if sim.chance(1, 10) && hit_outcome.succeeded() {
-            effects::add_volatile_status(sim, (context.target_id, &Confused));
+    on_hit_effect: |battle, context| {
+        let hit_outcome = effects::deal_default_damage(battle, context);
+        if battle.roll_chance(1, 10) && hit_outcome.succeeded() {
+            effects::add_volatile_status(battle, (context.target_id, &Confused));
         }
         hit_outcome
     },

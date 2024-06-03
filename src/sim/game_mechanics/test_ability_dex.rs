@@ -20,7 +20,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
         on_try_move_hit: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location![],
-            response: |sim,
+            response: |battle,
                        broadcaster_id,
                        receiver_id,
                        MoveHitContext {
@@ -31,15 +31,15 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
                        _| {
                 if mov![move_used_id].is_type(Type::Fire) && target_id == receiver_id {
                     let activation_outcome = effects::activate_ability(
-                        sim,
+                        battle,
                         AbilityUseContext::from_owner(receiver_id),
-                        |sim,
+                        |battle,
                          AbilityUseContext {
                              ability_owner_id,
                              ability_used_id,
                          }| {
                             let ability_owner_name = mon![ability_owner_id].name();
-                            sim.push_message(format!["{ability_owner_name}'s Flash Fire activated!"]);
+                            battle.queue_message(format!["{ability_owner_name}'s Flash Fire activated!"]);
                             Outcome::Success(())
                         },
                     );

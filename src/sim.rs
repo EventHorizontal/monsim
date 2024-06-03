@@ -9,7 +9,7 @@ mod event_dispatcher;
 mod ordering;
 mod targetting;
 
-use std::{error::Error, fmt::Display, ops::RangeInclusive};
+use std::{error::Error, fmt::Display};
 
 pub use battle::*;
 pub use battle_constants::*;
@@ -176,7 +176,8 @@ impl BattleSimulator {
             // If the actor fainted we move on to the next action..
             let actor_id = action_choice.actor_id();
             if self.battle.monster(actor_id).is_fainted() {
-                self.push_message(format!["{} fainted so it was unable to act.", self.battle.monster(actor_id).name()]);
+                self.battle
+                    .queue_message(format!["{} fainted so it was unable to act.", self.battle.monster(actor_id).name()]);
                 continue 'turn;
             }
 
@@ -189,27 +190,27 @@ impl BattleSimulator {
                         .filter_map(|position| self.battle.monster_at_position(position))
                         .map(|monster| monster.id)
                         .collect::<Vec<_>>();
-                    effects::use_move(self, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
+                    effects::use_move(&mut self.battle, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
                 }
                 FullySpecifiedActionChoice::SwitchOut {
                     active_monster_id,
                     benched_monster_id,
                     ..
                 } => {
-                    effects::switch_monsters(self, SwitchContext::new(active_monster_id, benched_monster_id));
+                    effects::switch_monsters(&mut self.battle, SwitchContext::new(active_monster_id, benched_monster_id));
                 }
             }
 
-            self.push_message(EMPTY_LINE);
+            self.battle.queue_message(EMPTY_LINE);
 
             // After each action, we check if the the battle is finished or not.
             let ally_team_wiped = self.battle.ally_team().monsters().all(|monster| monster.is_fainted());
             let opponent_team_wiped = self.battle.opponent_team().monsters().all(|monster| monster.is_fainted());
 
             match (ally_team_wiped, opponent_team_wiped) {
-                (true, true) => self.push_message("Neither team has any usable Monsters, it's a tie!"),
-                (true, false) => self.push_message("Opponent team won!"),
-                (false, true) => self.push_message("Ally team won!"),
+                (true, true) => self.battle.queue_message("Neither team has any usable Monsters, it's a tie!"),
+                (true, false) => self.battle.queue_message("Opponent team won!"),
+                (false, true) => self.battle.queue_message("Ally team won!"),
                 (false, false) => {}
             }
 
@@ -236,7 +237,8 @@ impl BattleSimulator {
             let team_id = empty_field_position.side();
             let switchable_benched_monster_ids = self.battle.switchable_benched_monster_ids(team_id, &MaxSizedVec::empty());
             if switchable_benched_monster_ids.is_empty() {
-                self.push_message(format!["{} is empty but {} is out of switchable Monsters!", empty_field_position, team_id]);
+                self.battle
+                    .queue_message(format!["{} is empty but {} is out of switchable Monsters!", empty_field_position, team_id]);
             } else {
                 let monster_selected_for_switch_id =
                     ui.prompt_user_to_select_benched_monster_to_switch_in(&mut self.battle, empty_field_position, switchable_benched_monster_ids);
@@ -244,7 +246,7 @@ impl BattleSimulator {
                 INFO: Monsters get switched in immediately if they are replacing a fainted Monster
                 that fainted last turn, so we don't add them to the 'action_schedule'.
                 */
-                effects::switch_in_monster(self, (monster_selected_for_switch_id, empty_field_position))
+                effects::switch_in_monster(&mut self.battle, (monster_selected_for_switch_id, empty_field_position))
             }
         }
 
@@ -268,7 +270,7 @@ impl BattleSimulator {
             }
         }
 
-        event_dispatcher::trigger_on_turn_end_event(self, NOTHING, NOTHING);
+        event_dispatcher::trigger_on_turn_end_event(&mut self.battle, NOTHING, NOTHING);
 
         self.battle.message_log.show_new_messages();
 
@@ -279,21 +281,5 @@ impl BattleSimulator {
         }
 
         Ok(false)
-    }
-}
-
-impl BattleSimulator {
-    // public
-
-    pub fn push_message(&mut self, message: impl ToString) {
-        self.battle.message_log.push(message);
-    }
-
-    pub fn chance(&mut self, num: u16, denom: u16) -> bool {
-        self.battle.prng.chance(num, denom)
-    }
-
-    pub fn generate_random_number_in_range_inclusive(&mut self, range: RangeInclusive<u16>) -> u16 {
-        self.battle.prng.generate_random_number_in_range(range)
     }
 }

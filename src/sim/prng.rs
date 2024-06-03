@@ -53,7 +53,7 @@ impl Prng {
         self.current_seed
     }
 
-    pub fn chance(&mut self, num: u16, denom: u16) -> bool {
+    pub fn roll_chance(&mut self, num: u16, denom: u16) -> bool {
         assert!(denom != 0);
         self.generate_random_number_in_range(1..=denom) <= num
     }

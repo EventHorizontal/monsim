@@ -6,7 +6,7 @@ use crate::{
     AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags,
 };
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use std::fmt::Display;
+use std::{fmt::Display, ops::RangeInclusive};
 
 use self::builders::BattleFormat;
 
@@ -82,6 +82,8 @@ fn attach_tree_for_team(output_string: &mut String, team: &MonsterTeam) {
 }
 
 impl BattleState {
+    // Battle ---------------------------------------------------- //
+
     pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
         let teams = PerTeam::new(ally_team, opponent_team);
         Self {
@@ -102,7 +104,43 @@ impl BattleState {
         self.ally_team().monsters().all(|monster| monster.is_fainted()) || self.opponent_team().monsters().all(|monster| monster.is_fainted())
     }
 
-    // Teams -----------------
+    // Message Log ------------------------------------------------ //
+
+    /// The Battle queues a message in the message log to be displayed on the
+    /// next request to `show_new_messages()`.
+    pub fn queue_message(&mut self, message: impl ToString) {
+        self.message_log.push(message)
+    }
+
+    /// The Battle shows all the queued messages and then archives the messages.
+    pub fn show_new_messages(&mut self) {
+        self.message_log.show_new_messages()
+    }
+
+    // PRNG ------------------------------------------------------- //
+
+    /// Returns `true` `num` out of `denom` times, pseudorandomly, using the method used in
+    /// the games.
+    ///
+    /// To do this, the PRNG of the Battle is requested to yield the next random number. This
+    /// number is used to normalised to a range of `1` to `denom`. This function then returns
+    /// `true` if the resulting normalised random number is less than or equal ot `num`,
+    /// otherwise it returns `false`.
+    pub fn roll_chance(&mut self, num: u16, denom: u16) -> bool {
+        self.prng.roll_chance(num, denom)
+    }
+
+    /// Returns a random number within the range given by `range`, with equal probability,
+    /// of each number in the range.
+    ///
+    /// To do this, the PRNG of the Battle is requested to yield the next random number. This
+    /// number is used to normalised between the start and end of the range. Note that the range
+    /// is **inclusive** of both end points.
+    pub fn roll_random_number_in_range(&mut self, range: RangeInclusive<u16>) -> u16 {
+        self.prng.generate_random_number_in_range(range)
+    }
+
+    // Teams ------------------------------------------------------ //
 
     #[inline(always)]
     pub fn teams(&self) -> &PerTeam<MonsterTeam> {
@@ -164,7 +202,7 @@ impl BattleState {
         out
     }
 
-    // Monsters -----------------
+    // Monsters -------------------------------------------------- //
 
     /// The iterator yields ally monsters first, then yields opponent monsters, in id order.
     pub fn monsters(&self) -> impl Iterator<Item = &Monster> {
@@ -213,7 +251,7 @@ impl BattleState {
             .into_iter()
     }
 
-    // Abilities -----------------
+    // Abilities ---------------------------------------------------- //
 
     pub fn ability(&self, ability_id: AbilityID) -> &Ability {
         &self.monster(ability_id.owner_id).ability
@@ -229,7 +267,7 @@ impl BattleState {
         &mut self.monster_mut(owner_id).ability
     }
 
-    // Moves -----------------
+    // Moves -------------------------------------------------------- //
 
     pub fn move_(&self, move_id: MoveID) -> &Move {
         &self.monster(move_id.owner_id).moveset[move_id.move_number as usize]
@@ -245,7 +283,7 @@ impl BattleState {
         &mut self.monster_mut(move_id.owner_id).moveset[move_id.move_number as usize]
     }
 
-    // Items --- --- --- --- ---
+    // Items --------------------------------------------------------- //
 
     pub fn item(&self, item_id: ItemID) -> Option<&Item> {
         self.monster(item_id.item_holder_id).held_item.as_ref()
@@ -261,7 +299,7 @@ impl BattleState {
         self.monster_mut(item_id.item_holder_id).held_item.as_mut()
     }
 
-    // Choice -------------------------------------
+    // Choices -------------------------------------------------------- //
 
     const MAX_SWITCHES_PER_TURN: usize = 3;
 
@@ -336,6 +374,8 @@ impl BattleState {
             MaxSizedVec::from_vec(switchable_benched_monsters)
         }
     }
+
+    // Positions & Targetting ------------------------------------------------ //
 
     pub(crate) fn monster_at_position(&self, field_position: FieldPosition) -> Option<&Monster> {
         self.monsters().find(|monster| {

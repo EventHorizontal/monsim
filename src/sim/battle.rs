@@ -137,7 +137,7 @@ impl BattleState {
     /// number is used to normalised between the start and end of the range. Note that the range
     /// is **inclusive** of both end points.
     pub fn roll_random_number_in_range(&mut self, range: RangeInclusive<u16>) -> u16 {
-        self.prng.generate_random_number_in_range(range)
+        self.prng.roll_random_number_in_range(range)
     }
 
     // Teams ------------------------------------------------------ //

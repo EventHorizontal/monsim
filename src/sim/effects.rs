@@ -334,16 +334,8 @@ pub fn add_volatile_status(battle: &mut BattleState, affected_monster_id: Monste
     if try_add_status.succeeded() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
-            // HACK: We currently pass in the remaining turns because `prng` is inside `battle` so it causes multiple mutable references into `battle`.
-            // Resolving this will require some structural changes. Prng and Battle are too tightly coupled I think.
-            let lifetime_in_turns = match status_species.lifetime_in_turns {
-                Count::Fixed(n) => n,
-                Count::RandomInRange { min, max } => battle.roll_random_number_in_range(min as u16..=max as u16) as u8,
-            };
-
-            mon![mut affected_monster_id]
-                .volatile_statuses
-                .push(VolatileStatus::new(lifetime_in_turns, status_species));
+            let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species);
+            mon![mut affected_monster_id].volatile_statuses.push(volatile_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             Outcome::Success(NOTHING)
         } else {

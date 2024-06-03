@@ -32,11 +32,11 @@ impl Prng {
 
     pub fn roll_chance(&mut self, num: u16, denom: u16) -> bool {
         assert!(denom != 0);
-        self.generate_random_number_in_range(1..=denom) <= num
+        self.roll_random_number_in_range(1..=denom) <= num
     }
 
     /// Returns each number in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
-    pub(crate) fn generate_random_number_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
+    pub(crate) fn roll_random_number_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
         let start = range.next().expect("The range given to generate_number_in_range must have a first element.");
         let end = range
             .next_back()

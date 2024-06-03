@@ -1,7 +1,7 @@
 use monsim_utils::Count;
 use std::fmt::Display;
 
-use crate::{EventHandlerSet, Monster};
+use crate::{prng::Prng, EventHandlerSet, Monster};
 
 // Permanent Statuses
 #[derive(Debug, Clone, Copy)]
@@ -80,9 +80,11 @@ impl Display for VolatileStatus {
 }
 
 impl VolatileStatus {
-    // HACK: We currently pass in the remaining turns because `prng` is inside `battle` sot the mutable references
-    // conflict. A structural change is needed to resolve this correctly.
-    pub(crate) fn new(lifetime_in_turns: u8, species: &'static VolatileStatusSpecies) -> VolatileStatus {
+    pub(crate) fn from_species(prng: &mut Prng, species: &'static VolatileStatusSpecies) -> VolatileStatus {
+        let lifetime_in_turns = match species.lifetime_in_turns {
+            Count::Fixed(n) => n,
+            Count::RandomInRange { min, max } => prng.roll_random_number_in_range(min as u16..=max as u16) as u8,
+        };
         VolatileStatus {
             species,
             remaining_turns: lifetime_in_turns,

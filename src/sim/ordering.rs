@@ -62,7 +62,7 @@ fn resolve_speed_tie<T: Clone + Copy>(prng: &mut Prng, slice: &mut [T], tied_mon
     'iteration_over_tied_indices: while not!(tied_monster_indices.is_empty()) {
         let number_tied = tied_monster_indices.len() as u16;
         // Roll an n-sided die and put the monster corresponding to the roll at the front of the tied order.
-        let random_index = prng.generate_random_number_in_range(0..=number_tied - 1) as usize;
+        let random_index = prng.roll_random_number_in_range(0..=number_tied - 1) as usize;
         slice[i + offset] = slice_copy[tied_monster_indices.remove(random_index)];
         // Once there is only one remaining tied monster, put it at the end of the queue.
         if tied_monster_indices.len() == 1 {

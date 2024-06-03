@@ -61,8 +61,6 @@ pub struct BattleSimulator {
 }
 
 impl BattleSimulator {
-    // simulation
-
     pub fn init(battle: Battle) -> BattleSimulator {
         BattleSimulator { battle }
     }

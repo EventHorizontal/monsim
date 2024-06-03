@@ -73,7 +73,7 @@ impl EventDispatcher {
 
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
     ///
-    /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution short-circuits and returns early.
+    /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution "short-circuits", or returns early.
     pub fn dispatch_event<R: PartialEq + Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
         battle: &mut BattleState,
 

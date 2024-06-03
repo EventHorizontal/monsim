@@ -55,11 +55,11 @@ impl EventHandlerSet {
     }
 }
 
-pub(crate) fn trigger_on_try_move_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_move_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(battle, broadcaster_id, |event_handler_set| vec![(event_handler_set.on_try_move)], event_context)
 }
 
-pub(crate) fn trigger_on_damaging_move_used_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
+pub(crate) fn trigger_on_damaging_move_used_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -70,7 +70,7 @@ pub(crate) fn trigger_on_damaging_move_used_event(battle: &mut BattleState, broa
     )
 }
 
-pub(crate) fn trigger_on_status_move_used_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
+pub(crate) fn trigger_on_status_move_used_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -81,7 +81,7 @@ pub(crate) fn trigger_on_status_move_used_event(battle: &mut BattleState, broadc
     )
 }
 
-pub(crate) fn trigger_on_try_move_hit_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_move_hit_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -90,7 +90,7 @@ pub(crate) fn trigger_on_try_move_hit_event(battle: &mut BattleState, broadcaste
     )
 }
 
-pub(crate) fn trigger_on_move_hit_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Nothing {
+pub(crate) fn trigger_on_move_hit_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -101,7 +101,7 @@ pub(crate) fn trigger_on_move_hit_event(battle: &mut BattleState, broadcaster_id
     )
 }
 
-pub(crate) fn trigger_on_calculate_attack_stat_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
+pub(crate) fn trigger_on_calculate_attack_stat_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -112,7 +112,7 @@ pub(crate) fn trigger_on_calculate_attack_stat_event(battle: &mut BattleState, b
     )
 }
 
-pub(crate) fn trigger_on_calculate_defense_stat_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
+pub(crate) fn trigger_on_calculate_defense_stat_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -123,7 +123,7 @@ pub(crate) fn trigger_on_calculate_defense_stat_event(battle: &mut BattleState, 
     )
 }
 
-pub(crate) fn trigger_on_modify_damage_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveHitContext, current_damage: u16) -> u16 {
+pub(crate) fn trigger_on_modify_damage_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext, current_damage: u16) -> u16 {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -134,7 +134,7 @@ pub(crate) fn trigger_on_modify_damage_event(battle: &mut BattleState, broadcast
     )
 }
 
-pub(crate) fn trigger_on_damage_dealt_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: Nothing) -> Nothing {
+pub(crate) fn trigger_on_damage_dealt_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: Nothing) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -145,7 +145,11 @@ pub(crate) fn trigger_on_damage_dealt_event(battle: &mut BattleState, broadcaste
     )
 }
 
-pub(crate) fn trigger_on_try_activate_ability_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: AbilityActivationContext) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_activate_ability_event(
+    battle: &mut Battle,
+    broadcaster_id: MonsterID,
+    event_context: AbilityActivationContext,
+) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -154,7 +158,7 @@ pub(crate) fn trigger_on_try_activate_ability_event(battle: &mut BattleState, br
     )
 }
 
-pub(crate) fn trigger_on_ability_activated_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: AbilityActivationContext) -> Nothing {
+pub(crate) fn trigger_on_ability_activated_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: AbilityActivationContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -165,7 +169,7 @@ pub(crate) fn trigger_on_ability_activated_event(battle: &mut BattleState, broad
     )
 }
 
-pub(crate) fn trigger_on_modify_accuracy_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveHitContext, base_accuracy: u16) -> u16 {
+pub(crate) fn trigger_on_modify_accuracy_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext, base_accuracy: u16) -> u16 {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -176,7 +180,7 @@ pub(crate) fn trigger_on_modify_accuracy_event(battle: &mut BattleState, broadca
     )
 }
 
-pub(crate) fn trigger_on_try_raise_stat_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_raise_stat_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -185,7 +189,7 @@ pub(crate) fn trigger_on_try_raise_stat_event(battle: &mut BattleState, broadcas
     )
 }
 
-pub(crate) fn trigger_on_try_lower_stat_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_lower_stat_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -194,7 +198,7 @@ pub(crate) fn trigger_on_try_lower_stat_event(battle: &mut BattleState, broadcas
     )
 }
 
-pub(crate) fn trigger_on_try_add_volatile_status_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_add_volatile_status_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -203,7 +207,7 @@ pub(crate) fn trigger_on_try_add_volatile_status_event(battle: &mut BattleState,
     )
 }
 
-pub(crate) fn trigger_on_try_add_permanent_status_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_add_permanent_status_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: Nothing) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -212,7 +216,7 @@ pub(crate) fn trigger_on_try_add_permanent_status_event(battle: &mut BattleState
     )
 }
 
-pub(crate) fn trigger_on_try_use_held_item_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_use_held_item_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -221,7 +225,7 @@ pub(crate) fn trigger_on_try_use_held_item_event(battle: &mut BattleState, broad
     )
 }
 
-pub(crate) fn trigger_on_held_item_used_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Nothing {
+pub(crate) fn trigger_on_held_item_used_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: ItemUseContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
@@ -232,7 +236,7 @@ pub(crate) fn trigger_on_held_item_used_event(battle: &mut BattleState, broadcas
     )
 }
 
-pub(crate) fn trigger_on_turn_end_event(battle: &mut BattleState, broadcaster_id: Nothing, event_context: Nothing) -> Nothing {
+pub(crate) fn trigger_on_turn_end_event(battle: &mut Battle, broadcaster_id: Nothing, event_context: Nothing) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,

@@ -17,7 +17,7 @@ fn main() -> MonsimResult<()> {
     #[cfg(feature = "debug")]
     std::env::set_var("RUST_BACKTRACE", "1");
 
-    let battle = BattleState::spawn()
+    let battle = Battle::spawn()
         .add_ally_team(
             MonsterTeam::spawn()
                 .add_monster(

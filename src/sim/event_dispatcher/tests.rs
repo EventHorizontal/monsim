@@ -11,7 +11,7 @@ fn test_if_priority_sorting_is_deterministic() {
     };
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
-        let test_battle = BattleState::spawn()
+        let test_battle = Battle::spawn()
             .add_ally_team(
                 MonsterTeam::spawn()
                     .add_monster(
@@ -64,7 +64,7 @@ fn test_priority_sorting_with_speed_ties() {
     };
     let mut result = [Vec::new(), Vec::new()];
     for i in 0..=1 {
-        let test_battle = BattleState::spawn()
+        let test_battle = Battle::spawn()
             .add_ally_team(
                 MonsterTeam::spawn()
                     .add_monster(
@@ -170,7 +170,7 @@ fn test_filtering_events_by_broadcaster_relations() {
         test_move_dex::{Bubble, Ember, Scratch, Tackle},
         MonsterNumber, TeamID,
     };
-    let test_battle = BattleState::spawn()
+    let test_battle = Battle::spawn()
         .add_ally_team(
             MonsterTeam::spawn()
                 .add_monster(

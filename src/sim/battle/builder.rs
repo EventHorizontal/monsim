@@ -7,7 +7,7 @@ use crate::{
         game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet},
         targetting::{BoardPosition, FieldPosition},
     },
-    AbilityID, BattleState, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2,
+    AbilityID, Battle, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2,
     ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
 };
 
@@ -26,14 +26,7 @@ pub struct BattleBuilder {
     format: BattleFormat,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BattleFormat {
-    Single,
-    Double,
-    Triple,
-}
-
-impl BattleState {
+impl Battle {
     pub fn spawn() -> BattleBuilder {
         BattleBuilder {
             maybe_ally_team: None,
@@ -64,33 +57,8 @@ impl BattleBuilder {
         self
     }
 
-    pub fn build(self) -> BattleState {
-        let ally_board_positions = match self.format {
-            BattleFormat::Single => [
-                BoardPosition::Field(FieldPosition::AllySideCentre),
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-            ],
-            BattleFormat::Double => [
-                BoardPosition::Field(FieldPosition::AllySideCentre),
-                BoardPosition::Field(FieldPosition::AllySideRight),
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-            ],
-            BattleFormat::Triple => [
-                BoardPosition::Field(FieldPosition::AllySideCentre),
-                BoardPosition::Field(FieldPosition::AllySideLeft),
-                BoardPosition::Field(FieldPosition::AllySideRight),
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-            ],
-        };
+    pub fn build(self) -> Battle {
+        let ally_board_positions = self.format.ally_board_positions();
 
         const ALLY_IDS: [MonsterID; 6] = [ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6];
 
@@ -99,32 +67,7 @@ impl BattleBuilder {
             .expect("Building the BattleState requires adding an Ally Team, found none.")
             .map_consume(|ally_team_builder| ally_team_builder.build(ALLY_IDS, ally_board_positions, TeamID::Allies));
 
-        let opponent_board_positions = match self.format {
-            BattleFormat::Single => [
-                BoardPosition::Field(FieldPosition::OpponentSideCentre),
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-            ],
-            BattleFormat::Double => [
-                BoardPosition::Field(FieldPosition::OpponentSideCentre),
-                BoardPosition::Field(FieldPosition::OpponentSideRight),
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-            ],
-            BattleFormat::Triple => [
-                BoardPosition::Field(FieldPosition::OpponentSideCentre),
-                BoardPosition::Field(FieldPosition::OpponentSideLeft),
-                BoardPosition::Field(FieldPosition::OpponentSideRight),
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-                BoardPosition::Bench,
-            ],
-        };
+        let opponent_board_positions = self.format.opponent_board_positions();
 
         const OPPONENT_IDS: [MonsterID; 6] = [OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6];
 
@@ -133,7 +76,7 @@ impl BattleBuilder {
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
             .map_consume(|opponent_team_builder| opponent_team_builder.build(OPPONENT_IDS, opponent_board_positions, TeamID::Opponents));
 
-        BattleState::new(ally_team, opponent_team, self.format)
+        Battle::new(ally_team, opponent_team, self.format)
     }
 }
 
@@ -169,6 +112,99 @@ impl MonsterTeamBuilder {
             .map(|((monster_builder, monster_id), board_position)| monster_builder.build(monster_id, board_position))
             .collect::<Vec<_>>()
             .pipe(|monsters| MonsterTeam::new(monsters, team_id))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BattleFormat {
+    Single,
+    Double,
+    Triple,
+}
+
+impl BattleFormat {
+    pub(crate) fn valid_positions(&self) -> Vec<FieldPosition> {
+        match self {
+            BattleFormat::Single => {
+                vec![FieldPosition::AllySideCentre, FieldPosition::OpponentSideCentre]
+            }
+            BattleFormat::Double => {
+                vec![
+                    FieldPosition::AllySideCentre,
+                    FieldPosition::AllySideRight,
+                    FieldPosition::OpponentSideCentre,
+                    FieldPosition::OpponentSideRight,
+                ]
+            }
+            BattleFormat::Triple => {
+                vec![
+                    FieldPosition::AllySideLeft,
+                    FieldPosition::AllySideCentre,
+                    FieldPosition::AllySideRight,
+                    FieldPosition::OpponentSideLeft,
+                    FieldPosition::OpponentSideCentre,
+                    FieldPosition::OpponentSideRight,
+                ]
+            }
+        }
+    }
+
+    fn ally_board_positions(&self) -> [BoardPosition; 6] {
+        match self {
+            BattleFormat::Single => [
+                BoardPosition::Field(FieldPosition::AllySideCentre),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Double => [
+                BoardPosition::Field(FieldPosition::AllySideCentre),
+                BoardPosition::Field(FieldPosition::AllySideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Triple => [
+                BoardPosition::Field(FieldPosition::AllySideCentre),
+                BoardPosition::Field(FieldPosition::AllySideLeft),
+                BoardPosition::Field(FieldPosition::AllySideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+        }
+    }
+
+    fn opponent_board_positions(&self) -> [BoardPosition; 6] {
+        match self {
+            BattleFormat::Single => [
+                BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Double => [
+                BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                BoardPosition::Field(FieldPosition::OpponentSideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Triple => [
+                BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                BoardPosition::Field(FieldPosition::OpponentSideLeft),
+                BoardPosition::Field(FieldPosition::OpponentSideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+        }
     }
 }
 

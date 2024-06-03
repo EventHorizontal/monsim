@@ -13,7 +13,7 @@ use std::{error::Error, fmt::Display};
 
 pub use battle::*;
 pub use battle_constants::*;
-pub use builders::{AbilityBuilderExt, BattleFormat, ItemBuilderExt, MonsterBuilderExt, MoveBuilderExt};
+pub use builder::{AbilityBuilderExt, BattleFormat, ItemBuilderExt, MonsterBuilderExt, MoveBuilderExt};
 pub use choice::*;
 pub use effects::*;
 pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler, EventHandlerSet};
@@ -57,13 +57,13 @@ just functions that transform a `Battle` from one state to another.
 */
 #[derive(Debug)]
 pub struct BattleSimulator {
-    pub battle: BattleState,
+    pub battle: Battle,
 }
 
 impl BattleSimulator {
     // simulation
 
-    pub fn init(battle: BattleState) -> BattleSimulator {
+    pub fn init(battle: Battle) -> BattleSimulator {
         BattleSimulator { battle }
     }
 
@@ -229,7 +229,8 @@ impl BattleSimulator {
         // Monster Replacement Phase
         let empty_field_positions = self
             .battle
-            .valid_positions_in_format()
+            .format()
+            .valid_positions()
             .into_iter()
             .filter(|position| self.battle.monster_at_position(*position).is_none())
             .collect::<Vec<_>>();

@@ -41,7 +41,7 @@ mod events;
 mod tests;
 
 use crate::{
-    sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, EventHandlerSelector, Nothing, Outcome},
+    sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, Battle, EventHandlerSelector, Nothing, Outcome},
     ActivationOrder,
 };
 use contexts::*;
@@ -55,7 +55,7 @@ pub struct EventDispatcher;
 
 impl EventDispatcher {
     pub fn dispatch_trial_event<C: EventContext + Copy, B: Broadcaster + Copy>(
-        battle: &mut BattleState,
+        battle: &mut Battle,
 
         broadcaster_id: B,
         event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, B>,
@@ -75,7 +75,7 @@ impl EventDispatcher {
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution "short-circuits", or returns early.
     pub fn dispatch_event<R: PartialEq + Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
-        battle: &mut BattleState,
+        battle: &mut Battle,
 
         broadcaster_id: B,
         event_handler_selector: EventHandlerSelector<R, C, B>,
@@ -115,7 +115,7 @@ impl EventDispatcher {
     }
 
     fn does_event_pass_event_receivers_filtering_options(
-        battle: &BattleState,
+        battle: &Battle,
         event_broadcaster: impl Broadcaster,
         event_target_id: Option<MonsterID>,
         event_receiver_id: MonsterID,
@@ -243,7 +243,7 @@ impl EventFilteringOptions {
 }
 
 /// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: MonsterID, context: C, relay: R) -> event_outcome: R`
-pub type EventResponse<R, C, B> = fn(&mut BattleState, B, MonsterID, C, R) -> R;
+pub type EventResponse<R, C, B> = fn(&mut Battle, B, MonsterID, C, R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]

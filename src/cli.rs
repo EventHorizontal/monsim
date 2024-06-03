@@ -1,5 +1,5 @@
 use crate::{
-    sim::{AvailableChoices, BattleState, PartiallySpecifiedActionChoice},
+    sim::{AvailableChoices, Battle, PartiallySpecifiedActionChoice},
     FieldPosition, MonsterID, MoveID, SimulatorUi,
 };
 use monsim_utils::MaxSizedVec;
@@ -9,7 +9,7 @@ use std::io::{stdout, Write};
 pub struct Cli;
 
 impl SimulatorUi for Cli {
-    fn update_battle_status(&self, battle: &mut BattleState) {
+    fn update_battle_status(&self, battle: &mut Battle) {
         let mut locked_stdout = stdout().lock();
         _ = writeln![locked_stdout];
         _ = writeln![locked_stdout, "Current Battle Status:"];
@@ -27,7 +27,7 @@ impl SimulatorUi for Cli {
 
     fn prompt_user_to_select_action_for_monster(
         &self,
-        battle: &mut BattleState,
+        battle: &mut Battle,
         monster_id: MonsterID,
         available_choices_for_monster: AvailableChoices,
     ) -> PartiallySpecifiedActionChoice {
@@ -65,7 +65,7 @@ impl SimulatorUi for Cli {
 
     fn prompt_user_to_select_target_position(
         &self,
-        battle: &mut BattleState,
+        battle: &mut Battle,
         move_id: MoveID,
         possible_target_positions: MaxSizedVec<FieldPosition, 6>,
     ) -> FieldPosition {
@@ -86,7 +86,7 @@ impl SimulatorUi for Cli {
 
     fn prompt_user_to_select_benched_monster_to_switch_in(
         &self,
-        battle: &mut BattleState,
+        battle: &mut Battle,
         switch_position: FieldPosition,
         switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>,
     ) -> MonsterID {

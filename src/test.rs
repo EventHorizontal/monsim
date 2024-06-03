@@ -12,7 +12,7 @@ mod battle {
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
         };
 
-        let test_battle = BattleState::spawn()
+        let test_battle = Battle::spawn()
             .add_ally_team(
                 MonsterTeam::spawn()
                     .add_monster(

@@ -16,7 +16,7 @@ pub use tui::run as run_tui;
 
 pub type MonsimResult<S> = Result<S, Box<dyn Error>>;
 
-pub fn run(battle: BattleState) -> MonsimResult<Nothing> {
+pub fn run(battle: Battle) -> MonsimResult<Nothing> {
     let simulator = BattleSimulator::init(battle);
     let cli = Cli::new();
     simulator.simulate(cli)?;

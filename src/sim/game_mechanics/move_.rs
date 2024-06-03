@@ -1,6 +1,6 @@
 use monsim_utils::{Count, Nothing, Outcome};
 
-use crate::{sim::Type, BattleState, MonsterID, MoveHitContext, TargetFlags};
+use crate::{sim::Type, Battle, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Move {
@@ -11,7 +11,7 @@ pub struct Move {
 }
 
 /// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome<Nothing>`
-type OnHitEffect = fn(&mut BattleState, MoveHitContext) -> Outcome<Nothing>;
+type OnHitEffect = fn(&mut Battle, MoveHitContext) -> Outcome<Nothing>;
 
 impl Move {
     #[inline(always)]
@@ -84,7 +84,7 @@ pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
 
-    on_hit_effect: fn(/* simulator */ &mut BattleState, /* context */ MoveHitContext) -> Outcome<Nothing>,
+    on_hit_effect: fn(/* simulator */ &mut Battle, /* context */ MoveHitContext) -> Outcome<Nothing>,
     hits_per_target: Count,
 
     base_accuracy: Option<u16>,

@@ -2,30 +2,25 @@ use std::ops::{Index, IndexMut};
 
 use monsim_utils::MaxSizedVec;
 
-use crate::{ActivationOrder, BattleState, MonsterID};
+use crate::{ActivationOrder, Battle, MonsterID};
 
 use super::{game_mechanics::MoveID, targetting::FieldPosition};
 
 pub trait SimulatorUi {
-    fn update_battle_status(&self, battle: &mut BattleState);
+    fn update_battle_status(&self, battle: &mut Battle);
 
     fn prompt_user_to_select_action_for_monster(
         &self,
-        battle: &mut BattleState,
+        battle: &mut Battle,
         monster_id: MonsterID,
         available_choices_for_monster: AvailableChoices,
     ) -> PartiallySpecifiedActionChoice;
 
-    fn prompt_user_to_select_target_position(
-        &self,
-        battle: &mut BattleState,
-        move_id: MoveID,
-        possible_targets: MaxSizedVec<FieldPosition, 6>,
-    ) -> FieldPosition;
+    fn prompt_user_to_select_target_position(&self, battle: &mut Battle, move_id: MoveID, possible_targets: MaxSizedVec<FieldPosition, 6>) -> FieldPosition;
 
     fn prompt_user_to_select_benched_monster_to_switch_in(
         &self,
-        battle: &mut BattleState,
+        battle: &mut Battle,
         switch_position: FieldPosition,
         switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>,
     ) -> MonsterID;

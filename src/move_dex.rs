@@ -2,7 +2,7 @@
 
 use monsim::{
     effects,
-    sim::{BattleState, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type},
+    sim::{Battle, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, Stat, Type},
     Count, EventHandlerSet, MoveDexEntry, MoveHitContext, Outcome, TargetFlags,
 };
 use monsim_macros::mon;

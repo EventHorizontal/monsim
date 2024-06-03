@@ -1,4 +1,4 @@
-pub(super) mod builders;
+pub(super) mod builder;
 mod message_log;
 
 use crate::{
@@ -6,9 +6,12 @@ use crate::{
     AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags,
 };
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use std::{fmt::Display, ops::RangeInclusive};
+use std::{
+    fmt::Display,
+    ops::{Deref, DerefMut, RangeInclusive},
+};
 
-use self::builders::BattleFormat;
+use self::builder::BattleFormat;
 
 use super::{
     event_dispatcher::EventContext,
@@ -20,17 +23,35 @@ use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BattleState {
+pub struct Battle {
     pub(crate) prng: Prng,
     pub(crate) turn_number: u16,
     pub(crate) format: BattleFormat,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
+    pub state: BattleState,
+}
 
+impl Deref for Battle {
+    type Target = BattleState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl DerefMut for Battle {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BattleState {
     teams: PerTeam<MonsterTeam>,
 }
 
-impl Display for BattleState {
+impl Display for Battle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
         attach_tree_for_team(&mut out, *self.ally_team());
@@ -80,7 +101,7 @@ fn attach_tree_for_team(output_string: &mut String, team: &MonsterTeam) {
     }
 }
 
-impl BattleState {
+impl Battle {
     // Battle ---------------------------------------------------- //
 
     pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
@@ -88,9 +109,9 @@ impl BattleState {
         Self {
             prng: Prng::from_current_time(),
             turn_number: 0,
-            teams,
             message_log: MessageLog::new(),
             format,
+            state: BattleState { teams },
         }
     }
 
@@ -101,6 +122,10 @@ impl BattleState {
 
     pub fn is_finished(&self) -> bool {
         self.ally_team().monsters().all(|monster| monster.is_fainted()) || self.opponent_team().monsters().all(|monster| monster.is_fainted())
+    }
+
+    pub fn split(&mut self) -> (&mut Prng, &mut BattleState) {
+        (&mut self.prng, &mut self.state)
     }
 
     // Message Log ------------------------------------------------ //
@@ -138,7 +163,9 @@ impl BattleState {
     pub fn roll_random_number_in_range(&mut self, range: RangeInclusive<u16>) -> u16 {
         self.prng.roll_random_number_in_range(range)
     }
+}
 
+impl BattleState {
     // Teams ------------------------------------------------------ //
 
     #[inline(always)]
@@ -428,31 +455,5 @@ impl BattleState {
             }
         }
         allowed_target_flags.contains(targetted_position_flags)
-    }
-
-    pub(crate) fn valid_positions_in_format(&self) -> Vec<FieldPosition> {
-        match self.format {
-            BattleFormat::Single => {
-                vec![FieldPosition::AllySideCentre, FieldPosition::OpponentSideCentre]
-            }
-            BattleFormat::Double => {
-                vec![
-                    FieldPosition::AllySideCentre,
-                    FieldPosition::AllySideRight,
-                    FieldPosition::OpponentSideCentre,
-                    FieldPosition::OpponentSideRight,
-                ]
-            }
-            BattleFormat::Triple => {
-                vec![
-                    FieldPosition::AllySideLeft,
-                    FieldPosition::AllySideCentre,
-                    FieldPosition::AllySideRight,
-                    FieldPosition::OpponentSideLeft,
-                    FieldPosition::OpponentSideCentre,
-                    FieldPosition::OpponentSideRight,
-                ]
-            }
-        }
     }
 }

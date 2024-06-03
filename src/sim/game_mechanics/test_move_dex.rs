@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     effects,
-    sim::{event_dispatcher::EventFilteringOptions, BattleState, MonsterID, Move, Stat},
+    sim::{event_dispatcher::EventFilteringOptions, Battle, MonsterID, Move, Stat},
     test_status_dex::*,
     BattleSimulator, Count, EventHandlerSet, MoveDexEntry, MoveUseContext, TargetFlags,
 };

@@ -1,7 +1,15 @@
 use std::io::Stdout;
 
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
-use tui::{backend::CrosstermBackend, layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, terminal::CompletedFrame, text::{Span, Spans}, widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap}, Frame, Terminal};
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
+    terminal::CompletedFrame,
+    text::{Span, Spans},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    Frame, Terminal,
+};
 
 use crate::sim::{AvailableChoicesForTeam, BattleState, MonsterID, PartiallySpecifiedChoice, PerTeam, TeamID};
 
@@ -54,17 +62,15 @@ struct SwitcheePrompt;
 
 impl SwitcheePrompt {
     fn as_renderable_widget<'a>(battle: &BattleState, switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>) -> List<'a> {
-        let list_items = switchable_benched_monster_ids.into_iter()
-            .map(|monster_id| {
-                ListItem::new(battle.monster(monster_id).full_name())
-            }).collect::<Vec<_>>();
+        let list_items = switchable_benched_monster_ids
+            .into_iter()
+            .map(|monster_id| ListItem::new(battle.monster(monster_id).full_name()))
+            .collect::<Vec<_>>();
 
         List::new(list_items)
             .block(
                 Block::default()
-                    .title(
-                        Span::styled("Switchee?", Style::default().fg(Color::Yellow))
-                    )
+                    .title(Span::styled("Switchee?", Style::default().fg(Color::Yellow)))
                     .borders(Borders::ALL),
             )
             .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
@@ -84,22 +90,15 @@ const MAX_CHOICES: usize = 8;
 
 impl<'a> Ui<'a> {
     pub(super) fn new(battle: &BattleState) -> Self {
-     
         let available_choices = battle.available_choices();
 
         let mut ally_team_choice_list = Vec::with_capacity(MAX_CHOICES);
         let ally_team_available_choices = available_choices[TeamID::Allies];
-        Self::choice_list_from_available_choices_for_team(
-            &mut ally_team_choice_list, 
-            ally_team_available_choices
-        );
-        
+        Self::choice_list_from_available_choices_for_team(&mut ally_team_choice_list, ally_team_available_choices);
+
         let mut opponent_team_choice_list = Vec::with_capacity(MAX_CHOICES);
         let opponent_team_available_choices = available_choices[TeamID::Opponents];
-        Self::choice_list_from_available_choices_for_team(
-            &mut opponent_team_choice_list,
-            opponent_team_available_choices
-        );
+        Self::choice_list_from_available_choices_for_team(&mut opponent_team_choice_list, opponent_team_available_choices);
 
         Self {
             currently_selected_panel: SelectablePanelID::MessageLog,
@@ -107,28 +106,28 @@ impl<'a> Ui<'a> {
                 Ally::new(ActiveMonsterStatusPanel {
                     team_name: ALLY_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamID::Allies).status_string(),
-                }), 
+                }),
                 Opponent::new(ActiveMonsterStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     active_monster_status: battle.active_monsters_on_team(TeamID::Opponents).status_string(),
-                    }
-                )),
+                }),
+            ),
             choice_selection_menus: PerTeam::new(
-                    Ally::new(ChoiceSelectionMenu { 
-                        team_name: ALLY_TEAM_NAME, 
-                        selectable_panel_id: SelectablePanelID::AllyTeamChoiceSelectionMenu,
-                        choice_list: ally_team_choice_list,
-                        list_state: new_list_state(0),
-                        selection_cursor: None,
-                    }),
-                    Opponent::new(ChoiceSelectionMenu { 
-                        team_name: OPPONENT_TEAM_NAME,
-                        selectable_panel_id: SelectablePanelID::OpponentTeamChoiceSelectionMenu,
-                        choice_list: opponent_team_choice_list,
-                        list_state: new_list_state(0),
-                        selection_cursor: None, 
-                    }),
-                ),
+                Ally::new(ChoiceSelectionMenu {
+                    team_name: ALLY_TEAM_NAME,
+                    selectable_panel_id: SelectablePanelID::AllyTeamChoiceSelectionMenu,
+                    choice_list: ally_team_choice_list,
+                    list_state: new_list_state(0),
+                    selection_cursor: None,
+                }),
+                Opponent::new(ChoiceSelectionMenu {
+                    team_name: OPPONENT_TEAM_NAME,
+                    selectable_panel_id: SelectablePanelID::OpponentTeamChoiceSelectionMenu,
+                    choice_list: opponent_team_choice_list,
+                    list_state: new_list_state(0),
+                    selection_cursor: None,
+                }),
+            ),
             team_status_panels: PerTeam::new(
                 Ally::new(TeamStatusPanel {
                     team_name: ALLY_TEAM_NAME,
@@ -137,7 +136,7 @@ impl<'a> Ui<'a> {
                 Opponent::new(TeamStatusPanel {
                     team_name: OPPONENT_TEAM_NAME,
                     team_status: battle.opponent_team().team_status_string(),
-                }), 
+                }),
             ),
             message_log_panel: MessageLogPanel {
                 _selectable_panel_id: SelectablePanelID::MessageLog,
@@ -160,55 +159,51 @@ impl<'a> Ui<'a> {
     }
 
     fn update_team_status_panel(&mut self, team_id: TeamID, battle: &BattleState) {
-        
-        Self::choice_list_from_available_choices_for_team(
-            &mut self.choice_selection_menus[team_id].choice_list, 
-            battle.available_choices()[team_id]
-        );
+        Self::choice_list_from_available_choices_for_team(&mut self.choice_selection_menus[team_id].choice_list, battle.available_choices()[team_id]);
         self.active_monster_status_panels[team_id].active_monster_status = battle.active_monsters_on_team(team_id).status_string();
         self.team_status_panels[team_id].team_status = battle.team(team_id).team_status_string();
     }
 
     pub(super) fn render(
-        &self, terminal: &'a mut Terminal<CrosstermBackend<Stdout>>, 
+        &self,
+        terminal: &'a mut Terminal<CrosstermBackend<Stdout>>,
         battle: &BattleState,
         current_app_state: &super::AppState,
     ) -> std::io::Result<CompletedFrame<'a>> {
         terminal.draw(|frame| {
             let chunks = Ui::divide_screen_into_chunks(frame);
-            
+
             // Render the Ally team UI
             let ally_team_panel_chunks = Ui::divide_team_panel_into_chunks(chunks[0]);
-            let (
-                ally_team_active_monster_status_widget,
-                ally_team_choice_menu_widget, 
-                ally_team_status_widget
-            ) = self.renderable_widgets_for_team(TeamID::Allies);
+            let (ally_team_active_monster_status_widget, ally_team_choice_menu_widget, ally_team_status_widget) =
+                self.renderable_widgets_for_team(TeamID::Allies);
 
             frame.render_widget(ally_team_active_monster_status_widget, ally_team_panel_chunks[0]);
             // TODO: think about how to remove this clone (and possibly similar ones elsewhere)
-            frame.render_stateful_widget(ally_team_choice_menu_widget, ally_team_panel_chunks[1], &mut self.choice_selection_menus[TeamID::Allies].list_state.clone());
+            frame.render_stateful_widget(
+                ally_team_choice_menu_widget,
+                ally_team_panel_chunks[1],
+                &mut self.choice_selection_menus[TeamID::Allies].list_state.clone(),
+            );
             frame.render_widget(ally_team_status_widget, ally_team_panel_chunks[2]);
 
-            let message_log_widget = self.message_log_panel.as_renderable_widget(&battle.message_log.as_vec(), self.currently_selected_panel == SelectablePanelID::MessageLog);
+            let message_log_widget = self
+                .message_log_panel
+                .as_renderable_widget(&battle.message_log.as_vec(), self.currently_selected_panel == SelectablePanelID::MessageLog);
             // If we are on the SwitcheePrompt, then show the SwitcheePrompt widget
             if let AppState::AcceptingInput(InputMode::SwitcheePrompt {
                 switchable_benched_monster_ids,
                 highlight_cursor,
                 ..
-            }) = *current_app_state {
+            }) = *current_app_state
+            {
                 let switchee_prompt_widget = SwitcheePrompt::as_renderable_widget(battle, switchable_benched_monster_ids);
                 let middle_third_chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints(
-                    [
-                        Constraint::Max(7),
-                        Constraint::Percentage(80),
-                    ].as_ref(),
-                    )
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Max(7), Constraint::Percentage(80)].as_ref())
                     .split(chunks[1]);
                 let mut switchee_prompt_list_state = new_list_state(highlight_cursor);
-                
+
                 //Render the message log and switchee prompt
                 frame.render_stateful_widget(switchee_prompt_widget, middle_third_chunks[0], &mut switchee_prompt_list_state);
                 frame.render_widget(message_log_widget, middle_third_chunks[1]);
@@ -219,17 +214,16 @@ impl<'a> Ui<'a> {
 
             // Render the Opponent team UI
             let opponent_team_panel_chunks = Ui::divide_team_panel_into_chunks(chunks[2]);
-            let (
-                opponent_team_active_monster_status_widget,
-                opponent_team_choice_menu_widget, 
-                opponent_team_status_widget
-            ) = self.renderable_widgets_for_team(TeamID::Opponents);
+            let (opponent_team_active_monster_status_widget, opponent_team_choice_menu_widget, opponent_team_status_widget) =
+                self.renderable_widgets_for_team(TeamID::Opponents);
 
             frame.render_widget(opponent_team_active_monster_status_widget, opponent_team_panel_chunks[0]);
-            frame.render_stateful_widget(opponent_team_choice_menu_widget, opponent_team_panel_chunks[1], &mut self.choice_selection_menus[TeamID::Opponents].list_state.clone());
+            frame.render_stateful_widget(
+                opponent_team_choice_menu_widget,
+                opponent_team_panel_chunks[1],
+                &mut self.choice_selection_menus[TeamID::Opponents].list_state.clone(),
+            );
             frame.render_widget(opponent_team_status_widget, opponent_team_panel_chunks[2]);
-
-            
         })
     }
 
@@ -245,17 +239,10 @@ impl<'a> Ui<'a> {
         Layout::default()
             .direction(Direction::Horizontal)
             .margin(1)
-            .constraints(
-                [
-                    Constraint::Percentage(33),
-                    Constraint::Min(25),
-                    Constraint::Percentage(33),
-                ]
-                .as_ref(),
-            )
+            .constraints([Constraint::Percentage(33), Constraint::Min(25), Constraint::Percentage(33)].as_ref())
             .split(frame.size())
     }
-    
+
     fn divide_team_panel_into_chunks(chunk: Rect) -> Vec<Rect> {
         Layout::default()
             .direction(Direction::Vertical)
@@ -267,11 +254,11 @@ impl<'a> Ui<'a> {
         match self.currently_selected_panel {
             SelectablePanelID::AllyTeamChoiceSelectionMenu => {
                 self.choice_selection_menus[TeamID::Allies].scroll_up();
-            },
-            SelectablePanelID::MessageLog => { self.scroll_message_log_up() },
+            }
+            SelectablePanelID::MessageLog => self.scroll_message_log_up(),
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => {
                 self.choice_selection_menus[TeamID::Opponents].scroll_up();
-            },
+            }
         }
     }
 
@@ -279,11 +266,11 @@ impl<'a> Ui<'a> {
         match self.currently_selected_panel {
             SelectablePanelID::AllyTeamChoiceSelectionMenu => {
                 self.choice_selection_menus[TeamID::Allies].scroll_down();
-            },
-            SelectablePanelID::MessageLog => { self.scroll_message_log_down() },
+            }
+            SelectablePanelID::MessageLog => self.scroll_message_log_down(),
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => {
                 self.choice_selection_menus[TeamID::Opponents].scroll_down();
-            },
+            }
         }
     }
 
@@ -296,11 +283,11 @@ impl<'a> Ui<'a> {
     }
 
     pub(super) fn scroll_up_wrapped(cursor: &mut usize, list_length: usize) {
-        *cursor = (*cursor + list_length - 1) % list_length 
+        *cursor = (*cursor + list_length - 1) % list_length
     }
-    
+
     pub(super) fn scroll_down_wrapped(cursor: &mut usize, list_length: usize) {
-        *cursor = (*cursor + 1) % list_length 
+        *cursor = (*cursor + 1) % list_length
     }
 
     /// Returns the index and `TeamID` of the selected choice if one was successfully selected.
@@ -311,7 +298,10 @@ impl<'a> Ui<'a> {
             SelectablePanelID::OpponentTeamChoiceSelectionMenu => Some(TeamID::Opponents),
         };
         if let Some(team_id) = maybe_team_id {
-            let highlighted_choice_index = self.choice_selection_menus[team_id].list_state.selected().expect("This is initialised to Some and never set to None afterwards");
+            let highlighted_choice_index = self.choice_selection_menus[team_id]
+                .list_state
+                .selected()
+                .expect("This is initialised to Some and never set to None afterwards");
             self.choice_selection_menus[team_id].selection_cursor = Some(highlighted_choice_index);
             Some((highlighted_choice_index, team_id))
         } else {
@@ -337,10 +327,10 @@ impl<'a> Ui<'a> {
             match choice {
                 PartiallySpecifiedChoice::Move { display_text, .. } => {
                     list_to_fill.push(ListItem::new(display_text));
-                },
+                }
                 PartiallySpecifiedChoice::SwitchOut { display_text, .. } => {
                     list_to_fill.push(ListItem::new(display_text));
-                },
+                }
             }
         }
     }
@@ -354,17 +344,17 @@ impl<'a> Ui<'a> {
 impl SelectablePanelID {
     pub fn shift_right(&mut self) {
         match self {
-            SelectablePanelID::AllyTeamChoiceSelectionMenu => { *self = SelectablePanelID::MessageLog },
-            SelectablePanelID::MessageLog => { *self = SelectablePanelID::OpponentTeamChoiceSelectionMenu },
-            SelectablePanelID::OpponentTeamChoiceSelectionMenu => { *self = SelectablePanelID::AllyTeamChoiceSelectionMenu },
+            SelectablePanelID::AllyTeamChoiceSelectionMenu => *self = SelectablePanelID::MessageLog,
+            SelectablePanelID::MessageLog => *self = SelectablePanelID::OpponentTeamChoiceSelectionMenu,
+            SelectablePanelID::OpponentTeamChoiceSelectionMenu => *self = SelectablePanelID::AllyTeamChoiceSelectionMenu,
         }
     }
 
     pub fn shift_left(&mut self) {
         match self {
-            SelectablePanelID::AllyTeamChoiceSelectionMenu => { *self = SelectablePanelID::OpponentTeamChoiceSelectionMenu },
-            SelectablePanelID::MessageLog => { *self = SelectablePanelID::AllyTeamChoiceSelectionMenu },
-            SelectablePanelID::OpponentTeamChoiceSelectionMenu => { *self = SelectablePanelID::MessageLog },
+            SelectablePanelID::AllyTeamChoiceSelectionMenu => *self = SelectablePanelID::OpponentTeamChoiceSelectionMenu,
+            SelectablePanelID::MessageLog => *self = SelectablePanelID::AllyTeamChoiceSelectionMenu,
+            SelectablePanelID::OpponentTeamChoiceSelectionMenu => *self = SelectablePanelID::MessageLog,
         }
     }
 }
@@ -372,8 +362,11 @@ impl SelectablePanelID {
 impl ActiveMonsterStatusPanel {
     fn as_renderable_widget(&self) -> Paragraph<'_> {
         Paragraph::new(self.active_monster_status.as_str())
-            .block(Block::default().title(format![" {team_name} Active Monster ", team_name = self.team_name])
-            .borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title(format![" {team_name} Active Monster ", team_name = self.team_name])
+                    .borders(Borders::ALL),
+            )
             .alignment(Alignment::Left)
             .wrap(Wrap { trim: true })
     }
@@ -381,22 +374,30 @@ impl ActiveMonsterStatusPanel {
 
 impl<'a> ChoiceSelectionMenu<'a> {
     fn as_renderable_widget(&self, is_selected: bool) -> List<'a> {
-        let list_items = self.choice_list.iter().enumerate().map(|(i, list_item)| {
-            let is_selected_item = self.selection_cursor == Some(i);
-            if is_selected_item {
-                // Colour the selected choice green
-                list_item.clone().style(Style::default().fg(Color::Green))
-            } else {
-                // The rest are left default.
-                list_item.clone()
-            }
-        }).collect::<Vec<_>>();
+        let list_items = self
+            .choice_list
+            .iter()
+            .enumerate()
+            .map(|(i, list_item)| {
+                let is_selected_item = self.selection_cursor == Some(i);
+                if is_selected_item {
+                    // Colour the selected choice green
+                    list_item.clone().style(Style::default().fg(Color::Green))
+                } else {
+                    // The rest are left default.
+                    list_item.clone()
+                }
+            })
+            .collect::<Vec<_>>();
 
         List::new(list_items)
             .block(
                 Block::default()
                     .title(if is_selected {
-                        Span::styled(format![" {team_name} Action Choices ", team_name = self.team_name], Style::default().fg(Color::Yellow))
+                        Span::styled(
+                            format![" {team_name} Action Choices ", team_name = self.team_name],
+                            Style::default().fg(Color::Yellow),
+                        )
                     } else {
                         Span::raw(format![" {team_name} Action Choices ", team_name = self.team_name])
                     })
@@ -407,13 +408,19 @@ impl<'a> ChoiceSelectionMenu<'a> {
     }
 
     fn scroll_up(&mut self) {
-        let currently_highlighted_index = self.list_state.selected().expect("This is initialised to Some and never set to None afterwards");
+        let currently_highlighted_index = self
+            .list_state
+            .selected()
+            .expect("This is initialised to Some and never set to None afterwards");
         let new_highlighted_index = (currently_highlighted_index + self.choice_list.len() - 1) % self.choice_list.len();
         self.list_state.select(Some(new_highlighted_index));
     }
 
     fn scroll_down(&mut self) {
-        let currently_highlighted_index = self.list_state.selected().expect("This is initialised to Some and never set to None afterwards");
+        let currently_highlighted_index = self
+            .list_state
+            .selected()
+            .expect("This is initialised to Some and never set to None afterwards");
         let new_highlighted_index = (currently_highlighted_index + 1) % self.choice_list.len();
         self.list_state.select(Some(new_highlighted_index));
     }
@@ -426,11 +433,11 @@ impl MessageLogPanel {
             .enumerate()
             .filter_map(|(index, element)| {
                 if index >= self.scroll_cursor {
-                    // FIXME: Possible bug that will highlight any message with "Turn" in Cyan. Most problematic for messages involving moves like "U-Turn" or "Flip Turn". 
+                    // FIXME: Possible bug that will highlight any message with "Turn" in Cyan. Most problematic for messages involving moves like "U-Turn" or "Flip Turn".
                     if element.contains("Turn") {
-                        Some(Spans::from(Span::styled(element, Style::default()
-                            .fg(Color::Cyan)
-                            .add_modifier(Modifier::BOLD)
+                        Some(Spans::from(Span::styled(
+                            element,
+                            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
                         )))
                     } else {
                         Some(Spans::from(Span::raw(element)))
@@ -453,7 +460,7 @@ impl MessageLogPanel {
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: true })
     }
-    
+
     fn scroll_up(&mut self) {
         self.scroll_cursor = self.scroll_cursor.saturating_sub(1);
     }
@@ -478,15 +485,13 @@ impl MessageLogPanel {
 impl TeamStatusPanel {
     fn as_renderable_widget(&self) -> Paragraph<'_> {
         Paragraph::new(self.team_status.as_str())
-                .block(
-                    Block::default()
-                        .title({
-                            Span::raw(format![" {team_name} Team Status ", team_name = self.team_name])
-                        })
-                        .borders(Borders::ALL),
-                )
-                .alignment(Alignment::Left)
-                .wrap(Wrap { trim: true })
+            .block(
+                Block::default()
+                    .title({ Span::raw(format![" {team_name} Team Status ", team_name = self.team_name]) })
+                    .borders(Borders::ALL),
+            )
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true })
     }
 }
 

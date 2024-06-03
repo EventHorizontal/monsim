@@ -6,7 +6,7 @@ fn test_if_priority_sorting_is_deterministic() {
     use crate::sim::*;
     use crate::sim::{
         test_ability_dex::FlashFire,
-        test_monster_dex::{Merkey, Squirecoal, Dandyleo},
+        test_monster_dex::{Dandyleo, Merkey, Squirecoal},
         test_move_dex::{Bubble, Ember, Scratch, Tackle},
     };
     let mut result = [Vec::new(), Vec::new()];
@@ -15,43 +15,27 @@ fn test_if_priority_sorting_is_deterministic() {
             .add_ally_team(
                 MonsterTeam::spawn()
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("Ruby")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("Ruby"),
                     )
                     .add_monster(
-                        Merkey.spawn(
-                            (Tackle.spawn(), Some(Bubble.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("Sapphire")
+                        Merkey
+                            .spawn((Tackle.spawn(), Some(Bubble.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("Sapphire"),
                     )
                     .add_monster(
-                        Dandyleo.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("Emerald")
-                    )
+                        Dandyleo
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("Emerald"),
+                    ),
             )
-            .add_opponent_team(
-                MonsterTeam::spawn()
-                    .add_monster(
-                            Zombler.spawn(
-                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                                FlashFire.spawn()
-                            )
-                    )
-            )
+            .add_opponent_team(MonsterTeam::spawn().add_monster(Zombler.spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())))
             .build();
 
         let mut prng = Prng::from_current_time();
         let sim = BattleSimulator::init(test_battle);
-        let mut owned_event_handlers = sim.battle.owned_event_handlers(|event_handler_deck| {
-            vec![event_handler_deck.on_try_move_hit]
-        });
+        let mut owned_event_handlers = sim.battle.owned_event_handlers(|event_handler_deck| vec![event_handler_deck.on_try_move_hit]);
         crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, |it| it.activation_order);
 
         result[i] = owned_event_handlers
@@ -84,100 +68,74 @@ fn test_priority_sorting_with_speed_ties() {
             .add_ally_team(
                 MonsterTeam::spawn()
                     .add_monster(
-                        Zombler.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("A")
+                        Zombler
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("A"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("B")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("B"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("C")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("C"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("D")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("D"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("E")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("E"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("F")
-                    )
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("F"),
+                    ),
             )
             .add_opponent_team(
                 MonsterTeam::spawn()
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("G")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("G"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("H")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("H"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("I")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("I"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("J")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("J"),
                     )
                     .add_monster(
-                        Squirecoal.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("K")
+                        Squirecoal
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("K"),
                     )
                     .add_monster(
-                        Merkey.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("L")
-                    )
-        )
-        .build();
+                        Merkey
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("L"),
+                    ),
+            )
+            .build();
         let mut prng = Prng::new(i as u64);
         let sim = BattleSimulator::init(test_battle);
 
-        let mut owned_event_handlers = sim.battle.owned_event_handlers(|event_handler_deck| {
-            vec![event_handler_deck.on_try_move_hit]
-        });
+        let mut owned_event_handlers = sim.battle.owned_event_handlers(|event_handler_deck| vec![event_handler_deck.on_try_move_hit]);
 
         crate::sim::ordering::sort_by_activation_order(&mut prng, &mut owned_event_handlers, |it| it.activation_order);
 
@@ -208,40 +166,33 @@ fn test_filtering_events_by_broadcaster_relations() {
     use crate::sim::*;
     use crate::sim::{
         test_ability_dex::FlashFire,
-        test_monster_dex::{Merkey, Squirecoal, Dandyleo},
+        test_monster_dex::{Dandyleo, Merkey, Squirecoal},
         test_move_dex::{Bubble, Ember, Scratch, Tackle},
         MonsterNumber, TeamID,
     };
     let test_battle = BattleState::spawn()
-            .add_ally_team(
-                MonsterTeam::spawn()
-                    .add_monster(
-                        Squirecoal.spawn(
-                            (Ember.spawn(), Some(Scratch.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("Ruby")
-                    )
-                    .add_monster(
-                        Merkey.spawn(
-                            (Tackle.spawn(), Some(Bubble.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("Sapphire")
-                    )
+        .add_ally_team(
+            MonsterTeam::spawn()
+                .add_monster(
+                    Squirecoal
+                        .spawn((Ember.spawn(), Some(Scratch.spawn()), None, None), FlashFire.spawn())
+                        .with_nickname("Ruby"),
                 )
-                .add_opponent_team(
-                    MonsterTeam::spawn()
-                    .add_monster(
-                        Dandyleo.spawn(
-                            (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                            FlashFire.spawn()
-                        )
-                        .with_nickname("Emerald")
-                    )
-            )
-            .build();
-    
+                .add_monster(
+                    Merkey
+                        .spawn((Tackle.spawn(), Some(Bubble.spawn()), None, None), FlashFire.spawn())
+                        .with_nickname("Sapphire"),
+                ),
+        )
+        .add_opponent_team(
+            MonsterTeam::spawn().add_monster(
+                Dandyleo
+                    .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                    .with_nickname("Emerald"),
+            ),
+        )
+        .build();
+
     let passed_filter_1 = EventDispatcher::does_event_pass_event_receivers_filtering_options(
         &test_battle,
         MonsterID {
@@ -259,7 +210,7 @@ fn test_filtering_events_by_broadcaster_relations() {
         EventFilteringOptions::default(),
     );
     assert!(passed_filter_1);
-    
+
     let passed_filter_2 = EventDispatcher::does_event_pass_event_receivers_filtering_options(
         &test_battle,
         MonsterID {
@@ -282,10 +233,14 @@ fn test_filtering_events_by_broadcaster_relations() {
 #[test]
 #[cfg(feature = "debug")]
 fn test_print_owned_event_handler() {
-    use crate::sim::{test_ability_dex::FlashFire, event_dispatcher::OwnedEventHandler, MonsterID};
+    use crate::sim::{event_dispatcher::OwnedEventHandler, test_ability_dex::FlashFire, MonsterID};
     let owned_event_handler = OwnedEventHandler {
         event_handler: FlashFire.event_handlers().on_try_move_hit.unwrap(),
-        activation_order: crate::ActivationOrder { priority: 0, speed: 11, order: FlashFire.order() },
+        activation_order: crate::ActivationOrder {
+            priority: 0,
+            speed: 11,
+            order: FlashFire.order(),
+        },
         owner_id: MonsterID {
             team_id: crate::sim::TeamID::Allies,
             monster_number: crate::sim::MonsterNumber::_1,

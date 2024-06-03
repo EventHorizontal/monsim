@@ -1,22 +1,32 @@
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, ClampedPercent, Count, MaxSizedVec, Nothing, Outcome, Percent, NOTHING};
 
-use crate::{dual_type_matchup, sim::event_dispatcher, status::{PersistentStatus, VolatileStatus}, AbilityUseContext, BattleSimulator, BoardPosition, FieldPosition, ItemUseContext, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, SwitchContext, VolatileStatusSpecies};
+use crate::{
+    dual_type_matchup,
+    sim::event_dispatcher,
+    status::{PersistentStatus, VolatileStatus},
+    AbilityUseContext, BattleSimulator, BoardPosition, FieldPosition, ItemUseContext, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
+    PersistentStatusSpecies, Stat, SwitchContext, VolatileStatusSpecies,
+};
 
 /// `R`: A type that encodes any necessary information about how the `Effect` played
 /// out, _e.g._ an `Outcome` representing whether the `Effect` succeeded.
 ///
-/// `C`: Any information necessary for the resolution of the effect, provided 
-/// directly, such as the user of the move, the move used and the target 
-/// in case of a move's effect. 
-pub type Effect<R,C> = fn(/* simulator */ &mut BattleSimulator, /* context */ C) -> R;
+/// `C`: Any information necessary for the resolution of the effect, provided
+/// directly, such as the user of the move, the move used and the target
+/// in case of a move's effect.
+pub type Effect<R, C> = fn(/* simulator */ &mut BattleSimulator, /* context */ C) -> R;
 
 // internal `Effects` that are only supposed to be used by the engine -----------------------------------------
 
-/// The simulator simulates the use of a move `MoveUseContext.move_used` by 
+/// The simulator simulates the use of a move `MoveUseContext.move_used` by
 /// `MoveUseContext.move_user` on `MoveUseContext.target`.
 pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
-    let MoveUseContext { move_user_id, move_used_id, target_ids } = context;
+    let MoveUseContext {
+        move_user_id,
+        move_used_id,
+        target_ids,
+    } = context;
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
 
     let try_use_move_outcome = event_dispatcher::trigger_on_try_move_event(sim, move_user_id, context);
@@ -24,12 +34,10 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
         sim.push_message("The move failed!");
         return;
     }
-    
+
     // There are no remaining targets for this move. They fainted before the move was used.
     if target_ids.is_empty() {
-        sim.push_message(
-            format!["{}'s {} has no targets...", mon![move_user_id].name(), mov![move_used_id].name()]
-        );
+        sim.push_message(format!["{}'s {} has no targets...", mon![move_user_id].name(), mov![move_used_id].name()]);
         return;
     }
 
@@ -38,10 +46,14 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
     of them as having an `on_hit_effect` rather an `on_use_effect`. We may need
     rethink this if it turns out some moves do want to control their `on_use_effect`.
     Event multihit moves seem like they want to just have a `number_of_hits` variable
-    and just repeat its on_hit_effect 
+    and just repeat its on_hit_effect
     */
     for target_id in target_ids {
-        let subcontext = MoveHitContext { move_user_id, move_used_id, target_id };
+        let subcontext = MoveHitContext {
+            move_user_id,
+            move_used_id,
+            target_id,
+        };
         let mut actual_number_of_hits = 0;
         for _ in {
             match mov![move_used_id].hits_per_target() {
@@ -49,7 +61,7 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
                 Count::RandomInRange { min, max } => {
                     let number_of_hits = sim.generate_random_number_in_range_inclusive(min as u16..=max as u16);
                     1..=number_of_hits as u8
-                },
+                }
             }
         } {
             {
@@ -68,28 +80,27 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
             if mon![target_id].is_fainted() {
                 continue;
             }
-            
+
             let move_hit_outcome = mov![move_used_id].on_hit_effect()(sim, subcontext);
             if move_hit_outcome.succeeded() {
-                actual_number_of_hits += 1;  
+                actual_number_of_hits += 1;
             }
-        } 
+        }
 
         match mov![move_used_id].hits_per_target() {
             Count::Fixed(n) if n > 1 => {
                 sim.push_message(format!["The move hit {} time(s)", n]);
-            },
+            }
             Count::RandomInRange { min: _, max: _ } => {
                 sim.push_message(format!["The move hit {} time(s)", actual_number_of_hits]);
-            },
+            }
             _ => {}
         }
-
     }
-    
+
     mov![mut move_used_id].current_power_points -= 1;
-    
-    #[cfg(feature="debug")]
+
+    #[cfg(feature = "debug")]
     sim.push_message(format![
         "{}'s {}'s PP is now {}",
         mon![move_user_id].name(),
@@ -100,57 +111,56 @@ pub fn use_move(sim: &mut BattleSimulator, context: MoveUseContext) {
     match mov![move_used_id].category() {
         MoveCategory::Physical | MoveCategory::Special => {
             event_dispatcher::trigger_on_damaging_move_used_event(sim, move_user_id, context);
-        },
-        MoveCategory::Status => {
-            event_dispatcher::trigger_on_status_move_used_event(sim, move_user_id, context)
         }
+        MoveCategory::Status => event_dispatcher::trigger_on_status_move_used_event(sim, move_user_id, context),
     }
 }
 
-/// The simulator switches out the Monster given by `context.active_monster_id` and switches in 
+/// The simulator switches out the Monster given by `context.active_monster_id` and switches in
 /// the Monster given by `context.benched_monster_id`
 pub(crate) fn switch_monsters(sim: &mut BattleSimulator, context: SwitchContext) {
-    let SwitchContext { active_monster_id, benched_monster_id } = context;
-    let active_monster_field_position = mon![active_monster_id].field_position()
+    let SwitchContext {
+        active_monster_id,
+        benched_monster_id,
+    } = context;
+    let active_monster_field_position = mon![active_monster_id]
+        .field_position()
         .expect("Expected the monster to be switched out to be on the field.");
     switch_out_monster(sim, active_monster_id);
     switch_in_monster(sim, (benched_monster_id, active_monster_field_position));
 }
 
 /// The simulator switchees in the Monster given by `context.0` into a presumed empty field position given by `context.1`. The caller is expected
-/// to check that the field position is indeed empty. 
+/// to check that the field position is indeed empty.
 pub(crate) fn switch_in_monster(sim: &mut BattleSimulator, (benched_monster_id, field_position): (MonsterID, FieldPosition)) {
     mon![mut benched_monster_id].board_position = BoardPosition::Field(field_position);
-    sim.push_message(format![
-        "Go {}!",
-        mon![benched_monster_id].name()
-    ]);
+    sim.push_message(format!["Go {}!", mon![benched_monster_id].name()]);
 }
 
 pub(crate) fn switch_out_monster(sim: &mut BattleSimulator, active_monster_id: MonsterID) {
-    
     let active_monster = mon![mut active_monster_id];
-    active_monster.board_position = BoardPosition::Bench; 
+    active_monster.board_position = BoardPosition::Bench;
     active_monster.volatile_statuses = MaxSizedVec::empty();
-    
-    sim.push_message(format![
-        "Come back {}!",
-        mon![active_monster_id].name()
-    ]);
+
+    sim.push_message(format!["Come back {}!", mon![active_monster_id].name()]);
 }
 
 // public `Effects` usable by users of the crate. ------------------------------------------
 
-/// The simulator simulates dealing damage of a move given by `MoveUseContext.move_used` by 
+/// The simulator simulates dealing damage of a move given by `MoveUseContext.move_used` by
 /// `MoveUseContext.move_user` on `MoveUseContext.target` using the default damage formula.
-/// 
+///
 /// This is done by calculating the damage first using the formula then calling `deal_direct_damage`
 /// with the resulting damage.
-/// 
+///
 /// Returns an `Outcome` signifying whether the move succeeded.
 
 pub fn deal_default_damage(sim: &mut BattleSimulator, move_use_context: MoveHitContext) -> Outcome<Nothing> {
-    let MoveHitContext { move_user_id: attacker_id, move_used_id, target_id: defender_id } = move_use_context;
+    let MoveHitContext {
+        move_user_id: attacker_id,
+        move_used_id,
+        target_id: defender_id,
+    } = move_use_context;
 
     let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(sim, attacker_id, move_use_context);
     if try_move_hit_outcome.failed() {
@@ -177,18 +187,8 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, move_use_context: MoveHitC
     let move_power = mov![move_used_id].base_power();
 
     let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used_id].category() {
-        MoveCategory::Physical => {
-            (
-                mon![attacker_id].stat(Stat::PhysicalAttack),
-                mon![defender_id].stat(Stat::PhysicalDefense)
-            )
-        }
-        MoveCategory::Special => {
-            (
-                mon![attacker_id].stat(Stat::SpecialAttack),
-                mon![defender_id].stat(Stat::SpecialDefense)
-            )
-        }
+        MoveCategory::Physical => (mon![attacker_id].stat(Stat::PhysicalAttack), mon![defender_id].stat(Stat::PhysicalDefense)),
+        MoveCategory::Special => (mon![attacker_id].stat(Stat::SpecialAttack), mon![defender_id].stat(Stat::SpecialDefense)),
         _ => unreachable!("Expected physical or special move."),
     };
 
@@ -200,7 +200,11 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, move_use_context: MoveHitC
 
     let stab_multiplier = {
         let move_type = mov![move_used_id].type_();
-        if mon![attacker_id].is_type(move_type) { Percent(125) } else { Percent(100) }
+        if mon![attacker_id].is_type(move_type) {
+            Percent(125)
+        } else {
+            Percent(100)
+        }
     };
 
     let move_type = mov![move_used_id].type_();
@@ -227,7 +231,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, move_use_context: MoveHitC
     damage = (damage as f64 * stab_multiplier) as u16;
     damage = (damage as f64 * type_matchup_multiplier) as u16;
     // TODO: Introduce more damage multipliers as we implement them.
-    
+
     /*
     TODO: There was quite a bit written here about trying to organise multiple hits so that type effectiveness can be printed
     after the last hit. I think this only applies to multihit moves like Bullet Seed, and not multitarget moves like Growl or
@@ -247,7 +251,7 @@ pub fn deal_default_damage(sim: &mut BattleSimulator, move_use_context: MoveHitC
 /// The simulator simulates dealing damage equalling `Context.1` to the target `Context.0`. The simulator currently
 ///  assumes that the only way to faint a monster is by dealing damage equal to its max health, i.e. through this
 /// function. So the fainting logic is in this function.
-/// 
+///
 /// Returns the actual damage dealt.
 
 #[must_use]
@@ -255,16 +259,13 @@ pub fn deal_raw_damage(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> 
     let (target_id, mut damage) = context;
     let original_health = mon![target_id].current_health;
     mon![mut target_id].current_health = original_health.saturating_sub(damage);
-    sim.push_message(format![
-        "{} took {damage} damage!", 
-        mon![target_id].name()
-    ]);
+    sim.push_message(format!["{} took {damage} damage!", mon![target_id].name()]);
     sim.push_message(format![
         "{} has {num_hp} health left.",
         mon![target_id].name(),
         num_hp = mon![target_id].current_health
     ]);
-    if mon![target_id].is_fainted() { 
+    if mon![target_id].is_fainted() {
         damage = original_health;
         sim.push_message(format!["{} fainted!", mon![target_id].name()]);
         switch_out_monster(sim, target_id);
@@ -276,10 +277,14 @@ pub fn deal_raw_damage(sim: &mut BattleSimulator, context: (MonsterID, u16)) -> 
 /// The simulator simulates the activation of the ability `AbilityUseContext.ability_used` owned by
 /// the monster `AbilityUseContext.abilty_owner`.
 #[must_use]
-pub fn activate_ability<F>(sim: &mut BattleSimulator, context: AbilityUseContext, on_activate_effect: F) -> Outcome<Nothing> 
-    where F: FnOnce(&mut BattleSimulator, AbilityUseContext) -> Outcome<Nothing>
+pub fn activate_ability<F>(sim: &mut BattleSimulator, context: AbilityUseContext, on_activate_effect: F) -> Outcome<Nothing>
+where
+    F: FnOnce(&mut BattleSimulator, AbilityUseContext) -> Outcome<Nothing>,
 {
-    let AbilityUseContext { ability_used_id: _, ability_owner_id } = context;
+    let AbilityUseContext {
+        ability_used_id: _,
+        ability_owner_id,
+    } = context;
 
     let try_activate_ability_outcome = event_dispatcher::trigger_on_try_activate_ability_event(sim, ability_owner_id, context);
     if try_activate_ability_outcome.succeeded() {
@@ -339,15 +344,16 @@ pub fn add_volatile_status(sim: &mut BattleSimulator, (affected_monster_id, stat
     if try_add_status.succeeded() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
-            
             // HACK: We currently pass in the remaining turns because `prng` is inside `battle` so it causes multiple mutable references into `sim`.
             // Resolving this will require some structural changes. Prng and Battle are too tightly coupled I think.
             let lifetime_in_turns = match status_species.lifetime_in_turns {
                 Count::Fixed(n) => n,
                 Count::RandomInRange { min, max } => sim.battle.prng.generate_random_number_in_range(min as u16..=max as u16) as u8,
             };
-            
-            mon![mut affected_monster_id].volatile_statuses.push(VolatileStatus::new(lifetime_in_turns, status_species));
+
+            mon![mut affected_monster_id]
+                .volatile_statuses
+                .push(VolatileStatus::new(lifetime_in_turns, status_species));
             sim.push_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             Outcome::Success(NOTHING)
         } else {
@@ -359,7 +365,10 @@ pub fn add_volatile_status(sim: &mut BattleSimulator, (affected_monster_id, stat
 }
 
 #[must_use]
-pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, status_species): (MonsterID, &'static PersistentStatusSpecies)) -> Outcome<Nothing> {
+pub fn add_persistent_status(
+    sim: &mut BattleSimulator,
+    (affected_monster_id, status_species): (MonsterID, &'static PersistentStatusSpecies),
+) -> Outcome<Nothing> {
     let try_add_status = event_dispatcher::trigger_on_try_add_permanent_status_event(sim, affected_monster_id, NOTHING);
     if try_add_status.succeeded() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
@@ -375,8 +384,9 @@ pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, st
     }
 }
 
-pub fn use_item<T, F>(sim: &mut BattleSimulator, item_holder_id: MonsterID, on_use_effect: F) -> Outcome<T> 
-    where F: FnOnce(&mut BattleSimulator, MonsterID) -> T
+pub fn use_item<T, F>(sim: &mut BattleSimulator, item_holder_id: MonsterID, on_use_effect: F) -> Outcome<T>
+where
+    F: FnOnce(&mut BattleSimulator, MonsterID) -> T,
 {
     let context = ItemUseContext::from_holder(item_holder_id);
     let try_use_item = event_dispatcher::trigger_on_try_use_held_item_event(sim, item_holder_id, context);

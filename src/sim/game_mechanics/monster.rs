@@ -1,17 +1,28 @@
 use core::{fmt::Debug, panic};
-use std::{fmt::{Display, Formatter}, ops::{Index, IndexMut}};
+use std::{
+    fmt::{Display, Formatter},
+    ops::{Index, IndexMut},
+};
 
 use monsim_utils::MaxSizedVec;
 use tap::Pipe;
 
 use super::{Ability, TeamID};
-use crate::{sim::{event_dispatcher::EventContext, targetting::{BoardPosition, FieldPosition}, ActivationOrder, EventHandlerDeck, Type}, status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies}, Broadcaster, EventHandler, Item, Move, OwnedEventHandler};
+use crate::{
+    sim::{
+        event_dispatcher::EventContext,
+        targetting::{BoardPosition, FieldPosition},
+        ActivationOrder, EventHandlerDeck, Type,
+    },
+    status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
+    Broadcaster, EventHandler, Item, Move, OwnedEventHandler,
+};
 
 #[derive(Debug, Clone)]
 pub struct Monster {
     pub(crate) id: MonsterID,
     pub(crate) species: &'static MonsterSpecies,
-    
+
     pub(crate) nickname: Option<&'static str>,
     pub(crate) effort_values: StatSet,
     pub(crate) current_health: u16,
@@ -20,10 +31,10 @@ pub struct Monster {
     pub(crate) nature: MonsterNature,
     pub(crate) board_position: BoardPosition,
     pub(crate) stat_modifiers: StatModifierSet,
-    
+
     pub(crate) moveset: MaxSizedVec<Move, 4>,
     pub(crate) ability: Ability,
-    pub(crate) persistent_status: Option<PersistentStatus>, 
+    pub(crate) persistent_status: Option<PersistentStatus>,
     pub(crate) volatile_statuses: MaxSizedVec<VolatileStatus, 16>,
     pub(crate) held_item: Option<Item>,
     pub(crate) consumed_item: Option<Item>,
@@ -44,7 +55,11 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} the {} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    nickname, self.species.name, self.id, self.current_health, self.max_health()
+                    nickname,
+                    self.species.name,
+                    self.id,
+                    self.current_health,
+                    self.max_health()
                 ]
                 .as_str(),
             );
@@ -52,7 +67,10 @@ impl Display for Monster {
             out.push_str(
                 format![
                     "{} ({}) [HP: {}/{}]\n\t│\t│\n",
-                    self.species.name, self.id, self.current_health, self.max_health()
+                    self.species.name,
+                    self.id,
+                    self.current_health,
+                    self.max_health()
                 ]
                 .as_str(),
             );
@@ -83,7 +101,8 @@ impl Display for Monster {
     }
 }
 
-impl Monster { // public
+impl Monster {
+    // public
     pub fn name(&self) -> String {
         if let Some(nickname) = self.nickname {
             nickname.to_owned()
@@ -98,10 +117,15 @@ impl Monster { // public
 
     #[inline(always)]
     pub fn max_health(&self) -> u16 {
-        // INFO: Unless this turns out to be a bad idea, we just calculate every time its 
+        // INFO: Unless this turns out to be a bad idea, we just calculate every time its
         // requested. The only situation I would need to change this is if the formula
         // were to change, which I don't think will happen.
-        Monster::calculate_max_health(self.species.base_stat(Stat::Hp), self.individual_values[Stat::Hp], self.effort_values[Stat::Hp], self.level)
+        Monster::calculate_max_health(
+            self.species.base_stat(Stat::Hp),
+            self.individual_values[Stat::Hp],
+            self.effort_values[Stat::Hp],
+            self.level,
+        )
     }
 
     #[inline(always)]
@@ -110,11 +134,12 @@ impl Monster { // public
             Stat::Hp => self.max_health(),
             _ => {
                 // TODO: Division is supposed to be floating point here.
-                ((2 * self.species.base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5 // * self.nature[stat]
+                ((2 * self.species.base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5
+                // * self.nature[stat]
             }
         }
     }
-    
+
     #[inline(always)]
     pub fn current_health(&self) -> u16 {
         self.current_health
@@ -144,7 +169,7 @@ impl Monster { // public
     pub fn moveset(&self) -> &MaxSizedVec<Move, 4> {
         &self.moveset
     }
-    
+
     #[inline(always)]
     pub fn species(&self) -> &'static MonsterSpecies {
         self.species
@@ -169,25 +194,24 @@ impl Monster { // public
     pub fn held_item_mut(&mut self) -> &mut Option<Item> {
         &mut self.held_item
     }
-    
+
     #[inline(always)]
     pub fn consumed_item(&self) -> &Option<Item> {
         &self.consumed_item
     }
-    
+
     #[inline(always)]
     pub fn consumed_item_mut(&mut self) -> &mut Option<Item> {
         &mut self.consumed_item
     }
-    
-    
+
     pub fn field_position(&self) -> Option<FieldPosition> {
         match self.board_position {
             BoardPosition::Bench => None,
             BoardPosition::Field(field_position) => Some(field_position),
         }
     }
-    
+
     pub fn is_active(&self) -> bool {
         matches!(self.board_position, BoardPosition::Field(_))
     }
@@ -195,13 +219,10 @@ impl Monster { // public
     /// Returns the `VolatileStatus` of Monster of corresponding to a particular `VolatileStatusSpecies`, if the Monster
     /// has that particular status.
     pub fn volatile_status(&self, marker_species: VolatileStatusSpecies) -> Option<&VolatileStatus> {
-        self.volatile_statuses.iter()
-            .find(|marker| {
-                *marker.species == marker_species
-            })
+        self.volatile_statuses.iter().find(|marker| *marker.species == marker_species)
     }
-    
-    // TODO: We might change this if we decide that we want the current type of the 
+
+    // TODO: We might change this if we decide that we want the current type of the
     // monster to be different from the species' type.
     #[inline(always)]
     pub fn type_(&self) -> (Type, Option<Type>) {
@@ -209,39 +230,45 @@ impl Monster { // public
     }
 }
 
-impl Monster { // private
+impl Monster {
+    // private
 
     pub(crate) fn calculate_max_health(base_hp: u16, hp_iv: u16, hp_ev: u16, level: u16) -> u16 {
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
+    pub(crate) fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
+        &self,
+        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>,
+    ) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut output_owned_event_handlers = Vec::new();
-        
+
         // of the Monster itself
         event_handler_selector((self.species.event_handlers)())
             .into_iter()
-            .flatten() 
-            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+            .flatten()
+            .map(|event_handler| {
+                // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
                     owner_id: self.id,
-                    activation_order:  ActivationOrder {
+                    activation_order: ActivationOrder {
                         priority: 0,
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
                 }
             })
-            .pipe(|owned_event_handlers| { 
+            .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
             });
-        
-        // from the Monster's ability  
+
+        // from the Monster's ability
         event_handler_selector((&self).ability.event_handlers())
             .into_iter()
             .flatten()
-            .map(|event_handler| { // Add an OwnedEventHandler if an EventHandler exists.
+            .map(|event_handler| {
+                // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
                     owner_id: (&self).id,
@@ -251,34 +278,30 @@ impl Monster { // private
                         order: (&self).ability.order(),
                     },
                 }
-            })        
+            })
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
             });
-        
+
         // INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
-        
+
         // from the Monster's volatile statuses
-        self.volatile_statuses
-            .into_iter()
-            .for_each(|volatile_status| {
-                let owned_event_handlers = event_handler_selector(volatile_status.event_handlers())
-                    .into_iter()
-                    .flatten()
-                    .map(|event_handler| {
-                        OwnedEventHandler {
-                            event_handler,
-                            owner_id: self.id,
-                            activation_order:  ActivationOrder {
-                                priority: 0,
-                                speed: self.stat(Stat::Speed),
-                                order: 0,
-                            },
-                        }
-                    });
-                output_owned_event_handlers.extend(owned_event_handlers)
-            });
-        
+        self.volatile_statuses.into_iter().for_each(|volatile_status| {
+            let owned_event_handlers = event_handler_selector(volatile_status.event_handlers())
+                .into_iter()
+                .flatten()
+                .map(|event_handler| OwnedEventHandler {
+                    event_handler,
+                    owner_id: self.id,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: self.stat(Stat::Speed),
+                        order: 0,
+                    },
+                });
+            output_owned_event_handlers.extend(owned_event_handlers)
+        });
+
         // from the Monster's persistent status
         if let Some(persistent_status) = self.persistent_status {
             event_handler_selector(persistent_status.event_handlers())
@@ -288,7 +311,7 @@ impl Monster { // private
                     let owned_event_handler = OwnedEventHandler {
                         event_handler,
                         owner_id: self.id,
-                        activation_order:  ActivationOrder {
+                        activation_order: ActivationOrder {
                             priority: 0,
                             speed: self.stat(Stat::Speed),
                             order: 0,
@@ -307,15 +330,14 @@ impl Monster { // private
                     let owned_event_handler = OwnedEventHandler {
                         event_handler,
                         owner_id: self.id,
-                        activation_order:  ActivationOrder {
+                        activation_order: ActivationOrder {
                             priority: 0,
                             speed: self.stat(Stat::Speed),
                             order: 0,
                         },
                     };
                     output_owned_event_handlers.extend([owned_event_handler].into_iter());
-                }
-            );
+                });
         }
 
         output_owned_event_handlers
@@ -356,7 +378,16 @@ impl Monster { // private
 
         out.push_str(&format![
             "{} ({}) HP:[{}{}] {}/{} | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
-            self.full_name(), self.id, health_bar_filled.green(), health_bar_empty.red(), self.current_health, self.max_health(), self.board_position, persistent_status, self.volatile_statuses, held_item
+            self.full_name(),
+            self.id,
+            health_bar_filled.green(),
+            health_bar_empty.red(),
+            self.current_health,
+            self.max_health(),
+            self.board_position,
+            persistent_status,
+            self.volatile_statuses,
+            held_item
         ]);
         out
     }
@@ -464,7 +495,14 @@ impl Display for MonsterID {
 
 impl MonsterSpecies {
     pub const fn from_dex_entry(dex_entry: MonsterDexEntry) -> Self {
-        let MonsterDexEntry { dex_number, name, primary_type, secondary_type, base_stats, event_handlers } = dex_entry;
+        let MonsterDexEntry {
+            dex_number,
+            name,
+            primary_type,
+            secondary_type,
+            base_stats,
+            event_handlers,
+        } = dex_entry;
         Self {
             dex_number,
             name,
@@ -479,7 +517,7 @@ impl MonsterSpecies {
     pub fn name(&self) -> &'static str {
         self.name
     }
-    
+
     #[inline(always)]
     pub fn type_(&self) -> (Type, Option<Type>) {
         (self.primary_type, self.secondary_type)
@@ -499,12 +537,11 @@ impl MonsterSpecies {
     pub fn base_stat(&self, stat: Stat) -> u16 {
         self.base_stats[stat]
     }
-    
+
     #[inline(always)]
     pub fn event_handlers(&self) -> EventHandlerDeck {
         (self.event_handlers)()
     }
-
 }
 
 impl From<usize> for MonsterNumber {

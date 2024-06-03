@@ -1,21 +1,19 @@
-use std::fmt::Display;
 use monsim_utils::Count;
+use std::fmt::Display;
 
 use crate::{EventHandlerDeck, Monster};
 
 // Permanent Statuses
 #[derive(Debug, Clone, Copy)]
 pub struct PersistentStatus {
-    pub(crate) species: & 'static PersistentStatusSpecies,
+    pub(crate) species: &'static PersistentStatusSpecies,
 }
 
 impl PersistentStatus {
     pub(crate) fn new(species: &'static PersistentStatusSpecies) -> PersistentStatus {
-        PersistentStatus {
-            species,
-        }
+        PersistentStatus { species }
     }
-    
+
     #[inline(always)]
     pub fn name(&self) -> &'static str {
         self.species.name
@@ -29,7 +27,6 @@ impl PersistentStatus {
     pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
         (self.species.event_handlers)()
     }
-    
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -42,11 +39,11 @@ pub struct PersistentStatusSpecies {
 
 impl PersistentStatusSpecies {
     pub const fn from_dex_entry(dex_entry: PersistentStatusDexEntry) -> PersistentStatusSpecies {
-        let PersistentStatusDexEntry { 
-            dex_number, 
+        let PersistentStatusDexEntry {
+            dex_number,
             name,
-            on_acquired_message, 
-            event_handlers, 
+            on_acquired_message,
+            event_handlers,
         } = dex_entry;
 
         PersistentStatusSpecies {
@@ -69,7 +66,7 @@ pub struct PersistentStatusDexEntry {
 // Volatile Statuses
 #[derive(Debug, Clone, Copy)]
 pub struct VolatileStatus {
-    pub(crate) species: & 'static VolatileStatusSpecies,
+    pub(crate) species: &'static VolatileStatusSpecies,
     pub(crate) remaining_turns: u8,
 }
 
@@ -93,12 +90,11 @@ impl VolatileStatus {
     pub fn event_handlers(&self) -> EventHandlerDeck {
         self.species.event_handlers()
     }
-    
+
     #[inline(always)]
     pub fn remaining_turns(&self) -> u8 {
         self.remaining_turns
     }
-    
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -120,12 +116,12 @@ impl Eq for VolatileStatusSpecies {}
 
 impl VolatileStatusSpecies {
     pub const fn from_dex_entry(dex_entry: VolatileStatusDexEntry) -> VolatileStatusSpecies {
-        let VolatileStatusDexEntry { 
+        let VolatileStatusDexEntry {
             dex_number,
-            name, 
-            on_acquired_message, 
-            lifetime_in_turns, 
-            event_handlers, 
+            name,
+            on_acquired_message,
+            lifetime_in_turns,
+            event_handlers,
         } = dex_entry;
 
         VolatileStatusSpecies {
@@ -147,7 +143,7 @@ impl VolatileStatusSpecies {
 pub struct VolatileStatusDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    /// fn(affected_monster: &Monster) -> message: String 
+    /// fn(affected_monster: &Monster) -> message: String
     pub on_acquired_message: fn(&Monster) -> String,
     pub lifetime_in_turns: Count,
     pub event_handlers: fn() -> EventHandlerDeck,

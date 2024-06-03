@@ -89,7 +89,7 @@ impl TypeEffectiveness {
     pub fn is_matchup_super_effective(&self) -> bool {
         *self == TypeEffectiveness::SuperEffective || *self == TypeEffectiveness::DoubleSuperEffective
     }
-    
+
     pub(crate) fn as_text(&self) -> String {
         let text = match self {
             TypeEffectiveness::Ineffective => "ineffective",

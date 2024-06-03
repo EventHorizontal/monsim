@@ -1,13 +1,21 @@
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
 use tap::Pipe;
 
-use crate::{effects, sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet}, targetting::{BoardPosition, FieldPosition}}, AbilityID, BattleState, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6};
+use crate::{
+    effects,
+    sim::{
+        game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet},
+        targetting::{BoardPosition, FieldPosition},
+    },
+    AbilityID, BattleState, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2,
+    ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
+};
 
-/*  
-    FEATURE: Better Validation -> Some basic state validation will be done 
-    now, but later on I want to extend that to more stuff, such as validating 
-    that a certain monster species is allowed to have certain abilities etc. 
-    Mostly that kind of thing where the user is alerted that the combination 
+/*
+    FEATURE: Better Validation -> Some basic state validation will be done
+    now, but later on I want to extend that to more stuff, such as validating
+    that a certain monster species is allowed to have certain abilities etc.
+    Mostly that kind of thing where the user is alerted that the combination
     of things they provided is not allowed. The thing to keep in mind here is
     that monsim will eventually run with a GUI, this is just the engine, and so
     the interactive UI will allow reporting this errors iteratively.
@@ -15,7 +23,7 @@ use crate::{effects, sim::{game_mechanics::{Ability, AbilitySpecies, MonsterNatu
 pub struct BattleBuilder {
     maybe_ally_team: Option<Ally<MonsterTeamBuilder>>,
     maybe_opponent_team: Option<Opponent<MonsterTeamBuilder>>,
-    format: BattleFormat
+    format: BattleFormat,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27,10 +35,10 @@ pub enum BattleFormat {
 
 impl BattleState {
     pub fn spawn() -> BattleBuilder {
-        BattleBuilder { 
-            maybe_ally_team: None, 
-            maybe_opponent_team: None, 
-            format: BattleFormat::Single
+        BattleBuilder {
+            maybe_ally_team: None,
+            maybe_opponent_team: None,
+            format: BattleFormat::Single,
         }
     }
 }
@@ -43,7 +51,10 @@ impl BattleBuilder {
     }
 
     pub fn add_opponent_team(mut self, opponent_team: MonsterTeamBuilder) -> Self {
-        assert!(self.maybe_opponent_team.is_none(), "Only one Opponent Team is allowed per battle, but found multiple.");
+        assert!(
+            self.maybe_opponent_team.is_none(),
+            "Only one Opponent Team is allowed per battle, but found multiple."
+        );
         self.maybe_opponent_team = Some(Opponent::new(opponent_team));
         self
     }
@@ -54,116 +65,85 @@ impl BattleBuilder {
     }
 
     pub fn build(self) -> BattleState {
-        
         let ally_board_positions = match self.format {
-            BattleFormat::Single => {
-                [
-                    BoardPosition::Field(FieldPosition::AllySideCentre),
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                ]
-            },
-            BattleFormat::Double => {
-                [
-                    BoardPosition::Field(FieldPosition::AllySideCentre),
-                    BoardPosition::Field(FieldPosition::AllySideRight),
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                ]
-            },
-            BattleFormat::Triple => {
-                [
-                    BoardPosition::Field(FieldPosition::AllySideCentre),
-                    BoardPosition::Field(FieldPosition::AllySideLeft),
-                    BoardPosition::Field(FieldPosition::AllySideRight),
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                ]
-            },
+            BattleFormat::Single => [
+                BoardPosition::Field(FieldPosition::AllySideCentre),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Double => [
+                BoardPosition::Field(FieldPosition::AllySideCentre),
+                BoardPosition::Field(FieldPosition::AllySideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Triple => [
+                BoardPosition::Field(FieldPosition::AllySideCentre),
+                BoardPosition::Field(FieldPosition::AllySideLeft),
+                BoardPosition::Field(FieldPosition::AllySideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
         };
-        
-        const ALLY_IDS: [MonsterID; 6] = [
-            ALLY_1,
-            ALLY_2,
-            ALLY_3,
-            ALLY_4,
-            ALLY_5,
-            ALLY_6,
-        ];
 
-        let ally_team = self.maybe_ally_team
+        const ALLY_IDS: [MonsterID; 6] = [ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6];
+
+        let ally_team = self
+            .maybe_ally_team
             .expect("Building the BattleState requires adding an Ally Team, found none.")
-            .map_consume(|ally_team_builder| {
-                ally_team_builder.build(ALLY_IDS, ally_board_positions, TeamID::Allies)                
-            });
+            .map_consume(|ally_team_builder| ally_team_builder.build(ALLY_IDS, ally_board_positions, TeamID::Allies));
 
         let opponent_board_positions = match self.format {
-            BattleFormat::Single => {
-                [
-                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                ]
-            },
-            BattleFormat::Double => {
-                [
-                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
-                    BoardPosition::Field(FieldPosition::OpponentSideRight),
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                ]
-            },
-            BattleFormat::Triple => {
-                [
-                    BoardPosition::Field(FieldPosition::OpponentSideCentre),
-                    BoardPosition::Field(FieldPosition::OpponentSideLeft),
-                    BoardPosition::Field(FieldPosition::OpponentSideRight),
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                    BoardPosition::Bench,
-                ]
-            },
+            BattleFormat::Single => [
+                BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Double => [
+                BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                BoardPosition::Field(FieldPosition::OpponentSideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
+            BattleFormat::Triple => [
+                BoardPosition::Field(FieldPosition::OpponentSideCentre),
+                BoardPosition::Field(FieldPosition::OpponentSideLeft),
+                BoardPosition::Field(FieldPosition::OpponentSideRight),
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+                BoardPosition::Bench,
+            ],
         };
 
-        const OPPONENT_IDS: [MonsterID; 6] = [
-            OPPONENT_1,
-            OPPONENT_2,
-            OPPONENT_3,
-            OPPONENT_4,
-            OPPONENT_5,
-            OPPONENT_6,
-        ];
+        const OPPONENT_IDS: [MonsterID; 6] = [OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6];
 
-        let opponent_team = self.maybe_opponent_team
+        let opponent_team = self
+            .maybe_opponent_team
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
-            .map_consume(|opponent_team_builder| {
-                opponent_team_builder.build(OPPONENT_IDS, opponent_board_positions, TeamID::Opponents)                
-            });
+            .map_consume(|opponent_team_builder| opponent_team_builder.build(OPPONENT_IDS, opponent_board_positions, TeamID::Opponents));
 
         BattleState::new(ally_team, opponent_team, self.format)
-    }    
+    }
 }
 
 pub struct MonsterTeamBuilder {
-    maybe_monsters: Option<MaxSizedVec<MonsterBuilder, 6>>
+    maybe_monsters: Option<MaxSizedVec<MonsterBuilder, 6>>,
 }
 
 impl MonsterTeam {
     pub fn spawn() -> MonsterTeamBuilder {
-        MonsterTeamBuilder {
-            maybe_monsters: None
-        }
+        MonsterTeamBuilder { maybe_monsters: None }
     }
 }
 
@@ -172,25 +152,21 @@ impl MonsterTeamBuilder {
         match self.maybe_monsters {
             Some(ref mut monsters) => {
                 monsters.push(monster);
-            },
+            }
             None => {
                 self.maybe_monsters = Some(MaxSizedVec::from_vec(vec![monster]));
-            },
+            }
         }
         self
     }
 
     fn build(self, monster_ids: [MonsterID; 6], board_positions: [BoardPosition; 6], team_id: TeamID) -> MonsterTeam {
         self.maybe_monsters
-            .unwrap_or_else( 
-                || panic!("Expected {team_id} to have at least one monster, but none were given")
-            )
+            .unwrap_or_else(|| panic!("Expected {team_id} to have at least one monster, but none were given"))
             .into_iter()
             .zip(monster_ids)
             .zip(board_positions)
-            .map(|((monster_builder, monster_id), board_position)| {
-                monster_builder.build(monster_id, board_position)
-            })
+            .map(|((monster_builder, monster_id), board_position)| monster_builder.build(monster_id, board_position))
             .collect::<Vec<_>>()
             .pipe(|monsters| MonsterTeam::new(monsters, team_id))
     }
@@ -222,34 +198,32 @@ impl MonsterBuilderExt for MonsterSpecies {
 impl Monster {
     /// Starting point for building a Monster.
     pub fn with(
-        species:  &'static MonsterSpecies,
+        species: &'static MonsterSpecies,
         moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>),
         ability: AbilityBuilder,
     ) -> MonsterBuilder {
-        
         let moves = vec![moves.0]
-            .pipe(|mut vec| {  
+            .pipe(|mut vec| {
                 if let Some(move_) = moves.1 {
                     vec.push(move_)
                 }
                 vec
             })
-            .pipe(|mut vec| {  
+            .pipe(|mut vec| {
                 if let Some(move_) = moves.2 {
                     vec.push(move_)
                 }
                 vec
             })
-            .pipe(|mut vec| {  
+            .pipe(|mut vec| {
                 if let Some(move_) = moves.3 {
                     vec.push(move_)
                 }
                 vec
-            }
-        );
+            });
 
         let moves = MaxSizedVec::from_vec(moves);
-        
+
         MonsterBuilder {
             species,
             moves,
@@ -259,7 +233,7 @@ impl Monster {
             _nature: None,
             _stat_modifiers: None,
             _current_health: None,
-            item: None, 
+            item: None,
         }
     }
 }
@@ -273,30 +247,40 @@ impl MonsterBuilder {
     pub fn with_item(mut self, item: ItemBuilder) -> Self {
         self.item = Some(item);
         self
-    }  
+    }
 
     pub fn build(self, monster_id: MonsterID, board_position: BoardPosition) -> Monster {
-        
         let nickname = self.nickname;
-        
+
         let move_ids: [MoveID; 4] = [
-            MoveID { owner_id: monster_id, move_number: MoveNumber::_1 },
-            MoveID { owner_id: monster_id, move_number: MoveNumber::_2 },
-            MoveID { owner_id: monster_id, move_number: MoveNumber::_3 },
-            MoveID { owner_id: monster_id, move_number: MoveNumber::_4 },
+            MoveID {
+                owner_id: monster_id,
+                move_number: MoveNumber::_1,
+            },
+            MoveID {
+                owner_id: monster_id,
+                move_number: MoveNumber::_2,
+            },
+            MoveID {
+                owner_id: monster_id,
+                move_number: MoveNumber::_3,
+            },
+            MoveID {
+                owner_id: monster_id,
+                move_number: MoveNumber::_4,
+            },
         ];
 
-        let moveset = self.moves
+        let moveset = self
+            .moves
             .into_iter()
-            .zip(move_ids).map(|(move_builder, move_id)| {
-                move_builder.build(move_id)
-            })
+            .zip(move_ids)
+            .map(|(move_builder, move_id)| move_builder.build(move_id))
             .collect::<Vec<_>>()
-            .pipe(|vec| { MaxSizedVec::from_vec(vec) });
-        
-        let ability = self.ability
-            .build(AbilityID { owner_id: monster_id});
-        
+            .pipe(|vec| MaxSizedVec::from_vec(vec));
+
+        let ability = self.ability.build(AbilityID { owner_id: monster_id });
+
         let level = 50;
         // FEATURE: EVs and IVs should be settable through the builder.
         const IVS: StatSet = StatSet::new(31, 31, 31, 31, 31, 31);
@@ -304,11 +288,8 @@ impl MonsterBuilder {
         // In-game hp-stat determination formula
         let nature = MonsterNature::Serious;
 
-        let held_item = self.item
-            .map(|item| {
-                item.build(ItemID { item_holder_id: monster_id })
-            });
-        
+        let held_item = self.item.map(|item| item.build(ItemID { item_holder_id: monster_id }));
+
         Monster {
             id: monster_id,
             species: self.species,
@@ -326,13 +307,13 @@ impl MonsterBuilder {
             volatile_statuses: MaxSizedVec::empty(),
             held_item,
             consumed_item: None,
-        } 
+        }
     }
 }
 
 #[derive(Clone)]
 pub struct MoveBuilder {
-    species: & 'static MoveSpecies,
+    species: &'static MoveSpecies,
     power_points: Option<u8>,
 }
 
@@ -348,21 +329,19 @@ impl MoveBuilderExt for MoveSpecies {
 
 impl Move {
     pub fn builder(species: &'static MoveSpecies) -> MoveBuilder {
-        MoveBuilder {
-            species,
-            power_points: None,
-        }
+        MoveBuilder { species, power_points: None }
     }
 }
 
 impl MoveBuilder {
     pub fn with_power_points(mut self, power_points: u8) -> MoveBuilder {
-        assert!(power_points < self.species.max_power_points(), 
+        assert!(
+            power_points < self.species.max_power_points(),
             "Expected move {move_name} to have less than {max_pp} power points",
             move_name = self.species.name(),
             max_pp = self.species.max_power_points(),
         );
-         
+
         self.power_points = Some(power_points);
         self
     }
@@ -370,22 +349,21 @@ impl MoveBuilder {
     fn build(self, move_id: MoveID) -> Move {
         let species = self.species;
         // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
-        if species.category() == MoveCategory::Status && species.
-        on_hit_effect() as usize == effects::deal_default_damage as usize {
+        if species.category() == MoveCategory::Status && species.on_hit_effect() as usize == effects::deal_default_damage as usize {
             println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
         }
         Move {
             id: move_id,
-            
+
             current_power_points: self.power_points.unwrap_or(self.species.max_power_points()),
             species,
         }
-    } 
+    }
 }
 
 #[derive(Clone)]
 pub struct AbilityBuilder {
-    pub species: & 'static AbilitySpecies,
+    pub species: &'static AbilitySpecies,
 }
 
 pub trait AbilityBuilderExt {
@@ -401,9 +379,7 @@ impl AbilityBuilderExt for AbilitySpecies {
 impl Ability {
     /// Starting point for building an Ability.
     pub fn builder(species: &'static AbilitySpecies) -> AbilityBuilder {
-        AbilityBuilder {
-            species,
-        }
+        AbilityBuilder { species }
     }
 }
 
@@ -411,16 +387,13 @@ impl Ability {
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
     fn build(self, id: AbilityID) -> Ability {
-        Ability {
-            id,
-            species: self.species,
-        }
+        Ability { id, species: self.species }
     }
 }
 
 #[derive(Clone)]
 pub struct ItemBuilder {
-    pub species: & 'static ItemSpecies,
+    pub species: &'static ItemSpecies,
 }
 
 pub trait ItemBuilderExt {
@@ -435,17 +408,15 @@ impl ItemBuilderExt for ItemSpecies {
 
 impl Item {
     pub fn builder(species: &'static ItemSpecies) -> ItemBuilder {
-        ItemBuilder {
-            species,
-        }
+        ItemBuilder { species }
     }
 }
 
 impl ItemBuilder {
     pub fn build(self, id: ItemID) -> Item {
         Item {
-            _id: id, 
+            _id: id,
             species: self.species,
         }
-    } 
+    }
 }

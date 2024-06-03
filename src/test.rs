@@ -1,57 +1,46 @@
-
 #[cfg(all(test, feature = "debug"))]
 mod battle {
-    
-    
+
     #[test]
     fn test_display_battle() {
         extern crate self as monsim;
         use crate::sim::*;
         use crate::sim::{
             test_ability_dex::FlashFire,
-            test_monster_dex::{Zombler, Merkey, Squirecoal, Dandyleo},
+            test_item_dex::PasshoBerry,
+            test_monster_dex::{Dandyleo, Merkey, Squirecoal, Zombler},
             test_move_dex::{Bubble, Ember, Scratch, Tackle},
-            test_item_dex::PasshoBerry
         };
 
         let test_battle = BattleState::spawn()
-                .add_ally_team(
-                    MonsterTeam::spawn()
-                        .add_monster(
-                            Squirecoal.spawn(
-                                (Ember.spawn(), Some(Scratch.spawn()), None, None),
-                                FlashFire.spawn()
-                            )
-                            .with_nickname("Ruby")
-                        )
-                        .add_monster(
-                            Merkey.spawn(
-                                (Tackle.spawn(), Some(Bubble.spawn()), Some(Tackle.spawn()), None),
-                                FlashFire.spawn()
-                            )
-                            .with_item(PasshoBerry.spawn())
-                        )
-                        .add_monster(
-                            Dandyleo.spawn(
-                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                                FlashFire.spawn()
-                            )
-                            .with_nickname("Emerald")
-                        )
-                )
-                .add_opponent_team(
-                    MonsterTeam::spawn()
-                        .add_monster(
-                            Zombler.spawn(
-                                (Scratch.spawn(), Some(Ember.spawn()), None, None),
-                                FlashFire.spawn()
-                            )
-                            .with_nickname("Cheerio")
-                        )
-                )
-                .build();
+            .add_ally_team(
+                MonsterTeam::spawn()
+                    .add_monster(
+                        Squirecoal
+                            .spawn((Ember.spawn(), Some(Scratch.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("Ruby"),
+                    )
+                    .add_monster(
+                        Merkey
+                            .spawn((Tackle.spawn(), Some(Bubble.spawn()), Some(Tackle.spawn()), None), FlashFire.spawn())
+                            .with_item(PasshoBerry.spawn()),
+                    )
+                    .add_monster(
+                        Dandyleo
+                            .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                            .with_nickname("Emerald"),
+                    ),
+            )
+            .add_opponent_team(
+                MonsterTeam::spawn().add_monster(
+                    Zombler
+                        .spawn((Scratch.spawn(), Some(Ember.spawn()), None, None), FlashFire.spawn())
+                        .with_nickname("Cheerio"),
+                ),
+            )
+            .build();
 
-        println!("{}", test_battle);   
+        println!("{}", test_battle);
     }
 }
 
@@ -102,8 +91,8 @@ mod prng {
         let mut prng1 = Prng::from_current_time();
         let mut prng2 = prng1;
         for i in 0..10_000 {
-            let generated_number_1 = prng1.generate_random_number_in_range(0..=u16::MAX-1);
-            let generated_number_2 = prng2.generate_random_number_in_range(0..=u16::MAX-1);
+            let generated_number_1 = prng1.generate_random_number_in_range(0..=u16::MAX - 1);
+            let generated_number_2 = prng2.generate_random_number_in_range(0..=u16::MAX - 1);
             assert_eq!(generated_number_1, generated_number_2, "iteration {}", i);
         }
     }
@@ -134,13 +123,13 @@ mod utils {
     fn test_expect_wrong_team() {
         let item = Ally::new(10usize);
         let item = TeamAffl::ally(item);
-        (item.map(|i| { i - 1 }).expect_opponent());
+        (item.map(|i| i - 1).expect_opponent());
     }
 
     #[test]
     fn test_expect_right_team() {
         let item = Ally::new(10usize);
         let item = TeamAffl::ally(item);
-        item.map(|i| {i + 1}).expect_ally();
+        item.map(|i| i + 1).expect_ally();
     }
 }

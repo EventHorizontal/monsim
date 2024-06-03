@@ -6,8 +6,8 @@ use core::fmt::Debug;
 
 pub struct Move {
     pub(crate) id: MoveID,
-    pub(crate) species: &'static MoveSpecies, 
-    
+    pub(crate) species: &'static MoveSpecies,
+
     pub(crate) current_power_points: u8,
 }
 
@@ -45,11 +45,11 @@ impl Move {
     pub fn max_power_points(&self) -> u8 {
         self.species.max_power_points
     }
-    
+
     #[inline(always)]
     pub fn priority(&self) -> i8 {
         self.species.priority
-    } 
+    }
 
     #[inline(always)]
     pub fn allowed_target_flags(&self) -> TargetFlags {
@@ -60,7 +60,7 @@ impl Move {
     pub fn type_(&self) -> Type {
         self.species.type_
     }
-    
+
     #[inline(always)]
     pub fn is_type(&self, type_: Type) -> bool {
         self.species.type_ == type_
@@ -70,7 +70,7 @@ impl Move {
     pub fn species(&self) -> &'static MoveSpecies {
         self.species
     }
-    
+
     pub(crate) fn hits_per_target(&self) -> Count {
         self.species.hits_per_target
     }
@@ -81,10 +81,10 @@ impl Move {
 pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
-    
+
     on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
     hits_per_target: Count,
-    
+
     base_accuracy: Option<u16>,
     base_power: u16,
     category: MoveCategory,
@@ -114,20 +114,20 @@ impl Eq for MoveSpecies {}
 
 impl MoveSpecies {
     pub const fn from_dex_entry(dex_entry: MoveDexEntry) -> Self {
-        let MoveDexEntry { 
-            dex_number, 
-            name, 
-            on_hit_effect, 
-            base_accuracy, 
-            base_power, 
-            category, 
-            max_power_points, 
-            priority, 
-            targets, 
-            type_, 
+        let MoveDexEntry {
+            dex_number,
+            name,
+            on_hit_effect,
+            base_accuracy,
+            base_power,
+            category,
+            max_power_points,
+            priority,
+            targets,
+            type_,
             hits_per_target,
         } = dex_entry;
-        
+
         MoveSpecies {
             dex_number,
             name,
@@ -162,8 +162,6 @@ impl MoveSpecies {
     pub fn on_hit_effect(&self) -> Effect<Outcome<Nothing>, MoveHitContext> {
         self.on_hit_effect
     }
-    
-    
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -199,14 +197,14 @@ pub struct MoveDexEntry {
 
     pub on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
     pub hits_per_target: Count,
-    
+
     pub base_accuracy: Option<u16>,
     pub base_power: u16,
     pub category: MoveCategory,
     pub max_power_points: u8,
     pub priority: i8,
     pub targets: TargetFlags,
-    pub type_: Type,    
+    pub type_: Type,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

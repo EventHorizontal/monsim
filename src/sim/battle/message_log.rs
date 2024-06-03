@@ -19,7 +19,7 @@ impl MessageLog {
 
     pub fn as_vec(&self) -> &Vec<String> {
         &self.messages
-    } 
+    }
 
     pub fn show_all_messages(&self) {
         self.messages.iter().for_each(|message| {

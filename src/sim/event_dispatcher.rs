@@ -5,18 +5,18 @@ such as abilities or items. An example would be the item *Life Orb*, which react
 event, by raising the attack by 50%. It also reacts to the `on_move_used` event, by draining 10% of the user's max
 HP.
 
-Each Event has a *broadcaster* and zero or more *receivers*. The broadcaster is responsible for emitting or triggering 
-the Event, and then each receiver returns an `EventHandler` that contains a callback function of the appropriate 
-type and some extra information about how and when to activate it, most prominently `EventFilteringOptions`. This is 
-then wrapped into an `OwnedEventHandler` that contains additional information about the owner of the EventHandler (i.e 
-the Monster whose EventHandler it is). The `EventDispatcher` is responsible for collecting, filtering and calling all 
+Each Event has a *broadcaster* and zero or more *receivers*. The broadcaster is responsible for emitting or triggering
+the Event, and then each receiver returns an `EventHandler` that contains a callback function of the appropriate
+type and some extra information about how and when to activate it, most prominently `EventFilteringOptions`. This is
+then wrapped into an `OwnedEventHandler` that contains additional information about the owner of the EventHandler (i.e
+the Monster whose EventHandler it is). The `EventDispatcher` is responsible for collecting, filtering and calling all
 the callbacks of the appropriate EventHandlers.
 
 An Event is broadcasted during the turn-loop for two major reasons:
 1. To test if there are mechanics that forbid the next action, or alter it. These events are associated with
 functions of the form `on_try_<something>`. A reactive EventHandler may choose to disable this. Think moves like
 `Embargo` which prevents item use.
-2. To inform the entities in the battle that something specific happened. These events are associated with 
+2. To inform the entities in the battle that something specific happened. These events are associated with
 functions of the form `on_<something>_happened`. A reactive EventHandler may choose to do something every time
 that specific thing happens, or only if further conditions are satisfied. `Passho Berry` reacts to the Event
 `on_move_used` when used by an opponent, but only if the move is water-type and super-effective, which it then checks
@@ -24,8 +24,8 @@ manually.
 
 The EventHandler usually returns a value that has to do with the specific event being called. With the Life Orb example,
 it returned a new value for the attack stat to be used when attacking. What kind of value an EventHandler returns
-is decided by the Event it responds to. The `on_calculate_attack_stat` Event expects a `u16` - the modified attack stat. 
-Note that Life Orb may choose to return the initial attack, which would correspond to having no effect. This is 
+is decided by the Event it responds to. The `on_calculate_attack_stat` Event expects a `u16` - the modified attack stat.
+Note that Life Orb may choose to return the initial attack, which would correspond to having no effect. This is
 desirable when an mechanic wants to affect something only if certain conditions are met.
 
 Once all the EventHandlers are exhausted, the Event resolution ends and the return value is returned to the broadcaster.
@@ -38,9 +38,12 @@ use core::fmt::Debug;
 
 mod events;
 #[cfg(all(test, feature = "debug"))]
-mod tests ;
+mod tests;
 
-use crate::{sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, EventHandlerSelector}, ActivationOrder, BattleSimulator};
+use crate::{
+    sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, EventHandlerSelector, Nothing, Outcome},
+    ActivationOrder, BattleSimulator,
+};
 use contexts::*;
 pub use events::*;
 use monsim_utils::{not, NOTHING};
@@ -51,7 +54,6 @@ use super::targetting::TargetFlags;
 pub struct EventDispatcher;
 
 impl EventDispatcher {
-
     pub fn dispatch_trial_event<C: EventContext + Copy, B: Broadcaster + Copy>(
         sim: &mut BattleSimulator,
 
@@ -60,12 +62,12 @@ impl EventDispatcher {
         event_context: C,
     ) -> Outcome<Nothing> {
         EventDispatcher::dispatch_event(
-            sim, 
+            sim,
             broadcaster_id,
-            event_handler_selector, 
-            event_context, 
-            Outcome::Success(NOTHING), 
-            Some(Outcome::Failure)
+            event_handler_selector,
+            event_context,
+            Outcome::Success(NOTHING),
+            Some(Outcome::Failure),
         )
     }
 
@@ -81,13 +83,12 @@ impl EventDispatcher {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-
         let mut owned_event_handlers = sim.battle.owned_event_handlers(event_handler_selector);
 
         if owned_event_handlers.is_empty() {
             return default;
         }
- 
+
         sort_by_activation_order(&mut sim.battle.prng, &mut owned_event_handlers, |owned_event_handler| {
             owned_event_handler.activation_order
         });
@@ -95,13 +96,12 @@ impl EventDispatcher {
         let mut relay = default;
         for OwnedEventHandler { event_handler, owner_id, .. } in owned_event_handlers.into_iter() {
             if EventDispatcher::does_event_pass_event_receivers_filtering_options(
-                &sim.battle, 
-                broadcaster_id, 
+                &sim.battle,
+                broadcaster_id,
                 event_context.target(),
-                owner_id, 
-                event_handler.event_filtering_options
+                owner_id,
+                event_handler.event_filtering_options,
             ) {
-                
                 relay = (event_handler.response)(sim, broadcaster_id, owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
@@ -121,13 +121,12 @@ impl EventDispatcher {
         event_receiver_id: MonsterID,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
-
         let mut passes_filter;
-        
-        let EventFilteringOptions { 
-            only_if_broadcaster_is: allowed_broadcaster_relation_flags, 
+
+        let EventFilteringOptions {
+            only_if_broadcaster_is: allowed_broadcaster_relation_flags,
             only_if_target_is: allowed_target_relation_flags,
-            only_if_receiver_is_active: requires_being_active 
+            only_if_receiver_is_active: requires_being_active,
         } = receiver_filtering_options;
 
         // First check - does the event receiver require themselves to be active? If so check if they are actually active.
@@ -138,21 +137,22 @@ impl EventDispatcher {
         };
 
         // Skip the rest of the calculation if it doesn't pass.
-        if not!(passes_filter) { return false };
+        if not!(passes_filter) {
+            return false;
+        };
 
         if let Some(event_broadcaster_id) = event_broadcaster.source() {
             // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster
             // within the allowed relations to the event receiver?
             let mut broadcaster_relation_flags = TargetFlags::empty();
-            let event_broadcaster_field_position = battle.monster(event_broadcaster_id)
+            let event_broadcaster_field_position = battle
+                .monster(event_broadcaster_id)
                 .board_position
                 .field_position()
                 .expect("We assume broadcasters must be on the field.");
             // This is an optional value because it may be that the event receiver is benched.
-            let event_receiver_field_position = battle.monster(event_receiver_id)
-                .board_position
-                .field_position();
-            
+            let event_receiver_field_position = battle.monster(event_receiver_id).board_position.field_position();
+
             if battle.are_opponents(event_broadcaster_id, event_receiver_id) {
                 broadcaster_relation_flags |= TargetFlags::OPPONENTS;
             } else if battle.are_allies(event_broadcaster_id, event_receiver_id) {
@@ -173,21 +173,22 @@ impl EventDispatcher {
             passes_filter = allowed_broadcaster_relation_flags.contains(broadcaster_relation_flags);
         }
 
-        if not!(passes_filter) { return false };
+        if not!(passes_filter) {
+            return false;
+        };
 
-        // The event target is the contextual target for the action associated with this event. For example, 
+        // The event target is the contextual target for the action associated with this event. For example,
         // this could be the target of the current move.
         if let Some(event_target_id) = event_target_id {
             let mut target_relation_flags = TargetFlags::empty();
-            let event_target_field_position = battle.monster(event_target_id)
+            let event_target_field_position = battle
+                .monster(event_target_id)
                 .board_position
                 .field_position()
                 .expect("We assume targets must be on the field.");
-            
+
             // This is an optional value because it may be that the event receiver is benched.
-            let event_receiver_field_position = battle.monster(event_receiver_id)
-                .board_position
-                .field_position();
+            let event_receiver_field_position = battle.monster(event_receiver_id).board_position.field_position();
 
             if battle.are_opponents(event_target_id, event_receiver_id) {
                 target_relation_flags |= TargetFlags::OPPONENTS;
@@ -211,22 +212,22 @@ impl EventDispatcher {
         }
 
         passes_filter
-    }  
+    }
 }
 
-/// This tells asscociated EventHandlers whether to fire or not 
+/// This tells asscociated EventHandlers whether to fire or not
 /// in response to a certain kind of Event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventFilteringOptions {
-    /// Filters the EventHandler's response based on the relationship between the 
+    /// Filters the EventHandler's response based on the relationship between the
     /// broadcaster and the receiver. Does nothing if there is no broadcaster.
     pub only_if_broadcaster_is: TargetFlags,
     /// Filters the EventHandler based on the relationship between the target and the
     /// receiver. Does nothing if the event context has no clear target.
     pub only_if_target_is: TargetFlags,
     /// If `true` the EventHandler only responds to the Event if its receiver is active.
-    /// 
-    /// If `false`, the EventHandler ignores the whether the receiver is active or not 
+    ///
+    /// If `false`, the EventHandler ignores the whether the receiver is active or not
     /// (This could useful for abilities like Regenerator).
     pub only_if_receiver_is_active: bool,
 }
@@ -241,7 +242,8 @@ impl EventFilteringOptions {
     }
 }
 
-pub type EventResponse<R, C, B> =  fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C, /* relay */ R) -> R;
+pub type EventResponse<R, C, B> =
+    fn(/* simulator */ &mut BattleSimulator, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C, /* relay */ R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -283,9 +285,7 @@ impl<R: Copy, C: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, B> {
                 .finish()
         };
         #[cfg(not(feature = "debug"))]
-        let out = {
-            write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.")
-        };
+        let out = { write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.") };
         out
     }
 }
@@ -298,14 +298,17 @@ pub struct OwnedEventHandler<R: Copy, C: Copy, B: Broadcaster + Copy> {
 }
 
 pub mod contexts {
-    use monsim_utils::MaxSizedVec;
     use super::EventContext;
-    use crate::{sim::{MonsterID, MoveID}, AbilityID, ItemID};
+    use crate::{
+        sim::{MonsterID, MoveID},
+        AbilityID, ItemID,
+    };
+    use monsim_utils::MaxSizedVec;
 
     /// `move_user_id`: MonsterID of the Monster using the move.
-    /// 
+    ///
     /// `move_used_id`: MoveID of the Move being used.
-    /// 
+    ///
     /// `target_ids`: MonsterIDs of the Monsters the move is being used on.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct MoveUseContext {
@@ -327,9 +330,9 @@ pub mod contexts {
     }
 
     /// `move_user_id`: MonsterID of the Monster hitting.
-    /// 
+    ///
     /// `move_used_id`: MoveID of the Move being used.
-    /// 
+    ///
     /// `target_id`: MonsterID of the Monster being hit.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct MoveHitContext {
@@ -355,7 +358,7 @@ pub mod contexts {
     }
 
     /// `ability_owner_id`: MonsterID of the Monster whose ability is being used.
-    /// 
+    ///
     /// `ability_used_id`: AbilityID of the Ability being used.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct AbilityUseContext {
@@ -375,7 +378,7 @@ pub mod contexts {
     impl EventContext for AbilityUseContext {}
 
     /// `active_monster_id`: MonsterID of the Monster to be switched out.
-    /// 
+    ///
     /// `benched_monster_id`: MonsterID of the Monster to be switched in.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct SwitchContext {
@@ -395,7 +398,7 @@ pub mod contexts {
     impl EventContext for SwitchContext {}
 
     /// `active_monster_id`: MonsterID of the Monster to be switched out.
-    /// 
+    ///
     /// `benched_monster_id`: MonsterID of the Monster to be switched in.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct ItemUseContext {
@@ -406,14 +409,9 @@ pub mod contexts {
     impl ItemUseContext {
         pub fn from_holder(item_holder_id: MonsterID) -> Self {
             let item_id = ItemID::from_holder(item_holder_id);
-            Self {
-                item_id,
-                item_holder_id,
-            }
+            Self { item_id, item_holder_id }
         }
     }
 
     impl EventContext for ItemUseContext {}
 }
-
-

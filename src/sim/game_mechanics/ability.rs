@@ -3,31 +3,30 @@ use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ability {
-    pub(crate) id: AbilityID, 
+    pub(crate) id: AbilityID,
     pub(crate) species: &'static AbilitySpecies,
 }
 
 impl Ability {
-
     pub fn event_handlers(&self) -> EventHandlerDeck {
         (self.species.event_handlers)()
     }
-    
+
     #[inline(always)]
-    pub fn species(&self) -> & 'static AbilitySpecies {
+    pub fn species(&self) -> &'static AbilitySpecies {
         self.species
     }
-    
+
     #[inline(always)]
     pub fn name(&self) -> &'static str {
         self.species.name
     }
-    
+
     #[inline(always)]
     pub fn order(&self) -> u16 {
         self.species.order
     }
-    
+
     #[inline(always)]
     pub fn dex_number(&self) -> u16 {
         self.species.dex_number
@@ -36,7 +35,7 @@ impl Ability {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AbilityID {
-    pub owner_id: MonsterID
+    pub owner_id: MonsterID,
 }
 impl AbilityID {
     pub(crate) fn _from_owner(ability_owner: MonsterID) -> AbilityID {
@@ -51,7 +50,6 @@ pub struct AbilitySpecies {
     event_handlers: fn() -> EventHandlerDeck,
     order: u16,
 }
-
 
 impl Debug for AbilitySpecies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -69,13 +67,13 @@ impl Eq for AbilitySpecies {}
 
 impl AbilitySpecies {
     pub const fn from_dex_entry(dex_entry: AbilityDexEntry) -> Self {
-        let AbilityDexEntry { 
-            dex_number, 
-            name, 
-            event_handlers, 
-            order 
+        let AbilityDexEntry {
+            dex_number,
+            name,
+            event_handlers,
+            order,
         } = dex_entry;
-        
+
         Self {
             dex_number,
             name,
@@ -88,22 +86,21 @@ impl AbilitySpecies {
     pub fn event_handlers(&self) -> EventHandlerDeck {
         (self.event_handlers)()
     }
-    
+
     #[inline(always)]
-    pub fn name(&self) -> & 'static str {
+    pub fn name(&self) -> &'static str {
         self.name
     }
-    
+
     #[inline(always)]
     pub fn order(&self) -> u16 {
         self.order
     }
-    
+
     #[inline(always)]
     pub fn dex_number(&self) -> u16 {
         self.dex_number
     }
-    
 }
 
 pub struct AbilityDexEntry {

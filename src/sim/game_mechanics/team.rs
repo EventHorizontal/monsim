@@ -1,8 +1,14 @@
-use std::{fmt::{Debug, Display, Formatter}, ops::{Index, IndexMut}};
 use monsim_utils::{Ally, MaxSizedVec, Opponent};
+use std::{
+    fmt::{Debug, Display, Formatter},
+    ops::{Index, IndexMut},
+};
 
-use crate::{sim::{event_dispatcher::EventContext, targetting::BoardPosition, MonsterNumber}, Broadcaster, EventHandler, EventHandlerDeck, OwnedEventHandler};
 use super::Monster;
+use crate::{
+    sim::{event_dispatcher::EventContext, targetting::BoardPosition, MonsterNumber},
+    Broadcaster, EventHandler, EventHandlerDeck, OwnedEventHandler,
+};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
@@ -31,17 +37,12 @@ impl MonsterTeam {
         assert!(monsters.first().is_some(), "There is not a single monster in the team.");
         assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
         let monsters = MaxSizedVec::from_vec(monsters);
-        MonsterTeam {
-            id,
-            monsters 
-        }
+        MonsterTeam { id, monsters }
     }
 
     pub fn active_monsters(&self) -> Vec<&Monster> {
         self.monsters()
-            .filter(|monster| {
-                if let BoardPosition::Field(_) = monster.board_position { true } else { false }
-            })
+            .filter(|monster| if let BoardPosition::Field(_) = monster.board_position { true } else { false })
             .collect()
     }
 
@@ -53,7 +54,10 @@ impl MonsterTeam {
         self.monsters.iter_mut()
     }
 
-    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
+    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
+        &self,
+        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>,
+    ) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut out = Vec::new();
         for monster in self.monsters.iter() {
             out.append(&mut monster.owned_event_handlers(event_handler_selector))
@@ -153,7 +157,7 @@ impl<T: Clone> PerTeam<Option<T>> {
     pub fn to_option_pair(self) -> (Option<Ally<T>>, Option<Opponent<T>>) {
         let (ally_team_item, opponent_team_item) = self.unwrap();
         let (ally_team_item, opponent_team_item) = ((*ally_team_item).clone(), (*opponent_team_item).clone());
-        (ally_team_item.map(|item| { Ally::new(item) }), opponent_team_item.map(|item| { Opponent::new(item) }))
+        (ally_team_item.map(|item| Ally::new(item)), opponent_team_item.map(|item| Opponent::new(item)))
     }
 }
 
@@ -188,7 +192,7 @@ impl<T> Index<TeamID> for PerTeam<T> {
             TeamID::Opponents => &self.opponent_team_item,
         }
     }
-} 
+}
 
 impl<T> IndexMut<TeamID> for PerTeam<T> {
     fn index_mut(&mut self, index: TeamID) -> &mut Self::Output {

@@ -1,30 +1,36 @@
-mod message_log;
 pub(super) mod builders;
+mod message_log;
 
-use std::fmt::Display;
+use crate::{
+    sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
+    AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags,
+};
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
+use std::fmt::Display;
 
 use self::builders::BattleFormat;
 
-use super::{event_dispatcher::EventContext, prng::Prng, targetting::{BoardPosition, FieldPosition}, PerTeam, TeamID};
+use super::{
+    event_dispatcher::EventContext,
+    prng::Prng,
+    targetting::{BoardPosition, FieldPosition},
+    PerTeam, TeamID,
+};
 use message_log::MessageLog;
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattleState {
-
     pub(crate) prng: Prng,
     pub(crate) turn_number: u16,
     pub(crate) format: BattleFormat,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
-    
+
     teams: PerTeam<MonsterTeam>,
 }
 
 impl BattleState {
-
     pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
         let teams = PerTeam::new(ally_team, opponent_team);
         Self {
@@ -40,16 +46,9 @@ impl BattleState {
     pub fn format(&self) -> BattleFormat {
         self.format
     }
-    
 
     pub fn is_finished(&self) -> bool {
-        self.ally_team().monsters().all(|monster| {
-            monster.is_fainted()
-        })
-        ||
-        self.opponent_team().monsters().all(|monster| {
-            monster.is_fainted()
-        })
+        self.ally_team().monsters().all(|monster| monster.is_fainted()) || self.opponent_team().monsters().all(|monster| monster.is_fainted())
     }
 
     // Teams -----------------
@@ -60,7 +59,7 @@ impl BattleState {
     }
 
     pub fn team(&self, team_id: TeamID) -> &MonsterTeam {
-        & self.teams[team_id]
+        &self.teams[team_id]
     }
 
     pub(crate) fn team_mut(&mut self, team_id: TeamID) -> &mut MonsterTeam {
@@ -104,7 +103,10 @@ impl BattleState {
         }
     }
 
-    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: EventHandlerSelector<R, C, B>) -> Vec<OwnedEventHandler<R, C, B>> {
+    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
+        &self,
+        event_handler_selector: EventHandlerSelector<R, C, B>,
+    ) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
         out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));
@@ -131,8 +133,8 @@ impl BattleState {
     }
 
     /**
-    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
-    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state.
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this,
     we would need to be able to predict and provide a helper function for any niche manipulation of a
     Monster's data, which borders on impossible.
     */
@@ -142,8 +144,8 @@ impl BattleState {
     }
 
     pub fn active_monsters_by_team(&self) -> PerTeam<Vec<&Monster>> {
-        let ally_team_active_monsters = self.ally_team().map_consume(|team| { team.active_monsters() });
-        let opponent_team_active_monsters = self.opponent_team().map_consume(|team| team.active_monsters() );
+        let ally_team_active_monsters = self.ally_team().map_consume(|team| team.active_monsters());
+        let opponent_team_active_monsters = self.opponent_team().map_consume(|team| team.active_monsters());
         PerTeam::new(ally_team_active_monsters, opponent_team_active_monsters)
     }
 
@@ -163,76 +165,70 @@ impl BattleState {
     // Abilities -----------------
 
     pub fn ability(&self, ability_id: AbilityID) -> &Ability {
-        &self.monster(ability_id.owner_id)
-            .ability
+        &self.monster(ability_id.owner_id).ability
     }
 
     /**
-    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
-    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state.
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this,
     we would need to be able to predict and provide a helper function for any niche manipulation of a
     Monster's data, which borders on impossible.
     */
     pub fn ability_mut(&mut self, owner_id: MonsterID) -> &mut Ability {
-        &mut self
-            .monster_mut(owner_id)
-            .ability
+        &mut self.monster_mut(owner_id).ability
     }
 
     // Moves -----------------
 
     pub fn move_(&self, move_id: MoveID) -> &Move {
-        &self.monster(move_id.owner_id)
-            .moveset[move_id.move_number as usize]
+        &self.monster(move_id.owner_id).moveset[move_id.move_number as usize]
     }
 
     /**
-    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
-    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state.
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this,
     we would need to be able to predict and provide a helper function for any niche manipulation of a
     Monster's data, which borders on impossible.
     */
     pub fn move_mut(&mut self, move_id: MoveID) -> &mut Move {
-        &mut self.monster_mut(move_id.owner_id)
-            .moveset[move_id.move_number as usize]
+        &mut self.monster_mut(move_id.owner_id).moveset[move_id.move_number as usize]
     }
 
     // Items --- --- --- --- ---
 
     pub fn item(&self, item_id: ItemID) -> Option<&Item> {
-        self.monster(item_id.item_holder_id)
-            .held_item
-            .as_ref()
+        self.monster(item_id.item_holder_id).held_item.as_ref()
     }
 
     /**
-    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state. 
-    However sometimes niche use cases will require direct mutable access to a monster's data. Without this, 
+    _The use of this method is discouraged_, if used wrong this could leave the monster in an invalid state.
+    However sometimes niche use cases will require direct mutable access to a monster's data. Without this,
     we would need to be able to predict and provide a helper function for any niche manipulation of a
     Monster's data, which borders on impossible.
     */
     pub fn item_mut(&mut self, item_id: ItemID) -> Option<&mut Item> {
-        self.monster_mut(item_id.item_holder_id)
-            .held_item
-            .as_mut()
+        self.monster_mut(item_id.item_holder_id).held_item.as_mut()
     }
 
     // Choice -------------------------------------
 
     const MAX_SWITCHES_PER_TURN: usize = 3;
 
-    pub(crate) fn available_choices_for(&self, monster: &Monster, monsters_already_selected_for_switch: &MaxSizedVec<MonsterID, {Self::MAX_SWITCHES_PER_TURN}>) -> AvailableChoices {
-        
+    pub(crate) fn available_choices_for(
+        &self,
+        monster: &Monster,
+        monsters_already_selected_for_switch: &MaxSizedVec<MonsterID, { Self::MAX_SWITCHES_PER_TURN }>,
+    ) -> AvailableChoices {
         // Move choices
         let mut move_actions = Vec::with_capacity(4);
         for move_ in monster.moveset().iter() {
             /*
-            The move is only choosable if it still has power points. FEATURE: We might want to emit 
-            "inactive" choices in order to show a greyed out version of the choice (in this case that 
+            The move is only choosable if it still has power points. FEATURE: We might want to emit
+            "inactive" choices in order to show a greyed out version of the choice (in this case that
             the monster has that move but its out of PP).
             */
             if move_.current_power_points > 0 {
-                let partially_specified_choice = PartiallySpecifiedActionChoice::Move { 
+                let partially_specified_choice = PartiallySpecifiedActionChoice::Move {
                     move_id: move_.id,
                     possible_target_positions: self.possible_targets_for_move(move_),
                     activation_order: ActivationOrder {
@@ -249,27 +245,28 @@ impl BattleState {
         let switchable_benched_monster_ids = self.switchable_benched_monster_ids(monster.id.team_id, monsters_already_selected_for_switch);
         let any_switchable_monsters = not!(switchable_benched_monster_ids.is_empty());
         let switch_action = if any_switchable_monsters {
-            Some(PartiallySpecifiedActionChoice::SwitchOut { 
-                active_monster_id: monster.id, 
+            Some(PartiallySpecifiedActionChoice::SwitchOut {
+                active_monster_id: monster.id,
                 switchable_benched_monster_ids,
-                activation_order: ActivationOrder { 
-                    priority: 8, 
-                    speed: monster.stat(Stat::Speed), 
-                    order: 0
+                activation_order: ActivationOrder {
+                    priority: 8,
+                    speed: monster.stat(Stat::Speed),
+                    order: 0,
                 },
             })
         } else {
             None
         };
 
-        AvailableChoices::new(
-            move_actions, 
-            switch_action,
-        )
+        AvailableChoices::new(move_actions, switch_action)
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.
-    pub(crate) fn switchable_benched_monster_ids(&self, team_id: TeamID, monsters_already_selected_for_switch: &MaxSizedVec<MonsterID, {Self::MAX_SWITCHES_PER_TURN}>) -> MaxSizedVec<MonsterID, 5> {
+    pub(crate) fn switchable_benched_monster_ids(
+        &self,
+        team_id: TeamID,
+        monsters_already_selected_for_switch: &MaxSizedVec<MonsterID, { Self::MAX_SWITCHES_PER_TURN }>,
+    ) -> MaxSizedVec<MonsterID, 5> {
         let mut number_of_switchees = 0;
         let mut switchable_benched_monsters = Vec::with_capacity(5);
         for monster in self.team(team_id).monsters() {
@@ -288,31 +285,32 @@ impl BattleState {
             MaxSizedVec::from_vec(switchable_benched_monsters)
         }
     }
-    
+
     pub(crate) fn monster_at_position(&self, field_position: FieldPosition) -> Option<&Monster> {
-        self.monsters()
-            .find(|monster| {
-                if let Some(monster_field_position) = monster.field_position() {
-                    monster_field_position == field_position
-                } else {
-                    false
-                }
-            })
+        self.monsters().find(|monster| {
+            if let Some(monster_field_position) = monster.field_position() {
+                monster_field_position == field_position
+            } else {
+                false
+            }
+        })
     }
-    
+
     fn possible_targets_for_move(&self, move_: &Move) -> MaxSizedVec<FieldPosition, 6> {
         let mut possible_targets_for_move = Vec::new();
 
         for active_monsters_per_team in self.active_monsters_by_team() {
             for active_monster in active_monsters_per_team {
-                let targetter_position = self.monster(
-                    move_.id.owner_id).board_position.field_position().expect("The targetter must be on the field.");
-                let targetted_position = active_monster.board_position.field_position().expect("The targetted position must be on the field.");
-                if self.is_valid_target_position(
-                    targetter_position, 
-                    move_.allowed_target_flags(), 
-                    targetted_position
-                ) {
+                let targetter_position = self
+                    .monster(move_.id.owner_id)
+                    .board_position
+                    .field_position()
+                    .expect("The targetter must be on the field.");
+                let targetted_position = active_monster
+                    .board_position
+                    .field_position()
+                    .expect("The targetted position must be on the field.");
+                if self.is_valid_target_position(targetter_position, move_.allowed_target_flags(), targetted_position) {
                     possible_targets_for_move.push(targetted_position);
                 }
             }
@@ -321,7 +319,12 @@ impl BattleState {
         MaxSizedVec::from_vec(possible_targets_for_move)
     }
 
-    pub(crate) fn is_valid_target_position(&self, targetter_position: FieldPosition, allowed_target_flags: TargetFlags, targetted_position: FieldPosition) -> bool {
+    pub(crate) fn is_valid_target_position(
+        &self,
+        targetter_position: FieldPosition,
+        allowed_target_flags: TargetFlags,
+        targetted_position: FieldPosition,
+    ) -> bool {
         let mut targetted_position_flags = TargetFlags::empty();
         // FEATURE: BENCHED adjacency flag?
         if targetter_position == targetted_position {
@@ -330,12 +333,12 @@ impl BattleState {
             targetted_position_flags |= TargetFlags::OPPONENTS
         } else {
             targetted_position_flags |= TargetFlags::ALLIES
-        } 
+        }
         // Only calculate adjacency if not self
         if not!(targetted_position_flags == TargetFlags::SELF) {
             if targetter_position.is_adjacent_to(targetted_position) {
                 targetted_position_flags |= TargetFlags::ADJACENT
-            } else  {
+            } else {
                 targetted_position_flags |= TargetFlags::NONADJACENT
             }
         }
@@ -346,34 +349,35 @@ impl BattleState {
         match self.format {
             BattleFormat::Single => {
                 vec![FieldPosition::AllySideCentre, FieldPosition::OpponentSideCentre]
-            
-            },
+            }
             BattleFormat::Double => {
-                vec![FieldPosition::AllySideCentre, FieldPosition::AllySideRight, FieldPosition::OpponentSideCentre, FieldPosition::OpponentSideRight]
-            },
+                vec![
+                    FieldPosition::AllySideCentre,
+                    FieldPosition::AllySideRight,
+                    FieldPosition::OpponentSideCentre,
+                    FieldPosition::OpponentSideRight,
+                ]
+            }
             BattleFormat::Triple => {
-                vec![FieldPosition::AllySideLeft, FieldPosition::AllySideCentre, FieldPosition::AllySideRight, FieldPosition::OpponentSideLeft, FieldPosition::OpponentSideCentre, FieldPosition::OpponentSideRight]
-            },
+                vec![
+                    FieldPosition::AllySideLeft,
+                    FieldPosition::AllySideCentre,
+                    FieldPosition::AllySideRight,
+                    FieldPosition::OpponentSideLeft,
+                    FieldPosition::OpponentSideCentre,
+                    FieldPosition::OpponentSideRight,
+                ]
+            }
         }
-    }   
+    }
 }
 
 impl Display for BattleState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
 
-        push_pretty_tree_for_team(
-            &mut out,
-            "Ally Team\n", 
-            *self.ally_team(), 
-            self.ally_team().monsters().count(),
-        );
-        push_pretty_tree_for_team(
-            &mut out,
-            "Opponent Team\n",
-            *self.opponent_team(),
-            self.opponent_team().monsters().count(),
-        );
+        push_pretty_tree_for_team(&mut out, "Ally Team\n", *self.ally_team(), self.ally_team().monsters().count());
+        push_pretty_tree_for_team(&mut out, "Opponent Team\n", *self.opponent_team(), self.opponent_team().monsters().count());
         write!(f, "{}", out)
     }
 }

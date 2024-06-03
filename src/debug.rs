@@ -39,20 +39,14 @@ macro_rules! debug_to_file {
 #[cfg(feature = "debug")]
 macro_rules! source_code_location {
     () => {
-        const_format::formatcp![
-            "[{file}:{line}:{col}]",
-            file = std::file!(),
-            line = std::line!(),
-            col = std::column!(),
-        ]
+        const_format::formatcp!["[{file}:{line}:{col}]", file = std::file!(), line = std::line!(), col = std::column!(),]
     };
 }
 
 use monsim_utils::{Nothing, NOTHING};
 use std::error::Error;
-#[cfg(feature="debug")]
+#[cfg(feature = "debug")]
 pub fn remove_debug_log_file() -> Result<Nothing, Box<dyn Error>> {
-
     #[cfg(feature = "debug")]
     if let Err(e) = std::fs::remove_file("debug_output.txt") {
         if std::io::ErrorKind::NotFound != e.kind() {

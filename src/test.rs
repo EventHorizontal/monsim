@@ -57,7 +57,7 @@ mod event {
 
     #[test]
     #[cfg(feature = "debug")]
-    fn test_print_event_handler_deck() {
+    fn test_print_event_handler_set() {
         use crate::sim::test_ability_dex::FlashFire;
         println!("{:#?}", FlashFire.event_handlers());
     }

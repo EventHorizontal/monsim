@@ -7,7 +7,7 @@ use super::{ability::AbilitySpecies, Type};
 use crate::{
     effects,
     sim::{
-        event_dispatcher::{contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerDeck},
+        event_dispatcher::{contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerSet},
         AbilityDexEntry, AbilityID, AbilityUseContext, BattleSimulator, MoveHitContext,
     },
     source_code_location, Outcome,
@@ -16,7 +16,7 @@ use crate::{
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 001,
     name: "Flash Fire",
-    event_handlers: || EventHandlerDeck {
+    event_handlers: || EventHandlerSet {
         on_try_move_hit: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location![],
@@ -49,7 +49,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
             },
             event_filtering_options: EventFilteringOptions::default(),
         }),
-        ..EventHandlerDeck::empty()
+        ..EventHandlerSet::empty()
     },
     order: 0,
 });

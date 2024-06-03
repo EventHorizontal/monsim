@@ -8,7 +8,7 @@ use crate::{
     effects,
     sim::{event_dispatcher::EventFilteringOptions, BattleState, MonsterID, Move, Stat},
     test_status_dex::*,
-    BattleSimulator, Count, EventHandlerDeck, MoveDexEntry, MoveUseContext, TargetFlags,
+    BattleSimulator, Count, EventHandlerSet, MoveDexEntry, MoveUseContext, TargetFlags,
 };
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {

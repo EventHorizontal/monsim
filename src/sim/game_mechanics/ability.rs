@@ -1,4 +1,4 @@
-use crate::sim::{EventHandlerDeck, MonsterID};
+use crate::sim::{EventHandlerSet, MonsterID};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -8,7 +8,7 @@ pub struct Ability {
 }
 
 impl Ability {
-    pub fn event_handlers(&self) -> EventHandlerDeck {
+    pub fn event_handlers(&self) -> EventHandlerSet {
         (self.species.event_handlers)()
     }
 
@@ -47,7 +47,7 @@ impl AbilityID {
 pub struct AbilitySpecies {
     dex_number: u16,
     name: &'static str,
-    event_handlers: fn() -> EventHandlerDeck,
+    event_handlers: fn() -> EventHandlerSet,
     order: u16,
 }
 
@@ -83,7 +83,7 @@ impl AbilitySpecies {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerDeck {
+    pub fn event_handlers(&self) -> EventHandlerSet {
         (self.event_handlers)()
     }
 
@@ -106,6 +106,6 @@ impl AbilitySpecies {
 pub struct AbilityDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_handlers: fn() -> EventHandlerSet,
     pub order: u16,
 }

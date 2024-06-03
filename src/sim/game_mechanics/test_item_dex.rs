@@ -6,7 +6,7 @@ use monsim_utils::Percent;
 use crate::{
     dual_type_matchup, effects,
     item::{ItemDexEntry, ItemFlags, ItemSpecies},
-    source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveHitContext, MoveUseContext, TargetFlags, Type,
+    source_code_location, EventFilteringOptions, EventHandler, EventHandlerSet, MoveHitContext, MoveUseContext, TargetFlags, Type,
 };
 
 pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
@@ -14,7 +14,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
     name: "Life Orb",
     kind: ItemFlags::NONE,
     is_consumable: false,
-    event_handlers: || EventHandlerDeck {
+    event_handlers: || EventHandlerSet {
         on_modify_damage: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
@@ -48,7 +48,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                 ..EventFilteringOptions::default()
             },
         }),
-        ..EventHandlerDeck::empty()
+        ..EventHandlerSet::empty()
     },
 });
 
@@ -57,7 +57,7 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
     name: "Passho Berry",
     kind: ItemFlags::BERRY,
     is_consumable: true,
-    event_handlers: || EventHandlerDeck {
+    event_handlers: || EventHandlerSet {
         on_modify_damage: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
@@ -87,6 +87,6 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
             },
             event_filtering_options: EventFilteringOptions::default(),
         }),
-        ..EventHandlerDeck::empty()
+        ..EventHandlerSet::empty()
     },
 });

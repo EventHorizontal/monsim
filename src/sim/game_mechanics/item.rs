@@ -1,4 +1,4 @@
-use crate::{EventHandlerDeck, MonsterID};
+use crate::{EventHandlerSet, MonsterID};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
@@ -27,7 +27,7 @@ impl Item {
         self.species
     }
 
-    pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
+    pub(crate) fn event_handlers(&self) -> EventHandlerSet {
         (self.species.event_handlers)()
     }
 }
@@ -49,7 +49,7 @@ pub struct ItemSpecies {
     pub(crate) name: &'static str,
     pub(crate) kind: ItemFlags,
     pub(crate) is_consumable: bool,
-    pub(crate) event_handlers: fn() -> EventHandlerDeck,
+    pub(crate) event_handlers: fn() -> EventHandlerSet,
 }
 
 impl ItemSpecies {
@@ -87,5 +87,5 @@ pub struct ItemDexEntry {
     pub name: &'static str,
     pub kind: ItemFlags,
     pub is_consumable: bool,
-    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_handlers: fn() -> EventHandlerSet,
 }

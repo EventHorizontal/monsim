@@ -2,7 +2,7 @@
 
 use monsim::{
     effects, move_,
-    sim::{Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerDeck, MoveUseContext, Type},
+    sim::{Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerSet, MoveUseContext, Type},
     AbilityDexEntry, AbilityID, AbilityUseContext, MoveHitContext, Stat,
 };
 use monsim_macros::{mon, mov};
@@ -14,7 +14,7 @@ use monsim::source_code_location;
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 001,
     name: "Flash Fire",
-    event_handlers: || EventHandlerDeck {
+    event_handlers: || EventHandlerSet {
         on_try_move_hit: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location![],
@@ -47,7 +47,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
             },
             event_filtering_options: EventFilteringOptions::default(),
         }),
-        ..EventHandlerDeck::empty()
+        ..EventHandlerSet::empty()
     },
     order: 0,
 });
@@ -55,7 +55,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
 pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 002,
     name: "Spiteful",
-    event_handlers: || EventHandlerDeck {
+    event_handlers: || EventHandlerSet {
         on_damaging_move_used: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
@@ -83,7 +83,7 @@ pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEn
             },
             event_filtering_options: EventFilteringOptions::default(),
         }),
-        ..EventHandlerDeck::empty()
+        ..EventHandlerSet::empty()
     },
     order: 1,
 });

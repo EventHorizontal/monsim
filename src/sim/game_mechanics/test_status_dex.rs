@@ -4,7 +4,7 @@ use monsim_macros::mon;
 use monsim_utils::{Count, Outcome, Percent, NOTHING};
 
 use crate::{
-    effects, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, PersistentStatusDexEntry, PersistentStatusSpecies, TargetFlags,
+    effects, source_code_location, EventFilteringOptions, EventHandler, EventHandlerSet, PersistentStatusDexEntry, PersistentStatusSpecies, TargetFlags,
     VolatileStatusDexEntry, VolatileStatusSpecies,
 };
 
@@ -12,7 +12,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
     dex_number: 001,
     name: "Burned",
     on_acquired_message: |affected_monster| format!["{} was burned!", affected_monster.name()],
-    event_handlers: || EventHandlerDeck {
+    event_handlers: || EventHandlerSet {
         on_calculate_attack_stat: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
@@ -39,7 +39,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
                 ..EventFilteringOptions::default()
             },
         }),
-        ..EventHandlerDeck::empty()
+        ..EventHandlerSet::empty()
     },
 });
 
@@ -47,7 +47,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
     dex_number: 001,
     name: "Confused",
     lifetime_in_turns: Count::RandomInRange { min: 2, max: 4 },
-    event_handlers: || EventHandlerDeck {
+    event_handlers: || EventHandlerSet {
         on_try_move: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
@@ -77,7 +77,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
                 ..EventFilteringOptions::default()
             },
         }),
-        ..EventHandlerDeck::empty()
+        ..EventHandlerSet::empty()
     },
 
     on_acquired_message: |affected_monster| format!["{} became confused!", affected_monster.name()],

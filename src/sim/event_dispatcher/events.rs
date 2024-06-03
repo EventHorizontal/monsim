@@ -2,7 +2,7 @@ use super::*;
 use monsim_utils::NOTHING;
 
 #[derive(Debug, Clone, Copy)]
-pub struct EventHandlerDeck {
+pub struct EventHandlerSet {
     pub on_try_move: Option<EventHandler<Outcome<Nothing>, MoveUseContext, MonsterID>>,
     pub on_move_used: Option<EventHandler<Nothing, MoveUseContext, MonsterID>>,
     /// This is meant only to be a base event for `on_damaging_move_used` and `on_status_move_used`.
@@ -26,7 +26,7 @@ pub struct EventHandlerDeck {
     pub on_turn_end: Option<EventHandler<Nothing, Nothing, Nothing>>,
 }
 
-pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
+pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerSet = EventHandlerSet {
     on_try_move: None,
     on_move_used: None,
     on_damaging_move_used: None,
@@ -49,7 +49,7 @@ pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
     on_turn_end: None,
 };
 
-impl EventHandlerDeck {
+impl EventHandlerSet {
     pub const fn empty() -> Self {
         DEFAULT_EVENT_HANDLERS
     }
@@ -80,19 +80,14 @@ impl EventHandlerDeck {
 // }
 
 pub(crate) fn trigger_on_try_move_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome<Nothing> {
-    EventDispatcher::dispatch_trial_event(
-        battle,
-        broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_move)],
-        event_context,
-    )
+    EventDispatcher::dispatch_trial_event(battle, broadcaster_id, |event_handler_set| vec![(event_handler_set.on_try_move)], event_context)
 }
 
 pub(crate) fn trigger_on_damaging_move_used_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_damaging_move_used), (event_handler_deck.on_move_used)],
+        |event_handler_set| vec![(event_handler_set.on_damaging_move_used), (event_handler_set.on_move_used)],
         event_context,
         NOTHING,
         None,
@@ -103,7 +98,7 @@ pub(crate) fn trigger_on_status_move_used_event(battle: &mut BattleState, broadc
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_status_move_used), (event_handler_deck.on_move_used)],
+        |event_handler_set| vec![(event_handler_set.on_status_move_used), (event_handler_set.on_move_used)],
         event_context,
         NOTHING,
         None,
@@ -114,7 +109,7 @@ pub(crate) fn trigger_on_try_move_hit_event(battle: &mut BattleState, broadcaste
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_move_hit)],
+        |event_handler_set| vec![(event_handler_set.on_try_move_hit)],
         event_context,
     )
 }
@@ -123,7 +118,7 @@ pub(crate) fn trigger_on_move_hit_event(battle: &mut BattleState, broadcaster_id
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_move_hit)],
+        |event_handler_set| vec![(event_handler_set.on_move_hit)],
         event_context,
         NOTHING,
         None,
@@ -134,7 +129,7 @@ pub(crate) fn trigger_on_calculate_attack_stat_event(battle: &mut BattleState, b
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_calculate_attack_stat)],
+        |event_handler_set| vec![(event_handler_set.on_calculate_attack_stat)],
         event_context,
         default,
         None,
@@ -145,7 +140,7 @@ pub(crate) fn trigger_on_calculate_defense_stat_event(battle: &mut BattleState, 
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_calculate_defense_stat)],
+        |event_handler_set| vec![(event_handler_set.on_calculate_defense_stat)],
         event_context,
         default,
         None,
@@ -156,7 +151,7 @@ pub(crate) fn trigger_on_modify_damage_event(battle: &mut BattleState, broadcast
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_modify_damage)],
+        |event_handler_set| vec![(event_handler_set.on_modify_damage)],
         event_context,
         current_damage,
         None,
@@ -167,7 +162,7 @@ pub(crate) fn trigger_on_damage_dealt_event(battle: &mut BattleState, broadcaste
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_damage_dealt)],
+        |event_handler_set| vec![(event_handler_set.on_damage_dealt)],
         event_context,
         NOTHING,
         None,
@@ -178,7 +173,7 @@ pub(crate) fn trigger_on_try_activate_ability_event(battle: &mut BattleState, br
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_activate_ability)],
+        |event_handler_set| vec![(event_handler_set.on_try_activate_ability)],
         event_context,
     )
 }
@@ -187,7 +182,7 @@ pub(crate) fn trigger_on_ability_activated_event(battle: &mut BattleState, broad
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_ability_activated)],
+        |event_handler_set| vec![(event_handler_set.on_ability_activated)],
         event_context,
         NOTHING,
         None,
@@ -198,7 +193,7 @@ pub(crate) fn trigger_on_modify_accuracy_event(battle: &mut BattleState, broadca
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_modify_accuracy)],
+        |event_handler_set| vec![(event_handler_set.on_modify_accuracy)],
         event_context,
         base_accuracy,
         None,
@@ -209,7 +204,7 @@ pub(crate) fn trigger_on_try_raise_stat_event(battle: &mut BattleState, broadcas
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_raise_stat)],
+        |event_handler_set| vec![(event_handler_set.on_try_raise_stat)],
         event_context,
     )
 }
@@ -218,7 +213,7 @@ pub(crate) fn trigger_on_try_lower_stat_event(battle: &mut BattleState, broadcas
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_lower_stat)],
+        |event_handler_set| vec![(event_handler_set.on_try_lower_stat)],
         event_context,
     )
 }
@@ -227,7 +222,7 @@ pub(crate) fn trigger_on_try_add_volatile_status_event(battle: &mut BattleState,
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_add_volatile_status)],
+        |event_handler_set| vec![(event_handler_set.on_try_add_volatile_status)],
         event_context,
     )
 }
@@ -236,7 +231,7 @@ pub(crate) fn trigger_on_try_add_permanent_status_event(battle: &mut BattleState
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_add_permanent_status)],
+        |event_handler_set| vec![(event_handler_set.on_try_add_permanent_status)],
         event_context,
     )
 }
@@ -245,7 +240,7 @@ pub(crate) fn trigger_on_try_use_held_item_event(battle: &mut BattleState, broad
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_try_use_held_item)],
+        |event_handler_set| vec![(event_handler_set.on_try_use_held_item)],
         event_context,
     )
 }
@@ -254,7 +249,7 @@ pub(crate) fn trigger_on_held_item_used_event(battle: &mut BattleState, broadcas
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_held_item_used)],
+        |event_handler_set| vec![(event_handler_set.on_held_item_used)],
         event_context,
         NOTHING,
         None,
@@ -265,7 +260,7 @@ pub(crate) fn trigger_on_turn_end_event(battle: &mut BattleState, broadcaster_id
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_deck| vec![(event_handler_deck.on_turn_end)],
+        |event_handler_set| vec![(event_handler_set.on_turn_end)],
         event_context,
         NOTHING,
         None,

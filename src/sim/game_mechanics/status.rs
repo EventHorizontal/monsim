@@ -1,7 +1,7 @@
 use monsim_utils::Count;
 use std::fmt::Display;
 
-use crate::{EventHandlerDeck, Monster};
+use crate::{EventHandlerSet, Monster};
 
 // Permanent Statuses
 #[derive(Debug, Clone, Copy)]
@@ -24,7 +24,7 @@ impl PersistentStatus {
         self.species.dex_number
     }
 
-    pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
+    pub(crate) fn event_handlers(&self) -> EventHandlerSet {
         (self.species.event_handlers)()
     }
 }
@@ -37,7 +37,7 @@ pub struct PersistentStatusSpecies {
     pub(crate) dex_number: u16,
     pub(crate) name: &'static str,
     pub(crate) on_acquired_message: OnAcquiredMessageConstructor,
-    pub(crate) event_handlers: fn() -> EventHandlerDeck,
+    pub(crate) event_handlers: fn() -> EventHandlerSet,
 }
 
 impl PersistentStatusSpecies {
@@ -63,7 +63,7 @@ pub struct PersistentStatusDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub on_acquired_message: OnAcquiredMessageConstructor,
-    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_handlers: fn() -> EventHandlerSet,
 }
 
 // Volatile Statuses
@@ -90,7 +90,7 @@ impl VolatileStatus {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerDeck {
+    pub fn event_handlers(&self) -> EventHandlerSet {
         self.species.event_handlers()
     }
 
@@ -106,7 +106,7 @@ pub struct VolatileStatusSpecies {
     pub(crate) name: &'static str,
     pub(crate) on_acquired_message: fn(&Monster) -> String,
     pub(crate) lifetime_in_turns: Count,
-    pub(crate) event_handlers: fn() -> EventHandlerDeck,
+    pub(crate) event_handlers: fn() -> EventHandlerSet,
 }
 
 impl PartialEq for VolatileStatusSpecies {
@@ -137,7 +137,7 @@ impl VolatileStatusSpecies {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerDeck {
+    pub fn event_handlers(&self) -> EventHandlerSet {
         (self.event_handlers)()
     }
 }
@@ -148,5 +148,5 @@ pub struct VolatileStatusDexEntry {
     pub name: &'static str,
     pub on_acquired_message: OnAcquiredMessageConstructor,
     pub lifetime_in_turns: Count,
-    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_handlers: fn() -> EventHandlerSet,
 }

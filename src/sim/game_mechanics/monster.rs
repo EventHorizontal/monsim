@@ -12,7 +12,7 @@ use crate::{
     sim::{
         event_dispatcher::EventContext,
         targetting::{BoardPosition, FieldPosition},
-        ActivationOrder, EventHandlerDeck, Type,
+        ActivationOrder, EventHandlerSet, Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
     Broadcaster, EventHandler, Item, Move, OwnedEventHandler,
@@ -239,7 +239,7 @@ impl Monster {
 
     pub(crate) fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
         &self,
-        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>,
+        event_handler_selector: fn(EventHandlerSet) -> Vec<Option<EventHandler<R, C, B>>>,
     ) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut output_owned_event_handlers = Vec::new();
 
@@ -400,7 +400,7 @@ pub struct MonsterSpecies {
     primary_type: Type,
     secondary_type: Option<Type>,
     base_stats: StatSet,
-    event_handlers: fn() -> EventHandlerDeck,
+    event_handlers: fn() -> EventHandlerSet,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -539,7 +539,7 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerDeck {
+    pub fn event_handlers(&self) -> EventHandlerSet {
         (self.event_handlers)()
     }
 }
@@ -612,7 +612,7 @@ pub struct MonsterDexEntry {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
-    pub event_handlers: fn() -> EventHandlerDeck,
+    pub event_handlers: fn() -> EventHandlerSet,
 }
 
 impl Index<Stat> for StatSet {

@@ -73,8 +73,8 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
 
     let mut event_handler_impl_new_tokens = quote![];
     let mut trait_enum_tokens = quote![];
-    let mut event_handler_deck_field_tokens = quote![];
-    let mut event_handler_deck_defaults_tokens = quote![];
+    let mut event_handler_set_field_tokens = quote![];
+    let mut event_handler_set_defaults_tokens = quote![];
     let mut trigger_event_function_tokens = quote![];
 
     for event_expr in event_exprs {
@@ -98,22 +98,22 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
             #event_name_pascal_case,
         ]);
 
-        event_handler_deck_field_tokens.extend(quote![
+        event_handler_set_field_tokens.extend(quote![
             pub #event_name_snake_case: Option<EventHandler<#event_return_type_name, #event_context_type_name_pascal_case>>,
         ]);
 
-        event_handler_deck_defaults_tokens.extend(quote![
+        event_handler_set_defaults_tokens.extend(quote![
             #event_name_snake_case: None,
         ]);
 
         let function_name_snake_case = event_name_snake_case.to_string();
         let function_name_snake_case = Ident::new(&(String::from("trigger_") + &function_name_snake_case + "_event"), event_name_snake_case.span());
-        let mut vec_of_event_handler_deck_fields_tokens = quote![
-            event_handler_deck.#event_name_snake_case
+        let mut vec_of_event_handler_set_fields_tokens = quote![
+            event_handler_set.#event_name_snake_case
         ];
         if let Some(event_name) = superevent_name_snake_case {
-            vec_of_event_handler_deck_fields_tokens.extend(quote![
-                , event_handler_deck.#event_name
+            vec_of_event_handler_set_fields_tokens.extend(quote![
+                , event_handler_set.#event_name
             ]);
         };
         let default_tokens = if let Some(default) = default_expr {
@@ -133,8 +133,8 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
                     EventDispatcher::dispatch_trial_event(
                         sim,
                         broadcaster_id,
-                        |event_handler_deck| {
-                            vec![#vec_of_event_handler_deck_fields_tokens]
+                        |event_handler_set| {
+                            vec![#vec_of_event_handler_set_fields_tokens]
                         },
                         event_context,
                     )
@@ -151,8 +151,8 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
                     EventDispatcher::dispatch_event(
                         sim,
                         broadcaster_id,
-                        |event_handler_deck| {
-                            vec![#vec_of_event_handler_deck_fields_tokens]
+                        |event_handler_set| {
+                            vec![#vec_of_event_handler_set_fields_tokens]
                         },
                         event_context,
                         #default_tokens,
@@ -166,11 +166,11 @@ pub fn generate_events(input: TokenStream) -> TokenStream {
     let output = quote![
         #[derive(Debug, Clone, Copy)]
         pub struct EventHandlerDeck {
-            #event_handler_deck_field_tokens
+            #event_handler_set_field_tokens
         }
 
         pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerDeck = EventHandlerDeck {
-            #event_handler_deck_defaults_tokens
+            #event_handler_set_defaults_tokens
         };
 
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]

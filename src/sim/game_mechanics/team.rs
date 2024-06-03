@@ -7,7 +7,7 @@ use std::{
 use super::Monster;
 use crate::{
     sim::{event_dispatcher::EventContext, targetting::BoardPosition, MonsterNumber},
-    Broadcaster, EventHandler, EventHandlerDeck, OwnedEventHandler,
+    Broadcaster, EventHandler, EventHandlerSet, OwnedEventHandler,
 };
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
@@ -56,7 +56,7 @@ impl MonsterTeam {
 
     pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
         &self,
-        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>,
+        event_handler_selector: fn(EventHandlerSet) -> Vec<Option<EventHandler<R, C, B>>>,
     ) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut out = Vec::new();
         for monster in self.monsters.iter() {

@@ -16,7 +16,7 @@ pub use battle_constants::*;
 pub use builders::{AbilityBuilderExt, BattleFormat, ItemBuilderExt, MonsterBuilderExt, MoveBuilderExt};
 pub use choice::*;
 pub use effects::*;
-pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler, EventHandlerDeck};
+pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler, EventHandlerSet};
 pub(crate) use event_dispatcher::{Broadcaster, OwnedEventHandler};
 pub use game_mechanics::*;
 #[cfg(feature = "macros")]
@@ -34,7 +34,7 @@ type SimResult = Result<bool, SimError>;
 
 /// A function that picks out one or more specific fields of an EventHandlerDeck and returns
 /// them as a vector. The EventHandlers must all have the same signature for this to work.
-pub type EventHandlerSelector<R, C, B> = fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>;
+pub type EventHandlerSelector<R, C, B> = fn(EventHandlerSet) -> Vec<Option<EventHandler<R, C, B>>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {

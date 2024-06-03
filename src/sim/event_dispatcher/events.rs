@@ -55,30 +55,6 @@ impl EventHandlerSet {
     }
 }
 
-// #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// pub enum EventID {
-//     OnTryMove,
-//     OnMoveUsed,
-//     OnDamagingMoveUsed,
-//     OnStatusMoveUsed,
-//     OnTryMoveHit,
-//     OnMoveHit,
-//     OnCalculateAttackStat,
-//     OnCalculateDefenseStat,
-//     OnModifyDamage,
-//     OnDamageDealt,
-//     OnTryActivateAbility,
-//     OnAbilityActivated,
-//     OnModifyAccuracy,
-//     OnTryRaiseStat,
-//     OnTryLowerStat,
-//     OnTryAddVolatileStatus,
-//     OnTryAddPermanentStatus,
-//     OnTryUseHeldItem,
-//     OnHeldItemUsed,
-//     OnTurnEnd,
-// }
-
 pub(crate) fn trigger_on_try_move_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(battle, broadcaster_id, |event_handler_set| vec![(event_handler_set.on_try_move)], event_context)
 }

@@ -90,7 +90,7 @@ impl FieldPosition {
         }
     }
 
-    fn to_coords(&self) -> (i8, i8) {
+    fn to_coords(self) -> (i8, i8) {
         match self {
             FieldPosition::AllySideLeft => (0, 0),
             FieldPosition::AllySideCentre => (1, 0),

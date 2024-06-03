@@ -182,12 +182,12 @@ impl MonsterTeamBuilder {
 
     fn build(self, monster_ids: [MonsterID; 6], board_positions: [BoardPosition; 6], team_id: TeamID) -> MonsterTeam {
         self.maybe_monsters
-            .expect(
-                format!["Expected {team_id} to have at least one monster, but none were given"].as_str()
+            .unwrap_or_else( 
+                || panic!("Expected {team_id} to have at least one monster, but none were given")
             )
             .into_iter()
-            .zip(monster_ids.into_iter())
-            .zip(board_positions.into_iter())
+            .zip(monster_ids)
+            .zip(board_positions)
             .map(|((monster_builder, monster_id), board_position)| {
                 monster_builder.build(monster_id, board_position)
             })
@@ -215,7 +215,7 @@ pub trait MonsterBuilderExt {
 
 impl MonsterBuilderExt for MonsterSpecies {
     fn spawn(&'static self, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>), ability: AbilityBuilder) -> MonsterBuilder {
-        Monster::with(&self, moves, ability)
+        Monster::with(self, moves, ability)
     }
 }
 
@@ -288,7 +288,7 @@ impl MonsterBuilder {
 
         let moveset = self.moves
             .into_iter()
-            .zip(move_ids.into_iter()).map(|(move_builder, move_id)| {
+            .zip(move_ids).map(|(move_builder, move_id)| {
                 move_builder.build(move_id)
             })
             .collect::<Vec<_>>()
@@ -371,7 +371,7 @@ impl MoveBuilder {
         let species = self.species;
         // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
         if species.category() == MoveCategory::Status && species.
-        on_hit_effect() == effects::deal_default_damage {
+        on_hit_effect() as usize == effects::deal_default_damage as usize {
             println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
         }
         Move {
@@ -444,7 +444,7 @@ impl Item {
 impl ItemBuilder {
     pub fn build(self, id: ItemID) -> Item {
         Item {
-            id, 
+            _id: id, 
             species: self.species,
         }
     } 

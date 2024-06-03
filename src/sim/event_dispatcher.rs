@@ -40,7 +40,7 @@ mod events;
 #[cfg(all(test, feature = "debug"))]
 mod tests ;
 
-use crate::{sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, Percent}, ActivationOrder, BattleSimulator};
+use crate::{sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, BattleState, Nothing, Outcome, EventHandlerSelector}, ActivationOrder, BattleSimulator};
 use contexts::*;
 pub use events::*;
 use monsim_utils::{not, NOTHING};
@@ -56,7 +56,7 @@ impl EventDispatcher {
         sim: &mut BattleSimulator,
 
         broadcaster_id: B,
-        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<Outcome<Nothing>, C, B>>>,
+        event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, B>,
         event_context: C,
     ) -> Outcome<Nothing> {
         EventDispatcher::dispatch_event(
@@ -76,7 +76,7 @@ impl EventDispatcher {
         sim: &mut BattleSimulator,
 
         broadcaster_id: B,
-        event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>,
+        event_handler_selector: EventHandlerSelector<R, C, B>,
         event_context: C,
         default: R,
         short_circuit: Option<R>,

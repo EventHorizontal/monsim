@@ -1,3 +1,5 @@
+#![allow(clippy::let_and_return)]
+
 use monsim::*;
 
 mod ability_dex;

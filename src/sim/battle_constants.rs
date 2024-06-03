@@ -1,4 +1,4 @@
-use super::{Type, Percent};
+use super::Percent;
 
 pub const INEFFECTIVE: Percent = Percent(0);
 pub const NOT_VERY_EFFECTIVE: Percent = Percent(50);

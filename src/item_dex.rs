@@ -3,8 +3,10 @@
 use monsim::{dual_type_matchup, effects, ItemID, MoveHitContext, MoveUseContext, Type};
 use monsim_utils::Percent;
 
-use crate::{item::{ItemDexEntry, ItemFlags, ItemSpecies}, source_code_location, EventFilteringOptions, EventHandler, EventHandlerDeck, TargetFlags};
+use crate::{item::{ItemDexEntry, ItemFlags, ItemSpecies}, EventFilteringOptions, EventHandler, EventHandlerDeck, TargetFlags};
 
+#[cfg(feature = "debug")]
+use monsim::source_code_location;
 
 pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(
     ItemDexEntry {

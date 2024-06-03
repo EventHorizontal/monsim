@@ -17,9 +17,9 @@ impl SimulatorUi for Cli {
         }
         _ = writeln![locked_stdout];
         _ = writeln![locked_stdout,  "Ally Team Status:"];
-        _ = writeln![locked_stdout,  "\t{}", battle.ally_team().team_status_string().replace("\n", "\n\t")];
+        _ = writeln![locked_stdout,  "\t{}", battle.ally_team().team_status_string().replace('\n', "\n\t")];
         _ = writeln![locked_stdout,  "Opponent Team Status:"];
-        _ = writeln![locked_stdout,  "\t{}", battle.opponent_team().team_status_string().replace("\n", "\n\t")];
+        _ = writeln![locked_stdout,  "\t{}", battle.opponent_team().team_status_string().replace('\n', "\n\t")];
     }
 
     fn prompt_user_to_select_action_for_monster(&self, battle: &mut BattleState, monster_id: MonsterID, available_choices_for_monster: AvailableChoices) -> PartiallySpecifiedActionChoice {
@@ -99,7 +99,7 @@ impl Cli {
             let input = input.trim();
             let chosen_action_index = input.chars().next();
             if input.len() == 1 {
-                let maybe_action_choice_index = chosen_action_index.map(|char| { char.to_digit(10) }).flatten();
+                let maybe_action_choice_index = chosen_action_index.and_then(|char| { char.to_digit(10) });
                 if let Some(action_choice_index) = maybe_action_choice_index {
                     if 0 < action_choice_index && action_choice_index <= total_action_choice_count as u32 {
                         return action_choice_index as usize - 1; // The -1 converts back to zero based counting 
@@ -108,5 +108,11 @@ impl Cli {
             };
             println!("Invalid index. Please try again.");
         }
+    }
+}
+
+impl Default for Cli {
+    fn default() -> Self {
+        Cli::new()
     }
 }

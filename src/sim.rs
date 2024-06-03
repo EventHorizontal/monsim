@@ -34,6 +34,11 @@ pub use targetting::{TargetFlags, BoardPosition, FieldPosition};
 /// `bool` indicates whether the Simulation should be cancelled early.
 type SimResult = Result<bool, SimError>;
 
+/// A function that picks out one or more specific fields of an EventHandlerDeck and returns
+/// them as a vector. The EventHandlers must all have the same signature for this to work.
+pub type EventHandlerSelector<R, C, B> = fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>;
+
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
     InvalidStateReached(String),
@@ -164,8 +169,7 @@ impl BattleSimulator { // simulation
                 FullySpecifiedActionChoice::Move { move_id, target_positions, .. } => {
                     // The target position may be empty if the target fainted with no replacement, for example.
                     let target_ids = target_positions.into_iter()
-                        .map(|position| self.battle.monster_at_position(position) )
-                        .flatten()
+                        .filter_map(|position| self.battle.monster_at_position(position) )
                         .map(|monster| monster.id )
                         .collect::<Vec<_>>();
                     effects::use_move(self, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));

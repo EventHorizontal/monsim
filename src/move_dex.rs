@@ -174,7 +174,7 @@ pub const Recycle: MoveSpecies = MoveSpecies::from_dex_entry(
         dex_number: 009,
         name: "Recycle",
         on_hit_effect: |sim, MoveHitContext { move_user_id, move_used_id, target_id }| {
-            let consumed_item = sim.battle.monster(move_user_id).consumed_item().clone();
+            let consumed_item = sim.battle.monster_mut(move_user_id).consumed_item_mut().take();
             // Recycle only works if there exists a consumed item and no held item.
             if let Some(consumed_item) = consumed_item {
                 if sim.battle.monster_mut(move_user_id).held_item_mut().is_none() {

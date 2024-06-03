@@ -1,4 +1,4 @@
-use monsim_macros::{abl, mon, mov};
+use monsim_macros::{mon, mov};
 use monsim_utils::{not, ClampedPercent, Count, MaxSizedVec, Nothing, Outcome, Percent, NOTHING};
 
 use crate::{dual_type_matchup, sim::event_dispatcher, status::{PersistentStatus, VolatileStatus}, AbilityUseContext, BattleSimulator, BoardPosition, FieldPosition, ItemUseContext, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, SwitchContext, VolatileStatusSpecies};
@@ -364,7 +364,7 @@ pub fn add_persistent_status(sim: &mut BattleSimulator, (affected_monster_id, st
     if try_add_status.succeeded() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
-            mon![mut affected_monster_id].persistent_status = Some(PersistentStatus::new(&status_species));
+            mon![mut affected_monster_id].persistent_status = Some(PersistentStatus::new(status_species));
             sim.push_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             Outcome::Success(NOTHING)
         } else {
@@ -381,7 +381,7 @@ pub fn use_item<T, F>(sim: &mut BattleSimulator, item_holder_id: MonsterID, on_u
     let context = ItemUseContext::from_holder(item_holder_id);
     let try_use_item = event_dispatcher::trigger_on_try_use_held_item_event(sim, item_holder_id, context);
     if try_use_item.succeeded() {
-        let held_item = sim.battle.monster(item_holder_id).held_item.clone();
+        let held_item = sim.battle.monster(item_holder_id).held_item;
         if let Some(held_item) = held_item {
             if held_item.species.is_consumable {
                 // If an item is marked as consumable, it is remembered as a "consumed item" for the sake of moves like Recycle.

@@ -14,6 +14,7 @@ const C: u64 = 0x00269EC3;
 
 impl Prng {
     #[cfg(test)]
+    #[allow(unused)]
     pub(crate) fn new(start_seed: u64) -> Self {
         Self {
             start_seed,

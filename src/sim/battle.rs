@@ -3,7 +3,7 @@ pub(super) mod builders;
 
 use std::fmt::Display;
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
-use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Broadcaster, EventHandler, EventHandlerDeck, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
+use crate::{sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat}, AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags};
 
 use self::builders::BattleFormat;
 
@@ -98,13 +98,13 @@ impl BattleState {
     /// A monster is not considered its own ally.
     pub fn are_allies(&self, monster_1_id: MonsterID, monster_2_id: MonsterID) -> bool {
         if monster_1_id == monster_2_id {
-            return false;
+            false
         } else {
             monster_1_id.team_id == monster_2_id.team_id
         }
     }
 
-    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: fn(EventHandlerDeck) -> Vec<Option<EventHandler<R, C, B>>>) -> Vec<OwnedEventHandler<R, C, B>> {
+    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(&self, event_handler_selector: EventHandlerSelector<R, C, B>) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
         out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));

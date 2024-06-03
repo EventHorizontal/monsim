@@ -30,6 +30,57 @@ pub struct BattleState {
     teams: PerTeam<MonsterTeam>,
 }
 
+impl Display for BattleState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::new();
+
+        attach_tree_for_team(&mut out, *self.ally_team());
+        attach_tree_for_team(&mut out, *self.opponent_team());
+        write!(f, "{}", out)
+    }
+}
+
+fn attach_tree_for_team(output_string: &mut String, team: &MonsterTeam) {
+    output_string.push_str(&(format!["{}", team.id] + "\n"));
+    let number_of_monsters = team.monsters().count();
+    for (i, monster) in team.monsters().enumerate() {
+        let is_not_last_monster = i < number_of_monsters - 1;
+        let (prefix_str, suffix_str) = if is_not_last_monster {
+            ("\t│\t", "├── ")
+        } else {
+            ("\t \t", "└── ")
+        };
+        output_string.push_str(&("\t".to_owned() + suffix_str));
+        output_string.push_str(&monster.status_string());
+        output_string.push_str(&(prefix_str.to_owned() + "│\n"));
+        output_string.push_str(&(prefix_str.to_owned() + "├── "));
+
+        let primary_type = monster.species.primary_type();
+        let secondary_type = monster.species.secondary_type();
+        let type_string = if let Some(secondary_type) = secondary_type {
+            format!["   type: {:?}/{:?}\n", primary_type, secondary_type]
+        } else {
+            format!["   type: {:?}\n", primary_type]
+        };
+        output_string.push_str(&type_string);
+
+        output_string.push_str(&(prefix_str.to_owned() + "├── "));
+        output_string.push_str(format!["ability: {}\n", monster.ability.name()].as_str());
+
+        let number_of_moves = monster.moveset.count();
+        for (j, move_) in monster.moveset.into_iter().enumerate() {
+            let is_not_last_move = j < number_of_moves - 1;
+            if is_not_last_move {
+                output_string.push_str(&(prefix_str.to_owned() + "├── "));
+            } else {
+                output_string.push_str(&(prefix_str.to_owned() + "└── "));
+            }
+            output_string.push_str(format!["   move: {}\n", move_.name()].as_str());
+        }
+        output_string.push_str(&(prefix_str.to_owned() + "\n"));
+    }
+}
+
 impl BattleState {
     pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
         let teams = PerTeam::new(ally_team, opponent_team);
@@ -369,55 +420,5 @@ impl BattleState {
                 ]
             }
         }
-    }
-}
-
-impl Display for BattleState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut out = String::new();
-
-        push_pretty_tree_for_team(&mut out, "Ally Team\n", *self.ally_team(), self.ally_team().monsters().count());
-        push_pretty_tree_for_team(&mut out, "Opponent Team\n", *self.opponent_team(), self.opponent_team().monsters().count());
-        write!(f, "{}", out)
-    }
-}
-
-fn push_pretty_tree_for_team(output_string: &mut String, team_name: &str, team: &MonsterTeam, number_of_monsters: usize) {
-    output_string.push_str(team_name);
-    for (i, monster) in team.monsters().enumerate() {
-        let is_not_last_monster = i < number_of_monsters - 1;
-        let (prefix_str, suffix_str) = if is_not_last_monster {
-            ("\t│\t", "├── ")
-        } else {
-            ("\t \t", "└── ")
-        };
-        output_string.push_str(&("\t".to_owned() + suffix_str));
-        output_string.push_str(&monster.status_string());
-        output_string.push_str(&(prefix_str.to_owned() + "│\n"));
-        output_string.push_str(&(prefix_str.to_owned() + "├── "));
-
-        let primary_type = monster.species.primary_type();
-        let secondary_type = monster.species.secondary_type();
-        let type_string = if let Some(secondary_type) = secondary_type {
-            format!["   type: {:?}/{:?}\n", primary_type, secondary_type]
-        } else {
-            format!["   type: {:?}\n", primary_type]
-        };
-        output_string.push_str(&type_string);
-
-        output_string.push_str(&(prefix_str.to_owned() + "├── "));
-        output_string.push_str(format!["ability: {}\n", monster.ability.name()].as_str());
-
-        let number_of_moves = monster.moveset.count();
-        for (j, move_) in monster.moveset.into_iter().enumerate() {
-            let is_not_last_move = j < number_of_moves - 1;
-            if is_not_last_move {
-                output_string.push_str(&(prefix_str.to_owned() + "├── "));
-            } else {
-                output_string.push_str(&(prefix_str.to_owned() + "└── "));
-            }
-            output_string.push_str(format!["   move: {}\n", move_.name()].as_str());
-        }
-        output_string.push_str(&(prefix_str.to_owned() + "\n"));
     }
 }

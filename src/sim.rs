@@ -100,7 +100,7 @@ impl BattleSimulator {
         for active_monster_id in active_monster_ids {
             let available_choices_for_monster = self
                 .battle
-                .available_choices_for(self.battle.monster(active_monster_id), &monsters_selected_for_switch);
+                .available_choices_for_monster(self.battle.monster(active_monster_id), &monsters_selected_for_switch);
             let partially_specified_action_choice =
                 ui.prompt_user_to_select_action_for_monster(&mut self.battle, active_monster_id, available_choices_for_monster);
             let fully_specified_action_choice = match partially_specified_action_choice {

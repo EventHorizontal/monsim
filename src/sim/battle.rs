@@ -265,7 +265,7 @@ impl BattleState {
 
     const MAX_SWITCHES_PER_TURN: usize = 3;
 
-    pub(crate) fn available_choices_for(
+    pub(crate) fn available_choices_for_monster(
         &self,
         monster: &Monster,
         monsters_already_selected_for_switch: &MaxSizedVec<MonsterID, { Self::MAX_SWITCHES_PER_TURN }>,
@@ -361,7 +361,7 @@ impl BattleState {
                     .board_position
                     .field_position()
                     .expect("The targetted position must be on the field.");
-                if self.is_valid_target_position(targetter_position, move_.allowed_target_flags(), targetted_position) {
+                if self.matches_target_flags(targetter_position, move_.allowed_target_flags(), targetted_position) {
                     possible_targets_for_move.push(targetted_position);
                 }
             }
@@ -370,12 +370,7 @@ impl BattleState {
         MaxSizedVec::from_vec(possible_targets_for_move)
     }
 
-    pub(crate) fn is_valid_target_position(
-        &self,
-        targetter_position: FieldPosition,
-        allowed_target_flags: TargetFlags,
-        targetted_position: FieldPosition,
-    ) -> bool {
+    pub(crate) fn matches_target_flags(&self, targetter_position: FieldPosition, allowed_target_flags: TargetFlags, targetted_position: FieldPosition) -> bool {
         let mut targetted_position_flags = TargetFlags::empty();
         // FEATURE: BENCHED adjacency flag?
         if targetter_position == targetted_position {

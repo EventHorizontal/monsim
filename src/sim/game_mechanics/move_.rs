@@ -1,6 +1,6 @@
 use monsim_utils::{Count, Nothing, Outcome};
 
-use crate::{sim::Type, Battle, MonsterID, MoveHitContext, TargetFlags};
+use crate::{sim::Type, Battle, MonsterID, MoveHitContext, PositionRelationFlags};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Move {
@@ -54,7 +54,7 @@ impl Move {
     }
 
     #[inline(always)]
-    pub fn allowed_target_flags(&self) -> TargetFlags {
+    pub fn allowed_target_position_relation_flags(&self) -> PositionRelationFlags {
         self.species.targets
     }
 
@@ -92,7 +92,7 @@ pub struct MoveSpecies {
     category: MoveCategory,
     max_power_points: u8,
     priority: i8,
-    targets: TargetFlags,
+    targets: PositionRelationFlags,
     type_: Type,
 }
 
@@ -205,7 +205,7 @@ pub struct MoveDexEntry {
     pub category: MoveCategory,
     pub max_power_points: u8,
     pub priority: i8,
-    pub targets: TargetFlags,
+    pub targets: PositionRelationFlags,
     pub type_: Type,
 }
 

@@ -6,7 +6,7 @@ use monsim_utils::Percent;
 use crate::{
     dual_type_matchup, effects,
     item::{ItemDexEntry, ItemFlags, ItemSpecies},
-    source_code_location, EventFilteringOptions, EventHandler, EventHandlerSet, MoveHitContext, MoveUseContext, TargetFlags, Type,
+    source_code_location, EventFilteringOptions, EventHandler, EventHandlerSet, MoveHitContext, MoveUseContext, PositionRelationFlags, Type,
 };
 
 pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
@@ -23,7 +23,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                 damage * Percent(130)
             },
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),
@@ -44,7 +44,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                 let damage_dealt = effects::deal_raw_damage(battle, move_user_id, one_tenth_of_total_hp);
             },
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),

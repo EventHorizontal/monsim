@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use monsim::{
-    effects, Count, EventFilteringOptions, EventHandler, EventHandlerSet, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies, TargetFlags,
+    effects, Count, EventFilteringOptions, EventHandler, EventHandlerSet, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies, PositionRelationFlags,
     VolatileStatusDexEntry, VolatileStatusSpecies,
 };
 use monsim_macros::mon;
@@ -21,7 +21,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             response: |_, _, _, _, current_attack_stat| current_attack_stat * Percent(50),
 
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),
@@ -36,7 +36,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             },
 
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),
@@ -74,7 +74,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
             },
 
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),

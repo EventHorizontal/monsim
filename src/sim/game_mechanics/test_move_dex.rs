@@ -8,7 +8,7 @@ use crate::{
     effects,
     sim::{event_dispatcher::EventFilteringOptions, Battle, MonsterID, Move, Stat},
     test_status_dex::*,
-    BattleSimulator, Count, EventHandlerSet, MoveDexEntry, MoveUseContext, TargetFlags,
+    BattleSimulator, Count, EventHandlerSet, MoveDexEntry, MoveUseContext, PositionRelationFlags,
 };
 
 pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
@@ -21,10 +21,10 @@ pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     max_power_points: 35,
     hits_per_target: Count::Fixed(1),
     priority: 0,
-    targets: TargetFlags::ANY
-        .union(TargetFlags::ADJACENT)
-        .union(TargetFlags::OPPONENTS)
-        .union(TargetFlags::ALLIES),
+    targets: PositionRelationFlags::ANY
+        .union(PositionRelationFlags::ADJACENT)
+        .union(PositionRelationFlags::OPPONENTS)
+        .union(PositionRelationFlags::ALLIES),
     type_: Type::Normal,
 });
 
@@ -38,10 +38,10 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     max_power_points: 35,
     hits_per_target: Count::Fixed(1),
     priority: 0,
-    targets: TargetFlags::ANY
-        .union(TargetFlags::ADJACENT)
-        .union(TargetFlags::OPPONENTS)
-        .union(TargetFlags::ALLIES),
+    targets: PositionRelationFlags::ANY
+        .union(PositionRelationFlags::ADJACENT)
+        .union(PositionRelationFlags::OPPONENTS)
+        .union(PositionRelationFlags::ALLIES),
     type_: Type::Normal,
 });
 
@@ -61,7 +61,7 @@ pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     max_power_points: 35,
     hits_per_target: Count::Fixed(1),
     priority: 0,
-    targets: TargetFlags::ANY.union(TargetFlags::ADJACENT).union(TargetFlags::OPPONENTS),
+    targets: PositionRelationFlags::ANY.union(PositionRelationFlags::ADJACENT).union(PositionRelationFlags::OPPONENTS),
     type_: Type::Fire,
 });
 
@@ -75,7 +75,7 @@ pub const Bubble: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     max_power_points: 35,
     hits_per_target: Count::Fixed(1),
     priority: 0,
-    targets: TargetFlags::ALL.union(TargetFlags::ADJACENT).union(TargetFlags::OPPONENTS),
+    targets: PositionRelationFlags::ALL.union(PositionRelationFlags::ADJACENT).union(PositionRelationFlags::OPPONENTS),
     type_: Type::Water,
 });
 
@@ -92,7 +92,7 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     max_power_points: 40,
     hits_per_target: Count::Fixed(1),
     priority: 0,
-    targets: TargetFlags::ALL.union(TargetFlags::ADJACENT).union(TargetFlags::OPPONENTS),
+    targets: PositionRelationFlags::ALL.union(PositionRelationFlags::ADJACENT).union(PositionRelationFlags::OPPONENTS),
     type_: Type::Normal,
 });
 
@@ -110,7 +110,7 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     max_power_points: 20,
     hits_per_target: Count::Fixed(1),
     priority: 0,
-    targets: TargetFlags::SELF,
+    targets: PositionRelationFlags::SELF,
     type_: Type::Dragon,
 });
 
@@ -124,10 +124,10 @@ pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     category: MoveCategory::Physical,
     max_power_points: 20,
     priority: 0,
-    targets: TargetFlags::ANY
-        .union(TargetFlags::ADJACENT)
-        .union(TargetFlags::ALLIES)
-        .union(TargetFlags::OPPONENTS),
+    targets: PositionRelationFlags::ANY
+        .union(PositionRelationFlags::ADJACENT)
+        .union(PositionRelationFlags::ALLIES)
+        .union(PositionRelationFlags::OPPONENTS),
     type_: Type::Grass,
 });
 
@@ -147,10 +147,10 @@ pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     category: MoveCategory::Special,
     max_power_points: 25,
     priority: 0,
-    targets: TargetFlags::ANY
-        .union(TargetFlags::ADJACENT)
-        .union(TargetFlags::ALLIES)
-        .union(TargetFlags::OPPONENTS),
+    targets: PositionRelationFlags::ANY
+        .union(PositionRelationFlags::ADJACENT)
+        .union(PositionRelationFlags::ALLIES)
+        .union(PositionRelationFlags::OPPONENTS),
     type_: Type::Psychic,
 });
 
@@ -164,6 +164,6 @@ pub const Swift: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     category: MoveCategory::Special,
     max_power_points: 20,
     priority: 0,
-    targets: TargetFlags::ALL.union(TargetFlags::ADJACENT).union(TargetFlags::OPPONENTS),
+    targets: PositionRelationFlags::ALL.union(PositionRelationFlags::ADJACENT).union(PositionRelationFlags::OPPONENTS),
     type_: Type::Normal,
 });

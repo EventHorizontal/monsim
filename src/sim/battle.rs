@@ -3,7 +3,7 @@ mod message_log;
 
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice, TargetFlags,
+    AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice,
 };
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
@@ -427,33 +427,13 @@ impl BattleState {
                     .board_position
                     .field_position()
                     .expect("The targetted position must be on the field.");
-                if self.matches_target_flags(targetter_position, move_.allowed_target_flags(), targetted_position) {
+                if FieldPosition::is_position_relation_allowed_by_flags(targetter_position, targetted_position, move_.allowed_target_position_relation_flags())
+                {
                     possible_targets_for_move.push(targetted_position);
                 }
             }
         }
 
         MaxSizedVec::from_vec(possible_targets_for_move)
-    }
-
-    pub(crate) fn matches_target_flags(&self, targetter_position: FieldPosition, allowed_target_flags: TargetFlags, targetted_position: FieldPosition) -> bool {
-        let mut targetted_position_flags = TargetFlags::empty();
-        // FEATURE: BENCHED adjacency flag?
-        if targetter_position == targetted_position {
-            targetted_position_flags |= TargetFlags::SELF
-        } else if targetter_position.is_on_the_opposite_side_of(targetted_position) {
-            targetted_position_flags |= TargetFlags::OPPONENTS
-        } else {
-            targetted_position_flags |= TargetFlags::ALLIES
-        }
-        // Only calculate adjacency if not self
-        if not!(targetted_position_flags == TargetFlags::SELF) {
-            if targetter_position.is_adjacent_to(targetted_position) {
-                targetted_position_flags |= TargetFlags::ADJACENT
-            } else {
-                targetted_position_flags |= TargetFlags::NONADJACENT
-            }
-        }
-        allowed_target_flags.contains(targetted_position_flags)
     }
 }

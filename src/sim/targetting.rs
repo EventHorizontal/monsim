@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use monsim_utils::not;
+
 use crate::TeamID;
 
 /**
@@ -107,7 +109,7 @@ impl FieldPosition {
         self_side != other_position_side
     }
 
-    pub(crate) fn _is_on_the_same_side_as(&self, other_position: FieldPosition) -> bool {
+    pub(crate) fn is_on_the_same_side_as(&self, other_position: FieldPosition) -> bool {
         let self_side = self.to_coords().1; // The second element tells us which side the position is on.
         let other_position_side = other_position.to_coords().1;
         self_side == other_position_side
@@ -119,11 +121,43 @@ impl FieldPosition {
             FieldPosition::OpponentSideLeft | FieldPosition::OpponentSideCentre | FieldPosition::OpponentSideRight => TeamID::Opponents,
         }
     }
+
+    pub(crate) fn is_position_relation_allowed_by_flags(
+        targetters_position: FieldPosition,
+        targetted_position: FieldPosition,
+        allowed_relation_flags: PositionRelationFlags,
+    ) -> bool {
+        let mut targetted_position_relation_flags = PositionRelationFlags::empty();
+        // FEATURE: BENCHED adjacency flag?
+        if targetters_position.is_on_the_opposite_side_of(targetted_position) {
+            targetted_position_relation_flags |= PositionRelationFlags::OPPONENTS
+        } else if targetters_position.is_on_the_same_side_as(targetted_position) && targetters_position != targetted_position {
+            targetted_position_relation_flags |= PositionRelationFlags::ALLIES
+        } else {
+            targetted_position_relation_flags |= PositionRelationFlags::SELF
+        }
+
+        // Adjacency doesn't apply to self
+        if not!(targetted_position_relation_flags.contains(PositionRelationFlags::SELF)) {
+            if targetters_position.is_adjacent_to(targetted_position) {
+                targetted_position_relation_flags |= PositionRelationFlags::ADJACENT
+            } else {
+                targetted_position_relation_flags |= PositionRelationFlags::NONADJACENT
+            }
+        }
+        allowed_relation_flags.contains(targetted_position_relation_flags)
+    }
 }
 
 bitflags::bitflags! {
+    /// Used to specify what positions on the battle are valid for a certain
+    /// purpose, relative to a given Monster. For example, we might use this to add
+    /// the allowed targets of a Move, in which case the `PositionRelationFlags`
+    /// tell us which Monsters relative to Monster using the move are valid
+    /// targets. Bubble, for example, hits all opponents adjacent to the Monster
+    /// using it, so it would have `ALL | ADJACENT | OPPONENTS = 0b0010_0011`.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct TargetFlags: u8 {
+    pub struct PositionRelationFlags: u8 {
         const _           = 0b1111_1111;
 
         const ANY         = 0b0000_0000;

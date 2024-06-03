@@ -4,7 +4,7 @@ use monsim_macros::mon;
 use monsim_utils::{Count, Outcome, Percent, NOTHING};
 
 use crate::{
-    effects, source_code_location, EventFilteringOptions, EventHandler, EventHandlerSet, PersistentStatusDexEntry, PersistentStatusSpecies, TargetFlags,
+    effects, source_code_location, EventFilteringOptions, EventHandler, EventHandlerSet, PersistentStatusDexEntry, PersistentStatusSpecies, PositionRelationFlags,
     VolatileStatusDexEntry, VolatileStatusSpecies,
 };
 
@@ -20,7 +20,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             response: |_sim, _, _receiver_id, _context, current_attack_stat| current_attack_stat * Percent(50),
 
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),
@@ -35,7 +35,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             },
 
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),
@@ -73,7 +73,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
             },
 
             event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: TargetFlags::SELF,
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
         }),

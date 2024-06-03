@@ -27,7 +27,7 @@ pub use monsim_utils::{ClampedPercent, Count, Outcome, Percent};
 pub use ordering::ActivationOrder;
 pub use status::{PersistentStatusDexEntry, PersistentStatusSpecies, VolatileStatusDexEntry, VolatileStatusSpecies};
 use tap::Pipe;
-pub use targetting::{BoardPosition, FieldPosition, TargetFlags};
+pub use targetting::{BoardPosition, FieldPosition, PositionRelationFlags};
 
 /// `bool` indicates whether the Simulation should be cancelled early.
 type SimResult = Result<bool, SimError>;
@@ -108,8 +108,16 @@ impl BattleSimulator {
                     activation_order,
                     ..
                 } => {
-                    let move_targets_all = self.battle.move_(move_id).allowed_target_flags().contains(TargetFlags::ALL);
-                    let move_targets_any = self.battle.move_(move_id).allowed_target_flags().contains(TargetFlags::ANY);
+                    let move_targets_all = self
+                        .battle
+                        .move_(move_id)
+                        .allowed_target_position_relation_flags()
+                        .contains(PositionRelationFlags::ALL);
+                    let move_targets_any = self
+                        .battle
+                        .move_(move_id)
+                        .allowed_target_position_relation_flags()
+                        .contains(PositionRelationFlags::ANY);
 
                     // The engine autopicks if the move targets all possible targets...
                     if move_targets_all {

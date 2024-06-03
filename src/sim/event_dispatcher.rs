@@ -42,14 +42,14 @@ mod tests;
 
 use crate::{
     sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, Battle, EventHandlerSelector, Nothing, Outcome},
-    ActivationOrder,
+    ActivationOrder, FieldPosition,
 };
 use contexts::*;
 pub use events::*;
 use monsim_macros::mon;
 use monsim_utils::{not, NOTHING};
 
-use super::targetting::TargetFlags;
+use super::targetting::PositionRelationFlags;
 
 #[derive(Debug, Clone)]
 pub struct EventDispatcher;
@@ -125,8 +125,8 @@ impl EventDispatcher {
         let mut passes_filter;
 
         let EventFilteringOptions {
-            only_if_broadcaster_is: allowed_broadcaster_relation_flags,
-            only_if_target_is: allowed_target_relation_flags,
+            only_if_broadcaster_is: allowed_broadcaster_position_relation_flags,
+            only_if_target_is: allowed_target_position_relation_flags,
             only_if_receiver_is_active: requires_being_active,
         } = receiver_filtering_options;
 
@@ -138,35 +138,23 @@ impl EventDispatcher {
             return false;
         };
 
+        let event_receiver_field_position = mon![event_receiver_id]
+            .board_position
+            .field_position()
+            .expect("For now we disallow the receiver to be benched. This is will probably be reverted in the future.");
+
         if let Some(event_broadcaster_id) = event_broadcaster.source() {
-            // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster
-            // within the allowed relations to the event receiver?
-            let mut broadcaster_relation_flags = TargetFlags::empty();
+            // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster within the allowed relations to the event receiver?
             let event_broadcaster_field_position = mon![event_broadcaster_id]
                 .board_position
                 .field_position()
                 .expect("We assume broadcasters must be on the field.");
-            // This is an optional value because it may be that the event receiver is benched.
-            let event_receiver_field_position = mon![event_receiver_id].board_position.field_position();
 
-            if battle.are_opponents(event_broadcaster_id, event_receiver_id) {
-                broadcaster_relation_flags |= TargetFlags::OPPONENTS;
-            } else if battle.are_allies(event_broadcaster_id, event_receiver_id) {
-                broadcaster_relation_flags |= TargetFlags::ALLIES;
-            } else {
-                broadcaster_relation_flags |= TargetFlags::SELF;
-            }
-            // Adjacency doesn't apply to self
-            if not!(broadcaster_relation_flags.contains(TargetFlags::SELF)) {
-                if let Some(event_receiver_field_position) = event_receiver_field_position {
-                    if event_broadcaster_field_position.is_adjacent_to(event_receiver_field_position) {
-                        broadcaster_relation_flags |= TargetFlags::ADJACENT;
-                    } else {
-                        broadcaster_relation_flags |= TargetFlags::NONADJACENT;
-                    }
-                }
-            }
-            passes_filter = allowed_broadcaster_relation_flags.contains(broadcaster_relation_flags);
+            passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
+                event_receiver_field_position,
+                event_broadcaster_field_position,
+                allowed_broadcaster_position_relation_flags,
+            );
         }
 
         if not!(passes_filter) {
@@ -176,34 +164,16 @@ impl EventDispatcher {
         // The event target is the contextual target for the action associated with this event. For example,
         // this could be the target of the current move.
         if let Some(event_target_id) = event_target_id {
-            let mut target_relation_flags = TargetFlags::empty();
             let event_target_field_position = mon![event_target_id]
                 .board_position
                 .field_position()
                 .expect("We assume targets must be on the field.");
 
-            // This is an optional value because it may be that the event receiver is benched.
-            let event_receiver_field_position = mon![event_receiver_id].board_position.field_position();
-
-            if battle.are_opponents(event_target_id, event_receiver_id) {
-                target_relation_flags |= TargetFlags::OPPONENTS;
-            } else if battle.are_allies(event_target_id, event_receiver_id) {
-                target_relation_flags |= TargetFlags::ALLIES;
-            } else {
-                target_relation_flags |= TargetFlags::SELF;
-            }
-            // Adjacency doesn't apply to self
-            if not!(target_relation_flags.contains(TargetFlags::SELF)) {
-                if let Some(event_receiver_field_position) = event_receiver_field_position {
-                    if event_target_field_position.is_adjacent_to(event_receiver_field_position) {
-                        target_relation_flags |= TargetFlags::ADJACENT;
-                    } else {
-                        target_relation_flags |= TargetFlags::NONADJACENT;
-                    }
-                }
-            }
-
-            passes_filter = allowed_target_relation_flags.contains(target_relation_flags);
+            passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
+                event_receiver_field_position,
+                event_target_field_position,
+                allowed_target_position_relation_flags,
+            );
         }
 
         passes_filter
@@ -216,10 +186,10 @@ impl EventDispatcher {
 pub struct EventFilteringOptions {
     /// Filters the EventHandler's response based on the relationship between the
     /// broadcaster and the receiver. Does nothing if there is no broadcaster.
-    pub only_if_broadcaster_is: TargetFlags,
+    pub only_if_broadcaster_is: PositionRelationFlags,
     /// Filters the EventHandler based on the relationship between the target and the
     /// receiver. Does nothing if the event context has no clear target.
-    pub only_if_target_is: TargetFlags,
+    pub only_if_target_is: PositionRelationFlags,
     /// If `true` the EventHandler only responds to the Event if its receiver is active.
     ///
     /// If `false`, the EventHandler ignores the whether the receiver is active or not
@@ -230,8 +200,10 @@ pub struct EventFilteringOptions {
 impl EventFilteringOptions {
     pub const fn default() -> EventFilteringOptions {
         EventFilteringOptions {
-            only_if_broadcaster_is: TargetFlags::ADJACENT.union(TargetFlags::NONADJACENT).union(TargetFlags::OPPONENTS),
-            only_if_target_is: TargetFlags::SELF,
+            only_if_broadcaster_is: PositionRelationFlags::ADJACENT
+                .union(PositionRelationFlags::NONADJACENT)
+                .union(PositionRelationFlags::OPPONENTS),
+            only_if_target_is: PositionRelationFlags::SELF,
             only_if_receiver_is_active: true,
         }
     }

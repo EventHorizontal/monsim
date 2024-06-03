@@ -10,7 +10,7 @@ pub struct PersistentStatus {
 }
 
 impl PersistentStatus {
-    pub(crate) fn new(species: &'static PersistentStatusSpecies) -> PersistentStatus {
+    pub(crate) fn from_species(species: &'static PersistentStatusSpecies) -> PersistentStatus {
         PersistentStatus { species }
     }
 

@@ -357,7 +357,8 @@ pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID
     if try_add_status.succeeded() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
-            mon![mut affected_monster_id].persistent_status = Some(PersistentStatus::new(status_species));
+            let persistent_status = PersistentStatus::from_species(status_species);
+            mon![mut affected_monster_id].persistent_status = Some(persistent_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             Outcome::Success(NOTHING)
         } else {

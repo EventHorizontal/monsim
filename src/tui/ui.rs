@@ -64,7 +64,7 @@ impl SwitcheePrompt {
     fn as_renderable_widget<'a>(battle: &BattleState, switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>) -> List<'a> {
         let list_items = switchable_benched_monster_ids
             .into_iter()
-            .map(|monster_id| ListItem::new(battle.monster(monster_id).full_name()))
+            .map(|monster_id| ListItem::new(mon![monster_id].full_name()))
             .collect::<Vec<_>>();
 
         List::new(list_items)

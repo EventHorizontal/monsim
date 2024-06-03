@@ -165,11 +165,7 @@ pub const Recycle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         // Recycle only works if there exists a consumed item and no held item.
         if let Some(consumed_item) = consumed_item {
             if mon![mut move_user_id].held_item_mut().is_none() {
-                battle.queue_message(format![
-                    "Recycle replenished {}'s {}",
-                    battle.monster(move_user_id).name(),
-                    consumed_item.name()
-                ]);
+                battle.queue_message(format!["Recycle replenished {}'s {}", mon![move_user_id].name(), consumed_item.name()]);
                 *mon![mut move_user_id].held_item_mut() = Some(consumed_item);
                 *mon![mut move_user_id].consumed_item_mut() = None;
                 Outcome::Success(())

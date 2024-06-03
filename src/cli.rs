@@ -2,6 +2,7 @@ use crate::{
     sim::{AvailableChoices, Battle, PartiallySpecifiedActionChoice},
     FieldPosition, MonsterID, MoveID, SimulatorUi,
 };
+use monsim_macros::{mon, mov};
 use monsim_utils::MaxSizedVec;
 use std::io::{stdout, Write};
 
@@ -16,7 +17,7 @@ impl SimulatorUi for Cli {
         _ = writeln![locked_stdout];
         _ = writeln![locked_stdout, "Active Monsters:"];
         for active_monster_id in battle.active_monster_ids() {
-            _ = writeln![locked_stdout, "\t{}: {}", active_monster_id, battle.monster(active_monster_id).status_string()];
+            _ = writeln![locked_stdout, "\t{}: {}", active_monster_id, mon![active_monster_id].status_string()];
         }
         _ = writeln![locked_stdout];
         _ = writeln![locked_stdout, "Ally Team Status:"];
@@ -32,7 +33,7 @@ impl SimulatorUi for Cli {
         available_choices_for_monster: AvailableChoices,
     ) -> PartiallySpecifiedActionChoice {
         let mut locked_stdout = stdout().lock();
-        _ = writeln![locked_stdout, "Choose an action for {}", battle.monster(monster_id).name()];
+        _ = writeln![locked_stdout, "Choose an action for {}", mon![monster_id].name()];
         for (index, available_choice) in available_choices_for_monster
             .choices()
             .into_iter()
@@ -40,7 +41,7 @@ impl SimulatorUi for Cli {
             .enumerate()
         {
             let display_text = match available_choice {
-                PartiallySpecifiedActionChoice::Move { move_id, .. } => format!["Use {}", battle.move_(move_id).name()],
+                PartiallySpecifiedActionChoice::Move { move_id, .. } => format!["Use {}", mov![move_id].name()],
                 PartiallySpecifiedActionChoice::SwitchOut { .. } => String::from("Switch Out"),
                 PartiallySpecifiedActionChoice::CancelSimulation => String::from("Exit Monsim"),
             };
@@ -70,7 +71,7 @@ impl SimulatorUi for Cli {
         possible_target_positions: MaxSizedVec<FieldPosition, 6>,
     ) -> FieldPosition {
         let mut locked_stdout = stdout().lock();
-        _ = writeln![locked_stdout, "Please choose a target for {}", battle.move_(move_id).name()];
+        _ = writeln![locked_stdout, "Please choose a target for {}", mov![move_id].name()];
         for (index, possible_target_position) in possible_target_positions.into_iter().enumerate() {
             let target_name = battle
                 .monster_at_position(possible_target_position)
@@ -100,7 +101,7 @@ impl SimulatorUi for Cli {
             }
         }
         for (index, switchable_benched_monster_id) in switchable_benched_monster_ids.into_iter().enumerate() {
-            let benched_monster_name = battle.monster(switchable_benched_monster_id).name();
+            let benched_monster_name = mon![switchable_benched_monster_id].name();
             _ = writeln![locked_stdout, "[{}] {}", index + 1, benched_monster_name];
         }
         _ = writeln![locked_stdout];

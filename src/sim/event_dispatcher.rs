@@ -46,6 +46,7 @@ use crate::{
 };
 use contexts::*;
 pub use events::*;
+use monsim_macros::mon;
 use monsim_utils::{not, NOTHING};
 
 use super::targetting::TargetFlags;
@@ -130,11 +131,7 @@ impl EventDispatcher {
         } = receiver_filtering_options;
 
         // First check - does the event receiver require themselves to be active? If so check if they are actually active.
-        passes_filter = if requires_being_active {
-            battle.monster(event_receiver_id).is_active()
-        } else {
-            true
-        };
+        passes_filter = if requires_being_active { mon![event_receiver_id].is_active() } else { true };
 
         // Skip the rest of the calculation if it doesn't pass.
         if not!(passes_filter) {
@@ -145,13 +142,12 @@ impl EventDispatcher {
             // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster
             // within the allowed relations to the event receiver?
             let mut broadcaster_relation_flags = TargetFlags::empty();
-            let event_broadcaster_field_position = battle
-                .monster(event_broadcaster_id)
+            let event_broadcaster_field_position = mon![event_broadcaster_id]
                 .board_position
                 .field_position()
                 .expect("We assume broadcasters must be on the field.");
             // This is an optional value because it may be that the event receiver is benched.
-            let event_receiver_field_position = battle.monster(event_receiver_id).board_position.field_position();
+            let event_receiver_field_position = mon![event_receiver_id].board_position.field_position();
 
             if battle.are_opponents(event_broadcaster_id, event_receiver_id) {
                 broadcaster_relation_flags |= TargetFlags::OPPONENTS;
@@ -181,14 +177,13 @@ impl EventDispatcher {
         // this could be the target of the current move.
         if let Some(event_target_id) = event_target_id {
             let mut target_relation_flags = TargetFlags::empty();
-            let event_target_field_position = battle
-                .monster(event_target_id)
+            let event_target_field_position = mon![event_target_id]
                 .board_position
                 .field_position()
                 .expect("We assume targets must be on the field.");
 
             // This is an optional value because it may be that the event receiver is benched.
-            let event_receiver_field_position = battle.monster(event_receiver_id).board_position.field_position();
+            let event_receiver_field_position = mon![event_receiver_id].board_position.field_position();
 
             if battle.are_opponents(event_target_id, event_receiver_id) {
                 target_relation_flags |= TargetFlags::OPPONENTS;

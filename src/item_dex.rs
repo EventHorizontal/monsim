@@ -22,7 +22,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
             response: |battle, broadcaster_id, _receiver_id, _, damage| {
-                battle.queue_message(format!["Life orb boosted the damage of {}'s attack!", battle.monster(broadcaster_id).name()]);
+                battle.queue_message(format!["Life orb boosted the damage of {}'s attack!", mon![broadcaster_id].name()]);
                 damage * Percent(130)
             },
             event_filtering_options: EventFilteringOptions {
@@ -43,7 +43,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                        },
                        _| {
                 let one_tenth_of_total_hp = mon![move_user_id].max_health() * Percent(10);
-                battle.queue_message(format!["Life orb drained some of {}'s life force!", battle.monster(broadcaster_id).name()]);
+                battle.queue_message(format!["Life orb drained some of {}'s life force!", mon![broadcaster_id].name()]);
                 let damage_dealt = effects::deal_raw_damage(battle, move_user_id, one_tenth_of_total_hp);
             },
             event_filtering_options: EventFilteringOptions {

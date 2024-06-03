@@ -132,7 +132,7 @@ fn test_priority_sorting_with_speed_ties() {
                     ),
             )
             .build();
-        let mut prng = Prng::new(i as u64);
+        let mut prng = Prng::with_seed(i as u64);
         let sim = BattleSimulator::init(test_battle);
 
         let mut owned_event_handlers = sim.battle.owned_event_handlers(|event_handler_deck| vec![event_handler_deck.on_try_move_hit]);

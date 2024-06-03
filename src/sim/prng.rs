@@ -15,7 +15,7 @@ const C: u64 = 0x00269EC3;
 impl Prng {
     #[cfg(test)]
     #[allow(unused)]
-    pub(crate) fn new(start_seed: u64) -> Self {
+    pub(crate) fn with_seed(start_seed: u64) -> Self {
         Self {
             start_seed,
             current_seed: start_seed,
@@ -28,6 +28,11 @@ impl Prng {
             start_seed,
             current_seed: start_seed,
         }
+    }
+
+    pub fn roll_chance(&mut self, num: u16, denom: u16) -> bool {
+        assert!(denom != 0);
+        self.generate_random_number_in_range(1..=denom) <= num
     }
 
     /// Returns each number in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
@@ -51,11 +56,6 @@ impl Prng {
     fn next(&mut self) -> u64 {
         self.current_seed = self.current_seed.wrapping_mul(A).wrapping_add(C);
         self.current_seed
-    }
-
-    pub fn roll_chance(&mut self, num: u16, denom: u16) -> bool {
-        assert!(denom != 0);
-        self.generate_random_number_in_range(1..=denom) <= num
     }
 
     fn seed_from_current_time() -> u64 {

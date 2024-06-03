@@ -2,13 +2,30 @@ use crate::{EventHandlerDeck, MonsterID};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
-    pub(crate) id: ItemID,
+    pub(crate) _id: ItemID,
     pub(crate) species: & 'static ItemSpecies
 }
 
 impl Item {
+
+    #[inline(always)]
     pub fn name(&self) -> &'static str {
         &self.species.name
+    }
+
+    #[inline(always)]
+    pub fn dex_number(&self) -> u16 {
+        self.species.dex_number
+    }
+
+    #[inline(always)]
+    pub fn kind(&self) -> ItemFlags {
+        self.species.kind
+    }
+    
+    #[inline(always)]
+    pub fn species(&self) -> & 'static ItemSpecies {
+        self.species
     }
     
     pub(crate) fn event_handlers(&self) -> EventHandlerDeck {

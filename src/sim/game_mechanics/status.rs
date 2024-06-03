@@ -16,13 +16,20 @@ impl PersistentStatus {
         }
     }
     
+    #[inline(always)]
+    pub fn name(&self) -> &'static str {
+        self.species.name
+    }
+
+    #[inline(always)]
+    pub fn dex_number(&self) -> u16 {
+        self.species.dex_number
+    }
+
     pub(crate) fn event_handlers(&self) -> EventHandlerDeck {
         (self.species.event_handlers)()
     }
     
-    pub(crate) fn name(&self) -> &'static str {
-        self.species.name
-    }
 }
 
 #[derive(Debug, Clone, Copy)]

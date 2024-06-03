@@ -14,8 +14,8 @@ pub struct EventHandlerSet {
     pub on_calculate_defense_stat: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
     pub on_modify_damage: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
     pub on_damage_dealt: Option<EventHandler<Nothing, Nothing, MonsterID>>,
-    pub on_try_activate_ability: Option<EventHandler<Outcome<Nothing>, AbilityUseContext, MonsterID>>,
-    pub on_ability_activated: Option<EventHandler<Nothing, AbilityUseContext, MonsterID>>,
+    pub on_try_activate_ability: Option<EventHandler<Outcome<Nothing>, AbilityActivationContext, MonsterID>>,
+    pub on_ability_activated: Option<EventHandler<Nothing, AbilityActivationContext, MonsterID>>,
     pub on_modify_accuracy: Option<EventHandler<u16, MoveHitContext, MonsterID>>,
     pub on_try_raise_stat: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
     pub on_try_lower_stat: Option<EventHandler<Outcome<Nothing>, Nothing, MonsterID>>,
@@ -145,7 +145,7 @@ pub(crate) fn trigger_on_damage_dealt_event(battle: &mut BattleState, broadcaste
     )
 }
 
-pub(crate) fn trigger_on_try_activate_ability_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Outcome<Nothing> {
+pub(crate) fn trigger_on_try_activate_ability_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: AbilityActivationContext) -> Outcome<Nothing> {
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
@@ -154,7 +154,7 @@ pub(crate) fn trigger_on_try_activate_ability_event(battle: &mut BattleState, br
     )
 }
 
-pub(crate) fn trigger_on_ability_activated_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: AbilityUseContext) -> Nothing {
+pub(crate) fn trigger_on_ability_activated_event(battle: &mut BattleState, broadcaster_id: MonsterID, event_context: AbilityActivationContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,

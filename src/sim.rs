@@ -246,7 +246,7 @@ impl BattleSimulator {
                 INFO: Monsters get switched in immediately if they are replacing a fainted Monster
                 that fainted last turn, so we don't add them to the 'action_schedule'.
                 */
-                effects::switch_in_monster(&mut self.battle, (monster_selected_for_switch_id, empty_field_position))
+                effects::switch_in_monster(&mut self.battle, monster_selected_for_switch_id, empty_field_position)
             }
         }
 

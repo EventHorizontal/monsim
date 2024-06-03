@@ -361,12 +361,12 @@ pub mod contexts {
     ///
     /// `ability_used_id`: AbilityID of the Ability being used.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct AbilityUseContext {
+    pub struct AbilityActivationContext {
         pub ability_owner_id: MonsterID,
         pub ability_used_id: AbilityID,
     }
 
-    impl AbilityUseContext {
+    impl AbilityActivationContext {
         pub fn from_owner(ability_owner: MonsterID) -> Self {
             Self {
                 ability_used_id: AbilityID { owner_id: ability_owner },
@@ -375,7 +375,7 @@ pub mod contexts {
         }
     }
 
-    impl EventContext for AbilityUseContext {}
+    impl EventContext for AbilityActivationContext {}
 
     /// `active_monster_id`: MonsterID of the Monster to be switched out.
     ///

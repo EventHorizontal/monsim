@@ -349,7 +349,7 @@ impl MoveBuilder {
     fn build(self, move_id: MoveID) -> Move {
         let species = self.species;
         // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
-        if species.category() == MoveCategory::Status && species.on_hit_effect() as usize == effects::deal_default_damage as usize {
+        if species.category() == MoveCategory::Status && species.on_hit_effect() as usize == effects::deal_calculated_damage as usize {
             println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
         }
         Move {

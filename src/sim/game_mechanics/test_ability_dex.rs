@@ -8,7 +8,7 @@ use crate::{
     effects,
     sim::{
         event_dispatcher::{contexts::MoveUseContext, EventFilteringOptions, EventHandler, EventHandlerSet},
-        AbilityDexEntry, AbilityID, AbilityUseContext, BattleSimulator, MoveHitContext,
+        AbilityActivationContext, AbilityDexEntry, AbilityID, BattleSimulator, MoveHitContext,
     },
     source_code_location, Outcome,
 };
@@ -32,9 +32,9 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
                 if mov![move_used_id].is_type(Type::Fire) && target_id == receiver_id {
                     let activation_outcome = effects::activate_ability(
                         battle,
-                        AbilityUseContext::from_owner(receiver_id),
+                        AbilityActivationContext::from_owner(receiver_id),
                         |battle,
-                         AbilityUseContext {
+                         AbilityActivationContext {
                              ability_owner_id,
                              ability_used_id,
                          }| {

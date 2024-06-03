@@ -31,7 +31,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             response: |battle, _, receiver_id, _context, _| {
                 battle.queue_message(format!["{} is burned.", mon![receiver_id].name()]);
                 let damage = (mon![receiver_id].max_health() as f64 * 1.0 / 8.0) as u16;
-                let _ = effects::deal_raw_damage(battle, (receiver_id, damage));
+                let _ = effects::deal_raw_damage(battle, receiver_id, damage);
             },
 
             event_filtering_options: EventFilteringOptions {
@@ -66,7 +66,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
                 } else if battle.roll_chance(1, 3) {
                     battle.queue_message(format!["{} hit itself in confusion!", mon![receiver_id].name()]);
                     let one_eight_of_max_hp = (mon![receiver_id].max_health() as f64 * 1.0 / 8.0) as u16;
-                    let _damage = effects::deal_raw_damage(battle, (receiver_id, one_eight_of_max_hp));
+                    let _damage = effects::deal_raw_damage(battle, receiver_id, one_eight_of_max_hp);
                     return Outcome::Failure;
                 }
                 Outcome::Success(NOTHING)

@@ -41,7 +41,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                        _| {
                 let one_tenth_of_total_hp = mon![move_user_id].max_health() * Percent(10);
                 battle.queue_message(format!["Life orb drained some of {}'s life force!", battle.monster(broadcaster_id).name()]);
-                let damage_dealt = effects::deal_raw_damage(battle, (move_user_id, one_tenth_of_total_hp));
+                let damage_dealt = effects::deal_raw_damage(battle, move_user_id, one_tenth_of_total_hp);
             },
             event_filtering_options: EventFilteringOptions {
                 only_if_broadcaster_is: TargetFlags::SELF,

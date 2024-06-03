@@ -30,7 +30,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
                 if mov![move_used_id].is_type(Type::Fire) && target_id == receiver_id {
                     let activation_outcome = effects::activate_ability(
                         battle,
-                        AbilityActivationContext::from_owner(receiver_id),
+                        receiver_id,
                         |battle,
                          AbilityActivationContext {
                              ability_owner_id,
@@ -70,7 +70,7 @@ pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEn
                        _| {
                 let _ = effects::activate_ability(
                     battle,
-                    AbilityActivationContext::from_owner(receiver_id),
+                    receiver_id,
                     |battle,
                      AbilityActivationContext {
                          ability_owner_id,

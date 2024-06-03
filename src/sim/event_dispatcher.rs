@@ -242,8 +242,8 @@ impl EventFilteringOptions {
     }
 }
 
-pub type EventResponse<R, C, B> =
-    fn(/* battle */ &mut BattleState, /* broadcaster_id */ B, /* receiver_id */ MonsterID, /* context */ C, /* relay */ R) -> R;
+/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: MonsterID, context: C, relay: R) -> event_outcome: R`
+pub type EventResponse<R, C, B> = fn(&mut BattleState, B, MonsterID, C, R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]

@@ -9,14 +9,6 @@ use crate::{
     PersistentStatusSpecies, Stat, SwitchContext, VolatileStatusSpecies,
 };
 
-/// `R`: A type that encodes any necessary information about how the `Effect` played
-/// out, _e.g._ an `Outcome` representing whether the `Effect` succeeded.
-///
-/// `C`: Any information necessary for the resolution of the effect, provided
-/// directly, such as the user of the move, the move used and the target
-/// in case of a move's effect.
-pub type Effect<R, C> = fn(/* simulator */ &mut BattleState, /* context */ C) -> R;
-
 // internal `Effects` that are only supposed to be used by the engine -----------------------------------------
 
 /// The simulator simulates the use of a move `MoveUseContext.move_used` by
@@ -296,7 +288,6 @@ where
     }
 }
 
-// TODO: Split the second parameter of this function.
 /// The simulator simulates the raising of stat `Context.1` of monster `Context.0` by `Context.2` stages
 #[must_use]
 pub fn raise_stat(battle: &mut BattleState, (affected_monster_id, stat, number_of_stages): (MonsterID, Stat, u8)) -> Outcome<Nothing> {

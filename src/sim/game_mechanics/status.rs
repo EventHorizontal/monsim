@@ -29,11 +29,14 @@ impl PersistentStatus {
     }
 }
 
+/// `fn(monster_that_acquired_the_status: &Monster) -> message: String`
+type OnAcquiredMessageConstructor = fn(&Monster) -> String;
+
 #[derive(Debug, Clone, Copy)]
 pub struct PersistentStatusSpecies {
     pub(crate) dex_number: u16,
     pub(crate) name: &'static str,
-    pub(crate) on_acquired_message: fn(&Monster) -> String,
+    pub(crate) on_acquired_message: OnAcquiredMessageConstructor,
     pub(crate) event_handlers: fn() -> EventHandlerDeck,
 }
 
@@ -59,7 +62,7 @@ impl PersistentStatusSpecies {
 pub struct PersistentStatusDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub on_acquired_message: fn(&Monster) -> String,
+    pub on_acquired_message: OnAcquiredMessageConstructor,
     pub event_handlers: fn() -> EventHandlerDeck,
 }
 
@@ -143,8 +146,7 @@ impl VolatileStatusSpecies {
 pub struct VolatileStatusDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    /// fn(affected_monster: &Monster) -> message: String
-    pub on_acquired_message: fn(&Monster) -> String,
+    pub on_acquired_message: OnAcquiredMessageConstructor,
     pub lifetime_in_turns: Count,
     pub event_handlers: fn() -> EventHandlerDeck,
 }

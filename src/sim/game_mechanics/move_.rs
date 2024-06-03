@@ -1,9 +1,8 @@
 use monsim_utils::{Count, Nothing, Outcome};
 
-use crate::{sim::Type, Effect, MonsterID, MoveHitContext, TargetFlags};
+use crate::{sim::Type, BattleState, MonsterID, MoveHitContext, TargetFlags};
 use core::fmt::Debug;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Move {
     pub(crate) id: MoveID,
     pub(crate) species: &'static MoveSpecies,
@@ -11,13 +10,16 @@ pub struct Move {
     pub(crate) current_power_points: u8,
 }
 
+/// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome<Nothing>`
+type OnHitEffect = fn(&mut BattleState, MoveHitContext) -> Outcome<Nothing>;
+
 impl Move {
     #[inline(always)]
     pub fn name(&self) -> &'static str {
         self.species.name
     }
 
-    pub fn on_hit_effect(&self) -> Effect<Outcome<Nothing>, MoveHitContext> {
+    pub fn on_hit_effect(&self) -> OnHitEffect {
         self.species.on_hit_effect
     }
 
@@ -82,7 +84,7 @@ pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
 
-    on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
+    on_hit_effect: fn(/* simulator */ &mut BattleState, /* context */ MoveHitContext) -> Outcome<Nothing>,
     hits_per_target: Count,
 
     base_accuracy: Option<u16>,
@@ -159,7 +161,7 @@ impl MoveSpecies {
     }
 
     #[inline(always)]
-    pub fn on_hit_effect(&self) -> Effect<Outcome<Nothing>, MoveHitContext> {
+    pub fn on_hit_effect(&self) -> OnHitEffect {
         self.on_hit_effect
     }
 }
@@ -195,7 +197,7 @@ pub struct MoveDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
 
-    pub on_hit_effect: Effect<Outcome<Nothing>, MoveHitContext>,
+    pub on_hit_effect: OnHitEffect,
     pub hits_per_target: Count,
 
     pub base_accuracy: Option<u16>,

@@ -33,7 +33,6 @@ pub struct BattleState {
 impl Display for BattleState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::new();
-
         attach_tree_for_team(&mut out, *self.ally_team());
         attach_tree_for_team(&mut out, *self.opponent_team());
         write!(f, "{}", out)

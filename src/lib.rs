@@ -4,7 +4,6 @@ pub(crate) mod cli;
 #[cfg(feature = "debug")]
 pub mod debug;
 pub mod sim;
-mod test;
 #[cfg(feature = "monsim_tui")]
 pub(crate) mod tui;
 

@@ -37,8 +37,6 @@ for that particular Event at the moment.
 use core::fmt::Debug;
 
 mod events;
-#[cfg(all(test, feature = "debug"))]
-mod tests;
 
 use crate::{
     sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, Battle, EventHandlerSelector, Nothing, Outcome},

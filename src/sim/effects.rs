@@ -339,8 +339,8 @@ pub fn lower_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Sta
 #[must_use]
 pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome<Nothing> {
     // conflict. A structural change is needed to resolve this correctly.
-    let try_add_status = event_dispatcher::trigger_on_try_add_volatile_status_event(battle, affected_monster_id, NOTHING);
-    if try_add_status.is_success() {
+    let try_inflict_status = event_dispatcher::trigger_on_try_inflict_volatile_status_event(battle, affected_monster_id, NOTHING);
+    if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
             let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species);
@@ -361,8 +361,8 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
 pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
-    let try_add_status = event_dispatcher::trigger_on_try_add_permanent_status_event(battle, affected_monster_id, NOTHING);
-    if try_add_status.is_success() {
+    let try_inflict_status = event_dispatcher::trigger_on_try_inflict_permanent_status_event(battle, affected_monster_id, NOTHING);
+    if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
             let persistent_status = PersistentStatus::from_species(status_species);

@@ -25,6 +25,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
                            move_user_id,
                            move_used_id,
                            target_id,
+                           number_of_hits,
                        },
                        _| {
                 if mov![move_used_id].is_type(Type::Fire) && target_id == receiver_id {

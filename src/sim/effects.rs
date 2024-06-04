@@ -6,7 +6,7 @@ use crate::{
     sim::event_dispatcher,
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, ItemUseContext, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
-    PersistentStatusSpecies, Stat, SwitchContext, VolatileStatusSpecies,
+    PersistentStatusSpecies, Stat, SwitchContext, TypeEffectiveness, VolatileStatusSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -21,7 +21,7 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
 
     let try_use_move_outcome = event_dispatcher::trigger_on_try_move_event(battle, move_user_id, move_use_context);
-    if try_use_move_outcome.failed() {
+    if try_use_move_outcome.is_failure() {
         battle.queue_message("The move failed!");
         return;
     }
@@ -32,61 +32,31 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
         return;
     }
 
-    /*
-    INFO: We are currently dealing with the fact moves hit 0-6 times by thinking
-    of them as having an `on_hit_effect` rather an `on_use_effect`. We may need
-    rethink this if it turns out some moves do want to control their `on_use_effect`.
-    Event multihit moves seem like they want to just have a `number_of_hits` variable
-    and just repeat its on_hit_effect
-    */
     for target_id in target_ids {
+        let number_of_hits = match mov![move_used_id].hits_per_target() {
+            Count::Fixed(number_of_hits) => number_of_hits,
+            Count::RandomInRange { min, max } => battle.roll_random_number_in_range(min as u16..=max as u16) as u8,
+        };
+
         let move_hit_context = MoveHitContext {
             move_user_id,
             move_used_id,
             target_id,
+            number_of_hits,
         };
-        let mut actual_number_of_hits = 0;
-        for _ in {
-            match mov![move_used_id].hits_per_target() {
-                Count::Fixed(number_of_hits) => 1..=number_of_hits,
-                Count::RandomInRange { min, max } => {
-                    let number_of_hits = battle.roll_random_number_in_range(min as u16..=max as u16);
-                    1..=number_of_hits as u8
-                }
-            }
-        } {
-            {
-                let target = if move_user_id == target_id {
-                    "itself".to_owned()
-                } else {
-                    mon![target_id].name()
-                };
-                battle.queue_message(format![
-                    "{attacker} used {move_} on {target}",
-                    attacker = mon![move_user_id].name(),
-                    move_ = mov![move_used_id].name(),
-                ]);
-            }
 
-            if mon![target_id].is_fainted() {
-                continue;
+        battle.queue_message(format![
+            "{attacker} used {move_} on {target}",
+            attacker = mon![move_user_id].name(),
+            move_ = mov![move_used_id].name(),
+            target = if move_user_id == target_id {
+                "itself".to_owned()
+            } else {
+                mon![target_id].name()
             }
+        ]);
 
-            let move_hit_outcome = mov![move_used_id].on_hit_effect()(battle, move_hit_context);
-            if move_hit_outcome.succeeded() {
-                actual_number_of_hits += 1;
-            }
-        }
-
-        match mov![move_used_id].hits_per_target() {
-            Count::Fixed(n) if n > 1 => {
-                battle.queue_message(format!["The move hit {} time(s)", n]);
-            }
-            Count::RandomInRange { min: _, max: _ } => {
-                battle.queue_message(format!["The move hit {} time(s)", actual_number_of_hits]);
-            }
-            _ => {}
-        }
+        let _move_hit_outcome = mov![move_used_id].on_use_effect()(battle, move_hit_context);
     }
 
     mov![mut move_used_id].current_power_points -= 1;
@@ -149,92 +119,130 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         move_user_id: attacker_id,
         move_used_id,
         target_id: defender_id,
+        number_of_hits,
     } = move_hit_context;
 
-    let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(battle, attacker_id, move_hit_context);
-    if try_move_hit_outcome.failed() {
-        battle.queue_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
-        return Outcome::Failure;
-    }
+    // INFO: I am initialising this to appease the type system, but this for loop should always run at least once.
+    let mut overall_type_effectiveness = TypeEffectiveness::Effective;
+    let mut miss_count = 0;
+    let mut fail_count = 0;
 
-    let base_accuracy = mov![move_used_id].base_accuracy();
-
-    // If base_accuracy is `None`, the move is never-miss.
-    if let Some(base_accuracy) = base_accuracy {
-        // TODO: More sophisticated accuracy calculation
-        let modified_accuracy = event_dispatcher::trigger_on_modify_accuracy_event(battle, attacker_id, move_hit_context, base_accuracy);
-        if not!(battle.roll_chance(modified_accuracy, 100)) {
-            battle.queue_message("The move missed!");
-            return Outcome::Failure;
+    'hits: for i in 1..=number_of_hits {
+        let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(battle, attacker_id, move_hit_context);
+        if try_move_hit_outcome.is_failure() {
+            battle.queue_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
+            fail_count += 1;
+            continue 'hits;
         }
-    } else {
-        #[cfg(feature = "debug")]
-        battle.queue_message(format!["{} bypassed accuracy check!", mov![move_used_id].name()]);
-    }
 
-    let level = mon![attacker_id].level;
-    let move_power = mov![move_used_id].base_power();
+        if i > 1 {
+            battle.queue_message(format!["{} hit {} again!", mov![move_used_id].name(), mon![defender_id].name()]);
+        }
 
-    let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used_id].category() {
-        MoveCategory::Physical => (mon![attacker_id].stat(Stat::PhysicalAttack), mon![defender_id].stat(Stat::PhysicalDefense)),
-        MoveCategory::Special => (mon![attacker_id].stat(Stat::SpecialAttack), mon![defender_id].stat(Stat::SpecialDefense)),
-        _ => unreachable!("Expected physical or special move."),
-    };
+        let base_accuracy = mov![move_used_id].base_accuracy();
 
-    let attackers_attacking_stat = event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
-    let defenders_defense_stat = event_dispatcher::trigger_on_calculate_defense_stat_event(battle, attacker_id, move_hit_context, defenders_defense_stat);
-
-    let random_multiplier = battle.roll_random_number_in_range(85..=100);
-    let random_multiplier = ClampedPercent::from(random_multiplier);
-
-    let stab_multiplier = {
-        let move_type = mov![move_used_id].type_();
-        if mon![attacker_id].is_type(move_type) {
-            Percent(125)
+        // If base_accuracy is `None`, the move is never-miss.
+        if let Some(base_accuracy) = base_accuracy {
+            // TODO: More sophisticated accuracy calculation
+            let modified_accuracy = event_dispatcher::trigger_on_modify_accuracy_event(battle, attacker_id, move_hit_context, base_accuracy);
+            if not!(battle.roll_chance(modified_accuracy, 100)) {
+                battle.queue_message("The move missed!");
+                miss_count += 1;
+                continue 'hits;
+            }
         } else {
-            Percent(100)
+            #[cfg(feature = "debug")]
+            battle.queue_message(format!["{} bypassed accuracy check!", mov![move_used_id].name()]);
         }
-    };
 
-    let move_type = mov![move_used_id].type_();
-    let target_type = mon![defender_id].species.type_();
+        let level = mon![attacker_id].level;
+        let move_power = mov![move_used_id].base_power();
 
-    let type_effectiveness = dual_type_matchup(move_type, target_type);
+        let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used_id].category() {
+            MoveCategory::Physical => (mon![attacker_id].stat(Stat::PhysicalAttack), mon![defender_id].stat(Stat::PhysicalDefense)),
+            MoveCategory::Special => (mon![attacker_id].stat(Stat::SpecialAttack), mon![defender_id].stat(Stat::SpecialDefense)),
+            _ => unreachable!("Expected physical or special move."),
+        };
 
-    // If the opponent is immune, damage calculation is skipped.
-    if type_effectiveness.is_matchup_ineffective() {
-        battle.queue_message("It was ineffective...");
+        let attackers_attacking_stat =
+            event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
+        let defenders_defense_stat = event_dispatcher::trigger_on_calculate_defense_stat_event(battle, attacker_id, move_hit_context, defenders_defense_stat);
+
+        let random_multiplier = battle.roll_random_number_in_range(85..=100);
+        let random_multiplier = ClampedPercent::from(random_multiplier);
+
+        let stab_multiplier = {
+            let move_type = mov![move_used_id].type_();
+            if mon![attacker_id].is_type(move_type) {
+                Percent(125)
+            } else {
+                Percent(100)
+            }
+        };
+
+        let move_type = mov![move_used_id].type_();
+        let target_type = mon![defender_id].species.type_();
+
+        let type_effectiveness = dual_type_matchup(move_type, target_type);
+        overall_type_effectiveness = type_effectiveness;
+
+        // If the opponent is immune, damage calculation is skipped.
+        if type_effectiveness.is_matchup_ineffective() {
+            // INVESTIGATE: What happens if a multihit move procs an immunity? For now I'd say skip the rest of the hits.
+            fail_count += 1;
+            battle.queue_message("It was ineffective...");
+            break 'hits;
+        }
+
+        let type_matchup_multiplier: Percent = type_effectiveness.into();
+
+        // The (WIP) bona-fide damage formula.
+        // TODO: Introduce more damage multipliers as we implement them.
+        let mut damage = (2 * level) / 5;
+        damage += 2;
+        damage *= move_power;
+        damage = (damage as f64 * (attackers_attacking_stat as f64 / defenders_defense_stat as f64)) as u16;
+        damage /= 50;
+        damage += 2;
+        damage = (damage as f64 * random_multiplier) as u16;
+        damage = (damage as f64 * stab_multiplier) as u16;
+        damage = (damage as f64 * type_matchup_multiplier) as u16;
+        damage = event_dispatcher::trigger_on_modify_damage_event(battle, attacker_id, move_hit_context, damage);
+
+        let _ = deal_raw_damage(battle, defender_id, damage);
+
+        event_dispatcher::trigger_on_move_hit_event(battle, attacker_id, move_hit_context);
+    }
+
+    let did_every_hit_miss_or_fail = fail_count + miss_count == number_of_hits;
+    if not!(did_every_hit_miss_or_fail) {
+        battle.queue_message(format!["It was {}!", overall_type_effectiveness.as_text()]);
+    }
+
+    if fail_count == number_of_hits {
         return Outcome::Failure;
     }
 
-    let type_matchup_multiplier: Percent = type_effectiveness.into();
+    let actual_hit_count = number_of_hits - miss_count - fail_count;
 
-    // The (WIP) bona-fide damage formula.
-    let mut damage = (2 * level) / 5;
-    damage += 2;
-    damage *= move_power;
-    damage = (damage as f64 * (attackers_attacking_stat as f64 / defenders_defense_stat as f64)) as u16;
-    damage /= 50;
-    damage += 2;
-    damage = (damage as f64 * random_multiplier) as u16;
-    damage = (damage as f64 * stab_multiplier) as u16;
-    damage = (damage as f64 * type_matchup_multiplier) as u16;
-    // TODO: Introduce more damage multipliers as we implement them.
+    match mov![move_used_id].hits_per_target() {
+        Count::Fixed(n) if n > 1 => {
+            battle.queue_message(format!["The move hit {} time(s).", actual_hit_count]);
+        }
+        Count::RandomInRange { min: _, max: _ } => {
+            battle.queue_message(format!["The move hit {} time(s).", actual_hit_count]);
+        }
+        _ => {}
+    }
 
-    /*
-    TODO: There was quite a bit written here about trying to organise multiple hits so that type effectiveness can be printed
-    after the last hit. I think this only applies to multihit moves like Bullet Seed, and not multitarget moves like Growl or
-    Bubble. So that will make it interesting to try to tackle this issue.
-    */
-    battle.queue_message(format!["It was {}!", type_effectiveness.as_text()]);
-
-    let damage = event_dispatcher::trigger_on_modify_damage_event(battle, attacker_id, move_hit_context, damage);
-
-    let _ = deal_raw_damage(battle, defender_id, damage);
-
-    event_dispatcher::trigger_on_move_hit_event(battle, attacker_id, move_hit_context);
-
-    Outcome::Success(NOTHING)
+    // INFO: I am assuming that we want to say "the move failed to hit" if every hit misses.
+    // This is definitely true for the case where we try to hit only once, but
+    // not sure if this is the right call for `number_of_hits > 1`.
+    if overall_type_effectiveness.is_matchup_ineffective() || did_every_hit_miss_or_fail {
+        Outcome::Failure
+    } else {
+        Outcome::Success(())
+    }
 }
 
 /// The Simulator simulates dealing damage exactly equal to `damage` to the Monster given by `target_id`. The actual damage dealt
@@ -275,7 +283,7 @@ where
 {
     let ability_activation_context = AbilityActivationContext::from_owner(ability_owner_id);
     let try_activate_ability_outcome = event_dispatcher::trigger_on_try_activate_ability_event(battle, ability_owner_id, ability_activation_context);
-    if try_activate_ability_outcome.succeeded() {
+    if try_activate_ability_outcome.is_success() {
         let activation_outcome = on_activate_effect(battle, ability_activation_context);
         event_dispatcher::trigger_on_ability_activated_event(battle, ability_owner_id, ability_activation_context);
         activation_outcome
@@ -288,7 +296,7 @@ where
 #[must_use]
 pub fn raise_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Stat, number_of_stages: u8) -> Outcome<Nothing> {
     let try_raise_stat_outcome = event_dispatcher::trigger_on_try_raise_stat_event(battle, affected_monster_id, NOTHING);
-    if try_raise_stat_outcome.succeeded() {
+    if try_raise_stat_outcome.is_success() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, number_of_stages);
 
         battle.queue_message(format![
@@ -308,7 +316,7 @@ pub fn raise_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Sta
 #[must_use]
 pub fn lower_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Stat, number_of_stages: u8) -> Outcome<Nothing> {
     let try_lower_stat_outcome = event_dispatcher::trigger_on_try_lower_stat_event(battle, affected_monster_id, NOTHING);
-    if try_lower_stat_outcome.succeeded() {
+    if try_lower_stat_outcome.is_success() {
         let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);
 
         battle.queue_message(format![
@@ -332,7 +340,7 @@ pub fn lower_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Sta
 pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome<Nothing> {
     // conflict. A structural change is needed to resolve this correctly.
     let try_add_status = event_dispatcher::trigger_on_try_add_volatile_status_event(battle, affected_monster_id, NOTHING);
-    if try_add_status.succeeded() {
+    if try_add_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
             let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species);
@@ -354,7 +362,7 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
 #[must_use]
 pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
     let try_add_status = event_dispatcher::trigger_on_try_add_permanent_status_event(battle, affected_monster_id, NOTHING);
-    if try_add_status.succeeded() {
+    if try_add_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
             let persistent_status = PersistentStatus::from_species(status_species);
@@ -377,7 +385,7 @@ where
 {
     let item_use_context = ItemUseContext::from_holder(item_holder_id);
     let try_use_item = event_dispatcher::trigger_on_try_use_held_item_event(battle, item_holder_id, item_use_context);
-    if try_use_item.succeeded() {
+    if try_use_item.is_success() {
         let held_item = mon![item_holder_id].held_item;
         if let Some(held_item) = held_item {
             if held_item.species.is_consumable {

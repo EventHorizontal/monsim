@@ -42,7 +42,7 @@ impl BitAnd for Outcome<Nothing> {
     type Output = Outcome<Nothing>;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        if self.succeeded() && rhs.succeeded() {
+        if self.is_success() && rhs.is_success() {
             Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
@@ -52,13 +52,13 @@ impl BitAnd for Outcome<Nothing> {
 
 impl<T> Outcome<T> {
     #[inline(always)]
-    pub fn succeeded(self) -> bool {
+    pub fn is_success(self) -> bool {
         self.into()
     }
 
     #[inline(always)]
-    pub fn failed(self) -> bool {
-        not!(self.succeeded())
+    pub fn is_failure(self) -> bool {
+        not!(self.is_success())
     }
 
     #[inline(always)]
@@ -68,7 +68,7 @@ impl<T> Outcome<T> {
             Outcome::Failure => Outcome::Success(NOTHING),
         }
     }
-    
+
     pub fn unwrap_or(self, default: T) -> T {
         match self {
             Outcome::Success(payload) => payload,

@@ -11,7 +11,7 @@ pub struct Move {
 }
 
 /// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome<Nothing>`
-type OnHitEffect = fn(&mut Battle, MoveHitContext) -> Outcome<Nothing>;
+type OnUseEffect = fn(&mut Battle, MoveHitContext) -> Outcome<Nothing>;
 
 impl Move {
     #[inline(always)]
@@ -19,7 +19,7 @@ impl Move {
         self.species.name
     }
 
-    pub fn on_hit_effect(&self) -> OnHitEffect {
+    pub fn on_use_effect(&self) -> OnUseEffect {
         self.species.on_hit_effect
     }
 
@@ -84,7 +84,7 @@ pub struct MoveSpecies {
     dex_number: u16,
     name: &'static str,
 
-    on_hit_effect: OnHitEffect,
+    on_hit_effect: OnUseEffect,
     hits_per_target: Count,
 
     base_accuracy: Option<u16>,
@@ -119,7 +119,7 @@ impl MoveSpecies {
         let MoveDexEntry {
             dex_number,
             name,
-            on_hit_effect,
+            on_use_effect: on_hit_effect,
             base_accuracy,
             base_power,
             category,
@@ -161,7 +161,7 @@ impl MoveSpecies {
     }
 
     #[inline(always)]
-    pub fn on_hit_effect(&self) -> OnHitEffect {
+    pub fn on_hit_effect(&self) -> OnUseEffect {
         self.on_hit_effect
     }
 }
@@ -197,7 +197,7 @@ pub struct MoveDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
 
-    pub on_hit_effect: OnHitEffect,
+    pub on_use_effect: OnUseEffect,
     pub hits_per_target: Count,
 
     pub base_accuracy: Option<u16>,

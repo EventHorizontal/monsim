@@ -128,6 +128,11 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
     let mut fail_count = 0;
 
     'hits: for i in 1..=number_of_hits {
+        if mon![defender_id].is_fainted() {
+            fail_count += number_of_hits - i;
+            break 'hits;
+        }
+
         let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(battle, attacker_id, move_hit_context);
         if try_move_hit_outcome.is_failure() {
             battle.queue_message(format!["The move failed to hit {}!", mon![defender_id].name()]);

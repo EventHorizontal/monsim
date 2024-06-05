@@ -151,6 +151,16 @@ impl<T> PerTeam<T> {
     pub fn unwrap_mut(&mut self) -> (&mut Ally<T>, &mut Opponent<T>) {
         (&mut self.ally_team_item, &mut self.opponent_team_item)
     }
+
+    pub(crate) fn iter_with_team_id(self) -> impl Iterator<Item = (TeamID, T)> {
+        let (ally_team_item, opponent_team_item) = self.unwrap_full();
+        [(TeamID::Allies, ally_team_item), (TeamID::Opponents, opponent_team_item)].into_iter()
+    }
+
+    /// Consumes `self`
+    fn unwrap_full(self) -> (T, T) {
+        (self.ally_team_item.unwrap(), self.opponent_team_item.unwrap())
+    }
 }
 
 impl<T: Clone> PerTeam<Option<T>> {

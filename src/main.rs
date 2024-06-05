@@ -22,22 +22,27 @@ fn main() -> MonsimResult<()> {
             MonsterTeam::spawn()
                 .add_monster(
                     Dandyleo
-                        .spawn((Scratch.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), None), FlashFire.spawn())
+                        .spawn((Scratch.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), None), Pickup.spawn())
                         .with_nickname("Clover")
                         .with_item(LifeOrb.spawn()),
                 )
                 .add_monster(
                     Zombler
                         .spawn(
-                            (Tackle.spawn().with_power_points(23), Some(Growl.spawn()), Some(DragonDance.spawn()), None),
-                            Spiteful.spawn(),
+                            (
+                                Tackle.spawn().with_power_points(23),
+                                Some(Growl.spawn()),
+                                Some(DragonDance.spawn()),
+                                Some(ShadowBall.spawn()),
+                            ),
+                            Pickup.spawn(),
                         )
                         .with_nickname("Rick"),
                 )
                 .add_monster(
                     Squirecoal
                         .spawn(
-                            (Ember.spawn(), Some(Growl.spawn()), Some(Scratch.spawn()), Some(Recycle.spawn())),
+                            (Ember.spawn(), Some(Growl.spawn()), Some(ShadowBall.spawn()), Some(Recycle.spawn())),
                             FlashFire.spawn(),
                         )
                         .with_nickname("Lancelot")
@@ -48,25 +53,26 @@ fn main() -> MonsimResult<()> {
             MonsterTeam::spawn()
                 .add_monster(
                     Merkey
-                        .spawn((Bubble.spawn(), Some(Tackle.spawn()), Some(Swift.spawn()), None), FlashFire.spawn())
-                        .with_nickname("Shrimp"),
+                        .spawn((Bubble.spawn(), Some(Tackle.spawn()), Some(Swift.spawn()), None), Pickup.spawn())
+                        .with_nickname("Shrimp")
+                        .with_hitpoints(20),
                 )
                 .add_monster(
                     Zombler
                         .spawn(
                             (Tackle.spawn().with_power_points(23), Some(Growl.spawn()), Some(DragonDance.spawn()), None),
-                            FlashFire.spawn(),
+                            Pickup.spawn(),
                         )
-                        .with_nickname("Cordy"),
+                        .with_nickname("Cordy")
+                        .with_hitpoints(20),
                 )
                 .add_monster(
                     Squirecoal
-                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(Scratch.spawn()), None), FlashFire.spawn())
+                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(Scratch.spawn()), None), Pickup.spawn())
                         .with_nickname("Epona"),
-                )
-                .add_monster(Merkey.spawn((Growl.spawn(), Some(Tackle.spawn()), None, None), FlashFire.spawn())),
+                ),
         )
-        // .with_format(BattleFormat::Triple)
+        .with_format(BattleFormat::Triple)
         .build();
 
     println!("{:?}", battle.format());

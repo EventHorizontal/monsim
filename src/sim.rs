@@ -81,7 +81,7 @@ impl BattleSimulator {
     }
 
     pub fn simulate_turn(&mut self, ui: &mut impl SimulatorUi) -> SimResult {
-        // Beginning-of-turn Upkeep Phase
+        // Beginning-of-Turn Upkeep Phase -------------------------------- //
         self.battle.message_log.extend(&[
             "---",
             EMPTY_LINE,
@@ -91,7 +91,7 @@ impl BattleSimulator {
 
         ui.update_battle_status(&mut self.battle);
 
-        // Choice Phase
+        // Choice Phase ------------------------------------------------- //
         let mut action_schedule = Vec::new();
         let mut monsters_selected_for_switch = MaxSizedVec::empty();
         let active_monster_ids = self.battle.active_monster_ids();
@@ -171,7 +171,7 @@ impl BattleSimulator {
             action_schedule.push(fully_specified_action_choice);
         }
 
-        // Action Phase
+        // Action Phase --------------------------------------------- //
 
         #[cfg(feature = "debug")]
         let action_phase_start_time = std::time::SystemTime::now();
@@ -232,7 +232,7 @@ impl BattleSimulator {
 
         self.battle.message_log.show_new_messages();
 
-        // Monster Replacement Phase
+        // Monster Replacement Phase ---------------------------------------------- //
         let empty_field_positions = self
             .battle
             .format()
@@ -245,7 +245,7 @@ impl BattleSimulator {
             let switchable_benched_monster_ids = self.battle.switchable_benched_monster_ids(team_id, &MaxSizedVec::empty());
             if switchable_benched_monster_ids.is_empty() {
                 self.battle
-                    .queue_message(format!["{} is empty but {} is out of switchable Monsters!", empty_field_position, team_id]);
+                    .queue_message(format!["({} is empty but {} is out of switchable Monsters)", empty_field_position, team_id]);
             } else {
                 let monster_selected_for_switch_id =
                     ui.prompt_user_to_select_benched_monster_to_switch_in(&mut self.battle, empty_field_position, switchable_benched_monster_ids);
@@ -257,7 +257,39 @@ impl BattleSimulator {
             }
         }
 
-        // End-of-Turn Upkeep Phase
+        // If we are in an Battle Format with multiple Monsters per side, we need to check whether
+        // either team (or both) has only one monster remaining and then move it to the middle.
+
+        if matches!(self.battle.format, BattleFormat::Double | BattleFormat::Triple) {
+            let remaining_monsters_count_per_team = self
+                .battle
+                .teams()
+                .map_clone(|team| team.monsters().into_iter().filter(|monster| not![monster.is_fainted()]).count());
+
+            for (team_id, remaining_monsters_count) in remaining_monsters_count_per_team.iter_with_team_id() {
+                if remaining_monsters_count == 1 {
+                    let active_monster_for_team_id = self
+                        .battle
+                        .team(team_id)
+                        .active_monsters()
+                        .pop()
+                        .expect("Expected to get a Monster since remaining monster count is 1")
+                        .id;
+
+                    let centre_position = match team_id {
+                        TeamID::Allies => FieldPosition::AllySideCentre,
+                        TeamID::Opponents => FieldPosition::OpponentSideCentre,
+                    };
+
+                    // Only shift the monster if it isn't already in the centre.
+                    if self.battle.monster(active_monster_for_team_id).board_position != BoardPosition::Field(centre_position) {
+                        effects::shift_monster(&mut self.battle, active_monster_for_team_id, centre_position);
+                    }
+                }
+            }
+        }
+
+        // End-of-Turn Upkeep Phase --------------------------------------------- //
 
         #[cfg(feature = "debug")]
         let end_of_turn_phase_start_time = std::time::SystemTime::now();

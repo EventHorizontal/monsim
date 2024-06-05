@@ -208,3 +208,27 @@ pub const Swift: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         .union(PositionRelationFlags::OPPONENTS),
     type_: Type::Normal,
 });
+
+pub const ShadowBall: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 011,
+    name: "Shadow Ball",
+    on_use_effect: |battle, context| {
+        let hit_outcome = effects::deal_calculated_damage(battle, context);
+
+        if hit_outcome.is_success() && battle.roll_chance(2, 10) {
+            let _ = effects::lower_stat(battle, context.target_id, Stat::SpecialDefense, 1);
+        }
+        hit_outcome
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: Some(100),
+    base_power: 80,
+    category: MoveCategory::Special,
+    max_power_points: 15,
+    priority: 0,
+    targets: PositionRelationFlags::ANY
+        .union(PositionRelationFlags::ADJACENT)
+        .union(PositionRelationFlags::ALLIES)
+        .union(PositionRelationFlags::OPPONENTS),
+    type_: Type::Ghost,
+});

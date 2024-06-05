@@ -162,16 +162,16 @@ impl EventDispatcher {
         // The event target is the contextual target for the action associated with this event. For example,
         // this could be the target of the current move.
         if let Some(event_target_id) = event_target_id {
-            let event_target_field_position = mon![event_target_id]
-                .board_position
-                .field_position()
-                .expect("We assume targets must be on the field.");
+            let event_target_field_position = mon![event_target_id].board_position.field_position();
 
-            passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
-                event_receiver_field_position,
-                event_target_field_position,
-                allowed_target_position_relation_flags,
-            );
+            // The event target may have fainted by the time an EventHandler procs.
+            if let Some(event_target_field_position) = event_target_field_position {
+                passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
+                    event_receiver_field_position,
+                    event_target_field_position,
+                    allowed_target_position_relation_flags,
+                );
+            }
         }
 
         passes_filter

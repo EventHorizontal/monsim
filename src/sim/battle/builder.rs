@@ -218,7 +218,7 @@ pub struct MonsterBuilder {
     _level: Option<u16>,
     _nature: Option<MonsterNature>,
     _stat_modifiers: Option<StatModifierSet>,
-    _current_health: Option<u16>,
+    current_health: Option<u16>,
 }
 
 pub trait MonsterBuilderExt {
@@ -268,7 +268,7 @@ impl Monster {
             _level: None,
             _nature: None,
             _stat_modifiers: None,
-            _current_health: None,
+            current_health: None,
             item: None,
         }
     }
@@ -282,6 +282,12 @@ impl MonsterBuilder {
 
     pub fn with_item(mut self, item: ItemBuilder) -> Self {
         self.item = Some(item);
+        self
+    }
+
+    pub fn with_hitpoints(mut self, hitpoints: u16) -> MonsterBuilder {
+        assert!(hitpoints <= Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, 50));
+        self.current_health = Some(hitpoints);
         self
     }
 
@@ -326,12 +332,13 @@ impl MonsterBuilder {
 
         let held_item = self.item.map(|item| item.build(ItemID { item_holder_id: monster_id }));
 
+        let max_health = Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level);
         Monster {
             id: monster_id,
             species: self.species,
             nickname,
             effort_values: EVS,
-            current_health: Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level),
+            current_health: self.current_health.unwrap_or(max_health),
             individual_values: IVS,
             level,
             nature,

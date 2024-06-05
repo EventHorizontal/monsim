@@ -404,3 +404,13 @@ where
         Outcome::Failure
     }
 }
+
+pub(crate) fn shift_monster(battle: &mut Battle, monster_id: MonsterID, destination_position: FieldPosition) -> Outcome<Nothing> {
+    if mon![monster_id].field_position().is_some() {
+        mon![mut monster_id].board_position = BoardPosition::Field(destination_position);
+        battle.queue_message(format!["{} was shifted to {}", mon![monster_id].name(), destination_position]);
+        Outcome::Success(NOTHING)
+    } else {
+        Outcome::Failure
+    }
+}

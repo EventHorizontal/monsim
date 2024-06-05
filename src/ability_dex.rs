@@ -3,7 +3,7 @@
 use monsim::{
     effects, move_,
     sim::{Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerSet, MoveUseContext, Type},
-    AbilityActivationContext, AbilityDexEntry, AbilityID, MoveHitContext, Stat,
+    AbilityActivationContext, AbilityDexEntry, AbilityID, MoveHitContext, PositionRelationFlags, Stat,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
@@ -53,38 +53,9 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
     order: 0,
 });
 
-pub const Spiteful: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
+pub const Pickup: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 002,
-    name: "Spiteful",
-    event_handlers: || EventHandlerSet {
-        on_damaging_move_used: Some(EventHandler {
-            #[cfg(feature = "debug")]
-            source_code_location: source_code_location!(),
-            response: |battle,
-                       broadcaster_id,
-                       receiver_id,
-                       MoveUseContext {
-                           move_user_id,
-                           move_used_id,
-                           target_ids,
-                       },
-                       _| {
-                let _ = effects::activate_ability(
-                    battle,
-                    receiver_id,
-                    |battle,
-                     AbilityActivationContext {
-                         ability_owner_id,
-                         ability_used_id,
-                     }| {
-                        let stat_raise_outcome = effects::raise_stat(battle, ability_owner_id, Stat::PhysicalAttack, 3);
-                        stat_raise_outcome
-                    },
-                );
-            },
-            event_filtering_options: EventFilteringOptions::default(),
-        }),
-        ..EventHandlerSet::empty()
-    },
+    name: "Pickup",
+    event_handlers: || EventHandlerSet::empty(),
     order: 1,
 });

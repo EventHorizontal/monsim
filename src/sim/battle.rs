@@ -136,6 +136,10 @@ impl Battle {
         self.message_log.push(message)
     }
 
+    pub(crate) fn queue_multiple_messages(&mut self, messages: &[impl ToString]) {
+        self.message_log.extend(messages);
+    }
+
     /// The Battle shows all the queued messages and then archives the messages.
     pub fn show_new_messages(&mut self) {
         self.message_log.show_new_messages()

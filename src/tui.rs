@@ -91,7 +91,7 @@ pub fn run(mut battle: BattleState) -> TuiResult<Nothing> {
                 let _turn_result = BattleSimulator::simulate_turn(&mut battle, *choices);
                 #[cfg(feature = "debug")]
                 match _turn_result {
-                    Ok(_) => battle.message_log.extend(&["Simulator: The turn was calculated successfully.", EMPTY_LINE]),
+                    Ok(_) => battle.queue_multiple_messages(&["Simulator: The turn was calculated successfully.", EMPTY_LINE]),
                     Err(error) => battle.message_log.push(format!["Simulator: {:?}", error]),
                 };
 
@@ -218,7 +218,7 @@ fn update_from_input(
                     if let (Some(ally_team_choice), Some(opponent_team_choice)) = choices_for_turn.to_option_pair() {
                         Some(AppState::Simulating(PerTeam::new(ally_team_choice, opponent_team_choice)))
                     } else {
-                        battle.message_log.extend(&[
+                        battle.queue_multiple_messages(&[
                             &"Simulator: Actions were not chosen... please select something before activating the simulation.",
                             &"---",
                             &EMPTY_LINE,

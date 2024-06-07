@@ -38,7 +38,7 @@ impl MessageLog {
         self.messages.push(message.to_string());
     }
 
-    pub fn extend(&mut self, messages: &[&str]) {
+    pub fn extend(&mut self, messages: &[impl ToString]) {
         for message in messages {
             self.messages.push(message.to_string());
         }

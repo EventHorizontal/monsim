@@ -82,7 +82,7 @@ impl BattleSimulator {
 
     pub fn simulate_turn(&mut self, ui: &mut impl SimulatorUi) -> SimResult {
         // Beginning-of-Turn Upkeep Phase -------------------------------- //
-        self.battle.message_log.extend(&[
+        self.battle.queue_multiple_messages(&[
             "---",
             EMPTY_LINE,
             &format!["Turn {turn_number}", turn_number = self.battle.turn_number],
@@ -182,8 +182,13 @@ impl BattleSimulator {
             // If the actor fainted we move on to the next action..
             let actor_id = action_choice.actor_id();
             if self.battle.monster(actor_id).is_fainted() {
-                self.battle
-                    .queue_message(format!["{} fainted so it was unable to act.", self.battle.monster(actor_id).name()]);
+                self.battle.queue_multiple_messages(
+                    [
+                        &format!["{} fainted so it was unable to act.", self.battle.monster(actor_id).name()],
+                        EMPTY_LINE,
+                    ]
+                    .as_slice(),
+                );
                 continue 'turn;
             }
 
@@ -221,7 +226,7 @@ impl BattleSimulator {
             }
 
             if ally_team_wiped || opponent_team_wiped {
-                self.battle.message_log.extend(&[EMPTY_LINE, "The battle ended.", "---", EMPTY_LINE]);
+                self.battle.queue_multiple_messages(&[EMPTY_LINE, "The battle ended.", "---", EMPTY_LINE]);
                 self.battle.message_log.show_new_messages();
                 return Ok(true);
             }

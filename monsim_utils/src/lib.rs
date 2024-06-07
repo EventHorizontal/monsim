@@ -35,6 +35,32 @@ macro_rules! not {
 #[derive(Debug, Clone, Copy)]
 pub enum Count {
     Fixed(u8),
-    RandomInRange{ min: u8, max: u8 }
+    RandomInRange { min: u8, max: u8 },
 }
 
+pub trait RoundTiesDownExt {
+    type Result;
+    fn round_ties_down(self) -> Self::Result;
+}
+
+impl RoundTiesDownExt for f64 {
+    type Result = u16;
+
+    fn round_ties_down(self) -> Self::Result {
+        let integer_part = self.floor();
+        match (self - integer_part).total_cmp(&0.5) {
+            std::cmp::Ordering::Less | std::cmp::Ordering::Equal => self.floor() as u16,
+            std::cmp::Ordering::Greater => self.ceil() as u16,
+        }
+    }
+}
+
+#[test]
+fn test_round_ties_down() {
+    assert_eq!(34, 34.1.round_ties_down());
+    assert_eq!(34, 34.5.round_ties_down());
+    assert_eq!(256, 255.7.round_ties_down());
+    assert_eq!(134, 133.6.round_ties_down());
+    assert_eq!(133, 133.4999.round_ties_down());
+    assert_eq!(423238237847384783, 423238237847384783.4999.round_ties_down());
+}

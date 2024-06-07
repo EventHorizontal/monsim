@@ -198,9 +198,58 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         let level = mon![attacker_id].level;
         let move_power = mov![move_used_id].base_power();
 
+        // TODO: Plumbing for effects that use a different stat. Is it enough to just return the numerical value of the other stat?
         let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used_id].category() {
-            MoveCategory::Physical => (mon![attacker_id].stat(Stat::PhysicalAttack), mon![defender_id].stat(Stat::PhysicalDefense)),
-            MoveCategory::Special => (mon![attacker_id].stat(Stat::SpecialAttack), mon![defender_id].stat(Stat::SpecialDefense)),
+            MoveCategory::Physical => {
+                let (attackers_attacking_stat, maybe_modified_defenders_defense_stat) =
+                    (mon![attacker_id].stat(Stat::PhysicalAttack), mon![defender_id].stat(Stat::PhysicalDefense));
+                let maybe_modified_attackers_attacking_stat =
+                    event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
+
+                let maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
+                    battle,
+                    attacker_id,
+                    move_hit_context,
+                    mon![attacker_id].stat_modifier(ModifiableStat::PhysicalAttack),
+                );
+                let maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
+                    battle,
+                    defender_id,
+                    move_hit_context,
+                    mon![defender_id].stat_modifier(ModifiableStat::PhysicalDefense),
+                );
+                let attack_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_attackers_attack_modifier_stage);
+                let defense_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_defenders_defense_modifier_stage);
+                (
+                    maybe_modified_attackers_attacking_stat * attack_stage_multiplier,
+                    maybe_modified_defenders_defense_stat * defense_stage_multiplier,
+                )
+            }
+            MoveCategory::Special => {
+                let (attackers_attacking_stat, maybe_modified_defenders_defense_stat) =
+                    (mon![attacker_id].stat(Stat::SpecialAttack), mon![defender_id].stat(Stat::SpecialDefense));
+                let maybe_modified_attackers_attacking_stat =
+                    event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
+
+                let maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
+                    battle,
+                    attacker_id,
+                    move_hit_context,
+                    mon![attacker_id].stat_modifier(ModifiableStat::SpecialAttack),
+                );
+                let maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
+                    battle,
+                    defender_id,
+                    move_hit_context,
+                    mon![defender_id].stat_modifier(ModifiableStat::SpecialDefense),
+                );
+                let attack_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_attackers_attack_modifier_stage);
+                let defense_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_defenders_defense_modifier_stage);
+                (
+                    maybe_modified_attackers_attacking_stat * attack_stage_multiplier,
+                    maybe_modified_defenders_defense_stat * defense_stage_multiplier,
+                )
+            }
             _ => unreachable!("Expected physical or special move."),
         };
 

@@ -29,11 +29,13 @@ pub struct EventHandlerSet {
     /// leave the attack unchanged, say if a certain condition is met, then it can pass back the original attack
     /// stat, which is relayed to this EventHandler.
     pub on_calculate_attack_stat: Option<EventHandler<u16, MoveHitContext>>,
+    pub on_calculate_attack_stage: Option<EventHandler<i8, MoveHitContext>>,
     /// This EventHandler is triggered when a move is calculating the defense stat to be used. This EventHandler is to
     /// return a `u16` indicating a possibly modified defense stat to be used. If the EventHandler wishes to
     /// leave the defense unchanged, say if a certain condition is met, then it can pass back the original defense
     /// stat, which is relayed to this EventHandler.
     pub on_calculate_defense_stat: Option<EventHandler<u16, MoveHitContext>>,
+    pub on_calculate_defense_stage: Option<EventHandler<i8, MoveHitContext>>,
     /// This EventHandler is triggered after a move's damage is calculated, giving the opportunity for the final damage
     /// to be modified. This EventHandler is to return a `u16` indicating a possibly modified damage value. If the
     /// EventHandler wishes to leave the damage unchanged, say if a certain condition is met, then it can pass back
@@ -83,7 +85,9 @@ pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerSet = EventHandlerSet {
     on_try_move_hit: None,
     on_move_hit: None,
     on_calculate_attack_stat: None,
+    on_calculate_attack_stage: None,
     on_calculate_defense_stat: None,
+    on_calculate_defense_stage: None,
     on_modify_damage: None,
     on_damage_dealt: None,
     on_try_activate_ability: None,
@@ -195,6 +199,22 @@ pub(crate) fn trigger_on_calculate_attack_stat_event(battle: &mut Battle, broadc
     )
 }
 
+pub(crate) fn trigger_on_calculate_attack_stage_event(
+    battle: &mut Battle,
+    broadcaster_id: MonsterID,
+    event_context: MoveHitContext,
+    original_attack_stage: i8,
+) -> i8 {
+    EventDispatcher::dispatch_event(
+        battle,
+        broadcaster_id,
+        |event_handler_set| vec![(event_handler_set.on_calculate_attack_stage)],
+        event_context,
+        original_attack_stage,
+        None,
+    )
+}
+
 pub(crate) fn trigger_on_calculate_defense_stat_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext, default: u16) -> u16 {
     EventDispatcher::dispatch_event(
         battle,
@@ -202,6 +222,22 @@ pub(crate) fn trigger_on_calculate_defense_stat_event(battle: &mut Battle, broad
         |event_handler_set| vec![(event_handler_set.on_calculate_defense_stat)],
         event_context,
         default,
+        None,
+    )
+}
+
+pub(crate) fn trigger_on_calculate_defense_stage_event(
+    battle: &mut Battle,
+    broadcaster_id: MonsterID,
+    event_context: MoveHitContext,
+    original_defense_stage: i8,
+) -> i8 {
+    EventDispatcher::dispatch_event(
+        battle,
+        broadcaster_id,
+        |event_handler_set| vec![(event_handler_set.on_calculate_defense_stage)],
+        event_context,
+        original_defense_stage,
         None,
     )
 }

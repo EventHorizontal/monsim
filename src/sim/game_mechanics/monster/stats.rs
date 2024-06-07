@@ -217,6 +217,10 @@ impl StatModifierSet {
         self[stat] -= effective_stages;
         effective_stages as u8
     }
+
+    pub(crate) fn reset(&mut self) {
+        *self = StatModifierSet::blank();
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

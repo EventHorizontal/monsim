@@ -102,7 +102,8 @@ pub(crate) fn switch_in_monster(battle: &mut Battle, benched_monster_id: Monster
 pub(crate) fn switch_out_monster(battle: &mut Battle, active_monster_id: MonsterID) {
     let active_monster = mon![mut active_monster_id];
     active_monster.board_position = BoardPosition::Bench;
-    active_monster.volatile_statuses = MaxSizedVec::empty();
+    active_monster.stat_modifiers.reset();
+    active_monster.volatile_statuses.clear();
 
     battle.queue_message(format!["Come back {}!", mon![active_monster_id].name()]);
 }

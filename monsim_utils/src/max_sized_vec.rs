@@ -1,12 +1,15 @@
 #[cfg(test)]
 mod tests;
 
-use std::{fmt::{Display, Debug}, ops::{Index, IndexMut, Range}};
 use crate::NOTHING;
+use std::{
+    fmt::{Debug, Display},
+    ops::{Index, IndexMut, Range},
+};
 
-/// It's an array-backed vector (importantly for our use case it implements Copy) of capacity `CAP` where the elements are guaranteed to be at the beginning. _This may change in the future_ but panics if indexed outside of valid elements. It is meant for use cases with up to ~100 elements. 
-/// 
-/// How this internally works: Makes an array with default members for padding, and keeps track of a cursor that indicates the number of valid elements. 
+/// It's an array-backed vector (importantly for our use case it implements Copy) of capacity `CAP` where the elements are guaranteed to be at the beginning. _This may change in the future_ but panics if indexed outside of valid elements. It is meant for use cases with up to ~100 elements.
+///
+/// How this internally works: Makes an array with default members for padding, and keeps track of a cursor that indicates the number of valid elements.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MaxSizedVec<T, const CAP: usize> {
     elements: [Option<T>; CAP],
@@ -30,7 +33,10 @@ impl<T: Display, const CAP: usize> Display for MaxSizedVec<T, CAP> {
 impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn from_slice(elements: &[T]) -> Self {
         let count = elements.len();
-        assert!(count <= CAP, "Error: Attempted to create a FrontLoadedArray with a slice of length {count}, which is greater than the expected size {CAP}");
+        assert!(
+            count <= CAP,
+            "Error: Attempted to create a FrontLoadedArray with a slice of length {count}, which is greater than the expected size {CAP}"
+        );
 
         let elements = {
             let out: [Option<T>; CAP] = core::array::from_fn(|i| {
@@ -41,85 +47,97 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
                 } else {
                     None
                 }
-            } );
+            });
             out
         };
-        
-        Self {
-            elements,
-            count,
-        }
+
+        Self { elements, count }
     }
 
     pub fn extend_clone(&mut self, new_elements: &[T]) {
         let number_of_new_elements = new_elements.len();
-        assert!(self.count + number_of_new_elements <= CAP, "MaxSizedVec has {} elements and cannot be extended by {} more elements.", self.count, number_of_new_elements);
+        assert!(
+            self.count + number_of_new_elements <= CAP,
+            "MaxSizedVec has {} elements and cannot be extended by {} more elements.",
+            self.count,
+            number_of_new_elements
+        );
 
         for element in new_elements.into_iter() {
             self.push(element.clone());
         }
     }
-    
+
     // Removes the element at `index` and shifts over the rest of the elements.
     pub fn remove(&mut self, index: usize) {
-        assert!(index <= self.count, "Expected index to be less than element count, {}, found {} instead", self.count, index);
+        assert!(
+            index <= self.count,
+            "Expected index to be less than element count, {}, found {} instead",
+            self.count,
+            index
+        );
         for index2 in index..self.count {
             self.elements[index2] = self.elements[index2 + 1].clone();
         }
         self.elements[self.count] = None;
         self.count -= 1;
     }
-   
+
+    pub fn clear(&mut self) {
+        *self = MaxSizedVec::empty();
+    }
 }
 
 impl<T: PartialEq, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn contains(&self, item: &T) -> bool {
-        self.elements.iter()
-            .any(|element| { if let Some(element) = element {
-                *element == *item
-            } else {
-                false
-            } })
+        self.elements
+            .iter()
+            .any(|element| if let Some(element) = element { *element == *item } else { false })
     }
 }
 
 impl<T, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn empty() -> Self {
         MaxSizedVec {
-            elements: std::array::from_fn::<_, CAP, _>(|_| {
-                None
-            }),
+            elements: std::array::from_fn::<_, CAP, _>(|_| None),
             count: 0,
         }
     }
 
     pub fn from_vec(mut elements: Vec<T>) -> Self {
         let count = elements.len();
-        assert!(count <= CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
+        assert!(
+            count <= CAP,
+            "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}"
+        );
         elements.reverse();
 
         let elements = {
             let out: [Option<T>; CAP] = core::array::from_fn(|i| {
                 // Fill the front of the array with the slice elements
                 if i < count {
-                    Some(elements.pop().expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`"))
+                    Some(
+                        elements
+                            .pop()
+                            .expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`"),
+                    )
                 // Fill the rest of the array with dummy default values.
                 } else {
                     None
                 }
-            } );
+            });
             out
         };
-        
-        Self {
-            elements,
-            count,
-        }
+
+        Self { elements, count }
     }
 
     pub fn with_new_cap<const NEW_CAP: usize>(elements: Self) -> MaxSizedVec<T, NEW_CAP> {
         let count = elements.count();
-        assert!(count < NEW_CAP, "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}");
+        assert!(
+            count < NEW_CAP,
+            "Error: Attempted to create a MaxSizedVec with a slice of length {count}, which is greater than the expected size {CAP}"
+        );
         let mut elements = elements.to_vec();
         elements.reverse();
 
@@ -127,19 +145,20 @@ impl<T, const CAP: usize> MaxSizedVec<T, CAP> {
             let out: [Option<T>; NEW_CAP] = core::array::from_fn(|i| {
                 // Fill the front of the array with the slice elements
                 if i < count {
-                    Some(elements.pop().expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`"))
+                    Some(
+                        elements
+                            .pop()
+                            .expect("Expected an element because the loop is manually synchronised with the number of elements in `elements`"),
+                    )
                 // Fill the rest of the array with dummy default values.
                 } else {
                     None
                 }
-            } );
+            });
             out
         };
-        
-        MaxSizedVec {
-            elements,
-            count,
-        }
+
+        MaxSizedVec { elements, count }
     }
 
     pub fn push(&mut self, item: T) {
@@ -160,38 +179,38 @@ impl<T, const CAP: usize> MaxSizedVec<T, CAP> {
         self.count -= 1;
         popped_element
     }
-    
-    pub fn map<U, F>(self, mut f: F) -> MaxSizedVec<U, CAP> 
-        where F: FnMut(T) -> U
+
+    pub fn map<U, F>(self, mut f: F) -> MaxSizedVec<U, CAP>
+    where
+        F: FnMut(T) -> U,
     {
-        let items = self.elements.map(|element| {
-            element.map(|element| f(element))
-        });
+        let items = self.elements.map(|element| element.map(|element| f(element)));
         MaxSizedVec {
             elements: items,
-            count: self.count
+            count: self.count,
         }
     }
-    
+
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.elements[0..self.count]
-            .iter()
-            .flatten()
+        self.elements[0..self.count].iter().flatten()
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
-        self.elements[0..self.count]
-            .iter_mut()
-            .flatten()
+        self.elements[0..self.count].iter_mut().flatten()
     }
 
     pub fn count(&self) -> usize {
         self.count
     }
-    
+
     pub fn extend(&mut self, new_elements: Vec<T>) {
         let number_of_new_elements = new_elements.len();
-        assert!(self.count + number_of_new_elements <= CAP, "MaxSizedVec has {} elements and cannot be extended by {} more elements.", self.count, number_of_new_elements);
+        assert!(
+            self.count + number_of_new_elements <= CAP,
+            "MaxSizedVec has {} elements and cannot be extended by {} more elements.",
+            self.count,
+            number_of_new_elements
+        );
 
         for (i, element) in new_elements.into_iter().enumerate() {
             self.elements[self.count + i] = Some(element)
@@ -201,15 +220,14 @@ impl<T, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn is_empty(&self) -> bool {
         self.count == 0
     }
-    
+
     fn to_vec(self) -> Vec<T> {
-        self.into_iter()
-            .collect()
+        self.into_iter().collect()
     }
-    
+
     pub fn get(&self, index: usize) -> Option<&T> {
         self.elements[index].as_ref()
-    }      
+    }
 }
 
 impl<T, const CAP: usize> Index<usize> for MaxSizedVec<T, CAP> {
@@ -219,7 +237,12 @@ impl<T, const CAP: usize> Index<usize> for MaxSizedVec<T, CAP> {
         if index < self.count {
             self.elements[index].as_ref().expect("Index has been checked.")
         } else {
-            panic!("MaxSizedVec was indexed at {} ({}-th element) having only {} valid elements.", index, index+1, self.count)
+            panic!(
+                "MaxSizedVec was indexed at {} ({}-th element) having only {} valid elements.",
+                index,
+                index + 1,
+                self.count
+            )
         }
     }
 }
@@ -229,7 +252,12 @@ impl<T, const CAP: usize> IndexMut<usize> for MaxSizedVec<T, CAP> {
         if index < self.count {
             self.elements[index].as_mut().expect("Index has been checked.")
         } else {
-            panic!("MaxSizedVec was indexed at {} ({}-th element) having only {} valid elements.", index, index+1, self.count)
+            panic!(
+                "MaxSizedVec was indexed at {} ({}-th element) having only {} valid elements.",
+                index,
+                index + 1,
+                self.count
+            )
         }
     }
 }
@@ -245,22 +273,23 @@ impl<T, const CAP: usize> Index<Range<usize>> for MaxSizedVec<T, CAP> {
 impl<T: Default, const CAP: usize> Default for MaxSizedVec<T, CAP> {
     fn default() -> Self {
         let elements = {
-            let out: [Option<T>; CAP] = core::array::from_fn(|_| { Some(T::default()) });
+            let out: [Option<T>; CAP] = core::array::from_fn(|_| Some(T::default()));
             out
         };
-        Self { elements, count: Default::default() }
+        Self {
+            elements,
+            count: Default::default(),
+        }
     }
 }
 
 /// Iterates over the valid elements.
-impl<T, const CAP: usize> IntoIterator for MaxSizedVec<T, CAP>{
+impl<T, const CAP: usize> IntoIterator for MaxSizedVec<T, CAP> {
     type Item = T;
 
     type IntoIter = std::iter::Flatten<std::iter::Take<std::array::IntoIter<Option<T>, CAP>>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.elements.into_iter()
-            .take(self.count)
-            .flatten()
+        self.elements.into_iter().take(self.count).flatten()
     }
 }

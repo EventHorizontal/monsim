@@ -3,7 +3,7 @@
 use monsim::{
     effects, move_,
     sim::{Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerSet, MoveUseContext, Type},
-    AbilityActivationContext, AbilityDexEntry, AbilityID, MoveHitContext, PositionRelationFlags, Stat,
+    AbilityActivationContext, AbilityDexEntry, AbilityID, MoveHitContext, PositionRelationFlags, ModifiableStat,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};

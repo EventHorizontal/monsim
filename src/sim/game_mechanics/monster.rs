@@ -156,7 +156,7 @@ impl Monster {
     }
 
     #[inline(always)]
-    pub fn stat_modifier(&self, stat: Stat) -> i8 {
+    pub fn stat_modifier(&self, stat: ModifiableStat) -> i8 {
         self.stat_modifiers[stat]
     }
 

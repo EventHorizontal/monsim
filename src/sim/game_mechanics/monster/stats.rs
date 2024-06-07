@@ -13,6 +13,43 @@ pub enum Stat {
     Speed,
 }
 
+impl Display for Stat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Stat::Hp => write!(f, "HP"),
+            Stat::PhysicalAttack => write!(f, "Attack"),
+            Stat::PhysicalDefense => write!(f, "Defense"),
+            Stat::SpecialAttack => write!(f, "Special Attack"),
+            Stat::SpecialDefense => write!(f, "Special Defense"),
+            Stat::Speed => write!(f, "Speed"),
+        }
+    }
+}
+
+impl Stat {
+    fn to_modifier(&self) -> Option<ModifiableStat> {
+        match self {
+            Stat::Hp => None,
+            Stat::PhysicalAttack => Some(ModifiableStat::PhysicalAttack),
+            Stat::PhysicalDefense => Some(ModifiableStat::PhysicalDefense),
+            Stat::SpecialAttack => Some(ModifiableStat::SpecialAttack),
+            Stat::SpecialDefense => Some(ModifiableStat::SpecialDefense),
+            Stat::Speed => Some(ModifiableStat::Speed),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ModifiableStat {
+    PhysicalAttack,
+    PhysicalDefense,
+    SpecialAttack,
+    SpecialDefense,
+    Speed,
+    Accuracy,
+    Evasion,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StatSet {
     hp: u16,
@@ -21,15 +58,6 @@ pub struct StatSet {
     spa: u16,
     spd: u16,
     spe: u16,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct StatModifierSet {
-    att: i8,
-    def: i8,
-    spa: i8,
-    spd: i8,
-    spe: i8,
 }
 
 impl Index<Stat> for StatSet {
@@ -53,40 +81,75 @@ impl StatSet {
     }
 }
 
-impl Index<Stat> for StatModifierSet {
-    type Output = i8;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct StatModifierSet {
+    att: i8,
+    def: i8,
+    spa: i8,
+    spd: i8,
+    spe: i8,
+    acc: i8,
+    eva: i8,
+}
 
-    fn index(&self, index: Stat) -> &Self::Output {
-        match index {
-            Stat::Hp => panic!("Error: StatModifierSet does not have an HP entry and so cannot be indexed by Stat::HP."),
-            Stat::PhysicalAttack => &self.att,
-            Stat::PhysicalDefense => &self.def,
-            Stat::SpecialAttack => &self.spa,
-            Stat::SpecialDefense => &self.spd,
-            Stat::Speed => &self.spe,
+impl Display for ModifiableStat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ModifiableStat::PhysicalAttack => write!(f, "Attack"),
+            ModifiableStat::PhysicalDefense => write!(f, "Defense"),
+            ModifiableStat::SpecialAttack => write!(f, "Special Attack"),
+            ModifiableStat::SpecialDefense => write!(f, "Special Defense"),
+            ModifiableStat::Speed => write!(f, "Speed"),
+            ModifiableStat::Accuracy => write!(f, "Accuracy"),
+            ModifiableStat::Evasion => write!(f, "Evasion"),
         }
     }
 }
 
-impl IndexMut<Stat> for StatModifierSet {
-    fn index_mut(&mut self, index: Stat) -> &mut Self::Output {
+impl Index<ModifiableStat> for StatModifierSet {
+    type Output = i8;
+
+    fn index(&self, index: ModifiableStat) -> &Self::Output {
         match index {
-            Stat::Hp => panic!("Error: StatModifierSet does not have an HP entry and so cannot be indexed by Stat::HP."),
-            Stat::PhysicalAttack => &mut self.att,
-            Stat::PhysicalDefense => &mut self.def,
-            Stat::SpecialAttack => &mut self.spa,
-            Stat::SpecialDefense => &mut self.spd,
-            Stat::Speed => &mut self.spe,
+            ModifiableStat::PhysicalAttack => &self.att,
+            ModifiableStat::PhysicalDefense => &self.def,
+            ModifiableStat::SpecialAttack => &self.spa,
+            ModifiableStat::SpecialDefense => &self.spd,
+            ModifiableStat::Speed => &self.spe,
+            ModifiableStat::Accuracy => &self.acc,
+            ModifiableStat::Evasion => &self.eva,
+        }
+    }
+}
+
+impl IndexMut<ModifiableStat> for StatModifierSet {
+    fn index_mut(&mut self, index: ModifiableStat) -> &mut Self::Output {
+        match index {
+            ModifiableStat::PhysicalAttack => &mut self.att,
+            ModifiableStat::PhysicalDefense => &mut self.def,
+            ModifiableStat::SpecialAttack => &mut self.spa,
+            ModifiableStat::SpecialDefense => &mut self.spd,
+            ModifiableStat::Speed => &mut self.spe,
+            ModifiableStat::Accuracy => &mut self.acc,
+            ModifiableStat::Evasion => &mut self.eva,
         }
     }
 }
 
 impl StatModifierSet {
-    pub const fn new(att: i8, def: i8, spa: i8, spd: i8, spe: i8) -> Self {
-        Self { att, def, spa, spd, spe }
+    pub const fn blank() -> Self {
+        Self {
+            att: 0,
+            def: 0,
+            spa: 0,
+            spd: 0,
+            spe: 0,
+            acc: 0,
+            eva: 0,
+        }
     }
 
-    pub fn raise_stat(&mut self, stat: Stat, by_number_of_stages: u8) -> u8 {
+    pub fn raise_stat(&mut self, stat: ModifiableStat, by_number_of_stages: u8) -> u8 {
         assert!(
             by_number_of_stages > 0 && by_number_of_stages <= 6,
             "Expected stat change to be between 1 and 6 stages, found {} stages",
@@ -98,7 +161,7 @@ impl StatModifierSet {
         effective_stages as u8
     }
 
-    pub fn lower_stat(&mut self, stat: Stat, by_number_of_stages: u8) -> u8 {
+    pub fn lower_stat(&mut self, stat: ModifiableStat, by_number_of_stages: u8) -> u8 {
         assert!(
             by_number_of_stages > 0 && by_number_of_stages <= 6,
             "Expected stat change to be between 1 and 6 stages, found {} stages",
@@ -108,19 +171,6 @@ impl StatModifierSet {
         assert!(effective_stages >= 0);
         self[stat] -= effective_stages;
         effective_stages as u8
-    }
-}
-
-impl Display for Stat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Stat::Hp => write!(f, "HP"),
-            Stat::PhysicalAttack => write!(f, "Attack"),
-            Stat::PhysicalDefense => write!(f, "Defense"),
-            Stat::SpecialAttack => write!(f, "Special Attack"),
-            Stat::SpecialDefense => write!(f, "Special Defense"),
-            Stat::Speed => write!(f, "Speed"),
-        }
     }
 }
 

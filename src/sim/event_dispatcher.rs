@@ -266,7 +266,7 @@ pub mod contexts {
     use super::EventContext;
     use crate::{
         sim::{MonsterID, MoveID},
-        AbilityID, ItemID, Stat,
+        AbilityID, ItemID, ModifiableStat,
     };
     use monsim_utils::MaxSizedVec;
 
@@ -390,7 +390,7 @@ pub mod contexts {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct StatChangeContext {
         pub affected_monster_id: MonsterID,
-        pub stat: Stat,
+        pub stat: ModifiableStat,
         pub number_of_stages: i8,
     }
 

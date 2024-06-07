@@ -343,7 +343,7 @@ impl MonsterBuilder {
             level,
             nature,
             board_position,
-            stat_modifiers: StatModifierSet::new(0, 0, 0, 0, 0),
+            stat_modifiers: StatModifierSet::blank(),
             moveset,
             ability,
             persistent_status: None,

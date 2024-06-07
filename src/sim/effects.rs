@@ -5,7 +5,7 @@ use crate::{
     dual_type_matchup,
     sim::event_dispatcher,
     status::{PersistentStatus, VolatileStatus},
-    AbilityActivationContext, Battle, BoardPosition, FieldPosition, ItemUseContext, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
+    AbilityActivationContext, Battle, BoardPosition, FieldPosition, ItemUseContext, ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
     PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TypeEffectiveness, VolatileStatusSpecies,
 };
 
@@ -306,7 +306,7 @@ where
     }
 }
 
-pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Stat, number_of_stages: i8) -> Outcome<i8> {
+pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: ModifiableStat, number_of_stages: i8) -> Outcome<i8> {
     let stat_change_context = StatChangeContext {
         affected_monster_id,
         number_of_stages,

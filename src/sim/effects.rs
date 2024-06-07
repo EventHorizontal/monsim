@@ -43,6 +43,7 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
             move_used_id,
             target_id,
             number_of_hits,
+            number_of_targets: target_ids.count() as u8,
         };
 
         battle.queue_message(format![
@@ -120,6 +121,7 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         move_used_id,
         target_id: defender_id,
         number_of_hits,
+        number_of_targets,
     } = move_hit_context;
 
     // INFO: I am initialising this to appease the type system, but this for loop should always run at least once.
@@ -176,6 +178,8 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         let random_multiplier = battle.roll_random_number_in_range(85..=100);
         let random_multiplier = ClampedPercent::from(random_multiplier);
 
+        let multitarget_multiplier = if number_of_targets > 1 { Percent(75) } else { Percent(100) };
+
         let stab_multiplier = {
             let move_type = mov![move_used_id].type_();
             if mon![attacker_id].is_type(move_type) {
@@ -201,18 +205,23 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
 
         let type_matchup_multiplier: Percent = type_effectiveness.into();
 
-        // The (WIP) bona-fide damage formula.
-        // TODO: Introduce more damage multipliers as we implement them.
+        use monsim_utils::RoundTiesDownExt;
+
+        // This damage calculation tries to follow reasonably closely to the section `Generation V onwards`
+        // section on Bulbapedia's page on [Damage][https://bulbapedia.bulbagarden.net/wiki/Damage]. Where the
+        // page neglects to specify certain details for rounding, I made my best guess.
         let mut damage = (2 * level) / 5;
         damage += 2;
         damage *= move_power;
         damage = (damage as f64 * (attackers_attacking_stat as f64 / defenders_defense_stat as f64)) as u16;
         damage /= 50;
         damage += 2;
-        damage = (damage as f64 * random_multiplier) as u16;
-        damage = (damage as f64 * stab_multiplier) as u16;
-        damage = (damage as f64 * type_matchup_multiplier) as u16;
+        damage = (damage as f64 * multitarget_multiplier).round_ties_down();
+        damage = (damage as f64 * random_multiplier).floor() as u16;
+        damage = (damage as f64 * stab_multiplier).round_ties_down();
+        damage = (damage as f64 * type_matchup_multiplier).floor() as u16;
         damage = event_dispatcher::trigger_on_modify_damage_event(battle, attacker_id, move_hit_context, damage);
+        damage = damage.max(1);
 
         let _ = deal_raw_damage(battle, defender_id, damage);
 
@@ -246,7 +255,7 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
     if overall_type_effectiveness.is_matchup_ineffective() || did_every_hit_miss_or_fail {
         Outcome::Failure
     } else {
-        Outcome::Success(())
+        Outcome::Success(NOTHING)
     }
 }
 

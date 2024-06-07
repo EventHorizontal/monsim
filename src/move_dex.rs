@@ -167,6 +167,7 @@ pub const Recycle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
                         move_used_id,
                         target_id,
                         number_of_hits,
+                        number_of_targets,
                     }| {
         let consumed_item = mon![mut move_user_id].consumed_item_mut().take();
         // Recycle only works if there exists a consumed item and no held item.

@@ -72,6 +72,7 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                            move_used_id,
                            target_id,
                            number_of_hits,
+                           number_of_targets,
                        },
                        damage| {
                 let move_type = mov![move_used_id].type_();

@@ -305,15 +305,17 @@ pub mod contexts {
         pub move_used_id: MoveID,
         pub target_id: MonsterID,
         pub number_of_hits: u8,
+        pub number_of_targets: u8,
     }
 
     impl MoveHitContext {
-        pub fn new(move_used_id: MoveID, target_id: MonsterID, number_of_hits: u8) -> Self {
+        pub fn new(move_used_id: MoveID, target_id: MonsterID, number_of_hits: u8, number_of_targets: u8) -> Self {
             Self {
                 move_user_id: move_used_id.owner_id,
                 move_used_id,
                 target_id,
                 number_of_hits,
+                number_of_targets,
             }
         }
     }

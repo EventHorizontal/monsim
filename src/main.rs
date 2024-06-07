@@ -22,19 +22,17 @@ fn main() -> MonsimResult<()> {
             MonsterTeam::spawn()
                 .add_monster(
                     Dandyleo
-                        .spawn((Scratch.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), None), Pickup.spawn())
+                        .spawn(
+                            (StoneEdge.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), Some(HoneClaws.spawn())),
+                            Pickup.spawn(),
+                        )
                         .with_nickname("Clover")
                         .with_item(LifeOrb.spawn()),
                 )
                 .add_monster(
                     Zombler
                         .spawn(
-                            (
-                                Tackle.spawn().with_power_points(23),
-                                Some(Growl.spawn()),
-                                Some(DragonDance.spawn()),
-                                Some(ShadowBall.spawn()),
-                            ),
+                            (StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), Some(ShadowBall.spawn())),
                             Contrary.spawn(),
                         )
                         .with_nickname("Rick"),
@@ -53,16 +51,12 @@ fn main() -> MonsimResult<()> {
             MonsterTeam::spawn()
                 .add_monster(
                     Merkey
-                        .spawn((Bubble.spawn(), Some(Tackle.spawn()), Some(Swift.spawn()), None), Pickup.spawn())
-                        .with_nickname("Shrimp")
-                        .with_hitpoints(20),
+                        .spawn((Bubble.spawn(), Some(DoubleTeam.spawn()), Some(Swift.spawn()), None), Pickup.spawn())
+                        .with_nickname("Shrimp"),
                 )
                 .add_monster(
                     Zombler
-                        .spawn(
-                            (Tackle.spawn().with_power_points(23), Some(Growl.spawn()), Some(DragonDance.spawn()), None),
-                            Pickup.spawn(),
-                        )
+                        .spawn((StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), None), Pickup.spawn())
                         .with_nickname("Cordy")
                         .with_hitpoints(20),
                 )

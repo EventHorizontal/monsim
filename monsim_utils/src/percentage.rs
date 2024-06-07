@@ -1,5 +1,6 @@
 use std::ops::{Add, Mul, Sub};
 
+use crate::RoundTiesDownExt;
 
 /// A percentage that is unbound above
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -25,7 +26,7 @@ impl Mul for Percent {
     type Output = Percent;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Self((self.0 as f64 * (rhs.0 as f64 / 100.0f64)) as u16)
+        Self((self.0 as f64 * (rhs.0 as f64 / 100.0f64)).round_ties_down())
     }
 }
 
@@ -47,18 +48,17 @@ impl Mul<Percent> for f64 {
 
 impl Mul<u16> for Percent {
     type Output = u16;
-    
+
     fn mul(self, rhs: u16) -> Self::Output {
-        (rhs as f64 * (self.0 as f64 / 100.0f64)) as u16 
+        (rhs as f64 * (self.0 as f64 / 100.0f64)).round_ties_down()
     }
 }
 
-
 impl Mul<Percent> for u16 {
     type Output = u16;
-    
+
     fn mul(self, rhs: Percent) -> Self::Output {
-        (self as f64 * (rhs.0 as f64 / 100.0f64)) as u16
+        (self as f64 * (rhs.0 as f64 / 100.0f64)).round_ties_down()
     }
 }
 

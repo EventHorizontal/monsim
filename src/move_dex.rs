@@ -2,28 +2,28 @@
 
 use monsim::{
     effects,
-    sim::{Battle, EventFilteringOptions, MonsterID, MoveCategory, MoveSpecies, ModifiableStat, Type},
+    sim::{Battle, EventFilteringOptions, ModifiableStat, MonsterID, MoveCategory, MoveSpecies, Type},
     Count, EventHandlerSet, MoveDexEntry, MoveHitContext, Outcome, PositionRelationFlags,
 };
 use monsim_macros::mon;
 
 use super::status_dex::*;
 
-pub const Tackle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+pub const StoneEdge: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 001,
-    name: "Tackle",
+    name: "Stone Edge",
     on_use_effect: effects::deal_calculated_damage,
-    base_accuracy: Some(50),
-    base_power: 40,
+    base_accuracy: Some(80),
+    base_power: 100,
     category: MoveCategory::Physical,
-    max_power_points: 35,
+    max_power_points: 5,
     hits_per_target: Count::Fixed(1),
     priority: 0,
     targets: PositionRelationFlags::ANY
         .union(PositionRelationFlags::ADJACENT)
         .union(PositionRelationFlags::OPPONENTS)
         .union(PositionRelationFlags::ALLIES),
-    type_: Type::Normal,
+    type_: Type::Rock,
 });
 
 pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
@@ -108,7 +108,7 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         let second_stat_raise_outcome = effects::change_stat(sim, context.target_id, ModifiableStat::Speed, 1);
         first_stat_raise_outcome.empty() & second_stat_raise_outcome.empty()
     },
-    base_accuracy: Some(100),
+    base_accuracy: None,
     base_power: 0,
     category: MoveCategory::Status,
     max_power_points: 20,
@@ -232,4 +232,40 @@ pub const ShadowBall: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         .union(PositionRelationFlags::ALLIES)
         .union(PositionRelationFlags::OPPONENTS),
     type_: Type::Ghost,
+});
+
+pub const DoubleTeam: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 012,
+    name: "Double Team",
+    on_use_effect: |battle, context| {
+        let stat_raise_outcome = effects::change_stat(battle, context.target_id, ModifiableStat::Evasion, 1);
+        stat_raise_outcome.empty()
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: None,
+    base_power: 0,
+    category: MoveCategory::Status,
+    max_power_points: 15,
+    priority: 0,
+    targets: PositionRelationFlags::SELF,
+    type_: Type::Normal,
+});
+
+pub const HoneClaws: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 013,
+    name: "Hone Claws",
+    on_use_effect: |battle, context| {
+        let attack_raise_outcome = effects::change_stat(battle, context.target_id, ModifiableStat::PhysicalAttack, 1);
+        let accuracy_raise_outcome = effects::change_stat(battle, context.target_id, ModifiableStat::Accuracy, 1);
+
+        attack_raise_outcome.empty() & accuracy_raise_outcome.empty()
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: None,
+    base_power: 0,
+    category: MoveCategory::Special,
+    max_power_points: 15,
+    priority: 0,
+    targets: PositionRelationFlags::SELF,
+    type_: Type::Dark,
 });

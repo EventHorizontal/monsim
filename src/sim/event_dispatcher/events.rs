@@ -12,6 +12,13 @@ pub struct EventHandlerSet {
     pub on_damaging_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
     /// This EventHandler is triggered when a status move is used successfully.
     pub on_status_move_used: Option<EventHandler<Nothing, MoveUseContext>>,
+    /// This EventHandler is triggered after the accuracy to be used in move miss calculation is calculated. This
+    /// EventHandler is to return a `u16` representing a possibly modified _base_ accuracy to be used by the move.
+    /// If the EventHandler wishes to leave the accuracy unchanged, say if a certain condition is met, then it can
+    /// pass back the original accuracy, which is relayed to this EventHandler.
+    pub on_calculate_accuracy: Option<EventHandler<u16, MoveHitContext>>,
+    pub on_calculate_accuracy_stage: Option<EventHandler<i8, MoveHitContext>>,
+    pub on_calculate_evasion_stage: Option<EventHandler<i8, MoveHitContext>>,
     /// This EventHandler is triggered when a individual move hit is about to be performed. This EventHandler is to
     /// return an `Outcome` indicating whether the hit should succeed.
     pub on_try_move_hit: Option<EventHandler<Outcome<Nothing>, MoveHitContext>>,
@@ -39,11 +46,6 @@ pub struct EventHandlerSet {
     pub on_try_activate_ability: Option<EventHandler<Outcome<Nothing>, AbilityActivationContext>>,
     /// This EventHandler is triggered after an ability successfully activates.
     pub on_ability_activated: Option<EventHandler<Nothing, AbilityActivationContext>>,
-    /// This EventHandler is triggered after the accuracy to be used in move miss calculation is calculated. This
-    /// EventHandler is to return a `u16` representing a possibly modified accuracy to be used in move simulation.
-    /// If the EventHandler wishes to leave the accuracy unchanged, say if a certain condition is met, then it can
-    /// pass back the original accuracy, which is relayed to this EventHandler.
-    pub on_modify_accuracy: Option<EventHandler<u16, MoveHitContext>>,
     /// This EventHandler is triggered when a stat is about to be changed. This EventHandler is to return an `Outcome`
     /// representing whether the stat change should succeed.
     pub on_try_stat_change: Option<EventHandler<Outcome<Nothing>, StatChangeContext>>,
@@ -75,6 +77,9 @@ pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerSet = EventHandlerSet {
     on_move_used: None,
     on_damaging_move_used: None,
     on_status_move_used: None,
+    on_calculate_accuracy: None,
+    on_calculate_accuracy_stage: None,
+    on_calculate_evasion_stage: None,
     on_try_move_hit: None,
     on_move_hit: None,
     on_calculate_attack_stat: None,
@@ -83,7 +88,6 @@ pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerSet = EventHandlerSet {
     on_damage_dealt: None,
     on_try_activate_ability: None,
     on_ability_activated: None,
-    on_modify_accuracy: None,
     on_try_stat_change: None,
     on_modify_stat_change: None,
     on_stat_changed: None,
@@ -124,6 +128,38 @@ pub(crate) fn trigger_on_status_move_used_event(battle: &mut Battle, broadcaster
         |event_handler_set| vec![(event_handler_set.on_status_move_used), (event_handler_set.on_move_used)],
         event_context,
         NOTHING,
+        None,
+    )
+}
+
+pub(crate) fn trigger_on_calculate_accuracy_stage_event(
+    battle: &mut Battle,
+    broadcaster_id: MonsterID,
+    event_context: MoveHitContext,
+    original_accuracy_stage: i8,
+) -> i8 {
+    EventDispatcher::dispatch_event(
+        battle,
+        broadcaster_id,
+        |event_handler_set| vec![(event_handler_set.on_calculate_accuracy_stage)],
+        event_context,
+        original_accuracy_stage,
+        None,
+    )
+}
+
+pub(crate) fn trigger_on_calculate_evasion_stage_event(
+    battle: &mut Battle,
+    broadcaster_id: MonsterID,
+    event_context: MoveHitContext,
+    original_evasion_stage: i8,
+) -> i8 {
+    EventDispatcher::dispatch_event(
+        battle,
+        broadcaster_id,
+        |event_handler_set| vec![(event_handler_set.on_calculate_evasion_stage)],
+        event_context,
+        original_evasion_stage,
         None,
     )
 }
@@ -216,11 +252,11 @@ pub(crate) fn trigger_on_ability_activated_event(battle: &mut Battle, broadcaste
     )
 }
 
-pub(crate) fn trigger_on_modify_accuracy_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext, base_accuracy: u16) -> u16 {
+pub(crate) fn trigger_on_modify_base_accuracy_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveHitContext, base_accuracy: u16) -> u16 {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_set| vec![(event_handler_set.on_modify_accuracy)],
+        |event_handler_set| vec![(event_handler_set.on_calculate_accuracy)],
         event_context,
         base_accuracy,
         None,

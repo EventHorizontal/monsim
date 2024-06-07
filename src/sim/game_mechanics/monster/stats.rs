@@ -3,6 +3,8 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+use monsim_utils::Percent;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Stat {
     Hp,
@@ -48,6 +50,49 @@ pub enum ModifiableStat {
     Speed,
     Accuracy,
     Evasion,
+}
+
+impl ModifiableStat {
+    pub const MIN_STAGES: i8 = -6;
+    pub const MAX_STAGES: i8 = 6;
+    /// Applies for all stats except Accuracy/Evasion which have their own table.
+    pub(crate) const fn stat_stage_multiplier(stages: i8) -> Percent {
+        match stages {
+            -6 => Percent(25), // 2/8 = 1/4
+            -5 => Percent(29), // 2/7
+            -4 => Percent(33), // 2/6 = 1/3
+            -3 => Percent(40), // 2/5
+            -2 => Percent(50), // 2/4 = 1/2
+            -1 => Percent(67), // 2/3
+            0 => Percent(100), // 2/2 = 1
+            1 => Percent(150), // 3/2
+            2 => Percent(200), // 4/2 = 2
+            3 => Percent(250), // 5/2
+            4 => Percent(300), // 6/2 = 3
+            5 => Percent(350), // 7/2
+            6 => Percent(300), // 8/2 = 4
+            _ => panic!("Error: Expected Stat stages to be between -6 and +6"),
+        }
+    }
+
+    pub(crate) const fn accuracy_stage_multiplier(stages: i8) -> Percent {
+        match stages {
+            -6 => Percent(33), // 3/9 = 1/3
+            -5 => Percent(38), // 3/8
+            -4 => Percent(43), // 3/7
+            -3 => Percent(50), // 3/6 = 1/2
+            -2 => Percent(60), // 3/5
+            -1 => Percent(75), // 3/4
+            0 => Percent(100), // 3/3 = 1
+            1 => Percent(133), // 4/3
+            2 => Percent(167), // 5/3
+            3 => Percent(200), // 6/3 = 2
+            4 => Percent(233), // 7/3
+            5 => Percent(267), // 8/3
+            6 => Percent(300), // 9/3 = 3
+            _ => panic!("Error: Expected Accuracy stages to be between -6 and +6"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

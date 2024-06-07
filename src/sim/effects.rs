@@ -151,8 +151,40 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         // If base_accuracy is `None`, the move is never-miss.
         if let Some(base_accuracy) = base_accuracy {
             // TODO: More sophisticated accuracy calculation
-            let modified_accuracy = event_dispatcher::trigger_on_modify_accuracy_event(battle, attacker_id, move_hit_context, base_accuracy);
-            if not!(battle.roll_chance(modified_accuracy, 100)) {
+            let modified_base_accuracy = event_dispatcher::trigger_on_modify_base_accuracy_event(battle, attacker_id, move_hit_context, base_accuracy);
+            let attackers_accuracy_stages = event_dispatcher::trigger_on_calculate_accuracy_stage_event(
+                battle,
+                attacker_id,
+                move_hit_context,
+                mon![attacker_id].stat_modifier(ModifiableStat::Accuracy),
+            );
+            #[cfg(feature = "debug")]
+            battle.queue_message(format![
+                "({}'s Accuracy modifier is at {} stages.)",
+                mon![attacker_id].name(),
+                attackers_accuracy_stages
+            ]);
+
+            let defenders_evasion_stages = event_dispatcher::trigger_on_calculate_evasion_stage_event(
+                battle,
+                attacker_id,
+                move_hit_context,
+                mon![defender_id].stat_modifier(ModifiableStat::Evasion),
+            );
+            #[cfg(feature = "debug")]
+            battle.queue_message(format![
+                "({}'s Evasion modifier is at {} stages.)",
+                mon![defender_id].name(),
+                defenders_evasion_stages
+            ]);
+
+            let effective_accuracy_stages =
+                (attackers_accuracy_stages - defenders_evasion_stages).clamp(ModifiableStat::MIN_STAGES, ModifiableStat::MAX_STAGES);
+            let accuracy_stage_multiplier = ModifiableStat::accuracy_stage_multiplier(effective_accuracy_stages);
+            let effective_accuracy = (modified_base_accuracy * accuracy_stage_multiplier).min(100);
+            #[cfg(feature = "debug")]
+            battle.queue_message(format!["(The effective accuracy is {})", effective_accuracy]);
+            if not!(battle.roll_chance(effective_accuracy, 100)) {
                 battle.queue_message("The move missed!");
                 miss_count += 1;
                 continue 'hits;

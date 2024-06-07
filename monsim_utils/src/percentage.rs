@@ -2,6 +2,7 @@ use std::ops::{Add, Mul, Sub};
 
 use crate::RoundTiesDownExt;
 
+// TODO: Allow for Percentages to one decimal place?
 /// A percentage that is unbound above
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Percent(pub u16);

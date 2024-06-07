@@ -210,83 +210,50 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         let move_power = mov![move_used_id].base_power();
 
         // TODO: Plumbing for effects that use a different stat. Is it enough to just return the numerical value of the other stat?
-        // TODO: Avoid duplication?
-        let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used_id].category() {
-            MoveCategory::Physical => {
-                let (attackers_attacking_stat, maybe_modified_defenders_defense_stat) =
-                    (mon![attacker_id].stat(Stat::PhysicalAttack), mon![defender_id].stat(Stat::PhysicalDefense));
-                let maybe_modified_attackers_attacking_stat =
-                    event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
-
-                let mut maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
-                    battle,
-                    attacker_id,
-                    move_hit_context,
-                    mon![attacker_id].stat_modifier(ModifiableStat::PhysicalAttack),
-                );
-
-                let mut maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
-                    battle,
-                    defender_id,
-                    move_hit_context,
-                    mon![defender_id].stat_modifier(ModifiableStat::PhysicalDefense),
-                );
-
-                // If the move critted, the move calculation is to ignore
-                // any attack drops of the attacker and any defense buffs of the
-                // defender. This is a comeback mechanic present in the games.
-                if is_crit {
-                    maybe_modified_attackers_attack_modifier_stage = maybe_modified_attackers_attack_modifier_stage.max(0);
-                    maybe_modified_defenders_defense_modifier_stage = maybe_modified_defenders_defense_modifier_stage.min(0);
-                }
-
-                let attack_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_attackers_attack_modifier_stage);
-                let defense_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_defenders_defense_modifier_stage);
-                (
-                    maybe_modified_attackers_attacking_stat * attack_stage_multiplier,
-                    maybe_modified_defenders_defense_stat * defense_stage_multiplier,
-                )
-            }
-            MoveCategory::Special => {
-                let (attackers_attacking_stat, maybe_modified_defenders_defense_stat) =
-                    (mon![attacker_id].stat(Stat::SpecialAttack), mon![defender_id].stat(Stat::SpecialDefense));
-                let maybe_modified_attackers_attacking_stat =
-                    event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
-
-                let mut maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
-                    battle,
-                    attacker_id,
-                    move_hit_context,
-                    mon![attacker_id].stat_modifier(ModifiableStat::SpecialAttack),
-                );
-                let mut maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
-                    battle,
-                    defender_id,
-                    move_hit_context,
-                    mon![defender_id].stat_modifier(ModifiableStat::SpecialDefense),
-                );
-
-                // If the move critted, the move calculation is to ignore
-                // any attack drops of the attacker and any defense buffs of the
-                // defender. This is a comeback mechanic present in the games.
-                if is_crit {
-                    maybe_modified_attackers_attack_modifier_stage = maybe_modified_attackers_attack_modifier_stage.max(0);
-                    maybe_modified_defenders_defense_modifier_stage = maybe_modified_defenders_defense_modifier_stage.min(0);
-                }
-
-                let attack_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_attackers_attack_modifier_stage);
-                let defense_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_defenders_defense_modifier_stage);
-                (
-                    maybe_modified_attackers_attacking_stat * attack_stage_multiplier,
-                    maybe_modified_defenders_defense_stat * defense_stage_multiplier,
-                )
-            }
+        let (attackers_attack_stat, attackers_attack_stage, defenders_defense_stat, defenders_defense_stage) = match mov![move_used_id].category() {
+            MoveCategory::Physical => (
+                mon![attacker_id].stat(Stat::PhysicalAttack),
+                mon![attacker_id].stat_modifier(ModifiableStat::PhysicalAttack),
+                mon![defender_id].stat(Stat::PhysicalDefense),
+                mon![defender_id].stat_modifier(ModifiableStat::PhysicalDefense),
+            ),
+            MoveCategory::Special => (
+                mon![attacker_id].stat(Stat::SpecialAttack),
+                mon![attacker_id].stat_modifier(ModifiableStat::SpecialAttack),
+                mon![defender_id].stat(Stat::SpecialDefense),
+                mon![defender_id].stat_modifier(ModifiableStat::SpecialDefense),
+            ),
             _ => unreachable!("Expected physical or special move."),
         };
 
-        let attackers_attacking_stat =
-            event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
-        let defenders_defense_stat = event_dispatcher::trigger_on_calculate_defense_stat_event(battle, attacker_id, move_hit_context, defenders_defense_stat);
+        let (attackers_attack_stat, defenders_defense_stat) = {
+            let maybe_modified_attackers_attack_stat =
+                event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attack_stat);
+
+            let mut maybe_modified_attackers_attack_stage =
+                event_dispatcher::trigger_on_calculate_attack_stage_event(battle, attacker_id, move_hit_context, attackers_attack_stage);
+
+            let maybe_modified_defenders_defense_stat =
+                event_dispatcher::trigger_on_calculate_defense_stat_event(battle, defender_id, move_hit_context, defenders_defense_stat);
+
+            let mut maybe_modified_defenders_defense_stage =
+                event_dispatcher::trigger_on_calculate_defense_stage_event(battle, defender_id, move_hit_context, defenders_defense_stage);
+
+            // If the move critted, the move calculation is to ignore
+            // any attack drops of the attacker and any defense buffs of the
+            // defender. This is a comeback mechanic present in the games.
+            if is_crit {
+                maybe_modified_attackers_attack_stage = maybe_modified_attackers_attack_stage.max(0);
+                maybe_modified_defenders_defense_stage = maybe_modified_defenders_defense_stage.min(0);
+            }
+
+            let attack_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_attackers_attack_stage);
+            let defense_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_defenders_defense_stage);
+            (
+                maybe_modified_attackers_attack_stat * attack_stage_multiplier,
+                maybe_modified_defenders_defense_stat * defense_stage_multiplier,
+            )
+        };
 
         let random_multiplier = battle.roll_random_number_in_range(85..=100);
         let random_multiplier = ClampedPercent::from(random_multiplier);
@@ -326,7 +293,7 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         let mut damage = (2 * level) / 5;
         damage += 2;
         damage *= move_power;
-        damage = (damage as f64 * (attackers_attacking_stat as f64 / defenders_defense_stat as f64)) as u16;
+        damage = (damage as f64 * (attackers_attack_stat as f64 / defenders_defense_stat as f64)) as u16;
         damage /= 50;
         damage += 2;
         damage = (damage as f64 * crit_damage_multiplier).floor() as u16;

@@ -35,7 +35,7 @@ fn main() -> MonsimResult<()> {
                                 Some(DragonDance.spawn()),
                                 Some(ShadowBall.spawn()),
                             ),
-                            Pickup.spawn(),
+                            Contrary.spawn(),
                         )
                         .with_nickname("Rick"),
                 )
@@ -72,7 +72,7 @@ fn main() -> MonsimResult<()> {
                         .with_nickname("Epona"),
                 ),
         )
-        .with_format(BattleFormat::Triple)
+        // .with_format(BattleFormat::Triple)
         .build();
 
     println!("{:?}", battle.format());

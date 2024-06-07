@@ -85,8 +85,8 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 005,
     name: "Growl",
     on_use_effect: |sim, context| {
-        let stat_lowering_outcome = effects::lower_stat(sim, context.target_id, Stat::PhysicalAttack, 1);
-        stat_lowering_outcome
+        let stat_lowering_outcome = effects::change_stat(sim, context.target_id, Stat::PhysicalAttack, -1);
+        stat_lowering_outcome.empty()
     },
     base_accuracy: Some(100),
     base_power: 0,
@@ -104,9 +104,9 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 006,
     name: "Dragon Dance",
     on_use_effect: |sim, context| {
-        let first_stat_raise_outcome = effects::raise_stat(sim, context.target_id, Stat::PhysicalAttack, 1);
-        let second_stat_raise_outcome = effects::raise_stat(sim, context.target_id, Stat::Speed, 1);
-        first_stat_raise_outcome & second_stat_raise_outcome
+        let first_stat_raise_outcome = effects::change_stat(sim, context.target_id, Stat::PhysicalAttack, 1);
+        let second_stat_raise_outcome = effects::change_stat(sim, context.target_id, Stat::Speed, 1);
+        first_stat_raise_outcome.empty() & second_stat_raise_outcome.empty()
     },
     base_accuracy: Some(100),
     base_power: 0,
@@ -216,7 +216,7 @@ pub const ShadowBall: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         let hit_outcome = effects::deal_calculated_damage(battle, context);
 
         if hit_outcome.is_success() && battle.roll_chance(2, 10) {
-            let _ = effects::lower_stat(battle, context.target_id, Stat::SpecialDefense, 1);
+            let _ = effects::change_stat(battle, context.target_id, Stat::SpecialDefense, -1);
         }
         hit_outcome
     },

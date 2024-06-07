@@ -197,6 +197,10 @@ pub struct MoveDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
 
+    /// Tells the engine what to do when this move hits a Monster, and returns an `Outcome`
+    /// representing whether the move should be considered as having succeeded.
+    ///
+    /// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome<Nothing>`
     pub on_use_effect: OnUseEffect,
     pub hits_per_target: Count,
 

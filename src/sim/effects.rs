@@ -6,7 +6,7 @@ use crate::{
     sim::event_dispatcher,
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, ItemUseContext, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
-    PersistentStatusSpecies, Stat, SwitchContext, TypeEffectiveness, VolatileStatusSpecies,
+    PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TypeEffectiveness, VolatileStatusSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -297,42 +297,63 @@ where
     }
 }
 
-/// The Simulator simulates the raising of stat `stat` of Monster given by `affected_monster_id` by `number_of_stages` stages
-#[must_use]
-pub fn raise_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Stat, number_of_stages: u8) -> Outcome<Nothing> {
-    let try_raise_stat_outcome = event_dispatcher::trigger_on_try_raise_stat_event(battle, affected_monster_id, NOTHING);
-    if try_raise_stat_outcome.is_success() {
-        let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, number_of_stages);
+pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Stat, number_of_stages: i8) -> Outcome<i8> {
+    let stat_change_context = StatChangeContext {
+        affected_monster_id,
+        number_of_stages,
+        stat,
+    };
 
-        battle.queue_message(format![
-            "{monster}\'s {stat} was raised by {effective_stages} stage(s)!",
-            monster = mon![affected_monster_id].name(),
-        ]);
+    // We want to trigger events with the actual number of stages so we call the `on_modify_stat_change` first.
+    let modified_number_of_stages = event_dispatcher::trigger_on_modify_stat_change_event(battle, affected_monster_id, stat_change_context);
 
-        Outcome::Success(NOTHING)
+    let stat_change_context = StatChangeContext {
+        affected_monster_id,
+        number_of_stages: modified_number_of_stages,
+        stat,
+    };
+
+    let stat_change_outcome = event_dispatcher::trigger_on_try_stat_change_event(battle, affected_monster_id, stat_change_context);
+
+    if stat_change_outcome.is_success() {
+        // After modification, the stat change may change from a rise to a lower or vice versa.
+        let effective_stages = match modified_number_of_stages.cmp(&0) {
+            std::cmp::Ordering::Less => {
+                let effective_stages = mon![mut affected_monster_id]
+                    .stat_modifiers
+                    .lower_stat(stat, (-modified_number_of_stages) as u8);
+                if effective_stages == 0 {
+                    battle.queue_message(format!["{monster}'s stats cannot get any lower.", monster = mon![affected_monster_id].name()]);
+                } else {
+                    battle.queue_message(format![
+                        "{monster}\'s {stat} was lowered by {effective_stages} stage(s)!",
+                        monster = mon![affected_monster_id].name(),
+                    ]);
+                }
+                -(effective_stages as i8)
+            }
+            std::cmp::Ordering::Equal => {
+                battle.queue_message(format!["But {}'s stats ended up unchanged!", mon![affected_monster_id].name()]);
+                0
+            }
+            std::cmp::Ordering::Greater => {
+                let effective_stages = mon![mut affected_monster_id].stat_modifiers.raise_stat(stat, modified_number_of_stages as u8);
+                if effective_stages == 0 {
+                    battle.queue_message(format!["{monster}'s stats cannot get any higher.", monster = mon![affected_monster_id].name()]);
+                } else {
+                    battle.queue_message(format![
+                        "{monster}\'s {stat} was raised by {effective_stages} stage(s)!",
+                        monster = mon![affected_monster_id].name(),
+                    ]);
+                }
+                effective_stages as i8
+            }
+        };
+
+        event_dispatcher::trigger_on_stat_changed_event(battle, affected_monster_id, stat_change_context);
+
+        Outcome::Success(effective_stages)
     } else {
-        battle.queue_message(format!["{monster}'s stats cannot get any higher.", monster = mon![affected_monster_id].name()]);
-
-        Outcome::Failure
-    }
-}
-
-/// The Simulator simulates the lowering of stat `stat` of Monster given by `affected_monster_id` by `number_of_stages` stages
-#[must_use]
-pub fn lower_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Stat, number_of_stages: u8) -> Outcome<Nothing> {
-    let try_lower_stat_outcome = event_dispatcher::trigger_on_try_lower_stat_event(battle, affected_monster_id, NOTHING);
-    if try_lower_stat_outcome.is_success() {
-        let effective_stages = mon![mut affected_monster_id].stat_modifiers.lower_stat(stat, number_of_stages);
-
-        battle.queue_message(format![
-            "{monster}\'s {stat} was lowered by {effective_stages} stage(s)!",
-            monster = mon![affected_monster_id].name(),
-        ]);
-
-        Outcome::Success(NOTHING)
-    } else {
-        battle.queue_message(format!["{monster}'s stats cannot get any lower.", monster = mon![affected_monster_id].name()]);
-
         Outcome::Failure
     }
 }
@@ -351,6 +372,7 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
             let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species);
             mon![mut affected_monster_id].volatile_statuses.push(volatile_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
+            event_dispatcher::trigger_on_volatile_status_inflicted_event(battle, affected_monster_id, NOTHING);
             Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
@@ -366,13 +388,14 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
 pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
-    let try_inflict_status = event_dispatcher::trigger_on_try_inflict_permanent_status_event(battle, affected_monster_id, NOTHING);
+    let try_inflict_status = event_dispatcher::trigger_on_try_inflict_persistent_status_event(battle, affected_monster_id, NOTHING);
     if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
             let persistent_status = PersistentStatus::from_species(status_species);
             mon![mut affected_monster_id].persistent_status = Some(persistent_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
+            event_dispatcher::trigger_on_persistent_status_inflicted_event(battle, affected_monster_id, NOTHING);
             Outcome::Success(NOTHING)
         } else {
             Outcome::Failure

@@ -212,7 +212,7 @@ pub type EventResponse<R, C, B> = fn(&mut Battle, B, MonsterID, C, R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EventHandler<R: Copy, C: Copy, B: Broadcaster + Clone + Copy> {
+pub struct EventHandler<R: Copy, C: Copy, B: Broadcaster + Clone + Copy = MonsterID> {
     #[cfg(feature = "debug")]
     pub source_code_location: &'static str,
     pub response: EventResponse<R, C, B>,
@@ -266,7 +266,7 @@ pub mod contexts {
     use super::EventContext;
     use crate::{
         sim::{MonsterID, MoveID},
-        AbilityID, ItemID,
+        AbilityID, ItemID, Stat,
     };
     use monsim_utils::MaxSizedVec;
 
@@ -381,4 +381,16 @@ pub mod contexts {
     }
 
     impl EventContext for ItemUseContext {}
+
+    /// `active_monster_id`: MonsterID of the Monster to be switched out.
+    ///
+    /// `benched_monster_id`: MonsterID of the Monster to be switched in.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct StatChangeContext {
+        pub affected_monster_id: MonsterID,
+        pub stat: Stat,
+        pub number_of_stages: i8,
+    }
+
+    impl EventContext for StatChangeContext {}
 }

@@ -11,6 +11,7 @@ use monsim_utils::{not, Outcome};
 #[cfg(feature = "debug")]
 use monsim::source_code_location;
 
+// Flash Fire in-engine causes all Fire type moves on the user to fail.
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 001,
     name: "Flash Fire",
@@ -53,9 +54,42 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
     order: 0,
 });
 
+/// Pickup in-engine does nothing (for now).
 pub const Pickup: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 002,
     name: "Pickup",
     event_handlers: || EventHandlerSet::empty(),
     order: 1,
+});
+
+/// Contrary reverse all stat changes for the user.
+pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
+    dex_number: 003,
+    name: "Contrary",
+    event_handlers: || EventHandlerSet {
+        on_modify_stat_change: Some(EventHandler {
+            #[cfg(feature = "debug")]
+            source_code_location: source_code_location![],
+            response: |battle,
+                       broadcaster_id,
+                       receiver_id,
+                       monsim::StatChangeContext {
+                           affected_monster_id,
+                           stat,
+                           number_of_stages,
+                       },
+                       _|
+             -> i8 {
+                #[cfg(feature = "debug")]
+                battle.queue_message(format!["(Contrary reversed {}'s stat changes).", mon![affected_monster_id].name()]);
+                -number_of_stages
+            },
+            event_filtering_options: EventFilteringOptions {
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
+                ..EventFilteringOptions::default()
+            },
+        }),
+        ..EventHandlerSet::empty()
+    },
+    order: 2,
 });

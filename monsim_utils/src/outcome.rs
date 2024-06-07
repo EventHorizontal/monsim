@@ -75,4 +75,22 @@ impl<T> Outcome<T> {
             Outcome::Failure => default,
         }
     }
+
+    /// Empties the contents of the `Outcome`.
+    pub fn empty(self) -> Outcome<Nothing> {
+        match self {
+            Outcome::Success(_) => Outcome::Success(NOTHING),
+            Outcome::Failure => Outcome::Failure,
+        }
+    }
+
+    pub fn map<F, U>(self, transform: F) -> Outcome<U>
+    where
+        F: Fn(T) -> U,
+    {
+        match self {
+            Outcome::Success(payload) => Outcome::Success(transform(payload)),
+            Outcome::Failure => Outcome::Failure,
+        }
+    }
 }

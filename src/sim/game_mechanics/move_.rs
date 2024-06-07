@@ -76,6 +76,11 @@ impl Move {
     pub(crate) fn hits_per_target(&self) -> Count {
         self.species.hits_per_target
     }
+
+    #[inline(always)]
+    pub(crate) fn base_crit_stage(&self) -> u8 {
+        self.species.base_crit_stage
+    }
 }
 
 // INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
@@ -88,6 +93,7 @@ pub struct MoveSpecies {
     hits_per_target: Count,
 
     base_accuracy: Option<u16>,
+    base_crit_stage: u8,
     base_power: u16,
     category: MoveCategory,
     max_power_points: u8,
@@ -128,6 +134,7 @@ impl MoveSpecies {
             targets,
             type_,
             hits_per_target,
+            base_crit_stage,
         } = dex_entry;
 
         MoveSpecies {
@@ -142,6 +149,7 @@ impl MoveSpecies {
             targets,
             type_,
             hits_per_target,
+            base_crit_stage,
         }
     }
 
@@ -205,6 +213,7 @@ pub struct MoveDexEntry {
     pub hits_per_target: Count,
 
     pub base_accuracy: Option<u16>,
+    pub base_crit_stage: u8,
     pub base_power: u16,
     pub category: MoveCategory,
     pub max_power_points: u8,

@@ -93,6 +93,15 @@ impl ModifiableStat {
             _ => panic!("Error: Expected Accuracy stages to be between -6 and +6"),
         }
     }
+
+    pub(crate) fn crit_chance_from_stage(stage: u8) -> u16 {
+        match stage {
+            0 => 4,     // 1/24
+            1 => 13,    // 1/8
+            2 => 50,    // 1/2
+            3.. => 100, // 1
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

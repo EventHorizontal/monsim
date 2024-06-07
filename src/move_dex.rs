@@ -13,11 +13,12 @@ pub const StoneEdge: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 001,
     name: "Stone Edge",
     on_use_effect: effects::deal_calculated_damage,
+    hits_per_target: Count::Fixed(1),
     base_accuracy: Some(80),
+    base_crit_stage: 1,
     base_power: 100,
     category: MoveCategory::Physical,
     max_power_points: 5,
-    hits_per_target: Count::Fixed(1),
     priority: 0,
     targets: PositionRelationFlags::ANY
         .union(PositionRelationFlags::ADJACENT)
@@ -30,11 +31,12 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 002,
     name: "Scratch",
     on_use_effect: effects::deal_calculated_damage,
+    hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 40,
     category: MoveCategory::Physical,
     max_power_points: 35,
-    hits_per_target: Count::Fixed(1),
     priority: 0,
     targets: PositionRelationFlags::ANY
         .union(PositionRelationFlags::ADJACENT)
@@ -53,11 +55,12 @@ pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         }
         hit_outcome
     },
+    hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 40,
     category: MoveCategory::Special,
     max_power_points: 35,
-    hits_per_target: Count::Fixed(1),
     priority: 0,
     targets: PositionRelationFlags::ANY
         .union(PositionRelationFlags::ADJACENT)
@@ -69,11 +72,12 @@ pub const Bubble: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 004,
     name: "Bubble",
     on_use_effect: effects::deal_calculated_damage,
+    hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 40,
     category: MoveCategory::Special,
     max_power_points: 35,
-    hits_per_target: Count::Fixed(1),
     priority: 0,
     targets: PositionRelationFlags::ALL
         .union(PositionRelationFlags::ADJACENT)
@@ -88,11 +92,12 @@ pub const Growl: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         let stat_lowering_outcome = effects::change_stat(sim, context.target_id, ModifiableStat::PhysicalAttack, -1);
         stat_lowering_outcome.empty()
     },
+    hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 0,
     category: MoveCategory::Status,
     max_power_points: 40,
-    hits_per_target: Count::Fixed(1),
     priority: 0,
     targets: PositionRelationFlags::ALL
         .union(PositionRelationFlags::ADJACENT)
@@ -108,11 +113,12 @@ pub const DragonDance: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         let second_stat_raise_outcome = effects::change_stat(sim, context.target_id, ModifiableStat::Speed, 1);
         first_stat_raise_outcome.empty() & second_stat_raise_outcome.empty()
     },
+    hits_per_target: Count::Fixed(1),
     base_accuracy: None,
+    base_crit_stage: 0,
     base_power: 0,
     category: MoveCategory::Status,
     max_power_points: 20,
-    hits_per_target: Count::Fixed(1),
     priority: 0,
     targets: PositionRelationFlags::SELF,
     type_: Type::Dragon,
@@ -124,6 +130,7 @@ pub const BulletSeed: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     on_use_effect: effects::deal_calculated_damage,
     hits_per_target: Count::RandomInRange { min: 2, max: 5 },
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 25,
     category: MoveCategory::Physical,
     max_power_points: 20,
@@ -147,6 +154,7 @@ pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     },
     hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 50,
     category: MoveCategory::Special,
     max_power_points: 25,
@@ -186,6 +194,7 @@ pub const Recycle: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     },
     hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 0,
     category: MoveCategory::Status,
     max_power_points: 10,
@@ -200,6 +209,7 @@ pub const Swift: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     on_use_effect: effects::deal_calculated_damage,
     hits_per_target: Count::Fixed(1),
     base_accuracy: None,
+    base_crit_stage: 0,
     base_power: 60,
     category: MoveCategory::Special,
     max_power_points: 20,
@@ -223,6 +233,7 @@ pub const ShadowBall: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     },
     hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),
+    base_crit_stage: 0,
     base_power: 80,
     category: MoveCategory::Special,
     max_power_points: 15,
@@ -243,6 +254,7 @@ pub const DoubleTeam: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     },
     hits_per_target: Count::Fixed(1),
     base_accuracy: None,
+    base_crit_stage: 0,
     base_power: 0,
     category: MoveCategory::Status,
     max_power_points: 15,
@@ -262,6 +274,7 @@ pub const HoneClaws: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     },
     hits_per_target: Count::Fixed(1),
     base_accuracy: None,
+    base_crit_stage: 0,
     base_power: 0,
     category: MoveCategory::Special,
     max_power_points: 15,

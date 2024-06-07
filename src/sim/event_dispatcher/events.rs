@@ -1,5 +1,5 @@
 use super::*;
-use monsim_utils::NOTHING;
+use monsim_utils::{Percent, NOTHING};
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventHandlerSet {
@@ -19,6 +19,8 @@ pub struct EventHandlerSet {
     pub on_calculate_accuracy: Option<EventHandler<u16, MoveHitContext>>,
     pub on_calculate_accuracy_stage: Option<EventHandler<i8, MoveHitContext>>,
     pub on_calculate_evasion_stage: Option<EventHandler<i8, MoveHitContext>>,
+    pub on_calculate_crit_stage: Option<EventHandler<u8, MoveHitContext>>,
+    pub on_calculate_crit_damage_multiplier: Option<EventHandler<Percent, MoveHitContext>>,
     /// This EventHandler is triggered when a individual move hit is about to be performed. This EventHandler is to
     /// return an `Outcome` indicating whether the hit should succeed.
     pub on_try_move_hit: Option<EventHandler<Outcome<Nothing>, MoveHitContext>>,
@@ -82,6 +84,8 @@ pub(super) const DEFAULT_EVENT_HANDLERS: EventHandlerSet = EventHandlerSet {
     on_calculate_accuracy: None,
     on_calculate_accuracy_stage: None,
     on_calculate_evasion_stage: None,
+    on_calculate_crit_stage: None,
+    on_calculate_crit_damage_multiplier: None,
     on_try_move_hit: None,
     on_move_hit: None,
     on_calculate_attack_stat: None,
@@ -164,6 +168,38 @@ pub(crate) fn trigger_on_calculate_evasion_stage_event(
         |event_handler_set| vec![(event_handler_set.on_calculate_evasion_stage)],
         event_context,
         original_evasion_stage,
+        None,
+    )
+}
+
+pub(crate) fn trigger_on_calculate_crit_stage_event(
+    battle: &mut Battle,
+    broadcaster_id: MonsterID,
+    event_context: MoveHitContext,
+    original_crit_stage: u8,
+) -> u8 {
+    EventDispatcher::dispatch_event(
+        battle,
+        broadcaster_id,
+        |event_handler_set| vec![(event_handler_set.on_calculate_crit_stage)],
+        event_context,
+        original_crit_stage,
+        None,
+    )
+}
+
+pub(crate) fn trigger_on_calculate_crit_damage_multiplier_event(
+    battle: &mut Battle,
+    broadcaster_id: MonsterID,
+    event_context: MoveHitContext,
+    default: Percent,
+) -> Percent {
+    EventDispatcher::dispatch_event(
+        battle,
+        broadcaster_id,
+        |event_handler_set| vec![(event_handler_set.on_calculate_crit_damage_multiplier)],
+        event_context,
+        default,
         None,
     )
 }

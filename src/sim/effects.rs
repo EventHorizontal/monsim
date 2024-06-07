@@ -194,10 +194,23 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
             battle.queue_message(format!["{} bypassed accuracy check!", mov![move_used_id].name()]);
         }
 
+        let maybe_modified_crit_stage =
+            event_dispatcher::trigger_on_calculate_crit_stage_event(battle, attacker_id, move_hit_context, mov![move_used_id].base_crit_stage());
+        let crit_chance = ModifiableStat::crit_chance_from_stage(maybe_modified_crit_stage);
+
+        let is_crit = battle.roll_chance(crit_chance, 100);
+
+        let crit_damage_multiplier = if is_crit {
+            event_dispatcher::trigger_on_calculate_crit_damage_multiplier_event(battle, attacker_id, move_hit_context, Percent(150))
+        } else {
+            Percent(100)
+        };
+
         let level = mon![attacker_id].level;
         let move_power = mov![move_used_id].base_power();
 
         // TODO: Plumbing for effects that use a different stat. Is it enough to just return the numerical value of the other stat?
+        // TODO: Avoid duplication?
         let (attackers_attacking_stat, defenders_defense_stat) = match mov![move_used_id].category() {
             MoveCategory::Physical => {
                 let (attackers_attacking_stat, maybe_modified_defenders_defense_stat) =
@@ -205,18 +218,28 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
                 let maybe_modified_attackers_attacking_stat =
                     event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
 
-                let maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
+                let mut maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
                     battle,
                     attacker_id,
                     move_hit_context,
                     mon![attacker_id].stat_modifier(ModifiableStat::PhysicalAttack),
                 );
-                let maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
+
+                let mut maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
                     battle,
                     defender_id,
                     move_hit_context,
                     mon![defender_id].stat_modifier(ModifiableStat::PhysicalDefense),
                 );
+
+                // If the move critted, the move calculation is to ignore
+                // any attack drops of the attacker and any defense buffs of the
+                // defender. This is a comeback mechanic present in the games.
+                if is_crit {
+                    maybe_modified_attackers_attack_modifier_stage = maybe_modified_attackers_attack_modifier_stage.max(0);
+                    maybe_modified_defenders_defense_modifier_stage = maybe_modified_defenders_defense_modifier_stage.min(0);
+                }
+
                 let attack_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_attackers_attack_modifier_stage);
                 let defense_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_defenders_defense_modifier_stage);
                 (
@@ -230,18 +253,27 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
                 let maybe_modified_attackers_attacking_stat =
                     event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attacking_stat);
 
-                let maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
+                let mut maybe_modified_attackers_attack_modifier_stage = event_dispatcher::trigger_on_calculate_attack_stage_event(
                     battle,
                     attacker_id,
                     move_hit_context,
                     mon![attacker_id].stat_modifier(ModifiableStat::SpecialAttack),
                 );
-                let maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
+                let mut maybe_modified_defenders_defense_modifier_stage = event_dispatcher::trigger_on_calculate_defense_stage_event(
                     battle,
                     defender_id,
                     move_hit_context,
                     mon![defender_id].stat_modifier(ModifiableStat::SpecialDefense),
                 );
+
+                // If the move critted, the move calculation is to ignore
+                // any attack drops of the attacker and any defense buffs of the
+                // defender. This is a comeback mechanic present in the games.
+                if is_crit {
+                    maybe_modified_attackers_attack_modifier_stage = maybe_modified_attackers_attack_modifier_stage.max(0);
+                    maybe_modified_defenders_defense_modifier_stage = maybe_modified_defenders_defense_modifier_stage.min(0);
+                }
+
                 let attack_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_attackers_attack_modifier_stage);
                 let defense_stage_multiplier = ModifiableStat::stat_stage_multiplier(maybe_modified_defenders_defense_modifier_stage);
                 (
@@ -297,12 +329,17 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         damage = (damage as f64 * (attackers_attacking_stat as f64 / defenders_defense_stat as f64)) as u16;
         damage /= 50;
         damage += 2;
+        damage = (damage as f64 * crit_damage_multiplier).floor() as u16;
         damage = (damage as f64 * multitarget_multiplier).round_ties_down();
         damage = (damage as f64 * random_multiplier).floor() as u16;
         damage = (damage as f64 * stab_multiplier).round_ties_down();
         damage = (damage as f64 * type_matchup_multiplier).floor() as u16;
         damage = event_dispatcher::trigger_on_modify_damage_event(battle, attacker_id, move_hit_context, damage);
         damage = damage.max(1);
+
+        if is_crit {
+            battle.queue_message("It was a critical hit!");
+        }
 
         let _ = deal_raw_damage(battle, defender_id, damage);
 

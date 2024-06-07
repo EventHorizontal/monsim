@@ -151,7 +151,6 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
 
         // If base_accuracy is `None`, the move is never-miss.
         if let Some(base_accuracy) = base_accuracy {
-            // TODO: More sophisticated accuracy calculation
             let modified_base_accuracy = event_dispatcher::trigger_on_modify_base_accuracy_event(battle, attacker_id, move_hit_context, base_accuracy);
             let attackers_accuracy_stages = event_dispatcher::trigger_on_calculate_accuracy_stage_event(
                 battle,

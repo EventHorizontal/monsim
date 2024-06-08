@@ -1,8 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use monsim::{
-    effects, Count, EventFilteringOptions, EventHandler, EventHandlerSet, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies, PositionRelationFlags,
-    VolatileStatusDexEntry, VolatileStatusSpecies,
+    effects, Count, EventFilteringOptions, EventHandler, EventHandlerSet, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies,
+    PositionRelationFlags, VolatileStatusDexEntry, VolatileStatusSpecies,
 };
 use monsim_macros::mon;
 
@@ -13,7 +13,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
     dex_number: 001,
     name: "Burned",
     on_acquired_message: |affected_monster| format!["{} was burned!", affected_monster.name()],
-    event_handlers: || EventHandlerSet {
+    bind_event_handlers: || EventHandlerSet {
         on_calculate_attack_stat: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),

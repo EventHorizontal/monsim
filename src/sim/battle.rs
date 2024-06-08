@@ -14,7 +14,7 @@ use std::{
 use self::builder::BattleFormat;
 
 use super::{
-    event_dispatcher::EventContext,
+    event_dispatcher::{EventContext, EventHandlerCache},
     prng::Prng,
     targetting::{BoardPosition, FieldPosition},
     PerTeam, TeamID,
@@ -27,6 +27,7 @@ pub struct Battle {
     pub(crate) prng: Prng,
     pub(crate) turn_number: u16,
     pub(crate) format: BattleFormat,
+    pub(crate) event_handler_cache: EventHandlerCache,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
     pub state: BattleState,
@@ -104,16 +105,22 @@ fn attach_tree_for_team(output_string: &mut String, team: &MonsterTeam) {
 impl Battle {
     // Battle ---------------------------------------------------- //
 
-    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
-        let teams = PerTeam::new(ally_team, opponent_team);
-        Self {
+    pub(crate) fn init(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
+        let mut battle = Self {
             prng: Prng::from_current_time(),
             turn_number: 0,
             message_log: MessageLog::new(),
             format,
-            state: BattleState { teams },
-        }
+            state: BattleState {
+                teams: PerTeam::new(ally_team, opponent_team),
+            },
+            event_handler_cache: EventHandlerCache::default(),
+        };
+        battle.populate_event_handler_cache();
+        battle
     }
+
+    pub fn populate_event_handler_cache(&mut self) {}
 
     #[inline(always)]
     pub fn format(&self) -> BattleFormat {
@@ -222,14 +229,9 @@ impl BattleState {
         }
     }
 
-    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
-        &self,
-        event_handler_selector: EventHandlerSelector<R, C, B>,
-    ) -> Vec<OwnedEventHandler<R, C, B>> {
-        let mut out = Vec::new();
-        out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
-        out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));
-        out
+    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+        self.ally_team().bind_event_handlers(event_handler_cache);
+        self.opponent_team().bind_event_handlers(event_handler_cache);
     }
 
     // Monsters -------------------------------------------------- //

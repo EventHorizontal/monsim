@@ -3,7 +3,7 @@
 use monsim::{
     effects, move_,
     sim::{Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerSet, MoveUseContext, Type},
-    AbilityActivationContext, AbilityDexEntry, AbilityID, MoveHitContext, PositionRelationFlags, ModifiableStat,
+    AbilityActivationContext, AbilityDexEntry, AbilityID, ModifiableStat, MoveHitContext, PositionRelationFlags,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
@@ -15,7 +15,7 @@ use monsim::source_code_location;
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 001,
     name: "Flash Fire",
-    event_handlers: || EventHandlerSet {
+    bind_event_handlers: || EventHandlerSet {
         on_try_move_hit: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location![],
@@ -59,7 +59,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
 pub const Pickup: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 002,
     name: "Pickup",
-    event_handlers: || EventHandlerSet::empty(),
+    bind_event_handlers: || EventHandlerSet::empty(),
     order: 1,
 });
 
@@ -67,7 +67,7 @@ pub const Pickup: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntr
 pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 003,
     name: "Contrary",
-    event_handlers: || EventHandlerSet {
+    bind_event_handlers: || EventHandlerSet {
         on_modify_stat_change: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location![],

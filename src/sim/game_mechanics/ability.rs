@@ -1,4 +1,7 @@
-use crate::sim::{EventHandlerSet, MonsterID};
+use crate::{
+    sim::{event_dispatcher::EventHandlerCache, MonsterID},
+    ActivationOrder,
+};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -8,8 +11,9 @@ pub struct Ability {
 }
 
 impl Ability {
-    pub fn event_handlers(&self) -> EventHandlerSet {
-        (self.species.event_handlers)()
+    #[inline(always)]
+    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+        self.species.bind_event_handlers(event_handler_cache)
     }
 
     #[inline(always)]
@@ -47,7 +51,7 @@ impl AbilityID {
 pub struct AbilitySpecies {
     dex_number: u16,
     name: &'static str,
-    event_handlers: fn() -> EventHandlerSet,
+    bind_event_handlers: fn(&mut EventHandlerCache),
     order: u16,
 }
 
@@ -70,21 +74,21 @@ impl AbilitySpecies {
         let AbilityDexEntry {
             dex_number,
             name,
-            event_handlers,
+            bind_event_handlers,
             order,
         } = dex_entry;
 
         Self {
             dex_number,
             name,
-            event_handlers,
+            bind_event_handlers,
             order,
         }
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet {
-        (self.event_handlers)()
+    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+        (self.bind_event_handlers)(event_handler_cache)
     }
 
     #[inline(always)]
@@ -106,6 +110,6 @@ impl AbilitySpecies {
 pub struct AbilityDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub event_handlers: fn() -> EventHandlerSet,
+    pub bind_event_handlers: fn(&mut EventHandlerCache),
     pub order: u16,
 }

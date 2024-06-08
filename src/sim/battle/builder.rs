@@ -76,7 +76,7 @@ impl BattleBuilder {
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
             .map_consume(|opponent_team_builder| opponent_team_builder.build(OPPONENT_IDS, opponent_board_positions, TeamID::Opponents));
 
-        Battle::new(ally_team, opponent_team, self.format)
+        Battle::init(ally_team, opponent_team, self.format)
     }
 }
 

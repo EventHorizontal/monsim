@@ -10,12 +10,12 @@ use tap::Pipe;
 use super::{Ability, TeamID};
 use crate::{
     sim::{
-        event_dispatcher::EventContext,
+        event_dispatcher::{EventContext, EventHandlerCache},
         targetting::{BoardPosition, FieldPosition},
-        ActivationOrder, EventHandlerSet, Type,
+        ActivationOrder, Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Broadcaster, EventHandler, Item, Move, OwnedEventHandler,
+    Broadcaster, EventHandler, EventHandlerSelector, Item, Move, OwnedEventHandler,
 };
 
 #[derive(Debug, Clone)]
@@ -237,110 +237,46 @@ impl Monster {
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
-        &self,
-        event_handler_selector: fn(EventHandlerSet) -> Vec<Option<EventHandler<R, C, B>>>,
-    ) -> Vec<OwnedEventHandler<R, C, B>> {
-        let mut output_owned_event_handlers = Vec::new();
+    pub(crate) fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+        // from the Monster's ability
+        event_handler_cache.current_owner_info = Some((
+            self.id,
+            ActivationOrder {
+                priority: 0,
+                speed: self.stat(Stat::Speed),
+                order: self.ability.order(),
+            },
+        ));
+
+        self.ability().bind_event_handlers(event_handler_cache);
 
         // of the Monster itself
-        event_handler_selector((self.species.event_handlers)())
-            .into_iter()
-            .flatten()
-            .map(|event_handler| {
-                // Add an OwnedEventHandler if an EventHandler exists.
-                OwnedEventHandler {
-                    event_handler,
-                    owner_id: self.id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: 0,
-                    },
-                }
-            })
-            .pipe(|owned_event_handlers| {
-                output_owned_event_handlers.extend(owned_event_handlers);
-            });
-
-        // from the Monster's ability
-        event_handler_selector((&self).ability.event_handlers())
-            .into_iter()
-            .flatten()
-            .map(|event_handler| {
-                // Add an OwnedEventHandler if an EventHandler exists.
-                OwnedEventHandler {
-                    event_handler,
-                    owner_id: (&self).id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: (&self).stat(Stat::Speed),
-                        order: (&self).ability.order(),
-                    },
-                }
-            })
-            .pipe(|owned_event_handlers| {
-                output_owned_event_handlers.extend(owned_event_handlers);
-            });
+        event_handler_cache.current_owner_info = Some((
+            self.id,
+            ActivationOrder {
+                priority: 0,
+                speed: self.stat(Stat::Speed),
+                order: 0,
+            },
+        ));
+        (self.species.bind_event_handlers)(event_handler_cache);
 
         // INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
 
         // from the Monster's volatile statuses
         self.volatile_statuses.into_iter().for_each(|volatile_status| {
-            let owned_event_handlers = event_handler_selector(volatile_status.event_handlers())
-                .into_iter()
-                .flatten()
-                .map(|event_handler| OwnedEventHandler {
-                    event_handler,
-                    owner_id: self.id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: 0,
-                    },
-                });
-            output_owned_event_handlers.extend(owned_event_handlers)
+            volatile_status.bind_event_handlers(event_handler_cache);
         });
 
         // from the Monster's persistent status
         if let Some(persistent_status) = self.persistent_status {
-            event_handler_selector(persistent_status.event_handlers())
-                .into_iter()
-                .flatten()
-                .for_each(|event_handler| {
-                    let owned_event_handler = OwnedEventHandler {
-                        event_handler,
-                        owner_id: self.id,
-                        activation_order: ActivationOrder {
-                            priority: 0,
-                            speed: self.stat(Stat::Speed),
-                            order: 0,
-                        },
-                    };
-                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
-                });
+            persistent_status.bind_event_handlers(event_handler_cache);
         }
 
         // from the Monster's held item
         if let Some(held_item) = self.held_item {
-            event_handler_selector(held_item.event_handlers())
-                .into_iter()
-                .flatten()
-                .for_each(|event_handler| {
-                    let owned_event_handler = OwnedEventHandler {
-                        event_handler,
-                        owner_id: self.id,
-                        activation_order: ActivationOrder {
-                            priority: 0,
-                            speed: self.stat(Stat::Speed),
-                            order: 0,
-                        },
-                    };
-                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
-                });
+            held_item.bind_event_handlers(event_handler_cache);
         }
-
-        output_owned_event_handlers
     }
 
     pub(crate) fn full_name(&self) -> String {
@@ -400,7 +336,7 @@ pub struct MonsterSpecies {
     primary_type: Type,
     secondary_type: Option<Type>,
     base_stats: StatSet,
-    event_handlers: fn() -> EventHandlerSet,
+    bind_event_handlers: fn(&mut EventHandlerCache),
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -501,7 +437,7 @@ impl MonsterSpecies {
             primary_type,
             secondary_type,
             base_stats,
-            event_handlers,
+            bind_event_handlers,
         } = dex_entry;
         Self {
             dex_number,
@@ -509,7 +445,7 @@ impl MonsterSpecies {
             primary_type,
             secondary_type,
             base_stats,
-            event_handlers,
+            bind_event_handlers,
         }
     }
 
@@ -539,8 +475,8 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet {
-        (self.event_handlers)()
+    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+        (self.bind_event_handlers)(event_handler_cache)
     }
 }
 
@@ -583,5 +519,5 @@ pub struct MonsterDexEntry {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
-    pub event_handlers: fn() -> EventHandlerSet,
+    pub bind_event_handlers: fn(&mut EventHandlerCache),
 }

@@ -45,7 +45,7 @@ use crate::{
 use contexts::*;
 pub use events::*;
 use monsim_macros::mon;
-use monsim_utils::{not, NOTHING};
+use monsim_utils::{not, Percent, NOTHING};
 
 use super::targetting::PositionRelationFlags;
 
@@ -82,8 +82,7 @@ impl EventDispatcher {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let mut owned_event_handlers = battle.owned_event_handlers(event_handler_selector);
-
+        let mut owned_event_handlers = event_handler_selector(&mut battle.event_handler_cache);
         if owned_event_handlers.is_empty() {
             return default;
         }
@@ -98,10 +97,10 @@ impl EventDispatcher {
                 &battle,
                 broadcaster_id,
                 event_context.target(),
-                owner_id,
+                *owner_id,
                 event_handler.event_filtering_options,
             ) {
-                relay = (event_handler.response)(battle, broadcaster_id, owner_id, event_context, relay);
+                relay = (event_handler.response)(battle, broadcaster_id, *owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -177,6 +176,85 @@ impl EventDispatcher {
         passes_filter
     }
 }
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct EventHandlerCache {
+    pub(crate) is_dirty: bool,
+    pub(crate) current_owner_info: Option<(MonsterID, ActivationOrder)>,
+    /// This EventHandler is triggered when a move is about to be used. This EventHandler is to return an `Outcome`
+    /// indicating whether the move should succeed.
+    pub on_try_move: Vec<OwnedEventHandler<Outcome<Nothing>, MoveUseContext>>,
+    /// This EventHandler is triggered when a move is used successfully.
+    pub on_move_used: Vec<OwnedEventHandler<Nothing, MoveUseContext>>,
+    /// This EventHandler is meant only to be a base for `on_damaging_move_used` and `on_status_move_used`.
+    pub on_damaging_move_used: Vec<OwnedEventHandler<Nothing, MoveUseContext>>,
+    /// This EventHandler is triggered when a status move is used successfully.
+    pub on_status_move_used: Vec<OwnedEventHandler<Nothing, MoveUseContext>>,
+    /// This EventHandler is triggered after the accuracy to be used in move miss calculation is calculated. This
+    /// EventHandler is to return a `u16` representing a possibly modified _base_ accuracy to be used by the move.
+    /// If the EventHandler wishes to leave the accuracy unchanged, say if a certain condition is met, then it can
+    /// pass back the original accuracy, which is relayed to this EventHandler.
+    pub on_calculate_accuracy: Vec<OwnedEventHandler<u16, MoveHitContext>>,
+    pub on_calculate_accuracy_stage: Vec<OwnedEventHandler<i8, MoveHitContext>>,
+    pub on_calculate_evasion_stage: Vec<OwnedEventHandler<i8, MoveHitContext>>,
+    pub on_calculate_crit_stage: Vec<OwnedEventHandler<u8, MoveHitContext>>,
+    pub on_calculate_crit_damage_multiplier: Vec<OwnedEventHandler<Percent, MoveHitContext>>,
+    /// This EventHandler is triggered when a individual move hit is about to be performed. This EventHandler is to
+    /// return an `Outcome` indicating whether the hit should succeed.
+    pub on_try_move_hit: Vec<OwnedEventHandler<Outcome<Nothing>, MoveHitContext>>,
+    /// This EventHandler is triggered when a hit has been performed successfully.
+    pub on_move_hit: Vec<OwnedEventHandler<Nothing, MoveHitContext>>,
+    /// This EventHandler is triggered when a move is calculating the attack stat to be used. This EventHandler is to
+    /// return a `u16` indicating a possibly modified attack stat to be used. If the EventHandler wishes to
+    /// leave the attack unchanged, say if a certain condition is met, then it can pass back the original attack
+    /// stat, which is relayed to this EventHandler.
+    pub on_calculate_attack_stat: Vec<OwnedEventHandler<u16, MoveHitContext>>,
+    pub on_calculate_attack_stage: Vec<OwnedEventHandler<i8, MoveHitContext>>,
+    /// This EventHandler is triggered when a move is calculating the defense stat to be used. This EventHandler is to
+    /// return a `u16` indicating a possibly modified defense stat to be used. If the EventHandler wishes to
+    /// leave the defense unchanged, say if a certain condition is met, then it can pass back the original defense
+    /// stat, which is relayed to this EventHandler.
+    pub on_calculate_defense_stat: Vec<OwnedEventHandler<u16, MoveHitContext>>,
+    pub on_calculate_defense_stage: Vec<OwnedEventHandler<i8, MoveHitContext>>,
+    /// This EventHandler is triggered after a move's damage is calculated, giving the opportunity for the final damage
+    /// to be modified. This EventHandler is to return a `u16` indicating a possibly modified damage value. If the
+    /// EventHandler wishes to leave the damage unchanged, say if a certain condition is met, then it can pass back
+    /// the original damage, which is relayed to this EventHandler.
+    pub on_modify_damage: Vec<OwnedEventHandler<u16, MoveHitContext>>,
+    /// This EventHandler is triggered after a move's damage has been dealt successfully.
+    pub on_damage_dealt: Vec<OwnedEventHandler<Nothing, Nothing>>,
+    /// This EventHandler is triggered when an ability is about to be activated. The EventHandler is to
+    /// return an `Outcome` indicating whether the ability activation should succeed.
+    pub on_try_activate_ability: Vec<OwnedEventHandler<Outcome<Nothing>, AbilityActivationContext>>,
+    /// This EventHandler is triggered after an ability successfully activates.
+    pub on_ability_activated: Vec<OwnedEventHandler<Nothing, AbilityActivationContext>>,
+    /// This EventHandler is triggered when a stat is about to be changed. This EventHandler is to return an `Outcome`
+    /// representing whether the stat change should succeed.
+    pub on_try_stat_change: Vec<OwnedEventHandler<Outcome<Nothing>, StatChangeContext>>,
+    /// This EventHandler is triggered when a stat is changed, allowing for the stat change to be modified.
+    pub on_modify_stat_change: Vec<OwnedEventHandler<i8, StatChangeContext>>,
+    /// This EventHandler is triggered after a stat is changed.
+    pub on_stat_changed: Vec<OwnedEventHandler<Nothing, StatChangeContext>>,
+    /// This EventHandler is triggered when a volatile status is about to be inflicted on a Monster. This EventHandler
+    /// is to return and `Outcome` representing whether the infliction of the volatile status should succeed.
+    pub on_try_inflict_volatile_status: Vec<OwnedEventHandler<Outcome<Nothing>, Nothing>>,
+    /// This EventHandler is triggered after a volatile status has been successfully inflicted.
+    pub on_volatile_status_inflicted: Vec<OwnedEventHandler<Nothing, Nothing>>,
+    /// This EventHandler is triggered when a persistent status is about to be inflicted on a Monster. This EventHandler
+    /// is to return and `Outcome` representing whether the infliction of the persistent status should succeed.
+    pub on_try_inflict_persistent_status: Vec<OwnedEventHandler<Outcome<Nothing>, Nothing>>,
+    /// This EventHandler is triggered after a presistent status has been successfully inflicted.
+    pub on_persistent_status_inflicted: Vec<OwnedEventHandler<Nothing, Nothing>>,
+    /// This EventHandler is triggered when a held item is about to be used. This EventHandler
+    /// is to return and `Outcome` representing whether the use of the held item should succeed.
+    pub on_try_use_held_item: Vec<OwnedEventHandler<Outcome<Nothing>, ItemUseContext>>,
+    /// This EventHandler is triggered when a held item is used successfully.
+    pub on_held_item_used: Vec<OwnedEventHandler<Nothing, ItemUseContext>>,
+    /// This EventHandler is triggered at the end of each turn. This is a _temporal event_, such that it has no broadcaster.
+    pub on_turn_end: Vec<OwnedEventHandler<Nothing, Nothing, Nothing>>,
+}
+
+impl EventHandlerCache {}
 
 /// This tells asscociated EventHandlers whether to fire or not
 /// in response to a certain kind of Event.
@@ -256,7 +334,7 @@ impl<R: Copy, C: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, B> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandler<R: Copy, C: Copy, B: Broadcaster + Copy> {
+pub struct OwnedEventHandler<R: Copy, C: Copy, B: Broadcaster + Copy = MonsterID> {
     pub event_handler: EventHandler<R, C, B>,
     pub owner_id: MonsterID,
     pub activation_order: ActivationOrder,

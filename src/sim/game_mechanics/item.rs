@@ -1,4 +1,4 @@
-use crate::{EventHandlerSet, MonsterID};
+use crate::{sim::event_dispatcher::EventHandlerCache, MonsterID};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
@@ -27,8 +27,8 @@ impl Item {
         self.species
     }
 
-    pub(crate) fn event_handlers(&self) -> EventHandlerSet {
-        (self.species.event_handlers)()
+    pub(crate) fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+        (self.species.event_handlers)(event_handler_cache)
     }
 }
 
@@ -49,7 +49,7 @@ pub struct ItemSpecies {
     pub(crate) name: &'static str,
     pub(crate) kind: ItemFlags,
     pub(crate) is_consumable: bool,
-    pub(crate) event_handlers: fn() -> EventHandlerSet,
+    pub(crate) event_handlers: fn(&mut EventHandlerCache),
 }
 
 impl ItemSpecies {
@@ -87,5 +87,5 @@ pub struct ItemDexEntry {
     pub name: &'static str,
     pub kind: ItemFlags,
     pub is_consumable: bool,
-    pub event_handlers: fn() -> EventHandlerSet,
+    pub event_handlers: fn(&mut EventHandlerCache),
 }

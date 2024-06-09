@@ -5,14 +5,7 @@ use std::{
 };
 
 use super::Monster;
-use crate::{
-    sim::{
-        event_dispatcher::{EventContext, EventHandlerCache},
-        targetting::BoardPosition,
-        MonsterNumber,
-    },
-    Broadcaster,
-};
+use crate::sim::{event_dispatcher::EventHandlerRegistry, targetting::BoardPosition, MonsterNumber};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
@@ -58,9 +51,9 @@ impl MonsterTeam {
         self.monsters.iter_mut()
     }
 
-    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+    pub fn bind_event_handlers(&self) {
         for monster in self.monsters.iter() {
-            monster.bind_event_handlers(event_handler_cache);
+            monster.bind_event_handlers();
         }
     }
 
@@ -159,6 +152,10 @@ impl<T> PerTeam<T> {
     /// Consumes `self`
     fn unwrap_full(self) -> (T, T) {
         (self.ally_team_item.unwrap(), self.opponent_team_item.unwrap())
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &T> {
+        [self.ally_team_item.as_ref(), self.opponent_team_item.as_ref()].into_iter()
     }
 }
 

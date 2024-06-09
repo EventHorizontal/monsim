@@ -5,17 +5,16 @@ use std::fmt::{Display, Formatter};
 
 use monsim_utils::MaxSizedVec;
 pub use stats::*;
-use tap::Pipe;
 
 use super::{Ability, TeamID};
 use crate::{
     sim::{
-        event_dispatcher::{EventContext, EventHandlerCache},
+        event_dispatcher::EventHandlerRegistry,
         targetting::{BoardPosition, FieldPosition},
         ActivationOrder, Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Broadcaster, EventHandler, EventHandlerSelector, Item, Move, OwnedEventHandler,
+    Item, Move, EVENT_HANDLER_REGISTRY,
 };
 
 #[derive(Debug, Clone)]
@@ -237,46 +236,52 @@ impl Monster {
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
+    pub(crate) fn bind_event_handlers(&self) {
         // from the Monster's ability
-        event_handler_cache.current_owner_info = Some((
-            self.id,
-            ActivationOrder {
-                priority: 0,
-                speed: self.stat(Stat::Speed),
-                order: self.ability.order(),
-            },
-        ));
+        unsafe {
+            EVENT_HANDLER_REGISTRY.current_owner_info = Some((
+                self.id,
+                ActivationOrder {
+                    priority: 0,
+                    speed: self.stat(Stat::Speed),
+                    order: self.ability.order(),
+                },
+            ))
+        };
 
-        self.ability().bind_event_handlers(event_handler_cache);
+        self.ability().bind_event_handlers();
 
         // of the Monster itself
-        event_handler_cache.current_owner_info = Some((
-            self.id,
-            ActivationOrder {
-                priority: 0,
-                speed: self.stat(Stat::Speed),
-                order: 0,
-            },
-        ));
-        (self.species.bind_event_handlers)(event_handler_cache);
+        unsafe {
+            EVENT_HANDLER_REGISTRY.current_owner_info = Some((
+                self.id,
+                ActivationOrder {
+                    priority: 0,
+                    speed: self.stat(Stat::Speed),
+                    order: 0,
+                },
+            ))
+        };
+        (self.species.bind_event_handlers)();
 
         // INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
 
         // from the Monster's volatile statuses
         self.volatile_statuses.into_iter().for_each(|volatile_status| {
-            volatile_status.bind_event_handlers(event_handler_cache);
+            volatile_status.bind_event_handlers();
         });
 
         // from the Monster's persistent status
         if let Some(persistent_status) = self.persistent_status {
-            persistent_status.bind_event_handlers(event_handler_cache);
+            persistent_status.bind_event_handlers();
         }
 
         // from the Monster's held item
         if let Some(held_item) = self.held_item {
-            held_item.bind_event_handlers(event_handler_cache);
+            held_item.bind_event_handlers();
         }
+
+        unsafe { EVENT_HANDLER_REGISTRY.current_owner_info = None };
     }
 
     pub(crate) fn full_name(&self) -> String {
@@ -336,7 +341,7 @@ pub struct MonsterSpecies {
     primary_type: Type,
     secondary_type: Option<Type>,
     base_stats: StatSet,
-    bind_event_handlers: fn(&mut EventHandlerCache),
+    bind_event_handlers: fn(),
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -475,8 +480,8 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
-    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
-        (self.bind_event_handlers)(event_handler_cache)
+    pub fn bind_event_handlers(&self) {
+        (self.bind_event_handlers)()
     }
 }
 
@@ -519,5 +524,5 @@ pub struct MonsterDexEntry {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
-    pub bind_event_handlers: fn(&mut EventHandlerCache),
+    pub bind_event_handlers: fn(),
 }

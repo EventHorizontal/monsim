@@ -2,19 +2,14 @@ use super::*;
 use monsim_utils::{Percent, NOTHING};
 
 pub(crate) fn trigger_on_try_move_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Outcome<Nothing> {
-    EventDispatcher::dispatch_trial_event(
-        battle,
-        broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_try_move,
-        event_context,
-    )
+    EventDispatcher::dispatch_trial_event(battle, broadcaster_id, || unsafe { EVENT_HANDLER_REGISTRY.on_try_move.clone() }, event_context)
 }
 
 pub(crate) fn trigger_on_move_used_event(battle: &mut Battle, broadcaster_id: MonsterID, event_context: MoveUseContext) -> Nothing {
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_damaging_move_used,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_damaging_move_used.clone() },
         event_context,
         NOTHING,
         None,
@@ -30,7 +25,7 @@ pub(crate) fn trigger_on_calculate_accuracy_stage_event(
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_accuracy_stage,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_accuracy_stage.clone() },
         event_context,
         original_accuracy_stage,
         None,
@@ -46,7 +41,7 @@ pub(crate) fn trigger_on_calculate_evasion_stage_event(
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_evasion_stage,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_evasion_stage.clone() },
         event_context,
         original_evasion_stage,
         None,
@@ -62,7 +57,7 @@ pub(crate) fn trigger_on_calculate_crit_stage_event(
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_crit_stage,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_crit_stage.clone() },
         event_context,
         original_crit_stage,
         None,
@@ -78,7 +73,7 @@ pub(crate) fn trigger_on_calculate_crit_damage_multiplier_event(
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_crit_damage_multiplier,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_crit_damage_multiplier.clone() },
         event_context,
         default,
         None,
@@ -89,7 +84,7 @@ pub(crate) fn trigger_on_try_move_hit_event(battle: &mut Battle, broadcaster_id:
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_try_move_hit,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_try_move_hit.clone() },
         event_context,
     )
 }
@@ -98,7 +93,7 @@ pub(crate) fn trigger_on_move_hit_event(battle: &mut Battle, broadcaster_id: Mon
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_move_hit,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_move_hit.clone() },
         event_context,
         NOTHING,
         None,
@@ -109,7 +104,7 @@ pub(crate) fn trigger_on_calculate_attack_stat_event(battle: &mut Battle, broadc
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_attack_stat,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_attack_stat.clone() },
         event_context,
         default,
         None,
@@ -125,7 +120,7 @@ pub(crate) fn trigger_on_calculate_attack_stage_event(
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_attack_stage,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_attack_stage.clone() },
         event_context,
         original_attack_stage,
         None,
@@ -136,7 +131,7 @@ pub(crate) fn trigger_on_calculate_defense_stat_event(battle: &mut Battle, broad
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_defense_stat,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_defense_stat.clone() },
         event_context,
         default,
         None,
@@ -152,7 +147,7 @@ pub(crate) fn trigger_on_calculate_defense_stage_event(
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_defense_stage,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_defense_stage.clone() },
         event_context,
         original_defense_stage,
         None,
@@ -163,7 +158,7 @@ pub(crate) fn trigger_on_modify_damage_event(battle: &mut Battle, broadcaster_id
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_modify_damage,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_modify_damage.clone() },
         event_context,
         current_damage,
         None,
@@ -174,7 +169,7 @@ pub(crate) fn trigger_on_damage_dealt_event(battle: &mut Battle, broadcaster_id:
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_damage_dealt,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_damage_dealt.clone() },
         event_context,
         NOTHING,
         None,
@@ -189,7 +184,7 @@ pub(crate) fn trigger_on_try_activate_ability_event(
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_try_activate_ability,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_try_activate_ability.clone() },
         event_context,
     )
 }
@@ -198,7 +193,7 @@ pub(crate) fn trigger_on_ability_activated_event(battle: &mut Battle, broadcaste
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_ability_activated,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_ability_activated.clone() },
         event_context,
         NOTHING,
         None,
@@ -209,7 +204,7 @@ pub(crate) fn trigger_on_modify_base_accuracy_event(battle: &mut Battle, broadca
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_calculate_accuracy,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_calculate_accuracy.clone() },
         event_context,
         base_accuracy,
         None,
@@ -220,7 +215,7 @@ pub(crate) fn trigger_on_try_stat_change_event(battle: &mut Battle, broadcaster_
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_try_stat_change,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_try_stat_change.clone() },
         event_context,
     )
 }
@@ -229,7 +224,7 @@ pub(crate) fn trigger_on_modify_stat_change_event(battle: &mut Battle, broadcast
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_modify_stat_change,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_modify_stat_change.clone() },
         event_context,
         event_context.number_of_stages,
         None,
@@ -240,7 +235,7 @@ pub(crate) fn trigger_on_stat_changed_event(battle: &mut Battle, broadcaster_id:
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_stat_changed,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_stat_changed.clone() },
         event_context,
         NOTHING,
         None,
@@ -251,7 +246,7 @@ pub(crate) fn trigger_on_try_inflict_volatile_status_event(battle: &mut Battle, 
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_try_inflict_volatile_status,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_try_inflict_volatile_status.clone() },
         event_context,
     )
 }
@@ -260,7 +255,7 @@ pub(crate) fn trigger_on_volatile_status_inflicted_event(battle: &mut Battle, br
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_volatile_status_inflicted,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_volatile_status_inflicted.clone() },
         event_context,
         NOTHING,
         None,
@@ -271,7 +266,7 @@ pub(crate) fn trigger_on_try_inflict_persistent_status_event(battle: &mut Battle
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_try_inflict_persistent_status,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_try_inflict_persistent_status.clone() },
         event_context,
     )
 }
@@ -280,7 +275,7 @@ pub(crate) fn trigger_on_persistent_status_inflicted_event(battle: &mut Battle, 
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_persistent_status_inflicted,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_persistent_status_inflicted.clone() },
         event_context,
         NOTHING,
         None,
@@ -291,7 +286,7 @@ pub(crate) fn trigger_on_try_use_held_item_event(battle: &mut Battle, broadcaste
     EventDispatcher::dispatch_trial_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_try_use_held_item,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_try_use_held_item.clone() },
         event_context,
     )
 }
@@ -300,7 +295,7 @@ pub(crate) fn trigger_on_held_item_used_event(battle: &mut Battle, broadcaster_i
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_held_item_used,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_held_item_used.clone() },
         event_context,
         NOTHING,
         None,
@@ -311,7 +306,7 @@ pub(crate) fn trigger_on_turn_end_event(battle: &mut Battle, broadcaster_id: Not
     EventDispatcher::dispatch_event(
         battle,
         broadcaster_id,
-        |event_handler_cache| &mut event_handler_cache.on_turn_end,
+        || unsafe { EVENT_HANDLER_REGISTRY.on_turn_end.clone() },
         event_context,
         NOTHING,
         None,

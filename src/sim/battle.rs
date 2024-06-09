@@ -3,7 +3,7 @@ mod message_log;
 
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice,
+    AbilityID, Item, ItemID, PartiallySpecifiedActionChoice,
 };
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
@@ -14,7 +14,7 @@ use std::{
 use self::builder::BattleFormat;
 
 use super::{
-    event_dispatcher::{EventContext, EventHandlerCache},
+    event_dispatcher::EventHandlerRegistry,
     prng::Prng,
     targetting::{BoardPosition, FieldPosition},
     PerTeam, TeamID,
@@ -27,7 +27,6 @@ pub struct Battle {
     pub(crate) prng: Prng,
     pub(crate) turn_number: u16,
     pub(crate) format: BattleFormat,
-    pub(crate) event_handler_cache: EventHandlerCache,
     // TODO: Special text format for storing metadata with text (colour and modifiers like italic and bold).
     pub message_log: MessageLog,
     pub state: BattleState,
@@ -106,7 +105,7 @@ impl Battle {
     // Battle ---------------------------------------------------- //
 
     pub(crate) fn init(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
-        let mut battle = Self {
+        Battle {
             prng: Prng::from_current_time(),
             turn_number: 0,
             message_log: MessageLog::new(),
@@ -114,13 +113,14 @@ impl Battle {
             state: BattleState {
                 teams: PerTeam::new(ally_team, opponent_team),
             },
-            event_handler_cache: EventHandlerCache::default(),
-        };
-        battle.populate_event_handler_cache();
-        battle
+        }
     }
 
-    pub fn populate_event_handler_cache(&mut self) {}
+    pub fn bind_event_handlers(&mut self) {
+        for team in self.teams.iter() {
+            team.bind_event_handlers();
+        }
+    }
 
     #[inline(always)]
     pub fn format(&self) -> BattleFormat {
@@ -229,9 +229,9 @@ impl BattleState {
         }
     }
 
-    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
-        self.ally_team().bind_event_handlers(event_handler_cache);
-        self.opponent_team().bind_event_handlers(event_handler_cache);
+    pub fn bind_event_handlers(&self) {
+        self.ally_team().bind_event_handlers();
+        self.opponent_team().bind_event_handlers();
     }
 
     // Monsters -------------------------------------------------- //

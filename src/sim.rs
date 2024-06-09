@@ -16,9 +16,9 @@ pub use battle_constants::*;
 pub use builder::{AbilityBuilderExt, BattleFormat, ItemBuilderExt, MonsterBuilderExt, MoveBuilderExt};
 pub use choice::*;
 pub use effects::*;
-use event_dispatcher::EventHandlerCache;
-pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler};
-pub(crate) use event_dispatcher::{Broadcaster, OwnedEventHandler};
+pub use event_dispatcher::EventHandlerRegistry;
+pub(crate) use event_dispatcher::OwnedEventHandler;
+pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler, EVENT_HANDLER_REGISTRY};
 pub use game_mechanics::*;
 #[cfg(feature = "macros")]
 pub use monsim_macros::*;
@@ -35,7 +35,7 @@ type SimResult = Result<bool, SimError>;
 
 /// A function that picks out one or more specific fields of an EventHandlerDeck and returns
 /// them as a vector. The EventHandlers must all have the same signature for this to work.
-pub type EventHandlerSelector<'a, R, C, B> = fn(&'a mut EventHandlerCache) -> &'a mut Vec<OwnedEventHandler<R, C, B>>;
+pub type EventHandlerSelector<R, C, B> = fn() -> Vec<OwnedEventHandler<R, C, B>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
@@ -59,16 +59,23 @@ just functions that transform a `Battle` from one state to another.
 #[derive(Debug)]
 pub struct BattleSimulator {
     pub battle: Battle,
+    pub event_handler_registry: EventHandlerRegistry,
 }
 
 impl BattleSimulator {
     pub fn init(battle: Battle) -> BattleSimulator {
-        BattleSimulator { battle }
+        BattleSimulator {
+            battle,
+            event_handler_registry: EventHandlerRegistry::default(),
+        }
     }
 
     pub fn simulate(mut self, mut ui: impl SimulatorUi) -> SimResult {
-        // TODO: We may be able to remove this assert if we consume self.
+        // TODO: We may be able to remove this assert if we consume the battle.
         assert!(not!(self.battle.is_finished()), "The simulator cannot be called on a finished battle.");
+
+        // Scan and collect all the mechanics in the battle and bind their EventHandlers to the proper channels.
+        self.battle.bind_event_handlers();
 
         while not!(self.battle.is_finished()) {
             self.battle.turn_number += 1;

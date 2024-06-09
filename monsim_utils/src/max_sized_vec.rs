@@ -270,16 +270,9 @@ impl<T, const CAP: usize> Index<Range<usize>> for MaxSizedVec<T, CAP> {
     }
 }
 
-impl<T: Default, const CAP: usize> Default for MaxSizedVec<T, CAP> {
+impl<T, const CAP: usize> Default for MaxSizedVec<T, CAP> {
     fn default() -> Self {
-        let elements = {
-            let out: [Option<T>; CAP] = core::array::from_fn(|_| Some(T::default()));
-            out
-        };
-        Self {
-            elements,
-            count: Default::default(),
-        }
+        Self::empty()
     }
 }
 

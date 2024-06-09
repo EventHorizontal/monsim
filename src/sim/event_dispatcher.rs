@@ -35,6 +35,7 @@ for that particular Event at the moment.
 */
 
 use core::fmt::Debug;
+use std::cell::Cell;
 
 mod events;
 
@@ -43,11 +44,12 @@ use crate::{
     ActivationOrder, FieldPosition,
 };
 use contexts::*;
-pub use events::*;
-use monsim_macros::mon;
+pub(crate) use events::*;
 use monsim_utils::{not, Percent, NOTHING};
 
 use super::targetting::PositionRelationFlags;
+
+pub static mut EVENT_HANDLER_REGISTRY: EventHandlerRegistry = EventHandlerRegistry::new();
 
 #[derive(Debug, Clone)]
 pub struct EventDispatcher;
@@ -82,7 +84,7 @@ impl EventDispatcher {
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let mut owned_event_handlers = event_handler_selector(&mut battle.event_handler_cache);
+        let mut owned_event_handlers = event_handler_selector();
         if owned_event_handlers.is_empty() {
             return default;
         }
@@ -97,10 +99,10 @@ impl EventDispatcher {
                 &battle,
                 broadcaster_id,
                 event_context.target(),
-                *owner_id,
+                owner_id,
                 event_handler.event_filtering_options,
             ) {
-                relay = (event_handler.response)(battle, broadcaster_id, *owner_id, event_context, relay);
+                relay = (event_handler.response)(battle, broadcaster_id, owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -128,21 +130,27 @@ impl EventDispatcher {
         } = receiver_filtering_options;
 
         // First check - does the event receiver require themselves to be active? If so check if they are actually active.
-        passes_filter = if requires_being_active { mon![event_receiver_id].is_active() } else { true };
+        passes_filter = if requires_being_active {
+            battle.monster(event_receiver_id).is_active()
+        } else {
+            true
+        };
 
         // Skip the rest of the calculation if it doesn't pass.
         if not!(passes_filter) {
             return false;
         };
 
-        let event_receiver_field_position = mon![event_receiver_id]
+        let event_receiver_field_position = battle
+            .monster(event_receiver_id)
             .board_position
             .field_position()
             .expect("For now we disallow the receiver to be benched. This is will probably be reverted in the future.");
 
         if let Some(event_broadcaster_id) = event_broadcaster.source() {
             // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster within the allowed relations to the event receiver?
-            let event_broadcaster_field_position = mon![event_broadcaster_id]
+            let event_broadcaster_field_position = battle
+                .monster(event_broadcaster_id)
                 .board_position
                 .field_position()
                 .expect("We assume broadcasters must be on the field.");
@@ -161,7 +169,7 @@ impl EventDispatcher {
         // The event target is the contextual target for the action associated with this event. For example,
         // this could be the target of the current move.
         if let Some(event_target_id) = event_target_id {
-            let event_target_field_position = mon![event_target_id].board_position.field_position();
+            let event_target_field_position = battle.monster(event_target_id).board_position.field_position();
 
             // The event target may have fainted by the time an EventHandler procs.
             if let Some(event_target_field_position) = event_target_field_position {
@@ -178,8 +186,8 @@ impl EventDispatcher {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct EventHandlerCache {
-    pub(crate) is_dirty: bool,
+pub struct EventHandlerRegistry {
+    pub(crate) is_dirty: Cell<bool>,
     pub(crate) current_owner_info: Option<(MonsterID, ActivationOrder)>,
     /// This EventHandler is triggered when a move is about to be used. This EventHandler is to return an `Outcome`
     /// indicating whether the move should succeed.
@@ -254,7 +262,57 @@ pub struct EventHandlerCache {
     pub on_turn_end: Vec<OwnedEventHandler<Nothing, Nothing, Nothing>>,
 }
 
-impl EventHandlerCache {}
+impl EventHandlerRegistry {
+    pub const fn new() -> EventHandlerRegistry {
+        EventHandlerRegistry {
+            is_dirty: Cell::new(false),
+            current_owner_info: None,
+            on_try_move: vec![],
+            on_move_used: vec![],
+            on_damaging_move_used: vec![],
+            on_status_move_used: vec![],
+            on_calculate_accuracy: vec![],
+            on_calculate_accuracy_stage: vec![],
+            on_calculate_evasion_stage: vec![],
+            on_calculate_crit_stage: vec![],
+            on_calculate_crit_damage_multiplier: vec![],
+            on_try_move_hit: vec![],
+            on_move_hit: vec![],
+            on_calculate_attack_stat: vec![],
+            on_calculate_attack_stage: vec![],
+            on_calculate_defense_stat: vec![],
+            on_calculate_defense_stage: vec![],
+            on_modify_damage: vec![],
+            on_damage_dealt: vec![],
+            on_try_activate_ability: vec![],
+            on_ability_activated: vec![],
+            on_try_stat_change: vec![],
+            on_modify_stat_change: vec![],
+            on_stat_changed: vec![],
+            on_try_inflict_volatile_status: vec![],
+            on_volatile_status_inflicted: vec![],
+            on_try_inflict_persistent_status: vec![],
+            on_persistent_status_inflicted: vec![],
+            on_try_use_held_item: vec![],
+            on_held_item_used: vec![],
+            on_turn_end: vec![],
+        }
+    }
+
+    pub fn register<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy, F>(&mut self, channel_specifier: F, event_handler: EventHandler<R, C, B>)
+    where
+        F: Fn(&mut EventHandlerRegistry) -> &mut Vec<OwnedEventHandler<R, C, B>>,
+    {
+        let (owner_id, activation_order) = self
+            .current_owner_info
+            .expect("The system fails if the owner info is not set correctly at this point.");
+        channel_specifier(self).push(OwnedEventHandler {
+            event_handler,
+            owner_id,
+            activation_order,
+        });
+    }
+}
 
 /// This tells asscociated EventHandlers whether to fire or not
 /// in response to a certain kind of Event.
@@ -285,7 +343,7 @@ impl EventFilteringOptions {
     }
 }
 
-/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: MonsterID, context: C, relay: R) -> event_outcome: R`
+/// `fn(battle: &mut Battle, broadcaster_id: B, receiver_id: MonsterID, context: C, relay: R) -> event_outcome: R`
 pub type EventResponse<R, C, B> = fn(&mut Battle, B, MonsterID, C, R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.

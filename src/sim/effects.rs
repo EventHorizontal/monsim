@@ -70,12 +70,7 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
         mov![move_used_id].current_power_points()
     ]);
 
-    match mov![move_used_id].category() {
-        MoveCategory::Physical | MoveCategory::Special => {
-            event_dispatcher::trigger_on_damaging_move_used_event(battle, move_user_id, move_use_context);
-        }
-        MoveCategory::Status => event_dispatcher::trigger_on_status_move_used_event(battle, move_user_id, move_use_context),
-    }
+    event_dispatcher::trigger_on_move_used_event(battle, move_user_id, move_use_context);
 }
 
 /// The simulator switches out the Monster given by `switch_context.active_monster_id` and switches in

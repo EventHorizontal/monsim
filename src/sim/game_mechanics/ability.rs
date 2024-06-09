@@ -1,7 +1,4 @@
-use crate::{
-    sim::{event_dispatcher::EventHandlerCache, MonsterID},
-    ActivationOrder,
-};
+use crate::sim::{event_dispatcher::EventHandlerRegistry, MonsterID};
 use core::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,8 +9,8 @@ pub struct Ability {
 
 impl Ability {
     #[inline(always)]
-    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
-        self.species.bind_event_handlers(event_handler_cache)
+    pub fn bind_event_handlers(&self) {
+        self.species.bind_event_handlers()
     }
 
     #[inline(always)]
@@ -51,7 +48,7 @@ impl AbilityID {
 pub struct AbilitySpecies {
     dex_number: u16,
     name: &'static str,
-    bind_event_handlers: fn(&mut EventHandlerCache),
+    bind_event_handlers: fn(),
     order: u16,
 }
 
@@ -87,8 +84,8 @@ impl AbilitySpecies {
     }
 
     #[inline(always)]
-    pub fn bind_event_handlers(&self, event_handler_cache: &mut EventHandlerCache) {
-        (self.bind_event_handlers)(event_handler_cache)
+    pub fn bind_event_handlers(&self) {
+        (self.bind_event_handlers)()
     }
 
     #[inline(always)]
@@ -110,6 +107,6 @@ impl AbilitySpecies {
 pub struct AbilityDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub bind_event_handlers: fn(&mut EventHandlerCache),
+    pub bind_event_handlers: fn(),
     pub order: u16,
 }

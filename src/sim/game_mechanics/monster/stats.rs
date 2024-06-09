@@ -28,19 +28,6 @@ impl Display for Stat {
     }
 }
 
-impl Stat {
-    fn to_modifier(&self) -> Option<ModifiableStat> {
-        match self {
-            Stat::Hp => None,
-            Stat::PhysicalAttack => Some(ModifiableStat::PhysicalAttack),
-            Stat::PhysicalDefense => Some(ModifiableStat::PhysicalDefense),
-            Stat::SpecialAttack => Some(ModifiableStat::SpecialAttack),
-            Stat::SpecialDefense => Some(ModifiableStat::SpecialDefense),
-            Stat::Speed => Some(ModifiableStat::Speed),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModifiableStat {
     PhysicalAttack,

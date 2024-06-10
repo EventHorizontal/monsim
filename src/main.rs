@@ -7,20 +7,22 @@ mod item_dex;
 mod monster_dex;
 mod move_dex;
 mod status_dex;
+mod weather_dex;
 
 use ability_dex::*;
 use item_dex::*;
 use monster_dex::*;
 use move_dex::*;
+use weather_dex::*;
 
 fn main() -> MonsimResult<()> {
     #[cfg(feature = "debug")]
     std::env::set_var("RUST_BACKTRACE", "1");
 
     let battle = Battle::spawn()
-        .add_ally_team(
+        .with_ally_team(
             MonsterTeam::spawn()
-                .add_monster(
+                .with_monster(
                     Dandyleo
                         .spawn(
                             (StoneEdge.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), Some(HoneClaws.spawn())),
@@ -29,7 +31,7 @@ fn main() -> MonsimResult<()> {
                         .with_nickname("Clover")
                         .with_item(LifeOrb.spawn()),
                 )
-                .add_monster(
+                .with_monster(
                     Zombler
                         .spawn(
                             (StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), Some(ShadowBall.spawn())),
@@ -37,7 +39,7 @@ fn main() -> MonsimResult<()> {
                         )
                         .with_nickname("Rick"),
                 )
-                .add_monster(
+                .with_monster(
                     Squirecoal
                         .spawn(
                             (Ember.spawn(), Some(Growl.spawn()), Some(ShadowBall.spawn()), Some(Recycle.spawn())),
@@ -47,25 +49,26 @@ fn main() -> MonsimResult<()> {
                         .with_item(PasshoBerry.spawn()),
                 ),
         )
-        .add_opponent_team(
+        .with_opponent_team(
             MonsterTeam::spawn()
-                .add_monster(
+                .with_monster(
                     Merkey
                         .spawn((Bubble.spawn(), Some(DoubleTeam.spawn()), Some(Swift.spawn()), None), Pickup.spawn())
                         .with_nickname("Shrimp"),
                 )
-                .add_monster(
+                .with_monster(
                     Zombler
                         .spawn((StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), None), Pickup.spawn())
                         .with_nickname("Cordy")
                         .with_hitpoints(20),
                 )
-                .add_monster(
+                .with_monster(
                     Squirecoal
                         .spawn((Ember.spawn(), Some(Growl.spawn()), Some(Scratch.spawn()), None), Pickup.spawn())
                         .with_nickname("Epona"),
                 ),
         )
+        .with_environment(Environment::spawn().with_weather(&HarshSunlight))
         // .with_format(BattleFormat::Triple)
         .build();
 

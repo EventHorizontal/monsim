@@ -15,7 +15,7 @@ use crate::{
         ActivationOrder, EventHandlerSet, Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Broadcaster, EventHandler, Item, Move, OwnedEventHandler,
+    ActorID, Broadcaster, EventHandlerSelector, Item, Move, OwnedEventHandler,
 };
 
 #[derive(Debug, Clone)]
@@ -239,9 +239,11 @@ impl Monster {
 
     pub(crate) fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
         &self,
-        event_handler_selector: fn(EventHandlerSet) -> Vec<Option<EventHandler<R, C, B>>>,
+        event_handler_selector: EventHandlerSelector<R, C, B>,
     ) -> Vec<OwnedEventHandler<R, C, B>> {
         let mut output_owned_event_handlers = Vec::new();
+
+        let owner_id = ActorID::Monster(self.id);
 
         // of the Monster itself
         event_handler_selector((self.species.event_handlers)())
@@ -251,7 +253,7 @@ impl Monster {
                 // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
-                    owner_id: self.id,
+                    owner_id,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: self.stat(Stat::Speed),
@@ -271,7 +273,7 @@ impl Monster {
                 // Add an OwnedEventHandler if an EventHandler exists.
                 OwnedEventHandler {
                     event_handler,
-                    owner_id: (&self).id,
+                    owner_id,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: (&self).stat(Stat::Speed),
@@ -292,7 +294,7 @@ impl Monster {
                 .flatten()
                 .map(|event_handler| OwnedEventHandler {
                     event_handler,
-                    owner_id: self.id,
+                    owner_id,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: self.stat(Stat::Speed),
@@ -310,7 +312,7 @@ impl Monster {
                 .for_each(|event_handler| {
                     let owned_event_handler = OwnedEventHandler {
                         event_handler,
-                        owner_id: self.id,
+                        owner_id,
                         activation_order: ActivationOrder {
                             priority: 0,
                             speed: self.stat(Stat::Speed),
@@ -329,7 +331,7 @@ impl Monster {
                 .for_each(|event_handler| {
                     let owned_event_handler = OwnedEventHandler {
                         event_handler,
-                        owner_id: self.id,
+                        owner_id,
                         activation_order: ActivationOrder {
                             priority: 0,
                             speed: self.stat(Stat::Speed),

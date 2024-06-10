@@ -7,8 +7,8 @@ use crate::{
         game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet},
         targetting::{BoardPosition, FieldPosition},
     },
-    AbilityID, Battle, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, ALLY_1, ALLY_2,
-    ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
+    AbilityID, Battle, Environment, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, Weather,
+    WeatherSpecies, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
 };
 
 /*
@@ -23,6 +23,7 @@ use crate::{
 pub struct BattleBuilder {
     maybe_ally_team: Option<Ally<MonsterTeamBuilder>>,
     maybe_opponent_team: Option<Opponent<MonsterTeamBuilder>>,
+    environment: EnvironmentBuilder,
     format: BattleFormat,
 }
 
@@ -32,23 +33,29 @@ impl Battle {
             maybe_ally_team: None,
             maybe_opponent_team: None,
             format: BattleFormat::Single,
+            environment: EnvironmentBuilder { maybe_weather: None },
         }
     }
 }
 
 impl BattleBuilder {
-    pub fn add_ally_team(mut self, ally_team_builder: MonsterTeamBuilder) -> Self {
+    pub fn with_ally_team(mut self, ally_team_builder: MonsterTeamBuilder) -> Self {
         assert!(self.maybe_ally_team.is_none(), "Only one Ally Team is allowed per battle, but found multiple.");
         self.maybe_ally_team = Some(Ally::new(ally_team_builder));
         self
     }
 
-    pub fn add_opponent_team(mut self, opponent_team: MonsterTeamBuilder) -> Self {
+    pub fn with_opponent_team(mut self, opponent_team: MonsterTeamBuilder) -> Self {
         assert!(
             self.maybe_opponent_team.is_none(),
             "Only one Opponent Team is allowed per battle, but found multiple."
         );
         self.maybe_opponent_team = Some(Opponent::new(opponent_team));
+        self
+    }
+
+    pub fn with_environment(mut self, environment: EnvironmentBuilder) -> Self {
+        self.environment = environment;
         self
     }
 
@@ -76,7 +83,9 @@ impl BattleBuilder {
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
             .map_consume(|opponent_team_builder| opponent_team_builder.build(OPPONENT_IDS, opponent_board_positions, TeamID::Opponents));
 
-        Battle::new(ally_team, opponent_team, self.format)
+        let environment = self.environment.build();
+
+        Battle::new(ally_team, opponent_team, environment, self.format)
     }
 }
 
@@ -91,7 +100,7 @@ impl MonsterTeam {
 }
 
 impl MonsterTeamBuilder {
-    pub fn add_monster(mut self, monster: MonsterBuilder) -> Self {
+    pub fn with_monster(mut self, monster: MonsterBuilder) -> Self {
         match self.maybe_monsters {
             Some(ref mut monsters) => {
                 monsters.push(monster);
@@ -461,5 +470,48 @@ impl ItemBuilder {
             _id: id,
             species: self.species,
         }
+    }
+}
+
+// Environment -------------------------------------------- //
+
+#[derive(Clone)]
+pub struct EnvironmentBuilder {
+    pub maybe_weather: Option<WeatherBuilder>,
+}
+
+impl Environment {
+    pub fn spawn() -> EnvironmentBuilder {
+        EnvironmentBuilder { maybe_weather: None }
+    }
+}
+
+impl WeatherSpecies {
+    pub fn spawn(&'static self) -> WeatherBuilder {
+        WeatherBuilder { species: self }
+    }
+}
+
+impl EnvironmentBuilder {
+    pub fn with_weather(mut self, species: &'static WeatherSpecies) -> Self {
+        self.maybe_weather = Some(WeatherBuilder { species });
+        self
+    }
+
+    pub fn build(self) -> Environment {
+        Environment {
+            weather: self.maybe_weather.map(|weather_builder| weather_builder.build()),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct WeatherBuilder {
+    pub species: &'static WeatherSpecies,
+}
+
+impl WeatherBuilder {
+    pub fn build(self) -> Weather {
+        Weather { species: self.species }
     }
 }

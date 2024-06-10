@@ -29,7 +29,7 @@ impl Display for Stat {
 }
 
 impl Stat {
-    fn to_modifier(&self) -> Option<ModifiableStat> {
+    fn _to_modifier(&self) -> Option<ModifiableStat> {
         match self {
             Stat::Hp => None,
             Stat::PhysicalAttack => Some(ModifiableStat::PhysicalAttack),

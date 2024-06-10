@@ -1,8 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use monsim::{
-    effects, Count, EventFilteringOptions, EventHandler, EventHandlerSet, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies, PositionRelationFlags,
-    VolatileStatusDexEntry, VolatileStatusSpecies,
+    effects, Count, EventFilteringOptions, EventHandler, EventHandlerSet, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies,
+    PositionRelationFlags, VolatileStatusDexEntry, VolatileStatusSpecies,
 };
 use monsim_macros::mon;
 
@@ -30,6 +30,7 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
             source_code_location: source_code_location!(),
 
             response: |battle, _, receiver_id, _context, _| {
+                let receiver_id = receiver_id.expect_monster();
                 battle.queue_message(format!["{} is burned.", mon![receiver_id].name()]);
                 let damage = (mon![receiver_id].max_health() as f64 * 1.0 / 8.0) as u16;
                 let _ = effects::deal_raw_damage(battle, receiver_id, damage);
@@ -54,6 +55,7 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
             source_code_location: source_code_location!(),
 
             response: |battle, _broadcaster_id, receiver_id, _context, _relay| {
+                let receiver_id = receiver_id.expect_monster();
                 battle.queue_message(format!["{} is confused!", mon![receiver_id].name()]);
 
                 if mon![receiver_id]

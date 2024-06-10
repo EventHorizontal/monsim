@@ -40,7 +40,7 @@ mod events;
 
 use crate::{
     sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, Battle, EventHandlerSelector, Nothing, Outcome},
-    ActivationOrder, FieldPosition,
+    ActivationOrder, ActorID, FieldPosition,
 };
 use contexts::*;
 pub use events::*;
@@ -101,6 +101,8 @@ impl EventDispatcher {
                 owner_id,
                 event_handler.event_filtering_options,
             ) {
+                // INVESTIGATE: Can we remove the need to pass the owner id? (since its already inside the
+                // OwnedEventHandler)
                 relay = (event_handler.response)(battle, broadcaster_id, owner_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
@@ -117,10 +119,15 @@ impl EventDispatcher {
         battle: &Battle,
         event_broadcaster: impl Broadcaster,
         event_target_id: Option<MonsterID>,
-        event_receiver_id: MonsterID,
+        event_receiver_id: ActorID,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
         let mut passes_filter;
+
+        let ActorID::Monster(event_receiver_id) = event_receiver_id else {
+            // The actor is the environment, in which case it auto-passes the check.
+            return true;
+        };
 
         let EventFilteringOptions {
             only_if_broadcaster_is: allowed_broadcaster_position_relation_flags,
@@ -207,8 +214,8 @@ impl EventFilteringOptions {
     }
 }
 
-/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: MonsterID, context: C, relay: R) -> event_outcome: R`
-pub type EventResponse<R, C, B> = fn(&mut Battle, B, MonsterID, C, R) -> R;
+/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: ActorID, context: C, relay: R) -> event_outcome: R`
+pub type EventResponse<R, C, B> = fn(&mut Battle, B, ActorID, C, R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -256,9 +263,9 @@ impl<R: Copy, C: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, B> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandler<R: Copy, C: Copy, B: Broadcaster + Copy> {
+pub struct OwnedEventHandler<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> {
     pub event_handler: EventHandler<R, C, B>,
-    pub owner_id: MonsterID,
+    pub owner_id: ActorID,
     pub activation_order: ActivationOrder,
 }
 

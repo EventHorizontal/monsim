@@ -3,7 +3,7 @@ mod message_log;
 
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Broadcaster, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice,
+    AbilityID, Broadcaster, Environment, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice,
 };
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
@@ -49,6 +49,7 @@ impl DerefMut for Battle {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattleState {
     teams: PerTeam<MonsterTeam>,
+    environment: Environment,
 }
 
 impl Display for Battle {
@@ -104,14 +105,14 @@ fn attach_tree_for_team(output_string: &mut String, team: &MonsterTeam) {
 impl Battle {
     // Battle ---------------------------------------------------- //
 
-    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, format: BattleFormat) -> Self {
+    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, environment: Environment, format: BattleFormat) -> Self {
         let teams = PerTeam::new(ally_team, opponent_team);
         Self {
             prng: Prng::from_current_time(),
             turn_number: 0,
             message_log: MessageLog::new(),
             format,
-            state: BattleState { teams },
+            state: BattleState { teams, environment },
         }
     }
 
@@ -134,6 +135,11 @@ impl Battle {
     /// next request to `show_new_messages()`.
     pub fn queue_message(&mut self, message: impl ToString) {
         self.message_log.push(message)
+    }
+
+    pub fn queue_debug_message(&mut self, _message: impl ToString) {
+        #[cfg(feature = "debug")]
+        self.queue_message(_message);
     }
 
     pub(crate) fn queue_multiple_messages(&mut self, messages: &[impl ToString]) {
@@ -222,6 +228,10 @@ impl BattleState {
         }
     }
 
+    pub fn environment(&self) -> &Environment {
+        &self.environment
+    }
+
     pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
         &self,
         event_handler_selector: EventHandlerSelector<R, C, B>,
@@ -229,6 +239,7 @@ impl BattleState {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
         out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));
+        out.append(&mut self.environment.owned_event_handlers(event_handler_selector));
         out
     }
 
@@ -439,5 +450,37 @@ impl BattleState {
         }
 
         MaxSizedVec::from_vec(possible_targets_for_move)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ActorID {
+    Monster(MonsterID),
+    Environment,
+}
+impl ActorID {
+    pub fn expect_monster(&self) -> MonsterID {
+        match self {
+            ActorID::Monster(monster_id) => *monster_id,
+            ActorID::Environment => panic!("Expected actor to be a monster, found environment instead."),
+        }
+    }
+}
+
+impl PartialEq<MonsterID> for ActorID {
+    fn eq(&self, other: &MonsterID) -> bool {
+        match self {
+            ActorID::Monster(monster_id) => monster_id == other,
+            ActorID::Environment => false,
+        }
+    }
+}
+
+impl PartialEq<ActorID> for MonsterID {
+    fn eq(&self, other: &ActorID) -> bool {
+        match other {
+            ActorID::Monster(monster_id) => monster_id == self,
+            ActorID::Environment => false,
+        }
     }
 }

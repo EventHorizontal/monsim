@@ -3,7 +3,7 @@
 use monsim::{
     effects, move_,
     sim::{Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerSet, MoveUseContext, Type},
-    AbilityActivationContext, AbilityDexEntry, AbilityID, MoveHitContext, PositionRelationFlags, ModifiableStat,
+    AbilityActivationContext, AbilityDexEntry, AbilityID, ModifiableStat, MoveHitContext, PositionRelationFlags,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
@@ -33,7 +33,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
                 if mov![move_used_id].is_type(Type::Fire) && target_id == receiver_id {
                     let activation_outcome = effects::activate_ability(
                         battle,
-                        receiver_id,
+                        target_id,
                         |battle,
                          AbilityActivationContext {
                              ability_owner_id,

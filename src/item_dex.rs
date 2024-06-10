@@ -51,7 +51,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                 ..EventFilteringOptions::default()
             },
         }),
-        ..EventHandlerSet::empty()
+        ..EventHandlerSet::default_for_monster()
     },
 });
 
@@ -80,7 +80,6 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
 
                 let type_effectiveness = dual_type_matchup(move_type, target_type);
                 if move_type == Type::Water && type_effectiveness.is_matchup_super_effective() {
-                    let receiver_id = receiver_id.expect_monster();
                     let maybe_modified_damage = effects::use_item(battle, receiver_id, |battle, item_holder_id| {
                         battle.queue_message("Passho Berry activated! The damage was reduced.");
                         damage * Percent(50)
@@ -93,6 +92,6 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
             },
             event_filtering_options: EventFilteringOptions::default(),
         }),
-        ..EventHandlerSet::empty()
+        ..EventHandlerSet::default_for_monster()
     },
 });

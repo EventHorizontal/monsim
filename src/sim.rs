@@ -34,7 +34,9 @@ type SimResult = Result<bool, SimError>;
 
 /// A function that picks out one or more specific fields of an EventHandlerDeck and returns
 /// them as a vector. The EventHandlers must all have the same signature for this to work.
-pub type EventHandlerSelector<R, C, B> = fn(EventHandlerSet) -> Vec<Option<EventHandler<R, C, B>>>;
+///
+/// `R: Return Type` `C: Context Type` `V: Receiver Type` `B: Broadcaster Type`
+pub type EventHandlerSelector<R, C, V, B> = fn(EventHandlerSet<V>) -> Vec<Option<EventHandler<R, C, V, B>>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {

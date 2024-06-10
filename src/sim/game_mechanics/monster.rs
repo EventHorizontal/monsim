@@ -10,12 +10,12 @@ use tap::Pipe;
 use super::{Ability, TeamID};
 use crate::{
     sim::{
-        event_dispatcher::EventContext,
+        event_dispatcher::{EventContext, OwnedEventHandlerT},
         targetting::{BoardPosition, FieldPosition},
         ActivationOrder, EventHandlerSet, Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    ActorID, Broadcaster, EventHandlerSelector, Item, Move, OwnedEventHandler,
+    Broadcaster, EventHandlerSelector, Item, Move, OwnedEventHandler,
 };
 
 #[derive(Debug, Clone)]
@@ -237,21 +237,20 @@ impl Monster {
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
+    pub(crate) fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         &self,
-        event_handler_selector: EventHandlerSelector<R, C, B>,
-    ) -> Vec<OwnedEventHandler<R, C, B>> {
+        event_handler_selector: EventHandlerSelector<R, C, MonsterID, B>,
+    ) -> Vec<Box<dyn OwnedEventHandlerT<R, C, B>>> {
         let mut output_owned_event_handlers = Vec::new();
 
-        let owner_id = ActorID::Monster(self.id);
+        let owner_id = self.id;
 
         // of the Monster itself
         event_handler_selector((self.species.event_handlers)())
             .into_iter()
             .flatten()
             .map(|event_handler| {
-                // Add an OwnedEventHandler if an EventHandler exists.
-                OwnedEventHandler {
+                Box::new(OwnedEventHandler {
                     event_handler,
                     owner_id,
                     activation_order: ActivationOrder {
@@ -259,7 +258,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
-                }
+                }) as Box<dyn OwnedEventHandlerT<R, C, B>>
             })
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
@@ -270,8 +269,7 @@ impl Monster {
             .into_iter()
             .flatten()
             .map(|event_handler| {
-                // Add an OwnedEventHandler if an EventHandler exists.
-                OwnedEventHandler {
+                Box::new(OwnedEventHandler {
                     event_handler,
                     owner_id,
                     activation_order: ActivationOrder {
@@ -279,7 +277,7 @@ impl Monster {
                         speed: (&self).stat(Stat::Speed),
                         order: (&self).ability.order(),
                     },
-                }
+                }) as Box<dyn OwnedEventHandlerT<R, C, B>>
             })
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
@@ -292,14 +290,16 @@ impl Monster {
             let owned_event_handlers = event_handler_selector(volatile_status.event_handlers())
                 .into_iter()
                 .flatten()
-                .map(|event_handler| OwnedEventHandler {
-                    event_handler,
-                    owner_id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: 0,
-                    },
+                .map(|event_handler| {
+                    Box::new(OwnedEventHandler {
+                        event_handler,
+                        owner_id,
+                        activation_order: ActivationOrder {
+                            priority: 0,
+                            speed: self.stat(Stat::Speed),
+                            order: 0,
+                        },
+                    }) as Box<dyn OwnedEventHandlerT<R, C, B>>
                 });
             output_owned_event_handlers.extend(owned_event_handlers)
         });
@@ -310,7 +310,7 @@ impl Monster {
                 .into_iter()
                 .flatten()
                 .for_each(|event_handler| {
-                    let owned_event_handler = OwnedEventHandler {
+                    let owned_event_handler = Box::new(OwnedEventHandler {
                         event_handler,
                         owner_id,
                         activation_order: ActivationOrder {
@@ -318,7 +318,7 @@ impl Monster {
                             speed: self.stat(Stat::Speed),
                             order: 0,
                         },
-                    };
+                    }) as Box<dyn OwnedEventHandlerT<R, C, B>>;
                     output_owned_event_handlers.extend([owned_event_handler].into_iter());
                 });
         }
@@ -329,7 +329,7 @@ impl Monster {
                 .into_iter()
                 .flatten()
                 .for_each(|event_handler| {
-                    let owned_event_handler = OwnedEventHandler {
+                    let owned_event_handler = Box::new(OwnedEventHandler {
                         event_handler,
                         owner_id,
                         activation_order: ActivationOrder {
@@ -337,7 +337,7 @@ impl Monster {
                             speed: self.stat(Stat::Speed),
                             order: 0,
                         },
-                    };
+                    }) as Box<dyn OwnedEventHandlerT<R, C, B>>;
                     output_owned_event_handlers.extend([owned_event_handler].into_iter());
                 });
         }

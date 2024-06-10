@@ -1,3 +1,5 @@
+use monsim_utils::Nothing;
+
 use crate::EventHandlerSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,7 +19,7 @@ impl Weather {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet {
+    pub fn event_handlers(&self) -> EventHandlerSet<Nothing> {
         self.species().event_handlers()
     }
 }
@@ -26,7 +28,7 @@ impl Weather {
 pub struct WeatherSpecies {
     dex_number: u16,
     name: &'static str,
-    on_event_behaviour: fn() -> EventHandlerSet,
+    on_event_behaviour: fn() -> EventHandlerSet<Nothing>,
 }
 
 impl PartialEq for WeatherSpecies {
@@ -63,7 +65,7 @@ impl WeatherSpecies {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet {
+    pub fn event_handlers(&self) -> EventHandlerSet<Nothing> {
         (self.on_event_behaviour)()
     }
 }
@@ -71,5 +73,5 @@ impl WeatherSpecies {
 pub struct WeatherDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub on_event_behaviour: fn() -> EventHandlerSet,
+    pub on_event_behaviour: fn() -> EventHandlerSet<Nothing>,
 }

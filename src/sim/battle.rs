@@ -3,9 +3,9 @@ mod message_log;
 
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Broadcaster, Environment, EventHandlerSelector, Item, ItemID, OwnedEventHandler, PartiallySpecifiedActionChoice,
+    AbilityID, Broadcaster, Environment, EventHandlerSelector, Item, ItemID, PartiallySpecifiedActionChoice,
 };
-use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
+use monsim_utils::{not, Ally, MaxSizedVec, Nothing, Opponent};
 use std::{
     fmt::Display,
     ops::{Deref, DerefMut, RangeInclusive},
@@ -14,7 +14,7 @@ use std::{
 use self::builder::BattleFormat;
 
 use super::{
-    event_dispatcher::EventContext,
+    event_dispatcher::{EventContext, OwnedEventHandlerT},
     prng::Prng,
     targetting::{BoardPosition, FieldPosition},
     PerTeam, TeamID,
@@ -232,14 +232,15 @@ impl BattleState {
         &self.environment
     }
 
-    pub fn owned_event_handlers<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
+    pub fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         &self,
-        event_handler_selector: EventHandlerSelector<R, C, B>,
-    ) -> Vec<OwnedEventHandler<R, C, B>> {
+        event_handler_selector: EventHandlerSelector<R, C, MonsterID, B>,
+        receiverless_event_handler_selector: EventHandlerSelector<R, C, Nothing, B>,
+    ) -> Vec<Box<dyn OwnedEventHandlerT<R, C, B>>> {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
         out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));
-        out.append(&mut self.environment.owned_event_handlers(event_handler_selector));
+        out.append(&mut self.environment.owned_event_handlers(receiverless_event_handler_selector));
         out
     }
 
@@ -450,37 +451,5 @@ impl BattleState {
         }
 
         MaxSizedVec::from_vec(possible_targets_for_move)
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ActorID {
-    Monster(MonsterID),
-    Environment,
-}
-impl ActorID {
-    pub fn expect_monster(&self) -> MonsterID {
-        match self {
-            ActorID::Monster(monster_id) => *monster_id,
-            ActorID::Environment => panic!("Expected actor to be a monster, found environment instead."),
-        }
-    }
-}
-
-impl PartialEq<MonsterID> for ActorID {
-    fn eq(&self, other: &MonsterID) -> bool {
-        match self {
-            ActorID::Monster(monster_id) => monster_id == other,
-            ActorID::Environment => false,
-        }
-    }
-}
-
-impl PartialEq<ActorID> for MonsterID {
-    fn eq(&self, other: &ActorID) -> bool {
-        match other {
-            ActorID::Monster(monster_id) => monster_id == self,
-            ActorID::Environment => false,
-        }
     }
 }

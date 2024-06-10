@@ -50,7 +50,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
             },
             event_filtering_options: EventFilteringOptions::default(),
         }),
-        ..EventHandlerSet::empty()
+        ..EventHandlerSet::default_for_monster()
     },
     order: 0,
 });
@@ -59,7 +59,7 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
 pub const Pickup: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 002,
     name: "Pickup",
-    event_handlers: || EventHandlerSet::empty(),
+    event_handlers: || EventHandlerSet::default_for_monster(),
     order: 1,
 });
 
@@ -90,7 +90,7 @@ pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEn
                 ..EventFilteringOptions::default()
             },
         }),
-        ..EventHandlerSet::empty()
+        ..EventHandlerSet::default_for_monster()
     },
     order: 2,
 });

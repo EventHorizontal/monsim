@@ -42,6 +42,6 @@ pub const HarshSunlight: WeatherSpecies = WeatherSpecies::from_dex_entry(Weather
                 only_if_receiver_is_active: true,
             },
         }),
-        ..EventHandlerSet::empty()
+        ..EventHandlerSet::default_for_environment()
     },
 });

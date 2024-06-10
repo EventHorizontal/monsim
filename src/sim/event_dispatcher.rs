@@ -40,7 +40,7 @@ mod events;
 
 use crate::{
     sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, Battle, EventHandlerSelector, Nothing, Outcome},
-    ActivationOrder, ActorID, FieldPosition,
+    ActivationOrder, FieldPosition,
 };
 use contexts::*;
 pub use events::*;
@@ -53,17 +53,19 @@ use super::targetting::PositionRelationFlags;
 pub struct EventDispatcher;
 
 impl EventDispatcher {
-    pub fn dispatch_trial_event<C: EventContext + Copy, B: Broadcaster + Copy>(
+    pub fn dispatch_trial_event<C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         battle: &mut Battle,
 
         broadcaster_id: B,
-        event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, B>,
+        event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, MonsterID, B>,
+        receiverless_event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, Nothing, B>,
         event_context: C,
     ) -> Outcome<Nothing> {
         EventDispatcher::dispatch_event(
             battle,
             broadcaster_id,
             event_handler_selector,
+            receiverless_event_handler_selector,
             event_context,
             Outcome::Success(NOTHING),
             Some(Outcome::Failure),
@@ -73,37 +75,39 @@ impl EventDispatcher {
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution "short-circuits", or returns early.
-    pub fn dispatch_event<R: PartialEq + Copy, C: EventContext + Copy, B: Broadcaster + Copy>(
+    pub fn dispatch_event<R: PartialEq + Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         battle: &mut Battle,
 
         broadcaster_id: B,
-        event_handler_selector: EventHandlerSelector<R, C, B>,
+        event_handler_selector: EventHandlerSelector<R, C, MonsterID, B>,
+        receiverless_event_handler_selector: EventHandlerSelector<R, C, Nothing, B>,
         event_context: C,
         default: R,
         short_circuit: Option<R>,
     ) -> R {
-        let mut owned_event_handlers = battle.owned_event_handlers(event_handler_selector);
+        #[cfg(feature = "debug")]
+        let event_dispatch_start_time = std::time::SystemTime::now();
+
+        let mut owned_event_handlers = battle.owned_event_handlers(event_handler_selector, receiverless_event_handler_selector);
 
         if owned_event_handlers.is_empty() {
             return default;
         }
 
         sort_by_activation_order(&mut battle.prng, &mut owned_event_handlers, |owned_event_handler| {
-            owned_event_handler.activation_order
+            owned_event_handler.activation_order()
         });
 
         let mut relay = default;
-        for OwnedEventHandler { event_handler, owner_id, .. } in owned_event_handlers.into_iter() {
+        for owned_event_handler in owned_event_handlers.into_iter() {
             if EventDispatcher::does_event_pass_event_receivers_filtering_options(
                 &battle,
                 broadcaster_id,
                 event_context.target(),
-                owner_id,
-                event_handler.event_filtering_options,
+                owned_event_handler.owner_id(),
+                owned_event_handler.event_filtering_options(),
             ) {
-                // INVESTIGATE: Can we remove the need to pass the owner id? (since its already inside the
-                // OwnedEventHandler)
-                relay = (event_handler.response)(battle, broadcaster_id, owner_id, event_context, relay);
+                relay = owned_event_handler.respond(battle, broadcaster_id, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -112,6 +116,12 @@ impl EventDispatcher {
                 };
             }
         }
+        #[cfg(feature = "debug")]
+        {
+            let elapsed_time = event_dispatch_start_time.elapsed().expect("This should work every time.");
+            println!("Event dispatch cycle took {:?}", elapsed_time);
+        }
+
         relay
     }
 
@@ -119,15 +129,15 @@ impl EventDispatcher {
         battle: &Battle,
         event_broadcaster: impl Broadcaster,
         event_target_id: Option<MonsterID>,
-        event_receiver_id: ActorID,
+        event_receiver_id: Option<MonsterID>,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
-        let mut passes_filter;
-
-        let ActorID::Monster(event_receiver_id) = event_receiver_id else {
-            // The actor is the environment, in which case it auto-passes the check.
+        let Some(event_receiver_id) = event_receiver_id else {
+            // The event_receiver is the Environment, that auto-passes checks.
             return true;
         };
+
+        let mut passes_filter;
 
         let EventFilteringOptions {
             only_if_broadcaster_is: allowed_broadcaster_position_relation_flags,
@@ -215,15 +225,29 @@ impl EventFilteringOptions {
 }
 
 /// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: ActorID, context: C, relay: R) -> event_outcome: R`
-pub type EventResponse<R, C, B> = fn(&mut Battle, B, ActorID, C, R) -> R;
+pub type EventResponse<R, C, V, B> = fn(&mut Battle, B, V, C, R) -> R;
 
 /// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EventHandler<R: Copy, C: Copy, B: Broadcaster + Clone + Copy = MonsterID> {
+pub struct EventHandler<R: Copy, C: Copy, V: Copy, B: Broadcaster + Clone + Copy = MonsterID> {
     #[cfg(feature = "debug")]
     pub source_code_location: &'static str,
-    pub response: EventResponse<R, C, B>,
+    pub response: EventResponse<R, C, V, B>,
     pub event_filtering_options: EventFilteringOptions,
+}
+
+impl<R: Copy, C: Copy, V: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, V, B> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[cfg(feature = "debug")]
+        let out = {
+            f.debug_struct("EventHandler")
+                .field("source_code_location", &self.source_code_location)
+                .finish()
+        };
+        #[cfg(not(feature = "debug"))]
+        let out = { write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.") };
+        out
+    }
 }
 
 pub trait Broadcaster {
@@ -248,24 +272,62 @@ pub trait EventContext {
 
 impl EventContext for Nothing {}
 
-impl<R: Copy, C: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, B> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(feature = "debug")]
-        let out = {
-            f.debug_struct("EventHandler")
-                .field("source_code_location", &self.source_code_location)
-                .finish()
-        };
-        #[cfg(not(feature = "debug"))]
-        let out = { write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.") };
-        out
+pub trait OwnedEventHandlerT<R, C, B> {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R;
+
+    fn activation_order(&self) -> ActivationOrder;
+
+    fn owner_id(&self) -> Option<MonsterID>;
+
+    fn event_filtering_options(&self) -> EventFilteringOptions;
+}
+
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> Clone for Box<dyn OwnedEventHandlerT<R, C, B>> {
+    fn clone(&self) -> Self {
+        self.to_owned()
+    }
+}
+
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> OwnedEventHandlerT<R, C, B> for OwnedEventHandler<R, C, MonsterID, B> {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+        (self.event_handler.response)(battle, broadcaster_id, self.owner_id, context, default)
+    }
+
+    fn activation_order(&self) -> ActivationOrder {
+        self.activation_order
+    }
+
+    fn owner_id(&self) -> Option<MonsterID> {
+        Some(self.owner_id)
+    }
+
+    fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.event_handler.event_filtering_options
+    }
+}
+
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> OwnedEventHandlerT<R, C, B> for OwnedEventHandler<R, C, Nothing, B> {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+        (self.event_handler.response)(battle, broadcaster_id, self.owner_id, context, default)
+    }
+
+    fn activation_order(&self) -> ActivationOrder {
+        self.activation_order
+    }
+
+    fn owner_id(&self) -> Option<MonsterID> {
+        None
+    }
+
+    fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.event_handler.event_filtering_options
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandler<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> {
-    pub event_handler: EventHandler<R, C, B>,
-    pub owner_id: ActorID,
+pub struct OwnedEventHandler<R: Copy, C: EventContext + Copy, V: Copy, B: Broadcaster + Copy> {
+    pub event_handler: EventHandler<R, C, V, B>,
+    pub owner_id: V,
     pub activation_order: ActivationOrder,
 }
 

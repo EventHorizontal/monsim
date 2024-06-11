@@ -25,7 +25,7 @@ fn main() -> MonsimResult<()> {
                 .with_monster(
                     Dandyleo
                         .spawn(
-                            (StoneEdge.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), Some(HoneClaws.spawn())),
+                            (SunnyDay.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), Some(HoneClaws.spawn())),
                             Pickup.spawn(),
                         )
                         .with_nickname("Clover")
@@ -68,7 +68,6 @@ fn main() -> MonsimResult<()> {
                         .with_nickname("Epona"),
                 ),
         )
-        .with_environment(Environment::spawn().with_weather(&HarshSunlight))
         // .with_format(BattleFormat::Triple)
         .build();
 

@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{EventFilteringOptions, EventHandler, EventHandlerSet, Percent, PositionRelationFlags, Type, WeatherDexEntry, WeatherSpecies};
+use monsim::{Count, EventFilteringOptions, EventHandler, EventHandlerSet, Percent, PositionRelationFlags, Type, WeatherDexEntry, WeatherSpecies};
 use monsim_macros::mov;
 
 #[cfg(feature = "debug")]
@@ -9,6 +9,7 @@ use monsim::source_code_location;
 pub const HarshSunlight: WeatherSpecies = WeatherSpecies::from_dex_entry(WeatherDexEntry {
     dex_number: 001,
     name: "Harsh Sunlight",
+    lifetime_in_turns: Count::Fixed(5),
     on_event_behaviour: || EventHandlerSet {
         on_modify_damage: Some(EventHandler {
             #[cfg(feature = "debug")]
@@ -44,4 +45,6 @@ pub const HarshSunlight: WeatherSpecies = WeatherSpecies::from_dex_entry(Weather
         }),
         ..EventHandlerSet::default_for_environment()
     },
+    on_start_message: "The sunlight became harsh!",
+    on_clear_message: "The harsh sunlight faded!",
 });

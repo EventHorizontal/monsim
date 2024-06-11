@@ -316,6 +316,17 @@ impl BattleSimulator {
             }
         }
 
+        let mut should_remove_weather = false;
+        if let Some(weather) = self.battle.environment_mut().weather_mut() {
+            weather.remaining_turns -= 1;
+            if weather.remaining_turns == 0 {
+                should_remove_weather = true;
+            }
+        }
+        if should_remove_weather {
+            clear_weather(&mut self.battle);
+        }
+
         event_dispatcher::trigger_on_turn_end_event(&mut self.battle, NOTHING, NOTHING);
 
         self.battle.message_log.show_new_messages();

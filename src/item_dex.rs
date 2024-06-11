@@ -30,7 +30,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
                 ..EventFilteringOptions::default()
             },
         }),
-        on_move_used: Some(EventHandler {
+        on_damaging_move_used: Some(EventHandler {
             #[cfg(feature = "debug")]
             source_code_location: source_code_location!(),
             response: |battle,

@@ -7,6 +7,8 @@ use monsim::{
 };
 use monsim_macros::mon;
 
+use crate::HarshSunlight;
+
 use super::status_dex::*;
 
 pub const StoneEdge: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
@@ -281,4 +283,22 @@ pub const HoneClaws: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     priority: 0,
     targets: PositionRelationFlags::SELF,
     type_: Type::Dark,
+});
+
+pub const SunnyDay: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 014,
+    name: "Sunny Day",
+    on_use_effect: |battle, context| {
+        let start_weather_outcome = effects::start_weather(battle, &HarshSunlight);
+        start_weather_outcome
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: Some(100),
+    base_crit_stage: 1,
+    base_power: 100,
+    category: MoveCategory::Status,
+    max_power_points: 5,
+    priority: 0,
+    targets: PositionRelationFlags::SELF,
+    type_: Type::Fire,
 });

@@ -105,10 +105,10 @@ fn attach_tree_for_team(output_string: &mut String, team: &MonsterTeam) {
 impl Battle {
     // Battle ---------------------------------------------------- //
 
-    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, environment: Environment, format: BattleFormat) -> Self {
+    pub(crate) fn new(ally_team: Ally<MonsterTeam>, opponent_team: Opponent<MonsterTeam>, environment: Environment, format: BattleFormat, prng: Prng) -> Self {
         let teams = PerTeam::new(ally_team, opponent_team);
         Self {
-            prng: Prng::from_current_time(),
+            prng,
             turn_number: 0,
             message_log: MessageLog::new(),
             format,
@@ -230,6 +230,10 @@ impl BattleState {
 
     pub fn environment(&self) -> &Environment {
         &self.environment
+    }
+
+    pub(crate) fn environment_mut(&mut self) -> &mut Environment {
+        &mut self.environment
     }
 
     pub fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(

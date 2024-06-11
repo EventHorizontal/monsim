@@ -6,7 +6,7 @@ use crate::{
     sim::event_dispatcher,
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, ItemUseContext, ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
-    PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TypeEffectiveness, VolatileStatusSpecies,
+    PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -57,7 +57,10 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
             }
         ]);
 
-        let _move_hit_outcome = mov![move_used_id].on_use_effect()(battle, move_hit_context);
+        let move_use_outcome = mov![move_used_id].on_use_effect()(battle, move_hit_context);
+        if move_use_outcome.is_failure() {
+            battle.queue_message("but the move failed!");
+        }
     }
 
     mov![mut move_used_id].current_power_points -= 1;
@@ -531,6 +534,37 @@ pub(crate) fn shift_monster(battle: &mut Battle, monster_id: MonsterID, destinat
     if mon![monster_id].field_position().is_some() {
         mon![mut monster_id].board_position = BoardPosition::Field(destination_position);
         battle.queue_message(format!["{} was shifted to {}", mon![monster_id].name(), destination_position]);
+        Outcome::Success(NOTHING)
+    } else {
+        Outcome::Failure
+    }
+}
+
+pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpecies) -> Outcome<Nothing> {
+    if let Some(weather) = battle.environment().weather() {
+        if weather.species() == weather_species {
+            return Outcome::Failure;
+        }
+    }
+
+    let remaining_turns = match weather_species.lifetime_in_turns() {
+        Count::Fixed(number) => number,
+        Count::RandomInRange { min, max } => battle.prng.roll_random_number_in_range(min as u16..=max as u16) as u8,
+    };
+    let weather = Weather {
+        species: weather_species,
+        remaining_turns,
+    };
+    battle.queue_message(format!["{}", weather.on_start_message()]);
+    battle.environment_mut().weather = Some(weather);
+    Outcome::Success(NOTHING)
+}
+
+pub(crate) fn clear_weather(battle: &mut Battle) -> Outcome<Nothing> {
+    // TODO: We might need something more elaborate here.
+    if let Some(weather) = battle.environment().weather() {
+        battle.queue_message(format!["{}", weather.on_clear_message()]);
+        battle.environment_mut().weather = None;
         Outcome::Success(NOTHING)
     } else {
         Outcome::Failure

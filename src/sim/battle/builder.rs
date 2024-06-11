@@ -1,8 +1,9 @@
-use monsim_utils::{Ally, MaxSizedVec, Opponent};
+use monsim_utils::{Ally, Count, MaxSizedVec, Opponent};
 use tap::Pipe;
 
 use crate::{
     effects,
+    prng::Prng,
     sim::{
         game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet},
         targetting::{BoardPosition, FieldPosition},
@@ -65,6 +66,8 @@ impl BattleBuilder {
     }
 
     pub fn build(self) -> Battle {
+        let mut prng = Prng::from_current_time();
+
         let ally_board_positions = self.format.ally_board_positions();
 
         const ALLY_IDS: [MonsterID; 6] = [ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6];
@@ -83,9 +86,9 @@ impl BattleBuilder {
             .expect("Building the BattleState requires adding an Opponent Team, found none.")
             .map_consume(|opponent_team_builder| opponent_team_builder.build(OPPONENT_IDS, opponent_board_positions, TeamID::Opponents));
 
-        let environment = self.environment.build();
+        let environment = self.environment.build(&mut prng);
 
-        Battle::new(ally_team, opponent_team, environment, self.format)
+        Battle::new(ally_team, opponent_team, environment, self.format, prng)
     }
 }
 
@@ -498,9 +501,9 @@ impl EnvironmentBuilder {
         self
     }
 
-    pub fn build(self) -> Environment {
+    pub fn build(self, prng: &mut Prng) -> Environment {
         Environment {
-            weather: self.maybe_weather.map(|weather_builder| weather_builder.build()),
+            weather: self.maybe_weather.map(|weather_builder| weather_builder.build(prng)),
         }
     }
 }
@@ -511,7 +514,14 @@ pub struct WeatherBuilder {
 }
 
 impl WeatherBuilder {
-    pub fn build(self) -> Weather {
-        Weather { species: self.species }
+    pub fn build(self, prng: &mut Prng) -> Weather {
+        let remaining_turns = match self.species.lifetime_in_turns() {
+            Count::Fixed(number) => number,
+            Count::RandomInRange { min, max } => prng.roll_random_number_in_range(min as u16..=max as u16) as u8,
+        };
+        Weather {
+            species: self.species,
+            remaining_turns,
+        }
     }
 }

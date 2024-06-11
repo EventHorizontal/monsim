@@ -1,10 +1,11 @@
-use monsim_utils::Nothing;
+use monsim_utils::{Count, Nothing};
 
 use crate::EventHandlerSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Weather {
     pub(crate) species: &'static WeatherSpecies,
+    pub(crate) remaining_turns: u8,
 }
 
 impl Weather {
@@ -19,6 +20,16 @@ impl Weather {
     }
 
     #[inline(always)]
+    pub fn on_start_message(&self) -> &'static str {
+        self.species.on_start_message
+    }
+
+    #[inline(always)]
+    pub fn on_clear_message(&self) -> &'static str {
+        self.species.on_clear_message
+    }
+
+    #[inline(always)]
     pub fn event_handlers(&self) -> EventHandlerSet<Nothing> {
         self.species().event_handlers()
     }
@@ -28,7 +39,10 @@ impl Weather {
 pub struct WeatherSpecies {
     dex_number: u16,
     name: &'static str,
+    lifetime_in_turns: Count,
     on_event_behaviour: fn() -> EventHandlerSet<Nothing>,
+    on_start_message: &'static str,
+    on_clear_message: &'static str,
 }
 
 impl PartialEq for WeatherSpecies {
@@ -44,13 +58,19 @@ impl WeatherSpecies {
         let WeatherDexEntry {
             dex_number,
             name,
+            lifetime_in_turns,
             on_event_behaviour,
+            on_start_message,
+            on_clear_message,
         } = dex_entry;
 
         WeatherSpecies {
             dex_number,
             name,
+            lifetime_in_turns,
             on_event_behaviour,
+            on_start_message,
+            on_clear_message,
         }
     }
 
@@ -68,10 +88,28 @@ impl WeatherSpecies {
     pub fn event_handlers(&self) -> EventHandlerSet<Nothing> {
         (self.on_event_behaviour)()
     }
+
+    #[inline(always)]
+    pub fn lifetime_in_turns(&self) -> Count {
+        self.lifetime_in_turns
+    }
+
+    #[inline(always)]
+    pub fn on_start_message(&self) -> &'static str {
+        self.on_start_message
+    }
+
+    #[inline(always)]
+    pub fn on_clear_message(&self) -> &'static str {
+        self.on_clear_message
+    }
 }
 
 pub struct WeatherDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
+    pub lifetime_in_turns: Count,
     pub on_event_behaviour: fn() -> EventHandlerSet<Nothing>,
+    pub on_start_message: &'static str,
+    pub on_clear_message: &'static str,
 }

@@ -22,16 +22,19 @@ that specific thing happens, or only if further conditions are satisfied. `Passh
 `on_move_used` when used by an opponent, but only if the move is water-type and super-effective, which it then checks
 manually.
 
-The EventHandler usually returns a value that has to do with the specific event being called. With the Life Orb example,
-it returned a new value for the attack stat to be used when attacking. What kind of value an EventHandler returns
+The EventHandler returns a value, which tells the broadcaster how to modify the logic being evaluated. With the Life Orb
+example, it returned a new value for the attack stat to be used when attacking. What kind of value an EventHandler returns
 is decided by the Event it responds to. The `on_calculate_attack_stat` Event expects a `u16` - the modified attack stat.
-Note that Life Orb may choose to return the initial attack, which would correspond to having no effect. This is
-desirable when an mechanic wants to affect something only if certain conditions are met.
+Note that Life Orb may choose to return the original attack stat, which would correspond to having no effect. This is
+desirable when an mechanic wants to affect the simulation only if certain conditions are met, it then returns the original
+value when the condition is not met.
 
-Once all the EventHandlers are exhausted, the Event resolution ends and the return value is returned to the broadcaster.
-The execution may be short-circuited if a special value, decided by the broadcaster, is obtained. Certain Events also
-require the specification of a default value to return if there happens (as it often does) that there are no EventHandlers
-for that particular Event at the moment.
+The Event Dispatcher folds the return values of all the EventHandlers it collected from the Battle, and then the return
+value is returned to the broadcaster. The execution may be short-circuited if a special value, decided by the broadcaster,
+is obtained. Certain Events also require the specification of a default value to return if there happens (as it often does)
+that there are no EventHandlers for that particular Event at the moment. For "trial" events, which encapsulate checking if
+some action will be successful, have always have a default value of `Outcome::Success<()>` which means they succeed by default,
+as would be expected.
 */
 
 pub mod contexts;

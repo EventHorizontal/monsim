@@ -34,9 +34,9 @@ pub enum TypeEffectiveness {
     DoubleSuperEffective,
 }
 
-impl Into<Percent> for TypeEffectiveness {
-    fn into(self) -> Percent {
-        match self {
+impl From<TypeEffectiveness> for Percent {
+    fn from(value: TypeEffectiveness) -> Self {
+        match value {
             TypeEffectiveness::Ineffective => Percent(0),
             TypeEffectiveness::DoubleNotVeryEffective => Percent(25),
             TypeEffectiveness::NotVeryEffective => Percent(50),

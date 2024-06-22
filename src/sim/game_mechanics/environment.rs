@@ -26,7 +26,7 @@ impl Environment {
     ) -> Vec<Box<dyn OwnedEventHandler<R, C, B>>> {
         let mut output_owned_event_handlers = Vec::new();
         if let Some(weather) = &self.weather {
-            event.get_event_handler_without_receiver(weather.event_handlers()).map(|event_handler| {
+            if let Some(event_handler) = event.get_event_handler_without_receiver(weather.event_handlers()) {
                 let owned_event_handler = Box::new(OwnedEventHandlerWithoutReceiver {
                     event_handler,
                     activation_order: ActivationOrder {
@@ -35,8 +35,8 @@ impl Environment {
                         order: 0,
                     },
                 }) as Box<dyn OwnedEventHandler<R, C, B>>;
-                output_owned_event_handlers.extend([owned_event_handler].into_iter());
-            });
+                output_owned_event_handlers.extend([owned_event_handler]);
+            }
         }
         output_owned_event_handlers
     }

@@ -9,7 +9,7 @@ pub struct Item {
 impl Item {
     #[inline(always)]
     pub fn name(&self) -> &'static str {
-        &self.species.name
+        self.species.name
     }
 
     #[inline(always)]

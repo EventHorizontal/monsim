@@ -266,7 +266,7 @@ impl BattleSimulator {
             let remaining_monsters_count_per_team = self
                 .battle
                 .teams()
-                .map_clone(|team| team.monsters().into_iter().filter(|monster| not![monster.is_fainted()]).count());
+                .map_clone(|team| team.monsters().filter(|monster| not![monster.is_fainted()]).count());
 
             for (team_id, remaining_monsters_count) in remaining_monsters_count_per_team.iter_with_team_id() {
                 if remaining_monsters_count == 1 {

@@ -4,6 +4,12 @@ pub struct MessageLog {
     shown_messages_cursor: usize,
 }
 
+impl Default for MessageLog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 const INITIAL_MESSAGE_LOG_CAPACITY: usize = 200;
 impl MessageLog {
     pub fn new() -> Self {

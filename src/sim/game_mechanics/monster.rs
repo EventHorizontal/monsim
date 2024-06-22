@@ -272,8 +272,8 @@ impl Monster {
                     owner_id,
                     activation_order: ActivationOrder {
                         priority: 0,
-                        speed: (&self).stat(Stat::Speed),
-                        order: (&self).ability.order(),
+                        speed: self.stat(Stat::Speed),
+                        order: self.ability.order(),
                     },
                 }) as Box<dyn OwnedEventHandler<R, C, B>>
             })
@@ -301,7 +301,7 @@ impl Monster {
 
         // from the Monster's persistent status
         if let Some(persistent_status) = self.persistent_status {
-            event.get_event_handler_with_receiver(persistent_status.event_handlers()).map(|event_handler| {
+            if let Some(event_handler) = event.get_event_handler_with_receiver(persistent_status.event_handlers()) {
                 let owned_event_handler = Box::new(OwnedEventHandlerWithReceiver {
                     event_handler,
                     owner_id,
@@ -311,13 +311,13 @@ impl Monster {
                         order: 0,
                     },
                 }) as Box<dyn OwnedEventHandler<R, C, B>>;
-                output_owned_event_handlers.extend([owned_event_handler].into_iter());
-            });
+                output_owned_event_handlers.extend([owned_event_handler]);
+            }
         }
 
         // from the Monster's held item
         if let Some(held_item) = self.held_item {
-            event.get_event_handler_with_receiver(held_item.event_listener()).map(|event_handler| {
+            if let Some(event_handler) = event.get_event_handler_with_receiver(held_item.event_listener()) {
                 let owned_event_handler = Box::new(OwnedEventHandlerWithReceiver {
                     event_handler,
                     owner_id,
@@ -327,8 +327,8 @@ impl Monster {
                         order: 0,
                     },
                 }) as Box<dyn OwnedEventHandler<R, C, B>>;
-                output_owned_event_handlers.extend([owned_event_handler].into_iter());
-            });
+                output_owned_event_handlers.extend([owned_event_handler]);
+            }
         }
 
         output_owned_event_handlers

@@ -331,7 +331,7 @@ impl MonsterBuilder {
             .zip(move_ids)
             .map(|(move_builder, move_id)| move_builder.build(move_id))
             .collect::<Vec<_>>()
-            .pipe(|vec| MaxSizedVec::from_vec(vec));
+            .pipe(MaxSizedVec::from_vec);
 
         let ability = self.ability.build(AbilityID { owner_id: monster_id });
 

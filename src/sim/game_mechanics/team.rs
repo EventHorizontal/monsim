@@ -46,7 +46,7 @@ impl MonsterTeam {
 
     pub fn active_monsters(&self) -> Vec<&Monster> {
         self.monsters()
-            .filter(|monster| if let BoardPosition::Field(_) = monster.board_position { true } else { false })
+            .filter(|monster| matches!(monster.board_position, BoardPosition::Field(_)))
             .collect()
     }
 

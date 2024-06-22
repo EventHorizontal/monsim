@@ -81,7 +81,7 @@ impl EventDispatcher {
         let mut relay = default;
         for owned_event_handler in owned_event_handlers.into_iter() {
             if EventDispatcher::does_event_pass_event_receivers_filtering_options(
-                &battle,
+                battle,
                 broadcaster_id,
                 event_context.target(),
                 owned_event_handler.owner_id(),

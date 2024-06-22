@@ -573,7 +573,7 @@ pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpeci
         species: weather_species,
         remaining_turns,
     };
-    battle.queue_message(format!["{}", weather.on_start_message()]);
+    battle.queue_message(weather.on_start_message());
     battle.environment_mut().weather = Some(weather);
     Outcome::Success(NOTHING)
 }
@@ -581,7 +581,7 @@ pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpeci
 pub(crate) fn clear_weather(battle: &mut Battle) -> Outcome<Nothing> {
     // TODO: We might need something more elaborate here.
     if let Some(weather) = battle.environment().weather() {
-        battle.queue_message(format!["{}", weather.on_clear_message()]);
+        battle.queue_message(weather.on_clear_message());
         battle.environment_mut().weather = None;
         Outcome::Success(NOTHING)
     } else {

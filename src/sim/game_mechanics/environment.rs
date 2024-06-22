@@ -3,7 +3,7 @@ use monsim_utils::NOTHING;
 pub use weather::*;
 
 use crate::{
-    sim::event_dispatcher::{Event, EventContext, OwnedEventHandler, OwnedEventHandlerWithoutReceiver},
+    sim::event_dispatcher::{Event, EventContext, EventReturnable, OwnedEventHandler, OwnedEventHandlerWithoutReceiver},
     ActivationOrder, Broadcaster,
 };
 
@@ -21,10 +21,10 @@ impl Environment {
         self.weather.as_mut()
     }
 
-    pub(crate) fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
+    pub(crate) fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
         &self,
-        event: &impl Event<R, C, B>,
-    ) -> Vec<Box<dyn OwnedEventHandler<R, C, B>>> {
+        event: &impl Event<C, R, B>,
+    ) -> Vec<Box<dyn OwnedEventHandler<C, R, B>>> {
         let mut output_owned_event_handlers = Vec::new();
         if let Some(weather) = &self.weather {
             if let Some(event_handler) = event.get_event_handler_without_receiver(weather.event_handlers()) {
@@ -36,7 +36,7 @@ impl Environment {
                         speed: 0,
                         order: 0,
                     },
-                }) as Box<dyn OwnedEventHandler<R, C, B>>;
+                }) as Box<dyn OwnedEventHandler<C, R, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }
         }

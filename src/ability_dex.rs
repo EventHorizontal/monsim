@@ -4,6 +4,7 @@ use monsim::{
     effects, move_,
     sim::{Ability, AbilitySpecies, EventFilteringOptions, MoveUseContext, Type},
     AbilityActivationContext, AbilityDexEntry, AbilityID, EventHandler, EventListener, ModifiableStat, MonsterID, MoveHitContext, PositionRelationFlags,
+    StatChangeContext,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
@@ -22,9 +23,9 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
 struct FlashFireEventListener;
 
 impl EventListener<AbilityID> for FlashFireEventListener {
-    fn on_try_move_hit_handler(&self) -> Option<EventHandler<Outcome, MoveHitContext, MonsterID, AbilityID>> {
+    fn on_try_move_hit_handler(&self) -> Option<EventHandler<MoveHitContext, Outcome, AbilityID, MonsterID>> {
         Some(EventHandler {
-            response: |battle, broadcaster_id, receiver_id, move_hit_context, ability_id, _| {
+            response: |battle, broadcaster_id, receiver_id, ability_id, move_hit_context, _| {
                 if mov![move_hit_context.move_used_id].is_type(Type::Fire) && move_hit_context.target_id == receiver_id {
                     let activation_outcome = effects::activate_ability(battle, move_hit_context.target_id, |battle, ability_activation_context| {
                         let ability_owner_name = mon![ability_activation_context.ability_owner_id].name();
@@ -63,9 +64,9 @@ pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEn
 struct ContraryEventListener;
 
 impl EventListener<AbilityID> for ContraryEventListener {
-    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<i8, monsim::StatChangeContext, MonsterID, AbilityID>> {
+    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<StatChangeContext, i8, AbilityID, MonsterID>> {
         Some(EventHandler {
-            response: |battle, broadcaster_id, receiver_id, context, ability_id, _| -> i8 {
+            response: |battle, broadcaster_id, receiver_id, ability_id, context, _| -> i8 {
                 #[cfg(feature = "debug")]
                 battle.queue_message(format!["(Contrary reversed {}'s stat changes).", mon![context.affected_monster_id].name()]);
                 -context.number_of_stages

@@ -2,15 +2,9 @@ use crate::{
     sim::{MonsterID, MoveID},
     AbilityID, ItemID, ModifiableStat,
 };
-use monsim_utils::{MaxSizedVec, Nothing};
+use monsim_utils::MaxSizedVec;
 
-pub trait EventContext {
-    fn target(&self) -> Option<MonsterID> {
-        None
-    }
-}
-
-impl EventContext for Nothing {}
+use super::EventContext;
 
 /// `move_user_id`: MonsterID of the Monster using the move.
 ///

@@ -10,7 +10,7 @@ use tap::Pipe;
 use super::{Ability, TeamID};
 use crate::{
     sim::{
-        event_dispatcher::{Event, EventContext, EventListener, OwnedEventHandler},
+        event_dispatcher::{Event, EventContext, EventListener, EventReturnable, OwnedEventHandler},
         targetting::{BoardPosition, FieldPosition},
         ActivationOrder, Type,
     },
@@ -237,10 +237,10 @@ impl Monster {
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
     }
 
-    pub(crate) fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
+    pub(crate) fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
         &self,
-        event: &impl Event<R, C, B>,
-    ) -> Vec<Box<dyn OwnedEventHandler<R, C, B>>> {
+        event: &impl Event<C, R, B>,
+    ) -> Vec<Box<dyn OwnedEventHandler<C, R, B>>> {
         let mut output_owned_event_handlers = Vec::new();
 
         let owner_id = self.id;
@@ -258,7 +258,7 @@ impl Monster {
                         order: 0,
                     },
                     mechanic_id: self.id,
-                }) as Box<dyn OwnedEventHandler<R, C, B>>
+                }) as Box<dyn OwnedEventHandler<C, R, B>>
             })
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
@@ -277,7 +277,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: self.ability.order(),
                     },
-                }) as Box<dyn OwnedEventHandler<R, C, B>>
+                }) as Box<dyn OwnedEventHandler<C, R, B>>
             })
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
@@ -297,7 +297,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
-                }) as Box<dyn OwnedEventHandler<R, C, B>>
+                }) as Box<dyn OwnedEventHandler<C, R, B>>
             });
             output_owned_event_handlers.extend(owned_event_handlers)
         });
@@ -314,7 +314,7 @@ impl Monster {
                         order: 0,
                     },
                     mechanic_id: persistent_status.id,
-                }) as Box<dyn OwnedEventHandler<R, C, B>>;
+                }) as Box<dyn OwnedEventHandler<C, R, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }
         }
@@ -331,7 +331,7 @@ impl Monster {
                         order: 0,
                     },
                     mechanic_id: held_item.id,
-                }) as Box<dyn OwnedEventHandler<R, C, B>>;
+                }) as Box<dyn OwnedEventHandler<C, R, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }
         }

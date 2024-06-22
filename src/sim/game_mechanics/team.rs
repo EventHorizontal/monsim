@@ -7,7 +7,7 @@ use std::{
 use super::Monster;
 use crate::{
     sim::{
-        event_dispatcher::{Event, EventContext, OwnedEventHandler},
+        event_dispatcher::{Event, EventContext, EventReturnable, OwnedEventHandler},
         targetting::BoardPosition,
         MonsterNumber,
     },
@@ -58,10 +58,10 @@ impl MonsterTeam {
         self.monsters.iter_mut()
     }
 
-    pub fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
+    pub fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
         &self,
-        event: &impl Event<R, C, B>,
-    ) -> Vec<Box<dyn OwnedEventHandler<R, C, B>>> {
+        event: &impl Event<C, R, B>,
+    ) -> Vec<Box<dyn OwnedEventHandler<C, R, B>>> {
         let mut out = Vec::new();
         for monster in self.monsters.iter() {
             out.append(&mut monster.owned_event_handlers(event))

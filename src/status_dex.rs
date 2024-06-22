@@ -1,8 +1,10 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use monsim::{
-    effects, Count, EventFilteringOptions, EventHandler, EventListener, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies,
-    PositionRelationFlags, VolatileStatusDexEntry, VolatileStatusSpecies,
+    effects,
+    status::{PersistentStatusID, VolatileStatusID},
+    Count, EventFilteringOptions, EventHandler, EventListener, MonsterID, MoveHitContext, MoveUseContext, Outcome, Percent, PersistentStatusDexEntry,
+    PersistentStatusSpecies, PositionRelationFlags, VolatileStatusDexEntry, VolatileStatusSpecies,
 };
 use monsim_macros::mon;
 
@@ -18,10 +20,10 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
 
 struct BurnedEventListener;
 
-impl EventListener for BurnedEventListener {
-    fn on_calculate_attack_stat_handler(&self) -> Option<monsim::EventHandler<u16, monsim::MoveHitContext, monsim::MonsterID>> {
+impl EventListener<PersistentStatusID> for BurnedEventListener {
+    fn on_calculate_attack_stat_handler(&self) -> Option<monsim::EventHandler<u16, MoveHitContext, MonsterID, PersistentStatusID>> {
         Some(EventHandler {
-            response: |_, _, _, _, current_attack_stat| current_attack_stat * Percent(50),
+            response: |_battle, _broadcaster_id, _receiver_id, _context, _status_id, current_attack_stat| current_attack_stat * Percent(50),
 
             event_filtering_options: EventFilteringOptions {
                 only_if_broadcaster_is: PositionRelationFlags::SELF,
@@ -30,9 +32,9 @@ impl EventListener for BurnedEventListener {
         })
     }
 
-    fn on_turn_end_handler(&self) -> Option<EventHandler<(), (), monsim::MonsterID, ()>> {
+    fn on_turn_end_handler(&self) -> Option<EventHandler<(), (), MonsterID, PersistentStatusID, ()>> {
         Some(EventHandler {
-            response: |battle, _, receiver_id, _context, _| {
+            response: |battle, _broadcaster_id, receiver_id, _context, _status_id, _| {
                 battle.queue_message(format!["{} is burned.", mon![receiver_id].name()]);
                 let damage = (mon![receiver_id].max_health() as f64 * 1.0 / 8.0) as u16;
                 let _ = effects::deal_raw_damage(battle, receiver_id, damage);
@@ -57,10 +59,10 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
 
 struct ConfusedEventListener;
 
-impl EventListener for ConfusedEventListener {
-    fn on_try_move_handler(&self) -> Option<EventHandler<Outcome, monsim::MoveUseContext, monsim::MonsterID>> {
+impl EventListener<VolatileStatusID> for ConfusedEventListener {
+    fn on_try_move_handler(&self) -> Option<EventHandler<Outcome, MoveUseContext, MonsterID, VolatileStatusID>> {
         Some(EventHandler {
-            response: |battle, _broadcaster_id, receiver_id, _context, _relay| {
+            response: |battle, _broadcaster_id, receiver_id, _context, _status_id, _relay| {
                 battle.queue_message(format!["{} is confused!", mon![receiver_id].name()]);
 
                 if mon![receiver_id]

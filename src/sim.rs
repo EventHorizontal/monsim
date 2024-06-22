@@ -22,8 +22,7 @@ pub(crate) use event_dispatcher::{Broadcaster, OwnedEventHandlerWithReceiver};
 pub use game_mechanics::*;
 #[cfg(feature = "macros")]
 pub use monsim_macros::*;
-use monsim_utils::MaxSizedVec;
-pub(crate) use monsim_utils::{not, Nothing, NOTHING};
+use monsim_utils::{not, MaxSizedVec, NOTHING};
 pub use monsim_utils::{ClampedPercent, Count, Outcome, Percent};
 pub use ordering::ActivationOrder;
 pub use status::{PersistentStatusDexEntry, PersistentStatusSpecies, VolatileStatusDexEntry, VolatileStatusSpecies};

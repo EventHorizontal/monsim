@@ -1,7 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
 use monsim::{
-    Count, EventFilteringOptions, EventHandler, EventListener, NullEventListener, Percent, PositionRelationFlags, Type, WeatherDexEntry, WeatherSpecies,
+    Count, EventFilteringOptions, EventHandler, EventListener, MonsterID, MoveHitContext, NullEventListener, Percent, PositionRelationFlags, Type,
+    WeatherDexEntry, WeatherSpecies,
 };
 use monsim_macros::mov;
 
@@ -19,10 +20,10 @@ pub const HarshSunlight: WeatherSpecies = WeatherSpecies::from_dex_entry(Weather
 
 struct HarshSunlightEventListener;
 
-impl EventListener for HarshSunlightEventListener {
-    fn on_modify_damage_handler(&self) -> Option<monsim::EventHandler<u16, monsim::MoveHitContext, monsim::MonsterID>> {
+impl EventListener<()> for HarshSunlightEventListener {
+    fn on_modify_damage_handler(&self) -> Option<EventHandler<u16, MoveHitContext, MonsterID, ()>> {
         Some(EventHandler {
-            response: |battle, broadcaster_id, receiver_id, context, damage| {
+            response: |battle, broadcaster_id, receiver_id, context, _, damage| {
                 if mov![context.move_used_id].is_type(Type::Fire) {
                     battle.queue_debug_message("(Harsh Sunlight boosted the move's damage)");
                     damage * Percent(150)
@@ -42,9 +43,9 @@ impl EventListener for HarshSunlightEventListener {
         })
     }
 
-    fn on_turn_end_handler(&self) -> Option<EventHandler<(), (), monsim::MonsterID, ()>> {
+    fn on_turn_end_handler(&self) -> Option<EventHandler<(), (), MonsterID, (), ()>> {
         Some(EventHandler {
-            response: |battle, _, _, _, _| {
+            response: |battle, _, _, _, _, _| {
                 battle.queue_message("The sunlight remains strong.");
             },
             event_filtering_options: EventFilteringOptions {

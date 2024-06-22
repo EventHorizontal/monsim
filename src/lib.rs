@@ -13,6 +13,8 @@ use std::error::Error;
 #[cfg(feature = "monsim_tui")]
 pub use tui::run as run_tui;
 
+pub use monsim_utils::{not, Nothing, NOTHING};
+
 pub type MonsimResult<S> = Result<S, Box<dyn Error>>;
 
 pub fn run(battle: Battle) -> MonsimResult<Nothing> {

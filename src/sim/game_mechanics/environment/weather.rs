@@ -30,7 +30,7 @@ impl Weather {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> &'static dyn EventListener<Nothing> {
+    pub fn event_handlers(&self) -> &'static dyn EventListener<Nothing, Nothing> {
         self.species.event_listener
     }
 }
@@ -40,7 +40,7 @@ pub struct WeatherSpecies {
     dex_number: u16,
     name: &'static str,
     lifetime_in_turns: Count,
-    event_listener: &'static dyn EventListener<Nothing>,
+    event_listener: &'static dyn EventListener<Nothing, Nothing>,
     on_start_message: &'static str,
     on_clear_message: &'static str,
 }
@@ -85,7 +85,7 @@ impl WeatherSpecies {
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener<Nothing> {
+    pub fn event_listener(&self) -> &'static dyn EventListener<Nothing, Nothing> {
         self.event_listener
     }
 
@@ -109,7 +109,7 @@ pub struct WeatherDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub lifetime_in_turns: Count,
-    pub event_listener: &'static dyn EventListener<Nothing>,
+    pub event_listener: &'static dyn EventListener<Nothing, Nothing>,
     pub on_start_message: &'static str,
     pub on_clear_message: &'static str,
 }

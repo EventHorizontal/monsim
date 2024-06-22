@@ -469,10 +469,7 @@ impl Item {
 
 impl ItemBuilder {
     pub fn build(self, id: ItemID) -> Item {
-        Item {
-            _id: id,
-            species: self.species,
-        }
+        Item { id, species: self.species }
     }
 }
 

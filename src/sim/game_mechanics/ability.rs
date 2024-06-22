@@ -8,7 +8,7 @@ pub struct Ability {
 }
 
 impl Ability {
-    pub fn event_listener(&self) -> &'static dyn EventListener {
+    pub fn event_listener(&self) -> &'static dyn EventListener<AbilityID> {
         self.species.event_listener
     }
 
@@ -47,7 +47,7 @@ impl AbilityID {
 pub struct AbilitySpecies {
     dex_number: u16,
     name: &'static str,
-    event_listener: &'static dyn EventListener,
+    event_listener: &'static dyn EventListener<AbilityID>,
     order: u16,
 }
 
@@ -83,7 +83,7 @@ impl AbilitySpecies {
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener {
+    pub fn event_listener(&self) -> &'static dyn EventListener<AbilityID> {
         self.event_listener
     }
 
@@ -106,6 +106,6 @@ impl AbilitySpecies {
 pub struct AbilityDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub event_listener: &'static dyn EventListener,
+    pub event_listener: &'static dyn EventListener<AbilityID>,
     pub order: u16,
 }

@@ -2,7 +2,7 @@ use crate::{sim::event_dispatcher::EventListener, MonsterID};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
-    pub(crate) _id: ItemID,
+    pub(crate) id: ItemID,
     pub(crate) species: &'static ItemSpecies,
 }
 
@@ -27,7 +27,7 @@ impl Item {
         self.species
     }
 
-    pub(crate) fn event_listener(&self) -> &'static dyn EventListener {
+    pub(crate) fn event_listener(&self) -> &'static dyn EventListener<ItemID> {
         self.species.event_listener
     }
 }
@@ -49,7 +49,7 @@ pub struct ItemSpecies {
     pub(crate) name: &'static str,
     pub(crate) kind: ItemFlags,
     pub(crate) is_consumable: bool,
-    pub(crate) event_listener: &'static dyn EventListener,
+    pub(crate) event_listener: &'static dyn EventListener<ItemID>,
 }
 
 impl ItemSpecies {
@@ -87,5 +87,5 @@ pub struct ItemDexEntry {
     pub name: &'static str,
     pub kind: ItemFlags,
     pub is_consumable: bool,
-    pub event_listener: &'static dyn EventListener,
+    pub event_listener: &'static dyn EventListener<ItemID>,
 }

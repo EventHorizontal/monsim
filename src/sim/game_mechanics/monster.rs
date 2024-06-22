@@ -257,6 +257,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
+                    mechanic_id: self.id,
                 }) as Box<dyn OwnedEventHandler<R, C, B>>
             })
             .pipe(|owned_event_handlers| {
@@ -270,6 +271,7 @@ impl Monster {
                 Box::new(OwnedEventHandlerWithReceiver {
                     event_handler,
                     owner_id,
+                    mechanic_id: self.ability().id,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: self.stat(Stat::Speed),
@@ -289,6 +291,7 @@ impl Monster {
                 Box::new(OwnedEventHandlerWithReceiver {
                     event_handler,
                     owner_id,
+                    mechanic_id: volatile_status.id,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: self.stat(Stat::Speed),
@@ -310,6 +313,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
+                    mechanic_id: persistent_status.id,
                 }) as Box<dyn OwnedEventHandler<R, C, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }
@@ -326,6 +330,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
+                    mechanic_id: held_item.id,
                 }) as Box<dyn OwnedEventHandler<R, C, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }
@@ -391,7 +396,86 @@ pub struct MonsterSpecies {
     primary_type: Type,
     secondary_type: Option<Type>,
     base_stats: StatSet,
-    event_listener: &'static dyn EventListener,
+    event_listener: &'static dyn EventListener<MonsterID>,
+}
+
+impl Debug for MonsterSpecies {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "#{:03} {},\n\t type: {:?}/{:?}",
+            self.dex_number, self.name, self.primary_type, self.secondary_type
+        )
+    }
+}
+
+impl PartialEq for MonsterSpecies {
+    fn eq(&self, other: &Self) -> bool {
+        self.dex_number == other.dex_number
+    }
+}
+
+impl Eq for MonsterSpecies {}
+
+impl MonsterSpecies {
+    pub const fn from_dex_entry(dex_entry: MonsterDexEntry) -> Self {
+        let MonsterDexEntry {
+            dex_number,
+            name,
+            primary_type,
+            secondary_type,
+            base_stats,
+            event_handlers,
+        } = dex_entry;
+        Self {
+            dex_number,
+            name,
+            primary_type,
+            secondary_type,
+            base_stats,
+            event_listener: event_handlers,
+        }
+    }
+
+    #[inline(always)]
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+
+    #[inline(always)]
+    pub fn type_(&self) -> (Type, Option<Type>) {
+        (self.primary_type, self.secondary_type)
+    }
+
+    #[inline(always)]
+    pub fn primary_type(&self) -> Type {
+        self.primary_type
+    }
+
+    #[inline(always)]
+    pub fn secondary_type(&self) -> Option<Type> {
+        self.secondary_type
+    }
+
+    #[inline(always)]
+    pub fn base_stat(&self, stat: Stat) -> u16 {
+        self.base_stats[stat]
+    }
+
+    #[inline(always)]
+    pub fn event_listener(&self) -> &'static dyn EventListener<MonsterID> {
+        self.event_listener
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct MonsterDexEntry {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub primary_type: Type,
+    pub secondary_type: Option<Type>,
+    pub base_stats: StatSet,
+    pub event_handlers: &'static dyn EventListener<MonsterID>,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -409,6 +493,20 @@ pub enum MonsterNumber {
     _4,
     _5,
     _6,
+}
+
+impl From<usize> for MonsterNumber {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => MonsterNumber::_1,
+            1 => MonsterNumber::_2,
+            2 => MonsterNumber::_3,
+            3 => MonsterNumber::_4,
+            4 => MonsterNumber::_5,
+            5 => MonsterNumber::_6,
+            _ => panic!("MonsterNumber can only be formed from usize 0 to 5."),
+        }
+    }
 }
 
 pub const ALLY_1: MonsterID = MonsterID {
@@ -482,97 +580,4 @@ impl Display for MonsterID {
             },
         }
     }
-}
-
-impl MonsterSpecies {
-    pub const fn from_dex_entry(dex_entry: MonsterDexEntry) -> Self {
-        let MonsterDexEntry {
-            dex_number,
-            name,
-            primary_type,
-            secondary_type,
-            base_stats,
-            event_handlers,
-        } = dex_entry;
-        Self {
-            dex_number,
-            name,
-            primary_type,
-            secondary_type,
-            base_stats,
-            event_listener: event_handlers,
-        }
-    }
-
-    #[inline(always)]
-    pub fn name(&self) -> &'static str {
-        self.name
-    }
-
-    #[inline(always)]
-    pub fn type_(&self) -> (Type, Option<Type>) {
-        (self.primary_type, self.secondary_type)
-    }
-
-    #[inline(always)]
-    pub fn primary_type(&self) -> Type {
-        self.primary_type
-    }
-
-    #[inline(always)]
-    pub fn secondary_type(&self) -> Option<Type> {
-        self.secondary_type
-    }
-
-    #[inline(always)]
-    pub fn base_stat(&self, stat: Stat) -> u16 {
-        self.base_stats[stat]
-    }
-
-    #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener {
-        self.event_listener
-    }
-}
-
-impl From<usize> for MonsterNumber {
-    fn from(value: usize) -> Self {
-        match value {
-            0 => MonsterNumber::_1,
-            1 => MonsterNumber::_2,
-            2 => MonsterNumber::_3,
-            3 => MonsterNumber::_4,
-            4 => MonsterNumber::_5,
-            5 => MonsterNumber::_6,
-            _ => panic!("MonsterNumber can only be formed from usize 0 to 5."),
-        }
-    }
-}
-
-impl Debug for MonsterSpecies {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "#{:03} {},\n\t type: {:?}/{:?}",
-            self.dex_number, self.name, self.primary_type, self.secondary_type
-        )
-    }
-}
-
-impl PartialEq for MonsterSpecies {
-    fn eq(&self, other: &Self) -> bool {
-        self.dex_number == other.dex_number
-    }
-}
-
-impl Eq for MonsterSpecies {}
-
-#[derive(Clone, Copy)]
-pub struct MonsterDexEntry {
-    pub dex_number: u16,
-    pub name: &'static str,
-    pub primary_type: Type,
-    pub secondary_type: Option<Type>,
-    pub base_stats: StatSet,
-    pub event_handlers: &'static dyn EventListener,
 }

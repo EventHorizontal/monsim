@@ -1,6 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{dual_type_matchup, effects, EventHandler, EventListener, ItemID, MoveCategory, MoveHitContext, MoveUseContext, NullEventListener, Type};
+use monsim::{
+    dual_type_matchup, effects, EventHandler, EventListener, ItemID, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, NullEventListener, Type,
+};
 use monsim_macros::{mon, mov};
 use monsim_utils::Percent;
 
@@ -22,10 +24,10 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
 
 struct LifeOrbEventListener;
 
-impl EventListener for LifeOrbEventListener {
-    fn on_modify_damage_handler(&self) -> Option<monsim::EventHandler<u16, MoveHitContext, monsim::MonsterID>> {
+impl EventListener<ItemID> for LifeOrbEventListener {
+    fn on_modify_damage_handler(&self) -> Option<monsim::EventHandler<u16, MoveHitContext, MonsterID, ItemID>> {
         Some(EventHandler {
-            response: |battle, broadcaster_id, _receiver_id, _, damage| {
+            response: |battle, broadcaster_id, _receiver_id, _context, item_id, damage| {
                 battle.queue_message(format!["Life orb boosted the damage of {}'s attack!", mon![broadcaster_id].name()]);
                 damage * Percent(130)
             },
@@ -36,7 +38,7 @@ impl EventListener for LifeOrbEventListener {
         })
     }
 
-    fn on_move_used_handler(&self) -> Option<EventHandler<(), MoveUseContext, monsim::MonsterID>> {
+    fn on_move_used_handler(&self) -> Option<EventHandler<(), MoveUseContext, MonsterID, ItemID>> {
         Some(EventHandler {
             response: |battle,
                        broadcaster_id,
@@ -46,6 +48,7 @@ impl EventListener for LifeOrbEventListener {
                            move_used_id,
                            target_ids,
                        },
+                       item_id,
                        _| {
                 if mov![move_used_id].category().is_damaging() {
                     let one_tenth_of_total_hp = mon![move_user_id].max_health() * Percent(10);
@@ -71,8 +74,8 @@ pub const PasshoBerry: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
 
 struct PasshoBerryEventListener;
 
-impl EventListener for PasshoBerryEventListener {
-    fn on_modify_damage_handler(&self) -> Option<EventHandler<u16, MoveHitContext, monsim::MonsterID>> {
+impl EventListener<ItemID> for PasshoBerryEventListener {
+    fn on_modify_damage_handler(&self) -> Option<EventHandler<u16, MoveHitContext, MonsterID, ItemID>> {
         Some(EventHandler {
             response: |battle,
                        broadcaster_id,
@@ -84,6 +87,7 @@ impl EventListener for PasshoBerryEventListener {
                            number_of_hits,
                            number_of_targets,
                        },
+                       item_id,
                        damage| {
                 let move_type = mov![move_used_id].type_();
                 let target_type = mon![target_id].type_();

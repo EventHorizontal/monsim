@@ -50,7 +50,7 @@ pub(crate) fn sort_by_activation_order<T: Clone>(prng: &mut Prng, slice: &mut [T
     }
 }
 
-use crate::sim::not;
+use crate::not;
 /// Shuffles the event handler order for consecutive speed-tied items in place using their associated activation orders.
 fn resolve_speed_tie<T: Clone>(prng: &mut Prng, slice: &mut [T], tied_monster_indices: &mut Vec<usize>) {
     if tied_monster_indices.len() < 2 {

@@ -1,4 +1,5 @@
 pub mod weather;
+use monsim_utils::NOTHING;
 pub use weather::*;
 
 use crate::{
@@ -29,6 +30,7 @@ impl Environment {
             if let Some(event_handler) = event.get_event_handler_without_receiver(weather.event_handlers()) {
                 let owned_event_handler = Box::new(OwnedEventHandlerWithoutReceiver {
                     event_handler,
+                    mechanic_id: NOTHING,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: 0,

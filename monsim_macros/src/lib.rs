@@ -5,7 +5,7 @@ use convert_case::Casing;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::quote;
-use syn::parse_macro_input;
+use syn::{parse_macro_input, DeriveInput, Type};
 
 #[cfg(feature = "battle_builder")]
 use syntax::battle_macro_syntax::{BattleExpr, MonsterExpr, MonsterTeamExpr};
@@ -53,6 +53,52 @@ fn construct_accessor(input: TokenStream, accessor_name: TokenStream2) -> TokenS
 }
 
 // Event system macros ------
+
+#[proc_macro_derive(Event, attributes(returns, context, handler, no_broadcaster))]
+pub fn event_macro_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let attributes = input.attrs;
+    let mut return_type = quote![()];
+    let mut context = quote![()];
+    let mut handler = quote![k3jrkejrke3lr];
+    let mut broadcaster = quote![];
+    for attribute in attributes {
+        if let Some(attribute_name) = attribute.path().get_ident() {
+            let attribute_name = attribute_name.to_string();
+            if attribute_name == "returns" {
+                let return_tokens = attribute.parse_args::<Type>().unwrap();
+                return_type = quote![#return_tokens];
+            } else if attribute_name == "context" {
+                let context_tokens = attribute.parse_args::<Type>().unwrap();
+                context = quote![#context_tokens];
+            } else if attribute_name == "handler" {
+                let handler_tokens = attribute.parse_args::<Ident>().unwrap();
+                handler = quote![#handler_tokens]
+            } else if attribute_name == "no_broadcaster" {
+                broadcaster = quote![, ()]
+            }
+        }
+    }
+    let name = input.ident;
+    quote!(
+        impl Event<#return_type, #context #broadcaster> for #name {
+            fn get_event_handler_with_receiver<M: Copy>(
+                &self,
+                event_listener: &'static dyn EventListener<M>,
+            ) -> Option<EventHandler<#return_type, #context, MonsterID, M #broadcaster>> {
+                event_listener.#handler()
+            }
+
+            fn get_event_handler_without_receiver<M: Copy>(
+                &self,
+                event_listener: &'static dyn EventListener<M, Nothing>,
+            ) -> Option<EventHandler<#return_type, #context, Nothing, M #broadcaster>> {
+                event_listener.#handler()
+            }
+        }
+    )
+    .into()
+}
 
 /// Generates a bunch of stuff that is pertaining to the individual events that would be a pain
 /// to write by hand. Currently that includes a struct called `EventHandlerDeck`, a constant which

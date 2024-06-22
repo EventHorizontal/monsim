@@ -21,34 +21,16 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
 
 struct FlashFireEventListener;
 
-impl EventListener for FlashFireEventListener {
-    fn on_try_move_hit_handler(&self) -> Option<EventHandler<Outcome, MoveHitContext, MonsterID>> {
+impl EventListener<AbilityID> for FlashFireEventListener {
+    fn on_try_move_hit_handler(&self) -> Option<EventHandler<Outcome, MoveHitContext, MonsterID, AbilityID>> {
         Some(EventHandler {
-            response: |battle,
-                       broadcaster_id,
-                       receiver_id,
-                       MoveHitContext {
-                           move_user_id,
-                           move_used_id,
-                           target_id,
-                           number_of_hits,
-                           number_of_targets,
-                       },
-                       _| {
-                if mov![move_used_id].is_type(Type::Fire) && target_id == receiver_id {
-                    let activation_outcome = effects::activate_ability(
-                        battle,
-                        target_id,
-                        |battle,
-                         AbilityActivationContext {
-                             ability_owner_id,
-                             ability_used_id,
-                         }| {
-                            let ability_owner_name = mon![ability_owner_id].name();
-                            battle.queue_message(format!["{ability_owner_name}'s Flash Fire activated!"]);
-                            Outcome::Success(())
-                        },
-                    );
+            response: |battle, broadcaster_id, receiver_id, move_hit_context, ability_id, _| {
+                if mov![move_hit_context.move_used_id].is_type(Type::Fire) && move_hit_context.target_id == receiver_id {
+                    let activation_outcome = effects::activate_ability(battle, move_hit_context.target_id, |battle, ability_activation_context| {
+                        let ability_owner_name = mon![ability_activation_context.ability_owner_id].name();
+                        battle.queue_message(format!["{ability_owner_name}'s Flash Fire activated!"]);
+                        Outcome::Success(())
+                    });
                     return activation_outcome.opposite();
                 }
                 Outcome::Success(())
@@ -68,7 +50,7 @@ pub const Pickup: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntr
 
 struct PickupEventListener;
 
-impl EventListener for PickupEventListener {}
+impl EventListener<AbilityID> for PickupEventListener {}
 
 /// Contrary reverse all stat changes for the user.
 pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
@@ -80,22 +62,13 @@ pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEn
 
 struct ContraryEventListener;
 
-impl EventListener for ContraryEventListener {
-    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<i8, monsim::StatChangeContext, MonsterID>> {
+impl EventListener<AbilityID> for ContraryEventListener {
+    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<i8, monsim::StatChangeContext, MonsterID, AbilityID>> {
         Some(EventHandler {
-            response: |battle,
-                       broadcaster_id,
-                       receiver_id,
-                       monsim::StatChangeContext {
-                           affected_monster_id,
-                           stat,
-                           number_of_stages,
-                       },
-                       _|
-             -> i8 {
+            response: |battle, broadcaster_id, receiver_id, context, ability_id, _| -> i8 {
                 #[cfg(feature = "debug")]
-                battle.queue_message(format!["(Contrary reversed {}'s stat changes).", mon![affected_monster_id].name()]);
-                -number_of_stages
+                battle.queue_message(format!["(Contrary reversed {}'s stat changes).", mon![context.affected_monster_id].name()]);
+                -context.number_of_stages
             },
             event_filtering_options: EventFilteringOptions {
                 only_if_broadcaster_is: PositionRelationFlags::SELF,

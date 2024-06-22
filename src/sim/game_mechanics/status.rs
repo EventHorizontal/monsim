@@ -1,17 +1,21 @@
 use monsim_utils::Count;
 use std::fmt::Display;
 
-use crate::{prng::Prng, sim::event_dispatcher::EventListener, Monster};
+use crate::{prng::Prng, sim::event_dispatcher::EventListener, Monster, MonsterID};
 
 // Permanent Statuses
 #[derive(Debug, Clone, Copy)]
 pub struct PersistentStatus {
+    pub(crate) id: PersistentStatusID,
     pub(crate) species: &'static PersistentStatusSpecies,
 }
 
 impl PersistentStatus {
-    pub(crate) fn from_species(species: &'static PersistentStatusSpecies) -> PersistentStatus {
-        PersistentStatus { species }
+    pub(crate) fn from_species(species: &'static PersistentStatusSpecies, owner_id: MonsterID) -> PersistentStatus {
+        PersistentStatus {
+            species,
+            id: PersistentStatusID { owner_id },
+        }
     }
 
     #[inline(always)]
@@ -24,7 +28,7 @@ impl PersistentStatus {
         self.species.dex_number
     }
 
-    pub(crate) fn event_handlers(&self) -> &'static dyn EventListener {
+    pub(crate) fn event_handlers(&self) -> &'static dyn EventListener<PersistentStatusID> {
         self.species.event_listener
     }
 }
@@ -37,7 +41,7 @@ pub struct PersistentStatusSpecies {
     pub(crate) dex_number: u16,
     pub(crate) name: &'static str,
     pub(crate) on_acquired_message: OnAcquiredMessageConstructor,
-    pub(crate) event_listener: &'static dyn EventListener,
+    pub(crate) event_listener: &'static dyn EventListener<PersistentStatusID>,
 }
 
 impl PersistentStatusSpecies {
@@ -63,12 +67,13 @@ pub struct PersistentStatusDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub on_acquired_message: OnAcquiredMessageConstructor,
-    pub event_listener: &'static dyn EventListener,
+    pub event_listener: &'static dyn EventListener<PersistentStatusID>,
 }
 
 // Volatile Statuses
 #[derive(Debug, Clone, Copy)]
 pub struct VolatileStatus {
+    pub(crate) id: VolatileStatusID,
     pub(crate) species: &'static VolatileStatusSpecies,
     pub(crate) remaining_turns: u8,
 }
@@ -80,7 +85,7 @@ impl Display for VolatileStatus {
 }
 
 impl VolatileStatus {
-    pub(crate) fn from_species(prng: &mut Prng, species: &'static VolatileStatusSpecies) -> VolatileStatus {
+    pub(crate) fn from_species(prng: &mut Prng, species: &'static VolatileStatusSpecies, owner_id: MonsterID) -> VolatileStatus {
         let lifetime_in_turns = match species.lifetime_in_turns {
             Count::Fixed(n) => n,
             Count::RandomInRange { min, max } => prng.roll_random_number_in_range(min as u16..=max as u16) as u8,
@@ -88,11 +93,12 @@ impl VolatileStatus {
         VolatileStatus {
             species,
             remaining_turns: lifetime_in_turns,
+            id: VolatileStatusID { owner_id, species },
         }
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener {
+    pub fn event_listener(&self) -> &'static dyn EventListener<VolatileStatusID> {
         self.species.event_listener()
     }
 
@@ -108,7 +114,7 @@ pub struct VolatileStatusSpecies {
     pub(crate) name: &'static str,
     pub(crate) on_acquired_message: fn(&Monster) -> String,
     pub(crate) lifetime_in_turns: Count,
-    pub(crate) event_listener: &'static dyn EventListener,
+    pub(crate) event_listener: &'static dyn EventListener<VolatileStatusID>,
 }
 
 impl PartialEq for VolatileStatusSpecies {
@@ -139,7 +145,7 @@ impl VolatileStatusSpecies {
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener {
+    pub fn event_listener(&self) -> &'static dyn EventListener<VolatileStatusID> {
         self.event_listener
     }
 }
@@ -150,5 +156,16 @@ pub struct VolatileStatusDexEntry {
     pub name: &'static str,
     pub on_acquired_message: OnAcquiredMessageConstructor,
     pub lifetime_in_turns: Count,
-    pub event_listener: &'static dyn EventListener,
+    pub event_listener: &'static dyn EventListener<VolatileStatusID>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VolatileStatusID {
+    owner_id: MonsterID,
+    species: &'static VolatileStatusSpecies,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PersistentStatusID {
+    owner_id: MonsterID,
 }

@@ -484,7 +484,7 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
     if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
-            let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species);
+            let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species, affected_monster_id);
             mon![mut affected_monster_id].volatile_statuses.push(volatile_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             EventDispatcher::dispatch_notify_event(battle, OnVolatileStatusInflictedEvent, affected_monster_id, NOTHING);
@@ -507,7 +507,7 @@ pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID
     if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
-            let persistent_status = PersistentStatus::from_species(status_species);
+            let persistent_status = PersistentStatus::from_species(status_species, affected_monster_id);
             mon![mut affected_monster_id].persistent_status = Some(persistent_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
             EventDispatcher::dispatch_notify_event(battle, OnPersistentStatusInflictedEvent, affected_monster_id, NOTHING);

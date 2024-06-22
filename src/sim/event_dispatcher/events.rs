@@ -1,3 +1,4 @@
+use super::MechanicID;
 use monsim_macros::Event;
 use monsim_utils::{Nothing, Outcome, Percent};
 

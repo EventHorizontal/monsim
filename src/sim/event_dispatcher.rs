@@ -45,7 +45,10 @@ use core::fmt::Debug;
 use monsim_macros::mon;
 use monsim_utils::{not, Nothing, Outcome, Percent, NOTHING};
 
-use crate::{ActivationOrder, Battle, FieldPosition, MonsterID, PositionRelationFlags};
+use crate::{
+    status::{PersistentStatusID, VolatileStatusID},
+    AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MonsterID, MoveID, PositionRelationFlags,
+};
 pub use contexts::*;
 
 use super::ordering::sort_by_activation_order;
@@ -195,24 +198,17 @@ impl EventDispatcher {
     }
 }
 
+// Event -------------------------------------------------- //
+
 pub trait Event<R: Copy + Sized, C: EventContext + Copy + Sized, B: Broadcaster + Copy = MonsterID> {
-    fn get_event_handler_with_receiver<M: Copy>(&self, event_listener: &'static dyn EventListener<M>) -> Option<EventHandler<R, C, MonsterID, M, B>>;
-    fn get_event_handler_without_receiver<M: Copy>(&self, event_listener: &'static dyn EventListener<M, Nothing>) -> Option<EventHandler<R, C, Nothing, M, B>>;
+    fn get_event_handler_with_receiver<M: MechanicID>(&self, event_listener: &'static dyn EventListener<M>) -> Option<EventHandler<R, C, MonsterID, M, B>>;
+    fn get_event_handler_without_receiver<M: MechanicID>(
+        &self,
+        event_listener: &'static dyn EventListener<M, Nothing>,
+    ) -> Option<EventHandler<R, C, Nothing, M, B>>;
 }
 
-pub trait Broadcaster {
-    fn source(&self) -> Option<MonsterID> {
-        None
-    }
-}
-
-impl Broadcaster for MonsterID {
-    fn source(&self) -> Option<MonsterID> {
-        Some(*self)
-    }
-}
-
-impl Broadcaster for Nothing {}
+// EventListener ------------------------------------------ //
 
 pub trait EventListener<M, V = MonsterID> {
     fn on_try_move_handler(&self) -> Option<EventHandler<Outcome, MoveUseContext, V, M>> {
@@ -340,18 +336,20 @@ impl<T, U> Debug for dyn EventListener<T, U> {
 
 pub struct NullEventListener;
 
-impl<M: Copy> EventListener<M> for NullEventListener {}
+impl<M: MechanicID> EventListener<M> for NullEventListener {}
 
-impl<M: Copy> EventListener<M, Nothing> for NullEventListener {}
+impl<M: MechanicID> EventListener<M, Nothing> for NullEventListener {}
 
-/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: V, context: C, mechanic_id: M, relay: R) -> event_outcome: R`
-pub type EventResponse<R, C, V, M, B> = fn(&mut Battle, B, V, C, M, R) -> R;
+// EventHandlers --------------------------------------------------- //
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventHandler<R, C, V, M, B = MonsterID> {
     pub response: EventResponse<R, C, V, M, B>,
     pub event_filtering_options: EventFilteringOptions,
 }
+
+/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: V, context: C, mechanic_id: M, relay: R) -> event_outcome: R`
+pub type EventResponse<R, C, V, M, B> = fn(&mut Battle, B, V, C, M, R) -> R;
 
 pub trait OwnedEventHandler<R, C, B> {
     fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R;
@@ -369,7 +367,7 @@ impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> Clone for Box<dyn O
     }
 }
 
-impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy, M: Copy> OwnedEventHandler<R, C, B> for OwnedEventHandlerWithReceiver<R, C, M, B> {
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy, M: MechanicID> OwnedEventHandler<R, C, B> for OwnedEventHandlerWithReceiver<R, C, M, B> {
     fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
         (self.event_handler.response)(battle, broadcaster_id, self.owner_id, context, self.mechanic_id, default)
     }
@@ -387,7 +385,7 @@ impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy, M: Copy> OwnedEvent
     }
 }
 
-impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy, M: Copy> OwnedEventHandler<R, C, B> for OwnedEventHandlerWithoutReceiver<R, C, M, B> {
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy, M: MechanicID> OwnedEventHandler<R, C, B> for OwnedEventHandlerWithoutReceiver<R, C, M, B> {
     fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
         (self.event_handler.response)(battle, broadcaster_id, NOTHING, context, self.mechanic_id, default)
     }
@@ -406,7 +404,7 @@ impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy, M: Copy> OwnedEvent
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandlerWithReceiver<R: Copy, C: EventContext + Copy, M: Copy, B: Broadcaster + Copy> {
+pub struct OwnedEventHandlerWithReceiver<R: Copy, C: EventContext + Copy, M: MechanicID, B: Broadcaster + Copy> {
     pub event_handler: EventHandler<R, C, MonsterID, M, B>,
     pub owner_id: MonsterID,
     pub mechanic_id: M,
@@ -414,11 +412,13 @@ pub struct OwnedEventHandlerWithReceiver<R: Copy, C: EventContext + Copy, M: Cop
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandlerWithoutReceiver<R: Copy, C: EventContext + Copy, M: Copy, B: Broadcaster + Copy> {
+pub struct OwnedEventHandlerWithoutReceiver<R: Copy, C: EventContext + Copy, M: MechanicID, B: Broadcaster + Copy> {
     pub event_handler: EventHandler<R, C, Nothing, M, B>,
     pub mechanic_id: M,
     pub activation_order: ActivationOrder,
 }
+
+// EventFilteringOptions -------------------------------------------------- //
 
 // This tells asscociated EventHandlers whether to fire or not
 /// in response to a certain kind of Event.
@@ -448,3 +448,31 @@ impl EventFilteringOptions {
         }
     }
 }
+
+// Broadcaster ------------------------------------------------------------ //
+
+pub trait Broadcaster {
+    fn source(&self) -> Option<MonsterID> {
+        None
+    }
+}
+
+impl Broadcaster for MonsterID {
+    fn source(&self) -> Option<MonsterID> {
+        Some(*self)
+    }
+}
+
+impl Broadcaster for Nothing {}
+
+// MechanicID --------------------------------------------------------------- //
+
+pub trait MechanicID: Copy {}
+
+impl MechanicID for Nothing {}
+impl MechanicID for MonsterID {}
+impl MechanicID for MoveID {}
+impl MechanicID for AbilityID {}
+impl MechanicID for VolatileStatusID {}
+impl MechanicID for PersistentStatusID {}
+impl MechanicID for ItemID {}

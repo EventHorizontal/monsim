@@ -82,14 +82,14 @@ pub fn event_macro_derive(input: TokenStream) -> TokenStream {
     let name = input.ident;
     quote!(
         impl Event<#return_type, #context #broadcaster> for #name {
-            fn get_event_handler_with_receiver<M: Copy>(
+            fn get_event_handler_with_receiver<M: MechanicID>(
                 &self,
                 event_listener: &'static dyn EventListener<M>,
             ) -> Option<EventHandler<#return_type, #context, MonsterID, M #broadcaster>> {
                 event_listener.#handler()
             }
 
-            fn get_event_handler_without_receiver<M: Copy>(
+            fn get_event_handler_without_receiver<M: MechanicID>(
                 &self,
                 event_listener: &'static dyn EventListener<M, Nothing>,
             ) -> Option<EventHandler<#return_type, #context, Nothing, M #broadcaster>> {

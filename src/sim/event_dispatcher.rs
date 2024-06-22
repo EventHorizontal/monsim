@@ -200,7 +200,7 @@ impl EventDispatcher {
 
 // Event -------------------------------------------------- //
 
-pub trait Event<C: EventContext + Sized, R: EventReturnable + Sized, B: Broadcaster = MonsterID> {
+pub trait Event<C: EventContext, R: EventReturnable, B: Broadcaster = MonsterID> {
     fn get_event_handler_with_receiver<M: MechanicID>(&self, event_listener: &'static dyn EventListener<M>) -> Option<EventHandler<C, R, M, MonsterID, B>>;
     fn get_event_handler_without_receiver<M: MechanicID>(
         &self,
@@ -210,7 +210,7 @@ pub trait Event<C: EventContext + Sized, R: EventReturnable + Sized, B: Broadcas
 
 // EventListener ------------------------------------------ //
 
-pub trait EventListener<M, V = MonsterID> {
+pub trait EventListener<M: MechanicID, V: Receiver = MonsterID> {
     fn on_try_move_handler(&self) -> Option<EventHandler<MoveUseContext, Outcome, M, V>> {
         None
     }
@@ -343,7 +343,7 @@ impl<M: MechanicID> EventListener<M, Nothing> for NullEventListener {}
 // EventHandlers --------------------------------------------------- //
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EventHandler<C, R, M, V, B = MonsterID> {
+pub struct EventHandler<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster = MonsterID> {
     pub response: EventResponse<C, R, M, V, B>,
     pub event_filtering_options: EventFilteringOptions,
 }
@@ -351,7 +351,15 @@ pub struct EventHandler<C, R, M, V, B = MonsterID> {
 /// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: V, mechanic_id: M, context: C, relay: R) -> event_outcome: R`
 pub type EventResponse<C, R, M, V, B> = fn(&mut Battle, B, V, M, C, R) -> R;
 
-pub trait OwnedEventHandler<C, R, B> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EventHandlerWithOwner<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster> {
+    pub event_handler: EventHandler<C, R, M, V, B>,
+    pub receiver_id: V,
+    pub mechanic_id: M,
+    pub activation_order: ActivationOrder,
+}
+
+pub trait EventHandlerWithOwnerEmbedded<C, R, B> {
     fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R;
 
     fn activation_order(&self) -> ActivationOrder;
@@ -361,61 +369,30 @@ pub trait OwnedEventHandler<C, R, B> {
     fn event_filtering_options(&self) -> EventFilteringOptions;
 }
 
-impl<R: Copy, C: EventContext, B: Broadcaster> Clone for Box<dyn OwnedEventHandler<C, R, B>> {
+impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster> EventHandlerWithOwnerEmbedded<C, R, B>
+    for EventHandlerWithOwner<C, R, M, V, B>
+{
+    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+        (self.event_handler.response)(battle, broadcaster_id, self.receiver_id, self.mechanic_id, context, default)
+    }
+
+    fn activation_order(&self) -> ActivationOrder {
+        self.activation_order
+    }
+
+    fn owner_id(&self) -> Option<MonsterID> {
+        self.receiver_id.id()
+    }
+
+    fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.event_handler.event_filtering_options
+    }
+}
+
+impl<R: EventReturnable, C: EventContext, B: Broadcaster> Clone for Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>> {
     fn clone(&self) -> Self {
         self.to_owned()
     }
-}
-
-impl<R: Copy, C: EventContext, B: Broadcaster, M: MechanicID> OwnedEventHandler<C, R, B> for OwnedEventHandlerWithReceiver<C, R, M, B> {
-    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
-        (self.event_handler.response)(battle, broadcaster_id, self.owner_id, self.mechanic_id, context, default)
-    }
-
-    fn activation_order(&self) -> ActivationOrder {
-        self.activation_order
-    }
-
-    fn owner_id(&self) -> Option<MonsterID> {
-        Some(self.owner_id)
-    }
-
-    fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.event_handler.event_filtering_options
-    }
-}
-
-impl<R: Copy, C: EventContext, B: Broadcaster, M: MechanicID> OwnedEventHandler<C, R, B> for OwnedEventHandlerWithoutReceiver<C, R, M, B> {
-    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
-        (self.event_handler.response)(battle, broadcaster_id, NOTHING, self.mechanic_id, context, default)
-    }
-
-    fn activation_order(&self) -> ActivationOrder {
-        self.activation_order
-    }
-
-    fn owner_id(&self) -> Option<MonsterID> {
-        None
-    }
-
-    fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.event_handler.event_filtering_options
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandlerWithReceiver<C: EventContext, R: Copy, M: MechanicID, B: Broadcaster> {
-    pub event_handler: EventHandler<C, R, M, MonsterID, B>,
-    pub owner_id: MonsterID,
-    pub mechanic_id: M,
-    pub activation_order: ActivationOrder,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandlerWithoutReceiver<C: EventContext, R: Copy, M: MechanicID, B: Broadcaster> {
-    pub event_handler: EventHandler<C, R, M, Nothing, B>,
-    pub mechanic_id: M,
-    pub activation_order: ActivationOrder,
 }
 
 // EventFilteringOptions -------------------------------------------------- //
@@ -449,7 +426,7 @@ impl EventFilteringOptions {
     }
 }
 
-// Response Parameter Traits ------------------------------------------------------------ //
+// Constraint Traits ------------------------------------------------------------ //
 
 pub trait Broadcaster: Copy {
     fn source(&self) -> Option<MonsterID> {
@@ -476,6 +453,21 @@ impl EventContext for Nothing {}
 pub trait EventReturnable: PartialEq + Copy {}
 
 impl<T: PartialEq + Copy> EventReturnable for T {}
+
+pub trait Receiver: Copy {
+    fn id(&self) -> Option<MonsterID>;
+}
+
+impl Receiver for Nothing {
+    fn id(&self) -> Option<MonsterID> {
+        None
+    }
+}
+impl Receiver for MonsterID {
+    fn id(&self) -> Option<MonsterID> {
+        Some(*self)
+    }
+}
 
 pub trait MechanicID: Copy {}
 

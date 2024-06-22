@@ -3,8 +3,8 @@ use monsim_utils::NOTHING;
 pub use weather::*;
 
 use crate::{
-    sim::event_dispatcher::{Event, EventContext, EventReturnable, OwnedEventHandler, OwnedEventHandlerWithoutReceiver},
-    ActivationOrder, Broadcaster,
+    sim::event_dispatcher::{Event, EventContext, EventHandlerWithOwnerEmbedded, EventReturnable},
+    ActivationOrder, Broadcaster, EventHandlerWithOwner,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,19 +24,20 @@ impl Environment {
     pub(crate) fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
         &self,
         event: &impl Event<C, R, B>,
-    ) -> Vec<Box<dyn OwnedEventHandler<C, R, B>>> {
+    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>> {
         let mut output_owned_event_handlers = Vec::new();
         if let Some(weather) = &self.weather {
             if let Some(event_handler) = event.get_event_handler_without_receiver(weather.event_handlers()) {
-                let owned_event_handler = Box::new(OwnedEventHandlerWithoutReceiver {
+                let owned_event_handler = Box::new(EventHandlerWithOwner {
                     event_handler,
+                    receiver_id: NOTHING,
                     mechanic_id: NOTHING,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: 0,
                         order: 0,
                     },
-                }) as Box<dyn OwnedEventHandler<C, R, B>>;
+                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }
         }

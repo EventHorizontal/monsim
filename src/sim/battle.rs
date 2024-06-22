@@ -14,7 +14,7 @@ use std::{
 use self::builder::BattleFormat;
 
 use super::{
-    event_dispatcher::{Event, EventContext, EventReturnable, OwnedEventHandler},
+    event_dispatcher::{Event, EventContext, EventHandlerWithOwnerEmbedded, EventReturnable},
     prng::Prng,
     targetting::{BoardPosition, FieldPosition},
     PerTeam, TeamID,
@@ -239,7 +239,7 @@ impl BattleState {
     pub fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
         &self,
         event: impl Event<C, R, B>,
-    ) -> Vec<Box<dyn OwnedEventHandler<C, R, B>>> {
+    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>> {
         let mut out = Vec::new();
         out.append(&mut self.ally_team().owned_event_handlers(&event));
         out.append(&mut self.opponent_team().owned_event_handlers(&event));

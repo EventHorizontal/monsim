@@ -18,7 +18,7 @@ pub use choice::*;
 pub use effects::*;
 pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler, EventListener, NullEventListener};
 use event_dispatcher::{events::OnTurnEndEvent, EventDispatcher};
-pub(crate) use event_dispatcher::{Broadcaster, OwnedEventHandlerWithReceiver};
+pub(crate) use event_dispatcher::{Broadcaster, EventHandlerWithOwner};
 pub use game_mechanics::*;
 #[cfg(feature = "macros")]
 pub use monsim_macros::*;

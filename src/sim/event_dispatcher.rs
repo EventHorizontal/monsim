@@ -34,53 +34,30 @@ require the specification of a default value to return if there happens (as it o
 for that particular Event at the moment.
 */
 
+pub mod contexts;
+pub mod events;
+
 use core::fmt::Debug;
 
-mod events;
-
-use crate::{
-    sim::{game_mechanics::MonsterID, ordering::sort_by_activation_order, Battle, EventHandlerSelector, Nothing, Outcome},
-    ActivationOrder, FieldPosition,
-};
-use contexts::*;
-pub use events::*;
 use monsim_macros::mon;
-use monsim_utils::{not, NOTHING};
+use monsim_utils::{not, Nothing, Outcome, Percent, NOTHING};
 
-use super::targetting::PositionRelationFlags;
+use crate::{ActivationOrder, Battle, FieldPosition, MonsterID, PositionRelationFlags};
+pub use contexts::*;
 
-#[derive(Debug, Clone)]
+use super::ordering::sort_by_activation_order;
+
 pub struct EventDispatcher;
 
 impl EventDispatcher {
-    pub fn dispatch_trial_event<C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
-        battle: &mut Battle,
-
-        broadcaster_id: B,
-        event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, MonsterID, B>,
-        receiverless_event_handler_selector: EventHandlerSelector<Outcome<Nothing>, C, Nothing, B>,
-        event_context: C,
-    ) -> Outcome<Nothing> {
-        EventDispatcher::dispatch_event(
-            battle,
-            broadcaster_id,
-            event_handler_selector,
-            receiverless_event_handler_selector,
-            event_context,
-            Outcome::Success(NOTHING),
-            Some(Outcome::Failure),
-        )
-    }
-
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution "short-circuits", or returns early.
     pub fn dispatch_event<R: PartialEq + Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         battle: &mut Battle,
 
+        event: impl Event<R, C, B>,
         broadcaster_id: B,
-        event_handler_selector: EventHandlerSelector<R, C, MonsterID, B>,
-        receiverless_event_handler_selector: EventHandlerSelector<R, C, Nothing, B>,
         event_context: C,
         default: R,
         short_circuit: Option<R>,
@@ -88,7 +65,7 @@ impl EventDispatcher {
         #[cfg(feature = "debug")]
         let event_dispatch_start_time = std::time::SystemTime::now();
 
-        let mut owned_event_handlers = battle.owned_event_handlers(event_handler_selector, receiverless_event_handler_selector);
+        let mut owned_event_handlers = battle.owned_event_handlers(event);
 
         if owned_event_handlers.is_empty() {
             return default;
@@ -193,9 +170,252 @@ impl EventDispatcher {
 
         passes_filter
     }
+
+    pub fn dispatch_trial_event<C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
+        battle: &mut Battle,
+
+        event: impl Event<Outcome, C, B>,
+        broadcaster_id: B,
+        event_context: C,
+    ) -> Outcome {
+        EventDispatcher::dispatch_event(battle, event, broadcaster_id, event_context, Outcome::Success(NOTHING), Some(Outcome::Failure))
+    }
+
+    pub fn dispatch_notify_event<C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
+        battle: &mut Battle,
+
+        event: impl Event<Nothing, C, B>,
+        broadcaster_id: B,
+        event_context: C,
+    ) {
+        EventDispatcher::dispatch_event(battle, event, broadcaster_id, event_context, NOTHING, None)
+    }
 }
 
-/// This tells asscociated EventHandlers whether to fire or not
+pub trait Event<R: Copy + Sized, C: EventContext + Copy + Sized, B: Broadcaster + Copy = MonsterID> {
+    fn get_event_handler_with_receiver(&self, event_listener: &'static dyn EventListener) -> Option<EventHandler<R, C, MonsterID, B>>;
+    fn get_event_handler_without_receiver(&self, event_listener: &'static dyn EventListener<Nothing>) -> Option<EventHandler<R, C, Nothing, B>>;
+}
+
+pub trait Broadcaster {
+    fn source(&self) -> Option<MonsterID> {
+        None
+    }
+}
+
+impl Broadcaster for MonsterID {
+    fn source(&self) -> Option<MonsterID> {
+        Some(*self)
+    }
+}
+
+impl Broadcaster for Nothing {}
+
+pub trait EventListener<V = MonsterID> {
+    fn on_try_move_handler(&self) -> Option<EventHandler<Outcome, MoveUseContext, V>> {
+        None
+    }
+
+    fn on_move_used_handler(&self) -> Option<EventHandler<Nothing, MoveUseContext, V>> {
+        None
+    }
+
+    fn on_damaging_move_used_handler(&self) -> Option<EventHandler<Nothing, MoveUseContext, V>> {
+        None
+    }
+
+    fn on_status_move_used_handler(&self) -> Option<EventHandler<Nothing, MoveUseContext, V>> {
+        None
+    }
+
+    fn on_calculate_accuracy_handler(&self) -> Option<EventHandler<u16, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_accuracy_stage_handler(&self) -> Option<EventHandler<i8, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_evasion_stage_handler(&self) -> Option<EventHandler<i8, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_crit_stage_handler(&self) -> Option<EventHandler<u8, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_crit_damage_multiplier_handler(&self) -> Option<EventHandler<Percent, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_try_move_hit_handler(&self) -> Option<EventHandler<Outcome<Nothing>, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_move_hit_handler(&self) -> Option<EventHandler<Nothing, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_attack_stat_handler(&self) -> Option<EventHandler<u16, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_attack_stage_handler(&self) -> Option<EventHandler<i8, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_defense_stat_handler(&self) -> Option<EventHandler<u16, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_calculate_defense_stage_handler(&self) -> Option<EventHandler<i8, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_modify_damage_handler(&self) -> Option<EventHandler<u16, MoveHitContext, V>> {
+        None
+    }
+
+    fn on_damage_dealt_handler(&self) -> Option<EventHandler<Nothing, Nothing, V>> {
+        None
+    }
+
+    fn on_try_activate_ability_handler(&self) -> Option<EventHandler<Outcome<Nothing>, AbilityActivationContext, V>> {
+        None
+    }
+
+    fn on_ability_activated_handler(&self) -> Option<EventHandler<Nothing, AbilityActivationContext, V>> {
+        None
+    }
+
+    fn on_try_stat_change_handler(&self) -> Option<EventHandler<Outcome<Nothing>, StatChangeContext, V>> {
+        None
+    }
+
+    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<i8, StatChangeContext, V>> {
+        None
+    }
+
+    fn on_stat_changed_handler(&self) -> Option<EventHandler<Nothing, StatChangeContext, V>> {
+        None
+    }
+
+    fn on_try_inflict_volatile_status_handler(&self) -> Option<EventHandler<Outcome<Nothing>, Nothing, V>> {
+        None
+    }
+
+    fn on_volatile_status_inflicted_handler(&self) -> Option<EventHandler<Nothing, Nothing, V>> {
+        None
+    }
+
+    fn on_try_inflict_persistent_status_handler(&self) -> Option<EventHandler<Outcome<Nothing>, Nothing, V>> {
+        None
+    }
+
+    fn on_persistent_status_inflicted_handler(&self) -> Option<EventHandler<Nothing, Nothing, V>> {
+        None
+    }
+
+    fn on_try_use_held_item_handler(&self) -> Option<EventHandler<Outcome<Nothing>, ItemUseContext, V>> {
+        None
+    }
+
+    fn on_held_item_used_handler(&self) -> Option<EventHandler<Nothing, ItemUseContext, V>> {
+        None
+    }
+
+    fn on_turn_end_handler(&self) -> Option<EventHandler<Nothing, Nothing, V, Nothing>> {
+        None
+    }
+}
+
+impl<T> Debug for dyn EventListener<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<Event Listener>")
+    }
+}
+
+pub struct NullEventListener;
+
+impl EventListener for NullEventListener {}
+
+impl EventListener<Nothing> for NullEventListener {}
+
+/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: ActorID, context: C, relay: R) -> event_outcome: R`
+pub type EventResponse<R, C, V, B> = fn(&mut Battle, B, V, C, R) -> R;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EventHandler<R, C, V, B = MonsterID> {
+    pub response: EventResponse<R, C, V, B>,
+    pub event_filtering_options: EventFilteringOptions,
+}
+
+pub trait OwnedEventHandler<R, C, B> {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R;
+
+    fn activation_order(&self) -> ActivationOrder;
+
+    fn owner_id(&self) -> Option<MonsterID>;
+
+    fn event_filtering_options(&self) -> EventFilteringOptions;
+}
+
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> Clone for Box<dyn OwnedEventHandler<R, C, B>> {
+    fn clone(&self) -> Self {
+        self.to_owned()
+    }
+}
+
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> OwnedEventHandler<R, C, B> for OwnedEventHandlerWithReceiver<R, C, B> {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+        (self.event_handler.response)(battle, broadcaster_id, self.owner_id, context, default)
+    }
+
+    fn activation_order(&self) -> ActivationOrder {
+        self.activation_order
+    }
+
+    fn owner_id(&self) -> Option<MonsterID> {
+        Some(self.owner_id)
+    }
+
+    fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.event_handler.event_filtering_options
+    }
+}
+
+impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> OwnedEventHandler<R, C, B> for OwnedEventHandlerWithoutReceiver<R, C, B> {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+        (self.event_handler.response)(battle, broadcaster_id, NOTHING, context, default)
+    }
+
+    fn activation_order(&self) -> ActivationOrder {
+        self.activation_order
+    }
+
+    fn owner_id(&self) -> Option<MonsterID> {
+        None
+    }
+
+    fn event_filtering_options(&self) -> EventFilteringOptions {
+        self.event_handler.event_filtering_options
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OwnedEventHandlerWithReceiver<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> {
+    pub event_handler: EventHandler<R, C, MonsterID, B>,
+    pub owner_id: MonsterID,
+    pub activation_order: ActivationOrder,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OwnedEventHandlerWithoutReceiver<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> {
+    pub event_handler: EventHandler<R, C, Nothing, B>,
+    pub activation_order: ActivationOrder,
+}
+
+// This tells asscociated EventHandlers whether to fire or not
 /// in response to a certain kind of Event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventFilteringOptions {
@@ -222,246 +442,4 @@ impl EventFilteringOptions {
             only_if_receiver_is_active: true,
         }
     }
-}
-
-/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: ActorID, context: C, relay: R) -> event_outcome: R`
-pub type EventResponse<R, C, V, B> = fn(&mut Battle, B, V, C, R) -> R;
-
-/// Stores an `Effect` that gets simulated in response to an `Event` being triggered.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EventHandler<R: Copy, C: Copy, V: Copy, B: Broadcaster + Clone + Copy = MonsterID> {
-    #[cfg(feature = "debug")]
-    pub source_code_location: &'static str,
-    pub response: EventResponse<R, C, V, B>,
-    pub event_filtering_options: EventFilteringOptions,
-}
-
-impl<R: Copy, C: Copy, V: Copy, B: Broadcaster + Copy> Debug for EventHandler<R, C, V, B> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(feature = "debug")]
-        let out = {
-            f.debug_struct("EventHandler")
-                .field("source_code_location", &self.source_code_location)
-                .finish()
-        };
-        #[cfg(not(feature = "debug"))]
-        let out = { write!(f, "EventHandler debug information only available with feature flag \"debug\" turned on.") };
-        out
-    }
-}
-
-pub trait Broadcaster {
-    fn source(&self) -> Option<MonsterID> {
-        None
-    }
-}
-
-impl Broadcaster for MonsterID {
-    fn source(&self) -> Option<MonsterID> {
-        Some(*self)
-    }
-}
-
-impl Broadcaster for Nothing {}
-
-pub trait EventContext {
-    fn target(&self) -> Option<MonsterID> {
-        None
-    }
-}
-
-impl EventContext for Nothing {}
-
-pub trait OwnedEventHandlerT<R, C, B> {
-    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R;
-
-    fn activation_order(&self) -> ActivationOrder;
-
-    fn owner_id(&self) -> Option<MonsterID>;
-
-    fn event_filtering_options(&self) -> EventFilteringOptions;
-}
-
-impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> Clone for Box<dyn OwnedEventHandlerT<R, C, B>> {
-    fn clone(&self) -> Self {
-        self.to_owned()
-    }
-}
-
-impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> OwnedEventHandlerT<R, C, B> for OwnedEventHandler<R, C, MonsterID, B> {
-    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
-        (self.event_handler.response)(battle, broadcaster_id, self.owner_id, context, default)
-    }
-
-    fn activation_order(&self) -> ActivationOrder {
-        self.activation_order
-    }
-
-    fn owner_id(&self) -> Option<MonsterID> {
-        Some(self.owner_id)
-    }
-
-    fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.event_handler.event_filtering_options
-    }
-}
-
-impl<R: Copy, C: EventContext + Copy, B: Broadcaster + Copy> OwnedEventHandlerT<R, C, B> for OwnedEventHandler<R, C, Nothing, B> {
-    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
-        (self.event_handler.response)(battle, broadcaster_id, self.owner_id, context, default)
-    }
-
-    fn activation_order(&self) -> ActivationOrder {
-        self.activation_order
-    }
-
-    fn owner_id(&self) -> Option<MonsterID> {
-        None
-    }
-
-    fn event_filtering_options(&self) -> EventFilteringOptions {
-        self.event_handler.event_filtering_options
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnedEventHandler<R: Copy, C: EventContext + Copy, V: Copy, B: Broadcaster + Copy> {
-    pub event_handler: EventHandler<R, C, V, B>,
-    pub owner_id: V,
-    pub activation_order: ActivationOrder,
-}
-
-pub mod contexts {
-    use super::EventContext;
-    use crate::{
-        sim::{MonsterID, MoveID},
-        AbilityID, ItemID, ModifiableStat,
-    };
-    use monsim_utils::MaxSizedVec;
-
-    /// `move_user_id`: MonsterID of the Monster using the move.
-    ///
-    /// `move_used_id`: MoveID of the Move being used.
-    ///
-    /// `target_ids`: MonsterIDs of the Monsters the move is being used on.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct MoveUseContext {
-        pub move_user_id: MonsterID,
-        pub move_used_id: MoveID,
-        pub target_ids: MaxSizedVec<MonsterID, 6>,
-    }
-
-    impl EventContext for MoveUseContext {}
-
-    impl MoveUseContext {
-        pub fn new(move_used_id: MoveID, target_ids: MaxSizedVec<MonsterID, 6>) -> Self {
-            Self {
-                move_user_id: move_used_id.owner_id,
-                move_used_id,
-                target_ids,
-            }
-        }
-    }
-
-    /// `move_user_id`: MonsterID of the Monster hitting.
-    ///
-    /// `move_used_id`: MoveID of the Move being used.
-    ///
-    /// `target_id`: MonsterID of the Monster being hit.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct MoveHitContext {
-        pub move_user_id: MonsterID,
-        pub move_used_id: MoveID,
-        pub target_id: MonsterID,
-        pub number_of_hits: u8,
-        pub number_of_targets: u8,
-    }
-
-    impl MoveHitContext {
-        pub fn new(move_used_id: MoveID, target_id: MonsterID, number_of_hits: u8, number_of_targets: u8) -> Self {
-            Self {
-                move_user_id: move_used_id.owner_id,
-                move_used_id,
-                target_id,
-                number_of_hits,
-                number_of_targets,
-            }
-        }
-    }
-
-    impl EventContext for MoveHitContext {
-        fn target(&self) -> Option<MonsterID> {
-            Some(self.target_id)
-        }
-    }
-
-    /// `ability_owner_id`: MonsterID of the Monster whose ability is being used.
-    ///
-    /// `ability_used_id`: AbilityID of the Ability being used.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct AbilityActivationContext {
-        pub ability_owner_id: MonsterID,
-        pub ability_used_id: AbilityID,
-    }
-
-    impl AbilityActivationContext {
-        pub fn from_owner(ability_owner: MonsterID) -> Self {
-            Self {
-                ability_used_id: AbilityID { owner_id: ability_owner },
-                ability_owner_id: ability_owner,
-            }
-        }
-    }
-
-    impl EventContext for AbilityActivationContext {}
-
-    /// `active_monster_id`: MonsterID of the Monster to be switched out.
-    ///
-    /// `benched_monster_id`: MonsterID of the Monster to be switched in.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct SwitchContext {
-        pub active_monster_id: MonsterID,
-        pub benched_monster_id: MonsterID,
-    }
-
-    impl SwitchContext {
-        pub fn new(active_monster_id: MonsterID, benched_monster_id: MonsterID) -> Self {
-            Self {
-                active_monster_id,
-                benched_monster_id,
-            }
-        }
-    }
-
-    impl EventContext for SwitchContext {}
-
-    /// `active_monster_id`: MonsterID of the Monster to be switched out.
-    ///
-    /// `benched_monster_id`: MonsterID of the Monster to be switched in.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct ItemUseContext {
-        pub item_id: ItemID,
-        pub item_holder_id: MonsterID,
-    }
-
-    impl ItemUseContext {
-        pub fn from_holder(item_holder_id: MonsterID) -> Self {
-            let item_id = ItemID::from_holder(item_holder_id);
-            Self { item_id, item_holder_id }
-        }
-    }
-
-    impl EventContext for ItemUseContext {}
-
-    /// `active_monster_id`: MonsterID of the Monster to be switched out.
-    ///
-    /// `benched_monster_id`: MonsterID of the Monster to be switched in.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct StatChangeContext {
-        pub affected_monster_id: MonsterID,
-        pub stat: ModifiableStat,
-        pub number_of_stages: i8,
-    }
-
-    impl EventContext for StatChangeContext {}
 }

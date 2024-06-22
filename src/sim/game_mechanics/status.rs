@@ -1,7 +1,7 @@
 use monsim_utils::Count;
 use std::fmt::Display;
 
-use crate::{prng::Prng, EventHandlerSet, Monster};
+use crate::{prng::Prng, sim::event_dispatcher::EventListener, Monster};
 
 // Permanent Statuses
 #[derive(Debug, Clone, Copy)]
@@ -24,8 +24,8 @@ impl PersistentStatus {
         self.species.dex_number
     }
 
-    pub(crate) fn event_handlers(&self) -> EventHandlerSet {
-        (self.species.event_handlers)()
+    pub(crate) fn event_handlers(&self) -> &'static dyn EventListener {
+        self.species.event_listener
     }
 }
 
@@ -37,7 +37,7 @@ pub struct PersistentStatusSpecies {
     pub(crate) dex_number: u16,
     pub(crate) name: &'static str,
     pub(crate) on_acquired_message: OnAcquiredMessageConstructor,
-    pub(crate) event_handlers: fn() -> EventHandlerSet,
+    pub(crate) event_listener: &'static dyn EventListener,
 }
 
 impl PersistentStatusSpecies {
@@ -46,14 +46,14 @@ impl PersistentStatusSpecies {
             dex_number,
             name,
             on_acquired_message,
-            event_handlers,
+            event_listener,
         } = dex_entry;
 
         PersistentStatusSpecies {
             dex_number,
             name,
             on_acquired_message,
-            event_handlers,
+            event_listener,
         }
     }
 }
@@ -63,7 +63,7 @@ pub struct PersistentStatusDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub on_acquired_message: OnAcquiredMessageConstructor,
-    pub event_handlers: fn() -> EventHandlerSet,
+    pub event_listener: &'static dyn EventListener,
 }
 
 // Volatile Statuses
@@ -92,8 +92,8 @@ impl VolatileStatus {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet {
-        self.species.event_handlers()
+    pub fn event_listener(&self) -> &'static dyn EventListener {
+        self.species.event_listener()
     }
 
     #[inline(always)]
@@ -108,7 +108,7 @@ pub struct VolatileStatusSpecies {
     pub(crate) name: &'static str,
     pub(crate) on_acquired_message: fn(&Monster) -> String,
     pub(crate) lifetime_in_turns: Count,
-    pub(crate) event_handlers: fn() -> EventHandlerSet,
+    pub(crate) event_listener: &'static dyn EventListener,
 }
 
 impl PartialEq for VolatileStatusSpecies {
@@ -126,7 +126,7 @@ impl VolatileStatusSpecies {
             name,
             on_acquired_message,
             lifetime_in_turns,
-            event_handlers,
+            event_listener,
         } = dex_entry;
 
         VolatileStatusSpecies {
@@ -134,13 +134,13 @@ impl VolatileStatusSpecies {
             name,
             on_acquired_message,
             lifetime_in_turns,
-            event_handlers,
+            event_listener,
         }
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet {
-        (self.event_handlers)()
+    pub fn event_listener(&self) -> &'static dyn EventListener {
+        self.event_listener
     }
 }
 
@@ -150,5 +150,5 @@ pub struct VolatileStatusDexEntry {
     pub name: &'static str,
     pub on_acquired_message: OnAcquiredMessageConstructor,
     pub lifetime_in_turns: Count,
-    pub event_handlers: fn() -> EventHandlerSet,
+    pub event_listener: &'static dyn EventListener,
 }

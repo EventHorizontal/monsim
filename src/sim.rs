@@ -16,8 +16,9 @@ pub use battle_constants::*;
 pub use builder::{AbilityBuilderExt, BattleFormat, ItemBuilderExt, MonsterBuilderExt, MoveBuilderExt};
 pub use choice::*;
 pub use effects::*;
-pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler, EventHandlerSet};
-pub(crate) use event_dispatcher::{Broadcaster, OwnedEventHandler};
+pub use event_dispatcher::{contexts::*, EventFilteringOptions, EventHandler, EventListener, NullEventListener};
+use event_dispatcher::{events::OnTurnEndEvent, EventDispatcher};
+pub(crate) use event_dispatcher::{Broadcaster, OwnedEventHandlerWithReceiver};
 pub use game_mechanics::*;
 #[cfg(feature = "macros")]
 pub use monsim_macros::*;
@@ -31,12 +32,6 @@ pub use targetting::{BoardPosition, FieldPosition, PositionRelationFlags};
 
 /// `bool` indicates whether the Simulation should be cancelled early.
 type SimResult = Result<bool, SimError>;
-
-/// A function that picks out one or more specific fields of an EventHandlerDeck and returns
-/// them as a vector. The EventHandlers must all have the same signature for this to work.
-///
-/// `R: Return Type` `C: Context Type` `V: Receiver Type` `B: Broadcaster Type`
-pub type EventHandlerSelector<R, C, V, B> = fn(EventHandlerSet<V>) -> Vec<Option<EventHandler<R, C, V, B>>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SimError {
@@ -327,7 +322,7 @@ impl BattleSimulator {
             clear_weather(&mut self.battle);
         }
 
-        event_dispatcher::trigger_on_turn_end_event(&mut self.battle, NOTHING, NOTHING);
+        EventDispatcher::dispatch_notify_event(&mut self.battle, OnTurnEndEvent, NOTHING, NOTHING);
 
         self.battle.message_log.show_new_messages();
 

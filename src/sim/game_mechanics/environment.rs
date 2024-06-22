@@ -1,10 +1,9 @@
 pub mod weather;
-use monsim_utils::{Nothing, NOTHING};
 pub use weather::*;
 
 use crate::{
-    sim::event_dispatcher::{EventContext, OwnedEventHandlerT},
-    ActivationOrder, Broadcaster, EventHandlerSelector, OwnedEventHandler,
+    sim::event_dispatcher::{Event, EventContext, OwnedEventHandler, OwnedEventHandlerWithoutReceiver},
+    ActivationOrder, Broadcaster,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,25 +22,21 @@ impl Environment {
 
     pub(crate) fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         &self,
-        event_handler_selector: EventHandlerSelector<R, C, Nothing, B>,
-    ) -> Vec<Box<dyn OwnedEventHandlerT<R, C, B>>> {
+        event: &impl Event<R, C, B>,
+    ) -> Vec<Box<dyn OwnedEventHandler<R, C, B>>> {
         let mut output_owned_event_handlers = Vec::new();
         if let Some(weather) = &self.weather {
-            event_handler_selector(weather.event_handlers())
-                .into_iter()
-                .flatten()
-                .for_each(|event_handler| {
-                    let owned_event_handler = Box::new(OwnedEventHandler {
-                        event_handler,
-                        owner_id: NOTHING,
-                        activation_order: ActivationOrder {
-                            priority: 0,
-                            speed: 0,
-                            order: 0,
-                        },
-                    }) as Box<dyn OwnedEventHandlerT<R, C, B>>;
-                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
-                });
+            event.get_event_handler_without_receiver(weather.event_handlers()).map(|event_handler| {
+                let owned_event_handler = Box::new(OwnedEventHandlerWithoutReceiver {
+                    event_handler,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: 0,
+                        order: 0,
+                    },
+                }) as Box<dyn OwnedEventHandler<R, C, B>>;
+                output_owned_event_handlers.extend([owned_event_handler].into_iter());
+            });
         }
         output_owned_event_handlers
     }

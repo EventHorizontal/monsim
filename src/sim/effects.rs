@@ -3,7 +3,7 @@ use monsim_utils::{not, ClampedPercent, Count, Nothing, Outcome, Percent, NOTHIN
 
 use crate::{
     dual_type_matchup,
-    sim::event_dispatcher,
+    sim::event_dispatcher::{events::*, EventDispatcher},
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, ItemUseContext, ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
     PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
@@ -20,7 +20,7 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
     } = move_use_context;
     assert!(mov![move_used_id].current_power_points > 0, "A move was used that had zero power points");
 
-    let try_use_move_outcome = event_dispatcher::trigger_on_try_move_event(battle, move_user_id, move_use_context);
+    let try_use_move_outcome = EventDispatcher::dispatch_trial_event(battle, OnTryMoveEvent, move_user_id, move_use_context);
     if try_use_move_outcome.is_failure() {
         battle.queue_message("The move failed!");
         return;
@@ -73,12 +73,7 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
         mov![move_used_id].current_power_points()
     ]);
 
-    match mov![move_used_id].category() {
-        MoveCategory::Physical | MoveCategory::Special => {
-            event_dispatcher::trigger_on_damaging_move_used_event(battle, move_user_id, move_use_context);
-        }
-        MoveCategory::Status => event_dispatcher::trigger_on_status_move_used_event(battle, move_user_id, move_use_context),
-    }
+    EventDispatcher::dispatch_notify_event(battle, OnMoveUsedEvent, move_user_id, move_use_context);
 }
 
 /// The simulator switches out the Monster given by `switch_context.active_monster_id` and switches in
@@ -139,7 +134,7 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
             break 'hits;
         }
 
-        let try_move_hit_outcome = event_dispatcher::trigger_on_try_move_hit_event(battle, attacker_id, move_hit_context);
+        let try_move_hit_outcome = EventDispatcher::dispatch_trial_event(battle, OnTryMoveHitEvent, attacker_id, move_hit_context);
         if try_move_hit_outcome.is_failure() {
             battle.queue_message(format!["The move failed to hit {}!", mon![defender_id].name()]);
             fail_count += 1;
@@ -154,12 +149,14 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
 
         // If base_accuracy is `None`, the move is never-miss.
         if let Some(base_accuracy) = base_accuracy {
-            let modified_base_accuracy = event_dispatcher::trigger_on_modify_base_accuracy_event(battle, attacker_id, move_hit_context, base_accuracy);
-            let attackers_accuracy_stages = event_dispatcher::trigger_on_calculate_accuracy_stage_event(
+            let modified_base_accuracy = EventDispatcher::dispatch_event(battle, OnCalculateAccuracyEvent, attacker_id, move_hit_context, base_accuracy, None);
+            let attackers_accuracy_stages = EventDispatcher::dispatch_event(
                 battle,
+                OnCalculateAccuracyStageEvent,
                 attacker_id,
                 move_hit_context,
                 mon![attacker_id].stat_modifier(ModifiableStat::Accuracy),
+                None,
             );
             #[cfg(feature = "debug")]
             battle.queue_message(format![
@@ -168,11 +165,13 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
                 attackers_accuracy_stages
             ]);
 
-            let defenders_evasion_stages = event_dispatcher::trigger_on_calculate_evasion_stage_event(
+            let defenders_evasion_stages = EventDispatcher::dispatch_event(
                 battle,
+                OnCalculateEvasionStageEvent,
                 attacker_id,
                 move_hit_context,
                 mon![defender_id].stat_modifier(ModifiableStat::Evasion),
+                None,
             );
             #[cfg(feature = "debug")]
             battle.queue_message(format![
@@ -197,14 +196,20 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
             battle.queue_message(format!["{} bypassed accuracy check!", mov![move_used_id].name()]);
         }
 
-        let maybe_modified_crit_stage =
-            event_dispatcher::trigger_on_calculate_crit_stage_event(battle, attacker_id, move_hit_context, mov![move_used_id].base_crit_stage());
+        let maybe_modified_crit_stage = EventDispatcher::dispatch_event(
+            battle,
+            OnCalculateCritStageEvent,
+            attacker_id,
+            move_hit_context,
+            mov![move_used_id].base_crit_stage(),
+            None,
+        );
         let crit_chance = ModifiableStat::crit_chance_from_stage(maybe_modified_crit_stage);
 
         let is_crit = battle.roll_chance(crit_chance, 100);
 
         let crit_damage_multiplier = if is_crit {
-            event_dispatcher::trigger_on_calculate_crit_damage_multiplier_event(battle, attacker_id, move_hit_context, Percent(150))
+            EventDispatcher::dispatch_event(battle, OnCalculateCritDamageMultiplierEvent, attacker_id, move_hit_context, Percent(150), None)
         } else {
             Percent(100)
         };
@@ -231,16 +236,22 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
 
         let (attackers_attack_stat, defenders_defense_stat) = {
             let maybe_modified_attackers_attack_stat =
-                event_dispatcher::trigger_on_calculate_attack_stat_event(battle, attacker_id, move_hit_context, attackers_attack_stat);
+                EventDispatcher::dispatch_event(battle, OnCalculateAttackStatEvent, attacker_id, move_hit_context, attackers_attack_stat, None);
 
             let mut maybe_modified_attackers_attack_stage =
-                event_dispatcher::trigger_on_calculate_attack_stage_event(battle, attacker_id, move_hit_context, attackers_attack_stage);
+                EventDispatcher::dispatch_event(battle, OnCalculateAttackStageEvent, attacker_id, move_hit_context, attackers_attack_stage, None);
 
             let maybe_modified_defenders_defense_stat =
-                event_dispatcher::trigger_on_calculate_defense_stat_event(battle, defender_id, move_hit_context, defenders_defense_stat);
+                EventDispatcher::dispatch_event(battle, OnCalculateDefenseStatEvent, defender_id, move_hit_context, defenders_defense_stat, None);
 
-            let mut maybe_modified_defenders_defense_stage =
-                event_dispatcher::trigger_on_calculate_defense_stage_event(battle, defender_id, move_hit_context, defenders_defense_stage);
+            let mut maybe_modified_defenders_defense_stage = EventDispatcher::dispatch_event(
+                battle,
+                OnCalculateDefenseStageEvent,
+                defender_id,
+                move_hit_context,
+                defenders_defense_stage,
+                None,
+            );
 
             // If the move critted, the move calculation is to ignore
             // any attack drops of the attacker and any defense buffs of the
@@ -304,7 +315,7 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         damage = (damage as f64 * random_multiplier).floor() as u16;
         damage = (damage as f64 * stab_multiplier).round_ties_down();
         damage = (damage as f64 * type_matchup_multiplier).floor() as u16;
-        damage = event_dispatcher::trigger_on_modify_damage_event(battle, attacker_id, move_hit_context, damage);
+        damage = EventDispatcher::dispatch_event(battle, OnModifyDamageEvent, attacker_id, move_hit_context, damage, None);
         damage = damage.max(1);
 
         if is_crit {
@@ -313,7 +324,7 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
 
         let _ = deal_raw_damage(battle, defender_id, damage);
 
-        event_dispatcher::trigger_on_move_hit_event(battle, attacker_id, move_hit_context);
+        EventDispatcher::dispatch_notify_event(battle, OnMoveHitEvent, attacker_id, move_hit_context);
     }
 
     let did_every_hit_miss_or_fail = fail_count + miss_count == number_of_hits;
@@ -373,7 +384,7 @@ pub fn deal_raw_damage(battle: &mut Battle, target_id: MonsterID, damage: u16) -
     } else {
         actual_damage = damage;
     };
-    event_dispatcher::trigger_on_damage_dealt_event(battle, target_id, NOTHING);
+    EventDispatcher::dispatch_notify_event(battle, OnDamageDealtEvent, target_id, NOTHING);
     actual_damage
 }
 
@@ -384,10 +395,10 @@ where
     F: FnOnce(&mut Battle, AbilityActivationContext) -> Outcome<Nothing>,
 {
     let ability_activation_context = AbilityActivationContext::from_owner(ability_owner_id);
-    let try_activate_ability_outcome = event_dispatcher::trigger_on_try_activate_ability_event(battle, ability_owner_id, ability_activation_context);
+    let try_activate_ability_outcome = EventDispatcher::dispatch_trial_event(battle, OnTryActivateAbilityEvent, ability_owner_id, ability_activation_context);
     if try_activate_ability_outcome.is_success() {
         let activation_outcome = on_activate_effect(battle, ability_activation_context);
-        event_dispatcher::trigger_on_ability_activated_event(battle, ability_owner_id, ability_activation_context);
+        EventDispatcher::dispatch_notify_event(battle, OnAbilityActivatedEvent, ability_owner_id, ability_activation_context);
         activation_outcome
     } else {
         Outcome::Failure
@@ -402,7 +413,14 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
     };
 
     // We want to trigger events with the actual number of stages so we call the `on_modify_stat_change` first.
-    let modified_number_of_stages = event_dispatcher::trigger_on_modify_stat_change_event(battle, affected_monster_id, stat_change_context);
+    let modified_number_of_stages = EventDispatcher::dispatch_event(
+        battle,
+        OnModifyStatChangeEvent,
+        affected_monster_id,
+        stat_change_context,
+        number_of_stages,
+        None,
+    );
 
     let stat_change_context = StatChangeContext {
         affected_monster_id,
@@ -410,7 +428,7 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
         stat,
     };
 
-    let stat_change_outcome = event_dispatcher::trigger_on_try_stat_change_event(battle, affected_monster_id, stat_change_context);
+    let stat_change_outcome = EventDispatcher::dispatch_trial_event(battle, OnTryStatChangeEvent, affected_monster_id, stat_change_context);
 
     if stat_change_outcome.is_success() {
         // After modification, the stat change may change from a rise to a lower or vice versa.
@@ -447,7 +465,7 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
             }
         };
 
-        event_dispatcher::trigger_on_stat_changed_event(battle, affected_monster_id, stat_change_context);
+        EventDispatcher::dispatch_notify_event(battle, OnStatChangedEvent, affected_monster_id, stat_change_context);
 
         Outcome::Success(effective_stages)
     } else {
@@ -462,14 +480,14 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
 #[must_use]
 pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome<Nothing> {
     // conflict. A structural change is needed to resolve this correctly.
-    let try_inflict_status = event_dispatcher::trigger_on_try_inflict_volatile_status_event(battle, affected_monster_id, NOTHING);
+    let try_inflict_status = EventDispatcher::dispatch_trial_event(battle, OnTryInflictVolatileStatusEvent, affected_monster_id, NOTHING);
     if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
             let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species);
             mon![mut affected_monster_id].volatile_statuses.push(volatile_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
-            event_dispatcher::trigger_on_volatile_status_inflicted_event(battle, affected_monster_id, NOTHING);
+            EventDispatcher::dispatch_notify_event(battle, OnVolatileStatusInflictedEvent, affected_monster_id, NOTHING);
             Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
@@ -485,14 +503,14 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
 pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
-    let try_inflict_status = event_dispatcher::trigger_on_try_inflict_persistent_status_event(battle, affected_monster_id, NOTHING);
+    let try_inflict_status = EventDispatcher::dispatch_trial_event(battle, OnTryInflictPersistentStatusEvent, affected_monster_id, NOTHING);
     if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
             let persistent_status = PersistentStatus::from_species(status_species);
             mon![mut affected_monster_id].persistent_status = Some(persistent_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
-            event_dispatcher::trigger_on_persistent_status_inflicted_event(battle, affected_monster_id, NOTHING);
+            EventDispatcher::dispatch_notify_event(battle, OnPersistentStatusInflictedEvent, affected_monster_id, NOTHING);
             Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
@@ -509,7 +527,7 @@ where
     F: FnOnce(&mut Battle, MonsterID) -> T,
 {
     let item_use_context = ItemUseContext::from_holder(item_holder_id);
-    let try_use_item = event_dispatcher::trigger_on_try_use_held_item_event(battle, item_holder_id, item_use_context);
+    let try_use_item = EventDispatcher::dispatch_trial_event(battle, OnTryUseHeldItemEvent, item_holder_id, item_use_context);
     if try_use_item.is_success() {
         let held_item = mon![item_holder_id].held_item;
         if let Some(held_item) = held_item {
@@ -520,7 +538,7 @@ where
                 mon![mut item_holder_id].held_item = None;
             }
             let on_use_outcome = on_activate_effect(battle, item_holder_id);
-            event_dispatcher::trigger_on_held_item_used_event(battle, item_holder_id, item_use_context);
+            EventDispatcher::dispatch_notify_event(battle, OnHeldItemUsedEvent, item_holder_id, item_use_context);
             Outcome::Success(on_use_outcome)
         } else {
             Outcome::Failure

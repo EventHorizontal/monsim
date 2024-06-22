@@ -2,8 +2,8 @@
 
 use monsim::{
     effects, move_,
-    sim::{Ability, AbilitySpecies, EventFilteringOptions, EventHandler, EventHandlerSet, MoveUseContext, Type},
-    AbilityActivationContext, AbilityDexEntry, AbilityID, ModifiableStat, MoveHitContext, PositionRelationFlags,
+    sim::{Ability, AbilitySpecies, EventFilteringOptions, MoveUseContext, Type},
+    AbilityActivationContext, AbilityDexEntry, AbilityID, EventHandler, EventListener, ModifiableStat, MonsterID, MoveHitContext, PositionRelationFlags,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
@@ -15,10 +15,15 @@ use monsim::source_code_location;
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 001,
     name: "Flash Fire",
-    event_handlers: || EventHandlerSet {
-        on_try_move_hit: Some(EventHandler {
-            #[cfg(feature = "debug")]
-            source_code_location: source_code_location![],
+    event_listener: &FlashFireEventListener,
+    order: 0,
+});
+
+struct FlashFireEventListener;
+
+impl EventListener for FlashFireEventListener {
+    fn on_try_move_hit_handler(&self) -> Option<EventHandler<Outcome, MoveHitContext, MonsterID>> {
+        Some(EventHandler {
             response: |battle,
                        broadcaster_id,
                        receiver_id,
@@ -49,28 +54,35 @@ pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexE
                 Outcome::Success(())
             },
             event_filtering_options: EventFilteringOptions::default(),
-        }),
-        ..EventHandlerSet::default_for_monster()
-    },
-    order: 0,
-});
+        })
+    }
+}
 
 /// Pickup in-engine does nothing (for now).
 pub const Pickup: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 002,
     name: "Pickup",
-    event_handlers: || EventHandlerSet::default_for_monster(),
+    event_listener: &PickupEventListener,
     order: 1,
 });
+
+struct PickupEventListener;
+
+impl EventListener for PickupEventListener {}
 
 /// Contrary reverse all stat changes for the user.
 pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 003,
     name: "Contrary",
-    event_handlers: || EventHandlerSet {
-        on_modify_stat_change: Some(EventHandler {
-            #[cfg(feature = "debug")]
-            source_code_location: source_code_location![],
+    event_listener: &ContraryEventListener,
+    order: 2,
+});
+
+struct ContraryEventListener;
+
+impl EventListener for ContraryEventListener {
+    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<i8, monsim::StatChangeContext, MonsterID>> {
+        Some(EventHandler {
             response: |battle,
                        broadcaster_id,
                        receiver_id,
@@ -89,8 +101,6 @@ pub const Contrary: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEn
                 only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
-        }),
-        ..EventHandlerSet::default_for_monster()
-    },
-    order: 2,
-});
+        })
+    }
+}

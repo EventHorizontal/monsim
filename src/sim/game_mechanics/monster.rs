@@ -10,12 +10,12 @@ use tap::Pipe;
 use super::{Ability, TeamID};
 use crate::{
     sim::{
-        event_dispatcher::{EventContext, OwnedEventHandlerT},
+        event_dispatcher::{Event, EventContext, EventListener, OwnedEventHandler},
         targetting::{BoardPosition, FieldPosition},
-        ActivationOrder, EventHandlerSet, Type,
+        ActivationOrder, Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Broadcaster, EventHandlerSelector, Item, Move, OwnedEventHandler,
+    Broadcaster, Item, Move, OwnedEventHandlerWithReceiver,
 };
 
 #[derive(Debug, Clone)]
@@ -239,18 +239,17 @@ impl Monster {
 
     pub(crate) fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         &self,
-        event_handler_selector: EventHandlerSelector<R, C, MonsterID, B>,
-    ) -> Vec<Box<dyn OwnedEventHandlerT<R, C, B>>> {
+        event: &impl Event<R, C, B>,
+    ) -> Vec<Box<dyn OwnedEventHandler<R, C, B>>> {
         let mut output_owned_event_handlers = Vec::new();
 
         let owner_id = self.id;
 
         // of the Monster itself
-        event_handler_selector((self.species.event_handlers)())
-            .into_iter()
-            .flatten()
+        event
+            .get_event_handler_with_receiver(self.species().event_listener())
             .map(|event_handler| {
-                Box::new(OwnedEventHandler {
+                Box::new(OwnedEventHandlerWithReceiver {
                     event_handler,
                     owner_id,
                     activation_order: ActivationOrder {
@@ -258,18 +257,17 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
-                }) as Box<dyn OwnedEventHandlerT<R, C, B>>
+                }) as Box<dyn OwnedEventHandler<R, C, B>>
             })
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
             });
 
         // from the Monster's ability
-        event_handler_selector((&self).ability.event_handlers())
-            .into_iter()
-            .flatten()
+        event
+            .get_event_handler_with_receiver(self.ability.event_listener())
             .map(|event_handler| {
-                Box::new(OwnedEventHandler {
+                Box::new(OwnedEventHandlerWithReceiver {
                     event_handler,
                     owner_id,
                     activation_order: ActivationOrder {
@@ -277,7 +275,7 @@ impl Monster {
                         speed: (&self).stat(Stat::Speed),
                         order: (&self).ability.order(),
                     },
-                }) as Box<dyn OwnedEventHandlerT<R, C, B>>
+                }) as Box<dyn OwnedEventHandler<R, C, B>>
             })
             .pipe(|owned_event_handlers| {
                 output_owned_event_handlers.extend(owned_event_handlers);
@@ -287,59 +285,50 @@ impl Monster {
 
         // from the Monster's volatile statuses
         self.volatile_statuses.into_iter().for_each(|volatile_status| {
-            let owned_event_handlers = event_handler_selector(volatile_status.event_handlers())
-                .into_iter()
-                .flatten()
-                .map(|event_handler| {
-                    Box::new(OwnedEventHandler {
-                        event_handler,
-                        owner_id,
-                        activation_order: ActivationOrder {
-                            priority: 0,
-                            speed: self.stat(Stat::Speed),
-                            order: 0,
-                        },
-                    }) as Box<dyn OwnedEventHandlerT<R, C, B>>
-                });
+            let owned_event_handlers = event.get_event_handler_with_receiver(volatile_status.event_listener()).map(|event_handler| {
+                Box::new(OwnedEventHandlerWithReceiver {
+                    event_handler,
+                    owner_id,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: self.stat(Stat::Speed),
+                        order: 0,
+                    },
+                }) as Box<dyn OwnedEventHandler<R, C, B>>
+            });
             output_owned_event_handlers.extend(owned_event_handlers)
         });
 
         // from the Monster's persistent status
         if let Some(persistent_status) = self.persistent_status {
-            event_handler_selector(persistent_status.event_handlers())
-                .into_iter()
-                .flatten()
-                .for_each(|event_handler| {
-                    let owned_event_handler = Box::new(OwnedEventHandler {
-                        event_handler,
-                        owner_id,
-                        activation_order: ActivationOrder {
-                            priority: 0,
-                            speed: self.stat(Stat::Speed),
-                            order: 0,
-                        },
-                    }) as Box<dyn OwnedEventHandlerT<R, C, B>>;
-                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
-                });
+            event.get_event_handler_with_receiver(persistent_status.event_handlers()).map(|event_handler| {
+                let owned_event_handler = Box::new(OwnedEventHandlerWithReceiver {
+                    event_handler,
+                    owner_id,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: self.stat(Stat::Speed),
+                        order: 0,
+                    },
+                }) as Box<dyn OwnedEventHandler<R, C, B>>;
+                output_owned_event_handlers.extend([owned_event_handler].into_iter());
+            });
         }
 
         // from the Monster's held item
         if let Some(held_item) = self.held_item {
-            event_handler_selector(held_item.event_handlers())
-                .into_iter()
-                .flatten()
-                .for_each(|event_handler| {
-                    let owned_event_handler = Box::new(OwnedEventHandler {
-                        event_handler,
-                        owner_id,
-                        activation_order: ActivationOrder {
-                            priority: 0,
-                            speed: self.stat(Stat::Speed),
-                            order: 0,
-                        },
-                    }) as Box<dyn OwnedEventHandlerT<R, C, B>>;
-                    output_owned_event_handlers.extend([owned_event_handler].into_iter());
-                });
+            event.get_event_handler_with_receiver(held_item.event_listener()).map(|event_handler| {
+                let owned_event_handler = Box::new(OwnedEventHandlerWithReceiver {
+                    event_handler,
+                    owner_id,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: self.stat(Stat::Speed),
+                        order: 0,
+                    },
+                }) as Box<dyn OwnedEventHandler<R, C, B>>;
+                output_owned_event_handlers.extend([owned_event_handler].into_iter());
+            });
         }
 
         output_owned_event_handlers
@@ -402,7 +391,7 @@ pub struct MonsterSpecies {
     primary_type: Type,
     secondary_type: Option<Type>,
     base_stats: StatSet,
-    event_handlers: fn() -> EventHandlerSet,
+    event_listener: &'static dyn EventListener,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -511,7 +500,7 @@ impl MonsterSpecies {
             primary_type,
             secondary_type,
             base_stats,
-            event_handlers,
+            event_listener: event_handlers,
         }
     }
 
@@ -541,8 +530,8 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet {
-        (self.event_handlers)()
+    pub fn event_listener(&self) -> &'static dyn EventListener {
+        self.event_listener
     }
 }
 
@@ -585,5 +574,5 @@ pub struct MonsterDexEntry {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     pub base_stats: StatSet,
-    pub event_handlers: fn() -> EventHandlerSet,
+    pub event_handlers: &'static dyn EventListener,
 }

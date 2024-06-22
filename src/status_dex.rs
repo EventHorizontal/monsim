@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal)]
 
 use monsim::{
-    effects, Count, EventFilteringOptions, EventHandler, EventHandlerSet, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies,
+    effects, Count, EventFilteringOptions, EventHandler, EventListener, Outcome, Percent, PersistentStatusDexEntry, PersistentStatusSpecies,
     PositionRelationFlags, VolatileStatusDexEntry, VolatileStatusSpecies,
 };
 use monsim_macros::mon;
@@ -13,22 +13,25 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
     dex_number: 001,
     name: "Burned",
     on_acquired_message: |affected_monster| format!["{} was burned!", affected_monster.name()],
-    event_handlers: || EventHandlerSet {
-        on_calculate_attack_stat: Some(EventHandler {
-            #[cfg(feature = "debug")]
-            source_code_location: source_code_location!(),
+    event_listener: &BurnedEventListener,
+});
 
+struct BurnedEventListener;
+
+impl EventListener for BurnedEventListener {
+    fn on_calculate_attack_stat_handler(&self) -> Option<monsim::EventHandler<u16, monsim::MoveHitContext, monsim::MonsterID>> {
+        Some(EventHandler {
             response: |_, _, _, _, current_attack_stat| current_attack_stat * Percent(50),
 
             event_filtering_options: EventFilteringOptions {
                 only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
-        }),
-        on_turn_end: Some(EventHandler {
-            #[cfg(feature = "debug")]
-            source_code_location: source_code_location!(),
+        })
+    }
 
+    fn on_turn_end_handler(&self) -> Option<EventHandler<(), (), monsim::MonsterID, ()>> {
+        Some(EventHandler {
             response: |battle, _, receiver_id, _context, _| {
                 battle.queue_message(format!["{} is burned.", mon![receiver_id].name()]);
                 let damage = (mon![receiver_id].max_health() as f64 * 1.0 / 8.0) as u16;
@@ -39,20 +42,24 @@ pub const Burned: PersistentStatusSpecies = PersistentStatusSpecies::from_dex_en
                 only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
-        }),
-        ..EventHandlerSet::default_for_monster()
-    },
-});
+        })
+    }
+}
 
 pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entry(VolatileStatusDexEntry {
     dex_number: 001,
     name: "Confused",
     lifetime_in_turns: Count::RandomInRange { min: 2, max: 4 },
-    event_handlers: || EventHandlerSet {
-        on_try_move: Some(EventHandler {
-            #[cfg(feature = "debug")]
-            source_code_location: source_code_location!(),
+    event_listener: &ConfusedEventListener,
 
+    on_acquired_message: |affected_monster| format!["{} became confused!", affected_monster.name()],
+});
+
+struct ConfusedEventListener;
+
+impl EventListener for ConfusedEventListener {
+    fn on_try_move_handler(&self) -> Option<EventHandler<Outcome, monsim::MoveUseContext, monsim::MonsterID>> {
+        Some(EventHandler {
             response: |battle, _broadcaster_id, receiver_id, _context, _relay| {
                 battle.queue_message(format!["{} is confused!", mon![receiver_id].name()]);
 
@@ -77,9 +84,6 @@ pub const Confused: VolatileStatusSpecies = VolatileStatusSpecies::from_dex_entr
                 only_if_broadcaster_is: PositionRelationFlags::SELF,
                 ..EventFilteringOptions::default()
             },
-        }),
-        ..EventHandlerSet::default_for_monster()
-    },
-
-    on_acquired_message: |affected_monster| format!["{} became confused!", affected_monster.name()],
-});
+        })
+    }
+}

@@ -1,6 +1,6 @@
 use monsim_utils::{Count, Nothing};
 
-use crate::EventHandlerSet;
+use crate::sim::event_dispatcher::EventListener;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Weather {
@@ -30,8 +30,8 @@ impl Weather {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet<Nothing> {
-        self.species().event_handlers()
+    pub fn event_handlers(&self) -> &'static dyn EventListener<Nothing> {
+        self.species.event_listener
     }
 }
 
@@ -40,7 +40,7 @@ pub struct WeatherSpecies {
     dex_number: u16,
     name: &'static str,
     lifetime_in_turns: Count,
-    on_event_behaviour: fn() -> EventHandlerSet<Nothing>,
+    event_listener: &'static dyn EventListener<Nothing>,
     on_start_message: &'static str,
     on_clear_message: &'static str,
 }
@@ -59,7 +59,7 @@ impl WeatherSpecies {
             dex_number,
             name,
             lifetime_in_turns,
-            on_event_behaviour,
+            event_listener,
             on_start_message,
             on_clear_message,
         } = dex_entry;
@@ -68,7 +68,7 @@ impl WeatherSpecies {
             dex_number,
             name,
             lifetime_in_turns,
-            on_event_behaviour,
+            event_listener,
             on_start_message,
             on_clear_message,
         }
@@ -85,8 +85,8 @@ impl WeatherSpecies {
     }
 
     #[inline(always)]
-    pub fn event_handlers(&self) -> EventHandlerSet<Nothing> {
-        (self.on_event_behaviour)()
+    pub fn event_listener(&self) -> &'static dyn EventListener<Nothing> {
+        self.event_listener
     }
 
     #[inline(always)]
@@ -109,7 +109,7 @@ pub struct WeatherDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub lifetime_in_turns: Count,
-    pub on_event_behaviour: fn() -> EventHandlerSet<Nothing>,
+    pub event_listener: &'static dyn EventListener<Nothing>,
     pub on_start_message: &'static str,
     pub on_clear_message: &'static str,
 }

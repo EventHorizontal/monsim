@@ -180,6 +180,11 @@ pub enum MoveCategory {
     Special,
     Status,
 }
+impl MoveCategory {
+    pub fn is_damaging(&self) -> bool {
+        matches!(self, MoveCategory::Physical | MoveCategory::Special)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MoveNumber {

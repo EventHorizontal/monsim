@@ -3,9 +3,9 @@ mod message_log;
 
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Broadcaster, Environment, EventHandlerSelector, Item, ItemID, PartiallySpecifiedActionChoice,
+    AbilityID, Broadcaster, Environment, Item, ItemID, PartiallySpecifiedActionChoice,
 };
-use monsim_utils::{not, Ally, MaxSizedVec, Nothing, Opponent};
+use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
     fmt::Display,
     ops::{Deref, DerefMut, RangeInclusive},
@@ -14,7 +14,7 @@ use std::{
 use self::builder::BattleFormat;
 
 use super::{
-    event_dispatcher::{EventContext, OwnedEventHandlerT},
+    event_dispatcher::{Event, EventContext, OwnedEventHandler},
     prng::Prng,
     targetting::{BoardPosition, FieldPosition},
     PerTeam, TeamID,
@@ -238,13 +238,12 @@ impl BattleState {
 
     pub fn owned_event_handlers<R: Copy + 'static, C: EventContext + Copy + 'static, B: Broadcaster + Copy + 'static>(
         &self,
-        event_handler_selector: EventHandlerSelector<R, C, MonsterID, B>,
-        receiverless_event_handler_selector: EventHandlerSelector<R, C, Nothing, B>,
-    ) -> Vec<Box<dyn OwnedEventHandlerT<R, C, B>>> {
+        event: impl Event<R, C, B>,
+    ) -> Vec<Box<dyn OwnedEventHandler<R, C, B>>> {
         let mut out = Vec::new();
-        out.append(&mut self.ally_team().owned_event_handlers(event_handler_selector));
-        out.append(&mut self.opponent_team().owned_event_handlers(event_handler_selector));
-        out.append(&mut self.environment.owned_event_handlers(receiverless_event_handler_selector));
+        out.append(&mut self.ally_team().owned_event_handlers(&event));
+        out.append(&mut self.opponent_team().owned_event_handlers(&event));
+        out.append(&mut self.environment.owned_event_handlers(&event));
         out
     }
 

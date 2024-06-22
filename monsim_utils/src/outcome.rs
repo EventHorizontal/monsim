@@ -4,7 +4,7 @@ use crate::{not, Nothing, NOTHING};
 
 /// An outcome with a payload, usually nothing, _i.e._ `()`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Outcome<P> {
+pub enum Outcome<P = Nothing> {
     Success(P),
     Failure,
 }

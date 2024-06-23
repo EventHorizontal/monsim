@@ -28,12 +28,20 @@ impl SimulatorUi for Cli {
         _ = writeln![
             locked_stdout,
             "\tCurrent Weather: {}",
-            battle.environment().weather().map_or("None", |weather| weather.name())
+            battle.environment().weather().map_or("None".to_string(), |weather| format![
+                "{} ({} turns remaining)",
+                weather.name(),
+                weather.remaining_turns
+            ])
         ];
         _ = writeln![
             locked_stdout,
             "\tCurrent Terrain: {}",
-            battle.environment().terrain().map_or("None", |terrain| terrain.name())
+            battle.environment().terrain().map_or("None".to_string(), |terrain| format![
+                "{} ({} turns remaining)",
+                terrain.name(),
+                terrain.remaining_turns
+            ])
         ];
         _ = writeln![locked_stdout];
     }

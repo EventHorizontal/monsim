@@ -70,7 +70,7 @@ fn main() -> MonsimResult<()> {
                         .with_nickname("Epona"),
                 ),
         )
-        .with_environment(Environment::spawn().with_terrain(&MistyTerrain))
+        .with_environment(Environment::spawn().with_weather(&HarshSunlight).with_terrain(&MistyTerrain))
         // .with_format(BattleFormat::Triple)
         .build();
 

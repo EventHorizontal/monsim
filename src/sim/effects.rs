@@ -603,7 +603,7 @@ pub fn start_terrain(battle: &mut Battle, terrain_species: &'static TerrainSpeci
 
 pub(crate) fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
     // TODO: We might need something more elaborate here.
-    if let Some(terrain) = battle.environment().weather() {
+    if let Some(terrain) = battle.environment().terrain() {
         battle.queue_message(terrain.on_clear_message());
         battle.environment_mut().terrain = None;
         Outcome::Success(NOTHING)

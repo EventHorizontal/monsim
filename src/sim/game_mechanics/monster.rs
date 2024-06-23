@@ -15,7 +15,7 @@ use crate::{
         ActivationOrder, Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Broadcaster, EventHandlerWithOwner, Item, Move,
+    Broadcaster, EventHandlerWithOwner, Item, MechanicKind, Move,
 };
 
 #[derive(Debug, Clone)]
@@ -269,6 +269,7 @@ impl Monster {
                         order: 0,
                     },
                     mechanic_id: self.id,
+                    mechanic_kind: MechanicKind::Monster,
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
             })
             .pipe(|owned_event_handlers| {
@@ -288,6 +289,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: self.ability.order(),
                     },
+                    mechanic_kind: MechanicKind::Ability,
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
             })
             .pipe(|owned_event_handlers| {
@@ -308,6 +310,7 @@ impl Monster {
                         speed: self.stat(Stat::Speed),
                         order: 0,
                     },
+                    mechanic_kind: MechanicKind::VolatileStatus,
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
             });
             output_owned_event_handlers.extend(owned_event_handlers)
@@ -325,6 +328,7 @@ impl Monster {
                         order: 0,
                     },
                     mechanic_id: persistent_status.id,
+                    mechanic_kind: MechanicKind::PersistentStatus,
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }
@@ -342,6 +346,7 @@ impl Monster {
                         order: 0,
                     },
                     mechanic_id: held_item.id,
+                    mechanic_kind: MechanicKind::Item,
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
                 output_owned_event_handlers.extend([owned_event_handler]);
             }

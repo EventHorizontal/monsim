@@ -8,8 +8,6 @@ use monsim_macros::{mon, mov};
 
 use crate::status_dex::Confused;
 
-// HACK: Right now I'm manually checking grounding in the event listener. Instead, grounding should be filtered in-engine for all terrain, since it seems pretty fundamental to the concept.
-
 pub const MistyTerrain: TerrainSpecies = TerrainSpecies::from_dex_entry(TerrainDexEntry {
     dex_number: 001,
     name: "Misty Terrain",
@@ -25,7 +23,7 @@ impl EventListener<Nothing, Nothing> for MistyTerrainEventListener {
     fn on_modify_damage_handler(&self) -> Option<EventHandler<MoveHitContext, u16, Nothing, Nothing>> {
         Some(EventHandler {
             response: |battle, broadcaster_id, receiver_id, _, move_hit_context, damage| {
-                if mov![move_hit_context.move_used_id].is_type(Type::Dragon) && mon![move_hit_context.move_user_id].is_grounded() {
+                if mov![move_hit_context.move_used_id].is_type(Type::Dragon) {
                     battle.queue_debug_message(format!["Misty terrain reduced the damage of {}", mov![move_hit_context.move_used_id].name()]);
                     damage * Percent(50)
                 } else {
@@ -39,16 +37,12 @@ impl EventListener<Nothing, Nothing> for MistyTerrainEventListener {
     fn on_try_inflict_persistent_status_handler(&self) -> Option<EventHandler<InflictPersistentStatusContext, Outcome, Nothing, Nothing>> {
         Some(EventHandler {
             response: |battle, broadcaster_id, receiver_id, _, context, relay| {
-                if mon![context.affected_monster_id].is_grounded() {
-                    battle.queue_debug_message(format![
-                        "(Misty Terrain prevented {} from being {}.)",
-                        mon![context.affected_monster_id].name(),
-                        context.status_condition.name()
-                    ]);
-                    Outcome::Failure
-                } else {
-                    Outcome::Success(NOTHING)
-                }
+                battle.queue_debug_message(format![
+                    "(Misty Terrain prevented {} from being {}.)",
+                    mon![context.affected_monster_id].name(),
+                    context.status_condition.name()
+                ]);
+                Outcome::Failure
             },
             event_filtering_options: EventFilteringOptions::default(),
         })
@@ -57,7 +51,7 @@ impl EventListener<Nothing, Nothing> for MistyTerrainEventListener {
     fn on_try_inflict_volatile_status_handler(&self) -> Option<EventHandler<InflictVolatileStatusContext, Outcome, Nothing, Nothing>> {
         Some(EventHandler {
             response: |battle, broadcaster_id, receiver_id, _, context, relay| {
-                if context.status_condition == &Confused && mon![context.affected_monster_id].is_grounded() {
+                if context.status_condition == &Confused {
                     battle.queue_debug_message("(Misty Terrain prevented confusion.)");
                     Outcome::Failure
                 } else {

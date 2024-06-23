@@ -14,3 +14,16 @@ pub use monster::*;
 pub use move_::*;
 pub use team::*;
 pub use types::*;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MechanicKind {
+    Monster,
+    Move,
+    Ability,
+    Item,
+    VolatileStatus,
+    PersistentStatus,
+    Weather,
+    Terrain,
+    EntryHazard,
+}

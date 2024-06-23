@@ -47,7 +47,7 @@ use monsim_utils::{not, Nothing, Outcome, Percent, NOTHING};
 
 use crate::{
     status::{PersistentStatusID, VolatileStatusID},
-    AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MonsterID, MoveID, PositionRelationFlags,
+    AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MechanicKind, MonsterID, MoveID, PositionRelationFlags,
 };
 pub use contexts::*;
 
@@ -63,7 +63,7 @@ impl EventDispatcher {
         battle: &mut Battle,
 
         event: impl Event<C, R, B>,
-        broadcaster_id: B,
+        broadcaster: B,
         event_context: C,
         default: R,
         short_circuit: Option<R>,
@@ -83,14 +83,15 @@ impl EventDispatcher {
 
         let mut relay = default;
         for owned_event_handler in owned_event_handlers.into_iter() {
-            if EventDispatcher::does_event_pass_event_receivers_filtering_options(
+            if EventDispatcher::does_event_handler_pass_filters(
                 battle,
-                broadcaster_id,
+                broadcaster.as_id(),
                 event_context.target(),
                 owned_event_handler.owner_id(),
+                owned_event_handler.mechanic_kind(),
                 owned_event_handler.event_filtering_options(),
             ) {
-                relay = owned_event_handler.respond(battle, broadcaster_id, event_context, relay);
+                relay = owned_event_handler.respond(battle, broadcaster, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -102,15 +103,24 @@ impl EventDispatcher {
         relay
     }
 
-    fn does_event_pass_event_receivers_filtering_options(
+    fn does_event_handler_pass_filters(
         battle: &Battle,
-        event_broadcaster: impl Broadcaster,
-        event_target_id: Option<MonsterID>,
-        event_receiver_id: Option<MonsterID>,
+
+        optional_broadcaster_id: Option<MonsterID>,
+        optional_target_id: Option<MonsterID>,
+        optional_receiver_id: Option<MonsterID>,
+
+        event_listener_mechanic_kind: MechanicKind,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
-        let Some(event_receiver_id) = event_receiver_id else {
-            // The event_receiver is the Environment, that auto-passes checks.
+        // If there is no receiver we skip checks and return true UNLESS
+        // the mechanic is a terrain and the broadcaster is not grounded.
+        let Some(event_receiver_id) = optional_receiver_id else {
+            if let Some(event_broadcaster_id) = optional_broadcaster_id {
+                if event_listener_mechanic_kind == MechanicKind::Terrain && not![mon![event_broadcaster_id].is_grounded()] {
+                    return false;
+                }
+            }
             return true;
         };
 
@@ -135,7 +145,7 @@ impl EventDispatcher {
             .field_position()
             .expect("For now we disallow the receiver to be benched. This is will probably be reverted in the future.");
 
-        if let Some(event_broadcaster_id) = event_broadcaster.source() {
+        if let Some(event_broadcaster_id) = optional_broadcaster_id {
             // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster within the allowed relations to the event receiver?
             let event_broadcaster_field_position = mon![event_broadcaster_id]
                 .board_position
@@ -155,7 +165,7 @@ impl EventDispatcher {
 
         // The event target is the contextual target for the action associated with this event. For example,
         // this could be the target of the current move.
-        if let Some(event_target_id) = event_target_id {
+        if let Some(event_target_id) = optional_target_id {
             let event_target_field_position = mon![event_target_id].board_position.field_position();
 
             // The event target may have fainted by the time an EventHandler procs.
@@ -351,6 +361,7 @@ pub struct EventHandlerWithOwner<C: EventContext, R: EventReturnable, M: Mechani
     pub event_handler: EventHandler<C, R, M, V, B>,
     pub receiver_id: V,
     pub mechanic_id: M,
+    pub mechanic_kind: MechanicKind,
     pub activation_order: ActivationOrder,
 }
 
@@ -364,6 +375,8 @@ pub trait EventHandlerWithOwnerEmbedded<C, R, B>: DynClone {
     fn owner_id(&self) -> Option<MonsterID>;
 
     fn event_filtering_options(&self) -> EventFilteringOptions;
+
+    fn mechanic_kind(&self) -> MechanicKind;
 }
 
 impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster> EventHandlerWithOwnerEmbedded<C, R, B>
@@ -383,6 +396,10 @@ impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadca
 
     fn event_filtering_options(&self) -> EventFilteringOptions {
         self.event_handler.event_filtering_options
+    }
+
+    fn mechanic_kind(&self) -> MechanicKind {
+        self.mechanic_kind
     }
 }
 
@@ -426,13 +443,13 @@ impl EventFilteringOptions {
 // Constraint Traits ------------------------------------------------------------ //
 
 pub trait Broadcaster: Copy {
-    fn source(&self) -> Option<MonsterID> {
+    fn as_id(&self) -> Option<MonsterID> {
         None
     }
 }
 
 impl Broadcaster for MonsterID {
-    fn source(&self) -> Option<MonsterID> {
+    fn as_id(&self) -> Option<MonsterID> {
         Some(*self)
     }
 }

@@ -6,7 +6,7 @@ pub use weather::*;
 
 use crate::{
     sim::event_dispatcher::{Event, EventContext, EventHandlerWithOwnerEmbedded, EventReturnable},
-    ActivationOrder, Broadcaster, EventHandlerWithOwner,
+    ActivationOrder, Broadcaster, EventHandlerWithOwner, MechanicKind,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,6 +50,7 @@ impl Environment {
                         speed: 0,
                         order: 0,
                     },
+                    mechanic_kind: MechanicKind::Weather,
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
                 output_owned_event_handlers.push(owned_event_handler);
             }
@@ -67,6 +68,7 @@ impl Environment {
                         speed: 0,
                         order: 0,
                     },
+                    mechanic_kind: MechanicKind::Terrain,
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
                 output_owned_event_handlers.push(owned_event_handler);
             }

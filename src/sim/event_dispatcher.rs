@@ -69,7 +69,7 @@ impl EventDispatcher {
         short_circuit: Option<R>,
     ) -> R {
         #[cfg(feature = "debug")]
-        let event_dispatch_start_time = std::time::SystemTime::now();
+        println!["(Dispatching {})", event.name()];
 
         let mut owned_event_handlers = battle.owned_event_handlers(event);
 
@@ -99,12 +99,6 @@ impl EventDispatcher {
                 };
             }
         }
-        #[cfg(feature = "debug")]
-        {
-            let elapsed_time = event_dispatch_start_time.elapsed().expect("This should work every time.");
-            println!("Event dispatch cycle took {:?}", elapsed_time);
-        }
-
         relay
     }
 
@@ -201,6 +195,7 @@ impl EventDispatcher {
 // Event -------------------------------------------------- //
 
 pub trait Event<C: EventContext, R: EventReturnable, B: Broadcaster = MonsterID> {
+    fn name(&self) -> &'static str;
     fn get_event_handler_with_receiver<M: MechanicID>(&self, event_listener: &'static dyn EventListener<M>) -> Option<EventHandler<C, R, M, MonsterID, B>>;
     fn get_event_handler_without_receiver<M: MechanicID>(
         &self,
@@ -359,7 +354,9 @@ pub struct EventHandlerWithOwner<C: EventContext, R: EventReturnable, M: Mechani
     pub activation_order: ActivationOrder,
 }
 
-pub trait EventHandlerWithOwnerEmbedded<C, R, B> {
+use dyn_clone::DynClone;
+
+pub trait EventHandlerWithOwnerEmbedded<C, R, B>: DynClone {
     fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R;
 
     fn activation_order(&self) -> ActivationOrder;
@@ -391,7 +388,7 @@ impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadca
 
 impl<R: EventReturnable, C: EventContext, B: Broadcaster> Clone for Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>> {
     fn clone(&self) -> Self {
-        self.to_owned()
+        dyn_clone::clone_box(&**self)
     }
 }
 

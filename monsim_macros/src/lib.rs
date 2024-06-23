@@ -5,7 +5,7 @@ use convert_case::Casing;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Type};
+use syn::{parse_macro_input, DeriveInput, LitStr, Type};
 
 #[cfg(feature = "battle_builder")]
 use syntax::battle_macro_syntax::{BattleExpr, MonsterExpr, MonsterTeamExpr};
@@ -80,8 +80,13 @@ pub fn event_macro_derive(input: TokenStream) -> TokenStream {
         }
     }
     let name = input.ident;
+    let name_literal = LitStr::new(name.to_string().as_str(), name.span());
     quote!(
         impl Event<#context, #return_type #broadcaster> for #name {
+            fn name(&self) -> &'static str {
+                #name_literal
+            }
+
             fn get_event_handler_with_receiver<M: MechanicID>(
                 &self,
                 event_listener: &'static dyn EventListener<M>,

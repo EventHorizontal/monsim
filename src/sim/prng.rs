@@ -32,23 +32,31 @@ impl Prng {
 
     pub fn roll_chance(&mut self, num: u16, denom: u16) -> bool {
         assert!(denom != 0);
-        self.roll_random_number_in_range(1..=denom) <= num
+        if cfg!(feature = "always_roll_high") {
+            true
+        } else {
+            self.roll_random_number_in_range(1..=denom) <= num
+        }
     }
 
     /// Returns each number in the range with equal probability. If the range contains one number, it returns it with 100% certainty.
     pub(crate) fn roll_random_number_in_range(&mut self, mut range: RangeInclusive<u16>) -> u16 {
-        let start = range.next().expect("The range given to generate_number_in_range must have a first element.");
-        let end = range
-            .next_back()
-            .expect("The range given to generate_number_in_range must have a last element.");
-        assert!(end >= 1, "The end of the range should be 1 or higher");
-        if end == start {
-            return start;
-        }
-        let random_number = self.next();
-        let range = (end - start + 1) as f64;
+        if cfg!(feature = "always_roll_high") {
+            *range.end()
+        } else {
+            let start = range.next().expect("The range given to generate_number_in_range must have a first element.");
+            let end = range
+                .next_back()
+                .expect("The range given to generate_number_in_range must have a last element.");
+            assert!(end >= 1, "The end of the range should be 1 or higher");
+            if end == start {
+                return start;
+            }
+            let random_number = self.next();
+            let range = (end - start + 1) as f64;
 
-        ((random_number as f64 / MAX as f64) * range) as u16 + start
+            ((random_number as f64 / MAX as f64) * range) as u16 + start
+        }
     }
 
     /// Uses the formula `x_{n+1} = (A * x_n) + C` where `A = 0x5D588B656C078965` and

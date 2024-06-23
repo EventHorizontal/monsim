@@ -13,9 +13,10 @@ const_format = { version = "0.2.30", optional = true }
 chrono = { version = "0.4.24", optional = true }
 tap = "1.0.1"
 colored = "2.1.0"
+dyn-clone = "1.0.17"
 
 [lib]
-name =  "monsim"
+name = "monsim"
 path = "src/lib.rs"
 
 [[bin]]
@@ -29,6 +30,7 @@ monsim_tui = ["tui", "crossterm"]
 event_gen = ["monsim_macros/event_gen"]
 entity_fetchers = ["monsim_macros/entity_fetchers"]
 battle_builder = ["monsim_macros/battle_builder"]
+always_roll_high = []
 
 [profile.speed]
 inherits = "dev"

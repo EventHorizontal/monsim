@@ -51,7 +51,7 @@ impl Environment {
                         order: 0,
                     },
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
-                output_owned_event_handlers.extend([owned_event_handler]);
+                output_owned_event_handlers.push(owned_event_handler);
             }
         }
 
@@ -68,7 +68,7 @@ impl Environment {
                         order: 0,
                     },
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
-                output_owned_event_handlers.extend([owned_event_handler]);
+                output_owned_event_handlers.push(owned_event_handler);
             }
         }
         output_owned_event_handlers

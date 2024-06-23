@@ -175,6 +175,23 @@ impl BattleSimulator {
         ordering::sort_by_activation_order(&mut self.battle.prng, &mut action_schedule, |choice| choice.activation_order());
 
         'turn: for action_choice in action_schedule.into_iter() {
+            #[cfg(feature = "debug")]
+            println![
+                "(Simulating {})",
+                match action_choice {
+                    FullySpecifiedActionChoice::Move { move_id, .. } =>
+                        format!["{} using {}", self.battle.monster(move_id.owner_id).name(), self.battle.move_(move_id).name()],
+                    FullySpecifiedActionChoice::SwitchOut {
+                        active_monster_id,
+                        benched_monster_id,
+                        ..
+                    } => format![
+                        "{} switching out with {}",
+                        self.battle.monster(active_monster_id).name(),
+                        self.battle.monster(benched_monster_id).name()
+                    ],
+                }
+            ];
             // If the actor fainted we move on to the next action..
             let actor_id = action_choice.actor_id();
             if self.battle.monster(actor_id).is_fainted() {

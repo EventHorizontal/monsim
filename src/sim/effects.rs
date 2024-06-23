@@ -413,6 +413,12 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
         stat,
     };
 
+    // Sometimes a move will cause a monster to faint before it's stat change occurs,
+    // in this case we want to return.
+    if mon![affected_monster_id].is_fainted() {
+        return Outcome::Failure;
+    }
+
     // We want to trigger events with the actual number of stages so we call the `on_modify_stat_change` first.
     let modified_number_of_stages = EventDispatcher::dispatch_event(
         battle,
@@ -479,7 +485,7 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
 ///
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
-pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome<Nothing> {
+pub fn inflict_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome<Nothing> {
     let context = InflictVolatileStatusContext {
         affected_monster_id,
         status_condition: status_species,
@@ -506,7 +512,7 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
 ///
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
-pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
+pub fn inflict_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
     let context = InflictPersistentStatusContext {
         affected_monster_id,
         status_condition: status_species,

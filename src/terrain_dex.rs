@@ -47,7 +47,7 @@ impl EventListener<Nothing, Nothing> for MistyTerrainEventListener {
                     ]);
                     Outcome::Failure
                 } else {
-                    Outcome::Failure
+                    Outcome::Success(NOTHING)
                 }
             },
             event_filtering_options: EventFilteringOptions::default(),

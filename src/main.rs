@@ -27,7 +27,7 @@ fn main() -> MonsimResult<()> {
                 .with_monster(
                     Dandyleo
                         .spawn(
-                            (SunnyDay.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), Some(HoneClaws.spawn())),
+                            (SunnyDay.spawn(), Some(BulletSeed.spawn()), Some(Confusion.spawn()), Some(WillOWisp.spawn())),
                             Pickup.spawn(),
                         )
                         .with_nickname("Clover")

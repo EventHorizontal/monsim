@@ -53,7 +53,7 @@ pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     on_use_effect: |battle, context| {
         let hit_outcome = effects::deal_calculated_damage(battle, context);
         if battle.roll_chance(1, 10) && hit_outcome.is_success() {
-            effects::add_persistent_status(battle, context.target_id, &Burned);
+            effects::inflict_persistent_status(battle, context.target_id, &Burned);
         }
         hit_outcome
     },
@@ -150,7 +150,7 @@ pub const Confusion: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     on_use_effect: |battle, context| {
         let hit_outcome = effects::deal_calculated_damage(battle, context);
         if battle.roll_chance(1, 10) && hit_outcome.is_success() {
-            effects::add_volatile_status(battle, context.target_id, &Confused);
+            effects::inflict_volatile_status(battle, context.target_id, &Confused);
         }
         hit_outcome
     },
@@ -300,5 +300,26 @@ pub const SunnyDay: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     max_power_points: 5,
     priority: 0,
     targets: PositionRelationFlags::SELF,
+    type_: Type::Fire,
+});
+
+pub const WillOWisp: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 015,
+    name: "Will-O-Wisp",
+    on_use_effect: |battle, context| {
+        let inflict_status_outcome = effects::inflict_persistent_status(battle, context.target_id, &Burned);
+        inflict_status_outcome
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: Some(85),
+    base_crit_stage: 1,
+    base_power: 0,
+    category: MoveCategory::Status,
+    max_power_points: 15,
+    priority: 0,
+    targets: PositionRelationFlags::ANY
+        .union(PositionRelationFlags::ADJACENT)
+        .union(PositionRelationFlags::ALLIES)
+        .union(PositionRelationFlags::OPPONENTS),
     type_: Type::Fire,
 });

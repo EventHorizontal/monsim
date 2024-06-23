@@ -231,7 +231,13 @@ impl Monster {
 
     // TODO: Telekinesis/Magnet Rise
     pub fn is_grounded(&self) -> bool {
-        not![self.is_type(Type::Flying)] && self.ability().name() != "Levitate" && self.held_item().map_or(false, |item| item.name() != "Air Balloon")
+        not![self.is_type(Type::Flying)]
+            && self.ability().name() != "Levitate"
+            && if let Some(held_item) = self.held_item() {
+                held_item.name() != "Air Balloon"
+            } else {
+                true
+            }
     }
 }
 

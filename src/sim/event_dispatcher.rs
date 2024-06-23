@@ -299,19 +299,19 @@ pub trait EventListener<M: MechanicID, V: Receiver = MonsterID> {
         None
     }
 
-    fn on_try_inflict_volatile_status_handler(&self) -> Option<EventHandler<Nothing, Outcome, M, V>> {
+    fn on_try_inflict_volatile_status_handler(&self) -> Option<EventHandler<InflictVolatileStatusContext, Outcome, M, V>> {
         None
     }
 
-    fn on_volatile_status_inflicted_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    fn on_volatile_status_inflicted_handler(&self) -> Option<EventHandler<InflictVolatileStatusContext, Nothing, M, V>> {
         None
     }
 
-    fn on_try_inflict_persistent_status_handler(&self) -> Option<EventHandler<Nothing, Outcome, M, V>> {
+    fn on_try_inflict_persistent_status_handler(&self) -> Option<EventHandler<InflictPersistentStatusContext, Outcome, M, V>> {
         None
     }
 
-    fn on_persistent_status_inflicted_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    fn on_persistent_status_inflicted_handler(&self) -> Option<EventHandler<InflictPersistentStatusContext, Nothing, M, V>> {
         None
     }
 

@@ -62,6 +62,12 @@ impl PersistentStatusSpecies {
     }
 }
 
+impl PersistentStatusSpecies {
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+}
+
 #[derive(Debug)]
 pub struct PersistentStatusDexEntry {
     pub dex_number: u16,

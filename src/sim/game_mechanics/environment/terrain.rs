@@ -3,19 +3,19 @@ use monsim_utils::{Count, Nothing};
 use crate::{prng::Prng, sim::builder::InitCount, sim::event_dispatcher::EventListener};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Weather {
-    pub(crate) species: &'static WeatherSpecies,
+pub struct Terrain {
+    pub(crate) species: &'static TerrainSpecies,
     pub(crate) remaining_turns: u8,
 }
 
-impl Weather {
-    pub fn from_species(species: &'static WeatherSpecies, prng: &mut Prng) -> Weather {
+impl Terrain {
+    pub(crate) fn from_species(species: &'static TerrainSpecies, prng: &mut Prng) -> Terrain {
         let remaining_turns = species.lifetime_in_turns().init(prng);
-        Weather { species, remaining_turns }
+        Terrain { species, remaining_turns }
     }
 
     #[inline(always)]
-    pub fn species(&self) -> &'static WeatherSpecies {
+    pub fn species(&self) -> &'static TerrainSpecies {
         self.species
     }
 
@@ -41,7 +41,7 @@ impl Weather {
 }
 
 #[derive(Debug, Clone)]
-pub struct WeatherSpecies {
+pub struct TerrainSpecies {
     dex_number: u16,
     name: &'static str,
     lifetime_in_turns: Count,
@@ -50,17 +50,17 @@ pub struct WeatherSpecies {
     on_clear_message: &'static str,
 }
 
-impl PartialEq for WeatherSpecies {
+impl PartialEq for TerrainSpecies {
     fn eq(&self, other: &Self) -> bool {
         self.dex_number == other.dex_number
     }
 }
 
-impl Eq for WeatherSpecies {}
+impl Eq for TerrainSpecies {}
 
-impl WeatherSpecies {
-    pub const fn from_dex_entry(dex_entry: WeatherDexEntry) -> WeatherSpecies {
-        let WeatherDexEntry {
+impl TerrainSpecies {
+    pub const fn from_dex_entry(dex_entry: TerrainDexEntry) -> TerrainSpecies {
+        let TerrainDexEntry {
             dex_number,
             name,
             lifetime_in_turns,
@@ -69,7 +69,7 @@ impl WeatherSpecies {
             on_clear_message,
         } = dex_entry;
 
-        WeatherSpecies {
+        TerrainSpecies {
             dex_number,
             name,
             lifetime_in_turns,
@@ -110,7 +110,7 @@ impl WeatherSpecies {
     }
 }
 
-pub struct WeatherDexEntry {
+pub struct TerrainDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub lifetime_in_turns: Count,

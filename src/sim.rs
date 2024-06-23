@@ -197,7 +197,8 @@ impl BattleSimulator {
                         .filter_map(|position| self.battle.monster_at_position(position))
                         .map(|monster| monster.id)
                         .collect::<Vec<_>>();
-                    effects::use_move(&mut self.battle, MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids)));
+                    let move_use_context = MoveUseContext::new(move_id, MaxSizedVec::from_vec(target_ids));
+                    effects::use_move(&mut self.battle, move_use_context);
                 }
                 FullySpecifiedActionChoice::SwitchOut {
                     active_monster_id,
@@ -310,15 +311,26 @@ impl BattleSimulator {
             }
         }
 
-        let mut should_remove_weather = false;
+        let mut weather_expired = false;
         if let Some(weather) = self.battle.environment_mut().weather_mut() {
             weather.remaining_turns -= 1;
             if weather.remaining_turns == 0 {
-                should_remove_weather = true;
+                weather_expired = true;
             }
         }
-        if should_remove_weather {
-            clear_weather(&mut self.battle);
+        if weather_expired {
+            effects::clear_weather(&mut self.battle);
+        }
+
+        let mut terrain_expired = false;
+        if let Some(terrain) = self.battle.environment_mut().terrain_mut() {
+            terrain.remaining_turns -= 1;
+            if terrain.remaining_turns == 0 {
+                terrain_expired = true;
+            }
+        }
+        if terrain_expired {
+            effects::clear_terrain(&mut self.battle);
         }
 
         EventDispatcher::dispatch_notify_event(&mut self.battle, OnTurnEndEvent, NOTHING, NOTHING);

@@ -8,8 +8,9 @@ use crate::{
         game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet},
         targetting::{BoardPosition, FieldPosition},
     },
-    AbilityID, Battle, Environment, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, Weather,
-    WeatherSpecies, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
+    AbilityID, Battle, Environment, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, Terrain,
+    TerrainSpecies, Weather, WeatherSpecies, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5,
+    OPPONENT_6,
 };
 
 /*
@@ -34,7 +35,7 @@ impl Battle {
             maybe_ally_team: None,
             maybe_opponent_team: None,
             format: BattleFormat::Single,
-            environment: EnvironmentBuilder { maybe_weather: None },
+            environment: Environment::spawn(),
         }
     }
 }
@@ -478,11 +479,15 @@ impl ItemBuilder {
 #[derive(Clone)]
 pub struct EnvironmentBuilder {
     pub maybe_weather: Option<WeatherBuilder>,
+    pub maybe_terrain: Option<TerrainBuilder>,
 }
 
 impl Environment {
     pub fn spawn() -> EnvironmentBuilder {
-        EnvironmentBuilder { maybe_weather: None }
+        EnvironmentBuilder {
+            maybe_weather: None,
+            maybe_terrain: None,
+        }
     }
 }
 
@@ -498,9 +503,15 @@ impl EnvironmentBuilder {
         self
     }
 
+    pub fn with_terrain(mut self, species: &'static TerrainSpecies) -> Self {
+        self.maybe_terrain = Some(TerrainBuilder { species });
+        self
+    }
+
     pub fn build(self, prng: &mut Prng) -> Environment {
         Environment {
             weather: self.maybe_weather.map(|weather_builder| weather_builder.build(prng)),
+            terrain: self.maybe_terrain.map(|terrain_builder| terrain_builder.build(prng)),
         }
     }
 }
@@ -512,13 +523,38 @@ pub struct WeatherBuilder {
 
 impl WeatherBuilder {
     pub fn build(self, prng: &mut Prng) -> Weather {
-        let remaining_turns = match self.species.lifetime_in_turns() {
-            Count::Fixed(number) => number,
-            Count::RandomInRange { min, max } => prng.roll_random_number_in_range(min as u16..=max as u16) as u8,
-        };
+        let remaining_turns = self.species.lifetime_in_turns().init(prng);
         Weather {
             species: self.species,
             remaining_turns,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TerrainBuilder {
+    pub species: &'static TerrainSpecies,
+}
+
+impl TerrainBuilder {
+    pub fn build(self, prng: &mut Prng) -> Terrain {
+        let remaining_turns = self.species.lifetime_in_turns().init(prng);
+        Terrain {
+            species: self.species,
+            remaining_turns,
+        }
+    }
+}
+
+pub trait InitCount {
+    fn init(&self, prng: &mut Prng) -> u8;
+}
+
+impl InitCount for Count {
+    fn init(&self, prng: &mut Prng) -> u8 {
+        match *self {
+            Count::Fixed(number) => number,
+            Count::RandomInRange { min, max } => prng.roll_random_number_in_range(min as u16..=max as u16) as u8,
         }
     }
 }

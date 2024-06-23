@@ -24,6 +24,18 @@ impl SimulatorUi for Cli {
         _ = writeln![locked_stdout, "\t{}", battle.ally_team().team_status_string().replace('\n', "\n\t")];
         _ = writeln![locked_stdout, "Opponent Team Status:"];
         _ = writeln![locked_stdout, "\t{}", battle.opponent_team().team_status_string().replace('\n', "\n\t")];
+        _ = writeln![locked_stdout, "Environment:"];
+        _ = writeln![
+            locked_stdout,
+            "\tCurrent Weather: {}",
+            battle.environment().weather().map_or("None", |weather| weather.name())
+        ];
+        _ = writeln![
+            locked_stdout,
+            "\tCurrent Terrain: {}",
+            battle.environment().terrain().map_or("None", |terrain| terrain.name())
+        ];
+        _ = writeln![locked_stdout];
     }
 
     fn prompt_user_to_select_action_for_monster(

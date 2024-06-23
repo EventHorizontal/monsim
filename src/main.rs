@@ -7,12 +7,14 @@ mod item_dex;
 mod monster_dex;
 mod move_dex;
 mod status_dex;
+mod terrain_dex;
 mod weather_dex;
 
 use ability_dex::*;
 use item_dex::*;
 use monster_dex::*;
 use move_dex::*;
+use terrain_dex::*;
 use weather_dex::*;
 
 fn main() -> MonsimResult<()> {
@@ -68,6 +70,7 @@ fn main() -> MonsimResult<()> {
                         .with_nickname("Epona"),
                 ),
         )
+        .with_environment(Environment::spawn().with_terrain(&MistyTerrain))
         // .with_format(BattleFormat::Triple)
         .build();
 

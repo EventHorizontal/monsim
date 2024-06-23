@@ -5,8 +5,9 @@ use crate::{
     dual_type_matchup,
     sim::event_dispatcher::{events::*, EventDispatcher},
     status::{PersistentStatus, VolatileStatus},
-    AbilityActivationContext, Battle, BoardPosition, FieldPosition, ItemUseContext, ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext,
-    PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
+    ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, Terrain,
+    TerrainSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -479,15 +480,18 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
 pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome<Nothing> {
-    // conflict. A structural change is needed to resolve this correctly.
-    let try_inflict_status = EventDispatcher::dispatch_trial_event(battle, OnTryInflictVolatileStatusEvent, affected_monster_id, NOTHING);
+    let context = InflictVolatileStatusContext {
+        affected_monster_id,
+        status_condition: status_species,
+    };
+    let try_inflict_status = EventDispatcher::dispatch_trial_event(battle, OnTryInflictVolatileStatusEvent, affected_monster_id, context);
     if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].volatile_status(*status_species).is_none();
         if affected_monster_does_not_already_have_status {
             let volatile_status = VolatileStatus::from_species(&mut battle.prng, status_species, affected_monster_id);
             mon![mut affected_monster_id].volatile_statuses.push(volatile_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
-            EventDispatcher::dispatch_notify_event(battle, OnVolatileStatusInflictedEvent, affected_monster_id, NOTHING);
+            EventDispatcher::dispatch_notify_event(battle, OnVolatileStatusInflictedEvent, affected_monster_id, context);
             Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
@@ -503,14 +507,18 @@ pub fn add_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, 
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
 pub fn add_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
-    let try_inflict_status = EventDispatcher::dispatch_trial_event(battle, OnTryInflictPersistentStatusEvent, affected_monster_id, NOTHING);
+    let context = InflictPersistentStatusContext {
+        affected_monster_id,
+        status_condition: status_species,
+    };
+    let try_inflict_status = EventDispatcher::dispatch_trial_event(battle, OnTryInflictPersistentStatusEvent, affected_monster_id, context);
     if try_inflict_status.is_success() {
         let affected_monster_does_not_already_have_status = mon![affected_monster_id].persistent_status.is_none();
         if affected_monster_does_not_already_have_status {
             let persistent_status = PersistentStatus::from_species(status_species, affected_monster_id);
             mon![mut affected_monster_id].persistent_status = Some(persistent_status);
             battle.queue_message((status_species.on_acquired_message)(mon![affected_monster_id]));
-            EventDispatcher::dispatch_notify_event(battle, OnPersistentStatusInflictedEvent, affected_monster_id, NOTHING);
+            EventDispatcher::dispatch_notify_event(battle, OnPersistentStatusInflictedEvent, affected_monster_id, context);
             Outcome::Success(NOTHING)
         } else {
             Outcome::Failure
@@ -564,15 +572,7 @@ pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpeci
             return Outcome::Failure;
         }
     }
-
-    let remaining_turns = match weather_species.lifetime_in_turns() {
-        Count::Fixed(number) => number,
-        Count::RandomInRange { min, max } => battle.prng.roll_random_number_in_range(min as u16..=max as u16) as u8,
-    };
-    let weather = Weather {
-        species: weather_species,
-        remaining_turns,
-    };
+    let weather = Weather::from_species(weather_species, &mut battle.prng);
     battle.queue_message(weather.on_start_message());
     battle.environment_mut().weather = Some(weather);
     Outcome::Success(NOTHING)
@@ -583,6 +583,29 @@ pub(crate) fn clear_weather(battle: &mut Battle) -> Outcome<Nothing> {
     if let Some(weather) = battle.environment().weather() {
         battle.queue_message(weather.on_clear_message());
         battle.environment_mut().weather = None;
+        Outcome::Success(NOTHING)
+    } else {
+        Outcome::Failure
+    }
+}
+
+pub fn start_terrain(battle: &mut Battle, terrain_species: &'static TerrainSpecies) -> Outcome<Nothing> {
+    if let Some(terrain) = battle.environment().terrain() {
+        if terrain.species() == terrain_species {
+            return Outcome::Failure;
+        }
+    }
+    let terrain = Terrain::from_species(terrain_species, &mut battle.prng);
+    battle.queue_message(terrain.on_start_message());
+    battle.environment_mut().terrain = Some(terrain);
+    Outcome::Success(NOTHING)
+}
+
+pub(crate) fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
+    // TODO: We might need something more elaborate here.
+    if let Some(terrain) = battle.environment().weather() {
+        battle.queue_message(terrain.on_clear_message());
+        battle.environment_mut().terrain = None;
         Outcome::Success(NOTHING)
     } else {
         Outcome::Failure

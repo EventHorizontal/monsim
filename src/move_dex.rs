@@ -44,7 +44,7 @@ pub const Scratch: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         .union(PositionRelationFlags::ADJACENT)
         .union(PositionRelationFlags::OPPONENTS)
         .union(PositionRelationFlags::ALLIES),
-    type_: Type::Normal,
+    type_: Type::Dragon,
 });
 
 pub const Ember: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {

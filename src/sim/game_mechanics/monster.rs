@@ -3,7 +3,7 @@ mod stats;
 use core::{fmt::Debug, panic};
 use std::fmt::{Display, Formatter};
 
-use monsim_utils::MaxSizedVec;
+use monsim_utils::{not, MaxSizedVec};
 pub use stats::*;
 use tap::Pipe;
 
@@ -227,6 +227,11 @@ impl Monster {
     #[inline(always)]
     pub fn type_(&self) -> (Type, Option<Type>) {
         self.species.type_()
+    }
+
+    // TODO: Telekinesis/Magnet Rise
+    pub fn is_grounded(&self) -> bool {
+        not![self.is_type(Type::Flying)] && self.ability().name() != "Levitate" && self.held_item().map_or(false, |item| item.name() != "Air Balloon")
     }
 }
 

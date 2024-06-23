@@ -128,25 +128,25 @@ pub struct OnStatChangedEvent;
 
 #[derive(Event)]
 #[returns(Outcome)]
-#[context(Nothing)]
+#[context(InflictVolatileStatusContext)]
 #[handler(on_try_inflict_volatile_status_handler)]
 pub struct OnTryInflictVolatileStatusEvent;
 
 #[derive(Event)]
 #[returns(Nothing)]
-#[context(Nothing)]
+#[context(InflictVolatileStatusContext)]
 #[handler(on_volatile_status_inflicted_handler)]
 pub struct OnVolatileStatusInflictedEvent;
 
 #[derive(Event)]
 #[returns(Outcome)]
-#[context(Nothing)]
+#[context(InflictPersistentStatusContext)]
 #[handler(on_try_inflict_persistent_status_handler)]
 pub struct OnTryInflictPersistentStatusEvent;
 
 #[derive(Event)]
 #[returns(Nothing)]
-#[context(Nothing)]
+#[context(InflictPersistentStatusContext)]
 #[handler(on_persistent_status_inflicted_handler)]
 pub struct OnPersistentStatusInflictedEvent;
 

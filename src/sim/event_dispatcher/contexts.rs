@@ -1,6 +1,6 @@
 use crate::{
     sim::{MonsterID, MoveID},
-    AbilityID, ItemID, ModifiableStat,
+    AbilityID, ItemID, ModifiableStat, PersistentStatusSpecies, VolatileStatusSpecies,
 };
 use monsim_utils::MaxSizedVec;
 
@@ -131,3 +131,19 @@ pub struct StatChangeContext {
 }
 
 impl EventContext for StatChangeContext {}
+
+#[derive(Debug, Clone, Copy)]
+pub struct InflictPersistentStatusContext {
+    pub affected_monster_id: MonsterID,
+    pub status_condition: &'static PersistentStatusSpecies,
+}
+
+impl EventContext for InflictPersistentStatusContext {}
+
+#[derive(Debug, Clone, Copy)]
+pub struct InflictVolatileStatusContext {
+    pub affected_monster_id: MonsterID,
+    pub status_condition: &'static VolatileStatusSpecies,
+}
+
+impl EventContext for InflictVolatileStatusContext {}

@@ -5,17 +5,16 @@ use std::fmt::{Display, Formatter};
 
 use monsim_utils::{not, MaxSizedVec};
 pub use stats::*;
-use tap::Pipe;
 
 use super::{Ability, TeamID};
 use crate::{
     sim::{
-        event_dispatcher::{Event, EventContext, EventHandlerWithOwnerEmbedded, EventListener, EventReturnable},
+        event_dispatcher::EventListener,
         targetting::{BoardPosition, FieldPosition},
-        ActivationOrder, Type,
+        Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Broadcaster, EventHandlerWithOwner, Item, MechanicKind, Move,
+    Item, Move,
 };
 
 #[derive(Debug, Clone)]
@@ -246,113 +245,6 @@ impl Monster {
 
     pub(crate) fn calculate_max_health(base_hp: u16, hp_iv: u16, hp_ev: u16, level: u16) -> u16 {
         ((2 * base_hp + hp_iv + (hp_ev / 4)) * level) / 100 + level + 10
-    }
-
-    pub(crate) fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
-        &self,
-        event: &impl Event<C, R, B>,
-    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>> {
-        let mut output_owned_event_handlers = Vec::new();
-
-        let owner_id = self.id;
-
-        // of the Monster itself
-        event
-            .get_event_handler_with_receiver(self.species().event_listener())
-            .map(|event_handler| {
-                Box::new(EventHandlerWithOwner {
-                    event_handler,
-                    receiver_id: owner_id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: 0,
-                    },
-                    mechanic_id: self.id,
-                    mechanic_kind: MechanicKind::Monster,
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
-            })
-            .pipe(|owned_event_handlers| {
-                output_owned_event_handlers.extend(owned_event_handlers);
-            });
-
-        // from the Monster's ability
-        event
-            .get_event_handler_with_receiver(self.ability.event_listener())
-            .map(|event_handler| {
-                Box::new(EventHandlerWithOwner {
-                    event_handler,
-                    receiver_id: owner_id,
-                    mechanic_id: self.ability().id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: self.ability.order(),
-                    },
-                    mechanic_kind: MechanicKind::Ability,
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
-            })
-            .pipe(|owned_event_handlers| {
-                output_owned_event_handlers.extend(owned_event_handlers);
-            });
-
-        // INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
-
-        // from the Monster's volatile statuses
-        self.volatile_statuses.into_iter().for_each(|volatile_status| {
-            let owned_event_handlers = event.get_event_handler_with_receiver(volatile_status.event_listener()).map(|event_handler| {
-                Box::new(EventHandlerWithOwner {
-                    event_handler,
-                    receiver_id: owner_id,
-                    mechanic_id: volatile_status.id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: 0,
-                    },
-                    mechanic_kind: MechanicKind::VolatileStatus,
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
-            });
-            output_owned_event_handlers.extend(owned_event_handlers)
-        });
-
-        // from the Monster's persistent status
-        if let Some(persistent_status) = self.persistent_status {
-            if let Some(event_handler) = event.get_event_handler_with_receiver(persistent_status.event_handlers()) {
-                let owned_event_handler = Box::new(EventHandlerWithOwner {
-                    event_handler,
-                    receiver_id: owner_id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: 0,
-                    },
-                    mechanic_id: persistent_status.id,
-                    mechanic_kind: MechanicKind::PersistentStatus,
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
-                output_owned_event_handlers.extend([owned_event_handler]);
-            }
-        }
-
-        // from the Monster's held item
-        if let Some(held_item) = self.held_item {
-            if let Some(event_handler) = event.get_event_handler_with_receiver(held_item.event_listener()) {
-                let owned_event_handler = Box::new(EventHandlerWithOwner {
-                    event_handler,
-                    receiver_id: owner_id,
-                    activation_order: ActivationOrder {
-                        priority: 0,
-                        speed: self.stat(Stat::Speed),
-                        order: 0,
-                    },
-                    mechanic_id: held_item.id,
-                    mechanic_kind: MechanicKind::Item,
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
-                output_owned_event_handlers.extend([owned_event_handler]);
-            }
-        }
-
-        output_owned_event_handlers
     }
 
     pub(crate) fn full_name(&self) -> String {

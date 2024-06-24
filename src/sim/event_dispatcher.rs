@@ -47,7 +47,7 @@ use monsim_utils::{not, Nothing, Outcome, Percent, NOTHING};
 
 use crate::{
     status::{PersistentStatusID, VolatileStatusID},
-    AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MechanicKind, MonsterID, MoveID, PositionRelationFlags,
+    AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MechanicKind, MonsterID, MoveID, PositionRelationFlags, Stat,
 };
 pub use contexts::*;
 
@@ -71,27 +71,27 @@ impl EventDispatcher {
         #[cfg(feature = "debug")]
         println!["(Dispatching {})", event.name()];
 
-        let mut owned_event_handlers = battle.owned_event_handlers(event);
+        let mut event_handlers = EventDispatcher::collect_event_handlers_for(battle, event);
 
-        if owned_event_handlers.is_empty() {
+        if event_handlers.is_empty() {
             return default;
         }
 
-        sort_by_activation_order(&mut battle.prng, &mut owned_event_handlers, |owned_event_handler| {
+        sort_by_activation_order(&mut battle.prng, &mut event_handlers, |owned_event_handler| {
             owned_event_handler.activation_order()
         });
 
         let mut relay = default;
-        for owned_event_handler in owned_event_handlers.into_iter() {
+        for event_handler in event_handlers.into_iter() {
             if EventDispatcher::does_event_handler_pass_filters(
                 battle,
                 broadcaster.as_id(),
                 event_context.target(),
-                owned_event_handler.owner_id(),
-                owned_event_handler.mechanic_kind(),
-                owned_event_handler.event_filtering_options(),
+                event_handler.owner_id(),
+                event_handler.mechanic_kind(),
+                event_handler.event_filtering_options(),
             ) {
-                relay = owned_event_handler.respond(battle, broadcaster, event_context, relay);
+                relay = event_handler.respond(battle, broadcaster, event_context, relay);
                 // Return early if the relay becomes the short-circuiting value.
                 if let Some(value) = short_circuit {
                     if relay == value {
@@ -101,6 +101,145 @@ impl EventDispatcher {
             }
         }
         relay
+    }
+
+    pub fn collect_event_handlers_for<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
+        battle: &Battle,
+        event: impl Event<C, R, B>,
+    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>> {
+        let mut output_event_handlers = Vec::new();
+        // Collect all the event handlers from each team
+        for team in battle.teams().iter() {
+            for monster in team.monsters() {
+                let owner_id = monster.id;
+                // of the Monster itself
+                if let Some(owned_event_handler) = event.get_event_handler_with_receiver(monster.species().event_listener()).map(|event_handler| {
+                    Box::new(EventHandlerWithOwner {
+                        event_handler,
+                        receiver_id: owner_id,
+                        activation_order: ActivationOrder {
+                            priority: 0,
+                            speed: monster.stat(Stat::Speed),
+                            order: 0,
+                        },
+                        mechanic_id: monster.id,
+                        mechanic_kind: MechanicKind::Monster,
+                    }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
+                }) {
+                    output_event_handlers.push(owned_event_handler);
+                }
+
+                // from the Monster's ability
+                if let Some(owned_event_handler) = event.get_event_handler_with_receiver((&monster).ability.event_listener()).map(|event_handler| {
+                    Box::new(EventHandlerWithOwner {
+                        event_handler,
+                        receiver_id: owner_id,
+                        mechanic_id: monster.ability().id,
+                        activation_order: ActivationOrder {
+                            priority: 0,
+                            speed: (&monster).stat(Stat::Speed),
+                            order: (&monster).ability.order(),
+                        },
+                        mechanic_kind: MechanicKind::Ability,
+                    }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
+                }) {
+                    output_event_handlers.push(owned_event_handler);
+                }
+
+                // INFO: Moves don't have EventHandlers any more. This may be reverted in the future.
+
+                // from the Monster's volatile statuses
+                monster.volatile_statuses.into_iter().for_each(|volatile_status| {
+                    if let Some(owned_event_handler) = event.get_event_handler_with_receiver(volatile_status.event_listener()).map(|event_handler| {
+                        Box::new(EventHandlerWithOwner {
+                            event_handler,
+                            receiver_id: owner_id,
+                            mechanic_id: volatile_status.id,
+                            activation_order: ActivationOrder {
+                                priority: 0,
+                                speed: (&monster).stat(Stat::Speed),
+                                order: 0,
+                            },
+                            mechanic_kind: MechanicKind::VolatileStatus,
+                        }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
+                    }) {
+                        output_event_handlers.push(owned_event_handler)
+                    }
+                });
+
+                // from the Monster's persistent status
+                if let Some(persistent_status) = monster.persistent_status {
+                    if let Some(event_handler) = event.get_event_handler_with_receiver(persistent_status.event_handlers()) {
+                        let owned_event_handler = Box::new(EventHandlerWithOwner {
+                            event_handler,
+                            receiver_id: owner_id,
+                            activation_order: ActivationOrder {
+                                priority: 0,
+                                speed: (&monster).stat(Stat::Speed),
+                                order: 0,
+                            },
+                            mechanic_id: persistent_status.id,
+                            mechanic_kind: MechanicKind::PersistentStatus,
+                        }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                        output_event_handlers.push(owned_event_handler);
+                    }
+                }
+
+                // from the Monster's held item
+                if let Some(held_item) = monster.held_item {
+                    if let Some(event_handler) = event.get_event_handler_with_receiver(held_item.event_listener()) {
+                        let owned_event_handler = Box::new(EventHandlerWithOwner {
+                            event_handler,
+                            receiver_id: owner_id,
+                            activation_order: ActivationOrder {
+                                priority: 0,
+                                speed: (&monster).stat(Stat::Speed),
+                                order: 0,
+                            },
+                            mechanic_id: held_item.id,
+                            mechanic_kind: MechanicKind::Item,
+                        }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                        output_event_handlers.push(owned_event_handler);
+                    }
+                }
+            }
+        }
+        // From the weather
+        if let Some(weather) = battle.environment().weather() {
+            if let Some(event_handler) = (&event).get_event_handler_without_receiver(weather.event_listener()) {
+                let owned_event_handler = Box::new(EventHandlerWithOwner {
+                    event_handler,
+                    receiver_id: NOTHING,
+                    mechanic_id: NOTHING,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: 0,
+                        order: 0,
+                    },
+                    mechanic_kind: MechanicKind::Weather,
+                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                output_event_handlers.push(owned_event_handler);
+            }
+        }
+
+        // From the terrain
+        if let Some(terrain) = battle.environment().terrain() {
+            if let Some(event_handler) = (&event).get_event_handler_without_receiver(terrain.event_listener()) {
+                let owned_event_handler = Box::new(EventHandlerWithOwner {
+                    event_handler,
+                    receiver_id: NOTHING,
+                    mechanic_id: NOTHING,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: 0,
+                        order: 0,
+                    },
+                    mechanic_kind: MechanicKind::Terrain,
+                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                output_event_handlers.push(owned_event_handler);
+            }
+        }
+        output_event_handlers
     }
 
     fn does_event_handler_pass_filters(

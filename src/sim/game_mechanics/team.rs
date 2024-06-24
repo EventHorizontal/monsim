@@ -5,14 +5,7 @@ use std::{
 };
 
 use super::Monster;
-use crate::{
-    sim::{
-        event_dispatcher::{Event, EventContext, EventHandlerWithOwnerEmbedded, EventReturnable},
-        targetting::BoardPosition,
-        MonsterNumber,
-    },
-    Broadcaster,
-};
+use crate::sim::{targetting::BoardPosition, MonsterNumber};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
@@ -56,17 +49,6 @@ impl MonsterTeam {
 
     pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         self.monsters.iter_mut()
-    }
-
-    pub fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
-        &self,
-        event: &impl Event<C, R, B>,
-    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>> {
-        let mut out = Vec::new();
-        for monster in self.monsters.iter() {
-            out.append(&mut monster.owned_event_handlers(event))
-        }
-        out
     }
 
     pub(crate) fn team_status_string(&self) -> String {
@@ -159,6 +141,10 @@ impl<T> PerTeam<T> {
     pub(crate) fn iter_with_team_id(self) -> impl Iterator<Item = (TeamID, T)> {
         let (ally_team_item, opponent_team_item) = self.unwrap_full();
         [(TeamID::Allies, ally_team_item), (TeamID::Opponents, opponent_team_item)].into_iter()
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &T> {
+        [self.ally_team_item.as_ref(), self.opponent_team_item.as_ref()].into_iter()
     }
 
     /// Consumes `self`

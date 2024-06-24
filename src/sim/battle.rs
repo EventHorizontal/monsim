@@ -3,7 +3,7 @@ mod message_log;
 
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Broadcaster, Environment, Item, ItemID, PartiallySpecifiedActionChoice,
+    AbilityID, Environment, Item, ItemID, PartiallySpecifiedActionChoice,
 };
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
@@ -14,7 +14,6 @@ use std::{
 use self::builder::BattleFormat;
 
 use super::{
-    event_dispatcher::{Event, EventContext, EventHandlerWithOwnerEmbedded, EventReturnable},
     prng::Prng,
     targetting::{BoardPosition, FieldPosition},
     PerTeam, TeamID,
@@ -234,17 +233,6 @@ impl BattleState {
 
     pub(crate) fn environment_mut(&mut self) -> &mut Environment {
         &mut self.environment
-    }
-
-    pub fn owned_event_handlers<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
-        &self,
-        event: impl Event<C, R, B>,
-    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>> {
-        let mut out = Vec::new();
-        out.append(&mut self.ally_team().owned_event_handlers(&event));
-        out.append(&mut self.opponent_team().owned_event_handlers(&event));
-        out.append(&mut self.environment.owned_event_handlers(&event));
-        out
     }
 
     // Monsters -------------------------------------------------- //

@@ -271,6 +271,7 @@ impl EventDispatcher {
         event_listener_mechanic_kind: MechanicKind,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
+        // TODO: Some of the branches probably need some refinement.
         match event_listener_mechanic_kind {
             MechanicKind::Trap { team_id } => {
                 if let Some(event_broadcaster_id) = optional_broadcaster_id {

@@ -130,15 +130,15 @@ impl EventDispatcher {
                 }
 
                 // from the Monster's ability
-                if let Some(owned_event_handler) = event.get_event_handler_with_receiver((&monster).ability.event_listener()).map(|event_handler| {
+                if let Some(owned_event_handler) = event.get_event_handler_with_receiver(monster.ability.event_listener()).map(|event_handler| {
                     Box::new(EventHandlerWithOwner {
                         event_handler,
                         receiver_id: owner_id,
                         mechanic_id: monster.ability().id,
                         activation_order: ActivationOrder {
                             priority: 0,
-                            speed: (&monster).stat(Stat::Speed),
-                            order: (&monster).ability.order(),
+                            speed: monster.stat(Stat::Speed),
+                            order: monster.ability.order(),
                         },
                         mechanic_kind: MechanicKind::Ability,
                     }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
@@ -157,7 +157,7 @@ impl EventDispatcher {
                             mechanic_id: volatile_status.id,
                             activation_order: ActivationOrder {
                                 priority: 0,
-                                speed: (&monster).stat(Stat::Speed),
+                                speed: monster.stat(Stat::Speed),
                                 order: 0,
                             },
                             mechanic_kind: MechanicKind::VolatileStatus,
@@ -175,7 +175,7 @@ impl EventDispatcher {
                             receiver_id: owner_id,
                             activation_order: ActivationOrder {
                                 priority: 0,
-                                speed: (&monster).stat(Stat::Speed),
+                                speed: monster.stat(Stat::Speed),
                                 order: 0,
                             },
                             mechanic_id: persistent_status.id,
@@ -193,7 +193,7 @@ impl EventDispatcher {
                             receiver_id: owner_id,
                             activation_order: ActivationOrder {
                                 priority: 0,
-                                speed: (&monster).stat(Stat::Speed),
+                                speed: monster.stat(Stat::Speed),
                                 order: 0,
                             },
                             mechanic_id: held_item.id,
@@ -241,22 +241,20 @@ impl EventDispatcher {
         }
 
         // From the entry hazards
-        for maybe_entry_hazard in battle.environment().entry_hazards().iter() {
-            if let Some(entry_hazard) = maybe_entry_hazard {
-                if let Some(event_handler) = event.get_event_handler_without_receiver(entry_hazard.event_listener()) {
-                    let owned_event_handler = Box::new(EventHandlerWithOwner {
-                        event_handler,
-                        receiver_id: NOTHING,
-                        mechanic_id: NOTHING,
-                        activation_order: ActivationOrder {
-                            priority: 0,
-                            speed: 0,
-                            order: 0,
-                        },
-                        mechanic_kind: MechanicKind::Terrain,
-                    }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
-                    output_event_handlers.push(owned_event_handler);
-                }
+        for entry_hazard in battle.environment().entry_hazards().iter().flatten() {
+            if let Some(event_handler) = event.get_event_handler_without_receiver(entry_hazard.event_listener()) {
+                let owned_event_handler = Box::new(EventHandlerWithOwner {
+                    event_handler,
+                    receiver_id: NOTHING,
+                    mechanic_id: NOTHING,
+                    activation_order: ActivationOrder {
+                        priority: 0,
+                        speed: 0,
+                        order: 0,
+                    },
+                    mechanic_kind: MechanicKind::Terrain,
+                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                output_event_handlers.push(owned_event_handler);
             }
         }
 

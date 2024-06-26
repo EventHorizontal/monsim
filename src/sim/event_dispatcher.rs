@@ -486,6 +486,14 @@ pub trait EventListener<M: MechanicID, V: Receiver = MonsterID> {
         None
     }
 
+    fn on_monster_enter_battle_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+        None
+    }
+
+    fn on_monster_exit_battle_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+        None
+    }
+
     fn on_turn_end_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V, Nothing>> {
         None
     }

@@ -162,6 +162,20 @@ pub struct OnTryUseHeldItemEvent;
 #[handler(on_held_item_used_handler)]
 pub struct OnHeldItemUsedEvent;
 
+// Temporal Events
+
+#[derive(Event)]
+#[returns(Nothing)]
+#[context(Nothing)]
+#[handler(on_monster_enter_battle_handler)]
+pub struct OnMonsterEnterBattle;
+
+#[derive(Event)]
+#[returns(Nothing)]
+#[context(Nothing)]
+#[handler(on_monster_exit_battle_handler)]
+pub struct OnMonsterExitBattle;
+
 #[derive(Event)]
 #[returns(Nothing)]
 #[context(Nothing)]

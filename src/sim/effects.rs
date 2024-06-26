@@ -7,7 +7,7 @@ use crate::{
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
     ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TeamID, Terrain,
-    TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    TerrainSpecies, Trap, TrapID, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -94,17 +94,18 @@ pub(crate) fn switch_monsters(battle: &mut Battle, switch_context: SwitchContext
 /// The Simulator switchees in the Monster given by `benched_monster_id` into a field position that is presumed to
 /// be empty, given by `field_position`. The caller must ensure that the field position is indeed empty.
 pub(crate) fn switch_in_monster(battle: &mut Battle, benched_monster_id: MonsterID, field_position: FieldPosition) {
-    mon![mut benched_monster_id].board_position = BoardPosition::Field(field_position);
     battle.queue_message(format!["Go {}!", mon![benched_monster_id].name()]);
+    mon![mut benched_monster_id].board_position = BoardPosition::Field(field_position);
+    EventDispatcher::dispatch_event(battle, OnMonsterEnterBattle, benched_monster_id, NOTHING, NOTHING, None);
 }
 
 pub(crate) fn switch_out_monster(battle: &mut Battle, active_monster_id: MonsterID) {
+    battle.queue_message(format!["Come back {}!", mon![active_monster_id].name()]);
+    EventDispatcher::dispatch_event(battle, OnMonsterExitBattle, active_monster_id, NOTHING, NOTHING, None);
     let active_monster = mon![mut active_monster_id];
     active_monster.board_position = BoardPosition::Bench;
     active_monster.stat_modifiers.reset();
     active_monster.volatile_statuses.clear();
-
-    battle.queue_message(format!["Come back {}!", mon![active_monster_id].name()]);
 }
 
 /// The Simulator simulates dealing damage via a Move given by `move_hit_context.move_used_id` by a Monster given by
@@ -624,7 +625,7 @@ pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_t
             return Outcome::Failure;
         }
     }
-    let trap = Trap::from_species(trap_species);
+    let trap = Trap::from_species(trap_species, TrapID::from_team_id(which_team));
     battle.queue_message(trap.on_start_message());
     battle.environment_mut().traps[which_team] = Some(trap);
     Outcome::Success(NOTHING)

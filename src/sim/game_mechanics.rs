@@ -25,5 +25,5 @@ pub enum MechanicKind {
     PersistentStatus,
     Weather,
     Terrain,
-    EntryHazard,
+    Trap { team_id: TeamID },
 }

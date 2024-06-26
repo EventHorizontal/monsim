@@ -74,6 +74,14 @@ impl TeamID {
             TeamID::Opponents => TeamID::Allies,
         }
     }
+
+    pub fn are_opposite(team_id: TeamID, other_team_id: TeamID) -> bool {
+        team_id.other() == other_team_id
+    }
+
+    pub fn are_same(team_id: TeamID, other_team_id: TeamID) -> bool {
+        team_id == other_team_id
+    }
 }
 
 impl Display for TeamID {

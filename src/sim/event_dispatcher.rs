@@ -47,7 +47,7 @@ use monsim_utils::{not, Nothing, Outcome, Percent, NOTHING};
 
 use crate::{
     status::{PersistentStatusID, VolatileStatusID},
-    AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MechanicKind, MonsterID, MoveID, PositionRelationFlags, Stat,
+    AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MechanicKind, MonsterID, MoveID, PositionRelationFlags, Stat, TeamID, TrapID,
 };
 pub use contexts::*;
 
@@ -246,13 +246,13 @@ impl EventDispatcher {
                 let owned_event_handler = Box::new(EventHandlerWithOwner {
                     event_handler,
                     receiver_id: NOTHING,
-                    mechanic_id: NOTHING,
+                    mechanic_id: trap.id,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: 0,
                         order: 0,
                     },
-                    mechanic_kind: MechanicKind::Terrain,
+                    mechanic_kind: MechanicKind::Trap { team_id: trap.id.team_id },
                 }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
                 output_event_handlers.push(owned_event_handler);
             }
@@ -271,6 +271,12 @@ impl EventDispatcher {
         event_listener_mechanic_kind: MechanicKind,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
+        // Traps only work if the trap is on the same side as the monster.
+        if let MechanicKind::Trap { team_id } = event_listener_mechanic_kind {
+            if let Some(event_broadcaster_id) = optional_broadcaster_id {
+                return TeamID::are_same(team_id, mon![event_broadcaster_id].id.team_id);
+            }
+        }
         // If there is no receiver we skip checks and return true UNLESS
         // the mechanic is a terrain and the broadcaster is not grounded.
         let Some(event_receiver_id) = optional_receiver_id else {
@@ -652,9 +658,10 @@ impl Receiver for MonsterID {
 pub trait MechanicID: Copy {}
 
 impl MechanicID for Nothing {}
+impl MechanicID for AbilityID {}
+impl MechanicID for ItemID {}
 impl MechanicID for MonsterID {}
 impl MechanicID for MoveID {}
-impl MechanicID for AbilityID {}
-impl MechanicID for VolatileStatusID {}
 impl MechanicID for PersistentStatusID {}
-impl MechanicID for ItemID {}
+impl MechanicID for TrapID {}
+impl MechanicID for VolatileStatusID {}

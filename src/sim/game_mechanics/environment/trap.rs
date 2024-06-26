@@ -1,15 +1,16 @@
 use monsim_utils::Nothing;
 
-use crate::sim::event_dispatcher::EventListener;
+use crate::{sim::event_dispatcher::EventListener, TeamID};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Trap {
+    pub(crate) id: TrapID,
     pub(crate) species: &'static TrapSpecies,
 }
 
 impl Trap {
-    pub(crate) fn from_species(species: &'static TrapSpecies) -> Trap {
-        Trap { species }
+    pub(crate) fn from_species(species: &'static TrapSpecies, id: TrapID) -> Trap {
+        Trap { id, species }
     }
 
     #[inline(always)]
@@ -33,7 +34,7 @@ impl Trap {
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener<Nothing, Nothing> {
+    pub fn event_listener(&self) -> &'static dyn EventListener<TrapID, Nothing> {
         self.species.event_listener
     }
 }
@@ -42,7 +43,7 @@ impl Trap {
 pub struct TrapSpecies {
     dex_number: u16,
     name: &'static str,
-    event_listener: &'static dyn EventListener<Nothing, Nothing>,
+    event_listener: &'static dyn EventListener<TrapID, Nothing>,
     on_start_message: &'static str,
     on_clear_message: &'static str,
 }
@@ -85,7 +86,7 @@ impl TrapSpecies {
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener<Nothing, Nothing> {
+    pub fn event_listener(&self) -> &'static dyn EventListener<TrapID, Nothing> {
         self.event_listener
     }
 
@@ -103,7 +104,17 @@ impl TrapSpecies {
 pub struct TrapDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
-    pub event_listener: &'static dyn EventListener<Nothing, Nothing>,
+    pub event_listener: &'static dyn EventListener<TrapID, Nothing>,
     pub on_start_message: &'static str,
     pub on_clear_message: &'static str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TrapID {
+    pub(crate) team_id: TeamID,
+}
+impl TrapID {
+    pub(crate) fn from_team_id(team_id: TeamID) -> TrapID {
+        TrapID { team_id }
+    }
 }

@@ -7,7 +7,7 @@ use crate::{
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
     ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TeamID, Terrain,
-    TerrainSpecies, Trap, TrapID, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -620,34 +620,36 @@ pub fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
 }
 
 pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome<Nothing> {
-    if let Some(trap) = &battle.environment().traps()[which_team] {
-        if trap.species() == trap_species {
-            if trap.layers == trap_species.max_layers() {
-                return Outcome::Failure;
-            } else {
-                battle.queue_message(trap.on_start_message());
-                battle.environment_mut().traps_mut()[which_team].as_mut().unwrap().layers += 1;
-                return Outcome::Success(NOTHING);
-            }
+    if let Some(trap) = &battle.environment().traps()[which_team].iter().find(|trap| trap.species() == trap_species) {
+        if trap.layers == trap_species.max_layers() {
+            return Outcome::Failure;
         } else {
-            let trap = Trap::from_species(trap_species, TrapID::from_team_id(which_team));
             battle.queue_message(trap.on_start_message());
-            battle.environment_mut().traps[which_team] = Some(trap);
-            Outcome::Success(NOTHING)
+            battle.environment_mut().traps_mut()[which_team]
+                .iter_mut()
+                .find(|trap| trap.species == trap_species)
+                .as_mut()
+                .unwrap()
+                .layers += 1;
+            return Outcome::Success(NOTHING);
         }
     } else {
-        let trap = Trap::from_species(trap_species, TrapID::from_team_id(which_team));
+        let trap = Trap::from_species(trap_species, which_team);
         battle.queue_message(trap.on_start_message());
-        battle.environment_mut().traps[which_team] = Some(trap);
+        battle.environment_mut().traps[which_team].push(trap);
         Outcome::Success(NOTHING)
     }
 }
 
-pub fn clear_trap(battle: &mut Battle, which_team: TeamID) -> Outcome<Nothing> {
+pub fn clear_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome<Nothing> {
     // TODO: We might need something more elaborate here.
-    if let Some(trap) = &battle.environment().traps()[which_team] {
+    if let Some((index, trap)) = &battle.environment().traps()[which_team]
+        .iter()
+        .enumerate()
+        .find(|(_, trap)| trap.species() == trap_species)
+    {
         battle.queue_message(trap.on_clear_message());
-        battle.environment_mut().traps[which_team] = None;
+        battle.environment_mut().traps[which_team].swap_remove(*index);
         Outcome::Success(NOTHING)
     } else {
         Outcome::Failure

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::NOTHING;
+use crate::{vec_to_string, NOTHING};
 use std::{
     fmt::{Debug, Display},
     ops::{Index, IndexMut, Range},
@@ -18,15 +18,8 @@ pub struct MaxSizedVec<T, const CAP: usize> {
 
 impl<T: Display, const CAP: usize> Display for MaxSizedVec<T, CAP> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write![f, "["]?;
-        for maybe_element in self.elements.iter() {
-            if let Some(element) = maybe_element {
-                write![f, " {},", element]?;
-            } else {
-                break;
-            }
-        }
-        write![f, "]"]
+        let vec_as_string = vec_to_string(&mut self.elements.iter().flatten());
+        write![f, "{}", vec_as_string]
     }
 }
 

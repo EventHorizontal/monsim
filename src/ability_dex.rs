@@ -4,7 +4,7 @@ use monsim::{
     effects, move_,
     sim::{Ability, AbilitySpecies, EventFilteringOptions, MoveUseContext, Type},
     AbilityActivationContext, AbilityDexEntry, AbilityID, EventHandler, EventListener, ModifiableStat, MonsterID, MoveHitContext, PositionRelationFlags,
-    StatChangeContext,
+    StatChangeContext, NOTHING,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
@@ -12,7 +12,9 @@ use monsim_utils::{not, Outcome};
 #[cfg(feature = "debug")]
 use monsim::source_code_location;
 
-// Flash Fire in-engine causes all Fire type moves on the user to fail.
+use crate::status_dex::FlashFireStatus;
+
+/// Flash Fire in-engine adds the FlashFireStatus to the user which boosts its attack by 50% when the move it uses is Fire type.
 pub const FlashFire: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
     dex_number: 001,
     name: "Flash Fire",
@@ -30,11 +32,18 @@ impl EventListener<AbilityID> for FlashFireEventListener {
                     let activation_outcome = effects::activate_ability(battle, move_hit_context.target_id, |battle, ability_activation_context| {
                         let ability_owner_name = mon![ability_activation_context.ability_owner_id].name();
                         battle.queue_message(format!["{ability_owner_name}'s Flash Fire activated!"]);
-                        Outcome::Success(())
+                        if let Some(flash_fire) = mon![ability_activation_context.ability_owner_id].volatile_status(FlashFireStatus) {
+                            Outcome::Success(NOTHING)
+                        } else {
+                            battle.queue_debug_message(format!["(Flash Fire added FlashFireStatus to {})", ability_owner_name]);
+                            let inflict_status_outcome =
+                                effects::inflict_volatile_status(battle, ability_activation_context.ability_owner_id, &FlashFireStatus);
+                            inflict_status_outcome
+                        }
                     });
                     return activation_outcome.opposite();
                 }
-                Outcome::Success(())
+                Outcome::Success(NOTHING)
             },
             event_filtering_options: EventFilteringOptions::default(),
         })

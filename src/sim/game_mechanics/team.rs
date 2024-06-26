@@ -151,15 +151,15 @@ impl<T> PerTeam<T> {
         [(TeamID::Allies, ally_team_item), (TeamID::Opponents, opponent_team_item)].into_iter()
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &T> {
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
         [self.ally_team_item.as_ref(), self.opponent_team_item.as_ref()].into_iter()
     }
 
-    pub(crate) fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         [self.ally_team_item.as_mut(), self.opponent_team_item.as_mut()].into_iter()
     }
 
-    /// Consumes `self`
+    /// Consumes `self`s
     fn unwrap_full(self) -> (T, T) {
         (self.ally_team_item.unwrap(), self.opponent_team_item.unwrap())
     }

@@ -29,8 +29,8 @@ fn main() -> MonsimResult<()> {
                 .with_monster(
                     Dandyleo
                         .spawn(
-                            (SunnyDay.spawn(), Some(StealthRocks.spawn()), Some(Confusion.spawn()), Some(Spikes.spawn())),
-                            Pickup.spawn(),
+                            (Ember.spawn(), Some(StealthRocks.spawn()), Some(Confusion.spawn()), Some(Spikes.spawn())),
+                            FlashFire.spawn(),
                         )
                         .with_nickname("Clover")
                         .with_item(LifeOrb.spawn()),
@@ -68,7 +68,7 @@ fn main() -> MonsimResult<()> {
                 )
                 .with_monster(
                     Squirecoal
-                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(Scratch.spawn()), None), Pickup.spawn())
+                        .spawn((Ember.spawn(), Some(Confusion.spawn()), Some(Scratch.spawn()), None), Pickup.spawn())
                         .with_nickname("Epona"),
                 ),
         )

@@ -10,7 +10,8 @@ pub struct Trap {
 }
 
 impl Trap {
-    pub(crate) fn from_species(species: &'static TrapSpecies, id: TrapID) -> Trap {
+    pub(crate) fn from_species(species: &'static TrapSpecies, team_id: TeamID) -> Trap {
+        let id = TrapID { team_id, species };
         Trap { id, species, layers: 1 }
     }
 
@@ -132,9 +133,10 @@ pub struct TrapDexEntry {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TrapID {
     pub(crate) team_id: TeamID,
+    pub(crate) species: &'static TrapSpecies,
 }
 impl TrapID {
-    pub(crate) fn from_team_id(team_id: TeamID) -> TrapID {
-        TrapID { team_id }
+    pub(crate) fn new(team_id: TeamID, species: &'static TrapSpecies) -> TrapID {
+        TrapID { team_id, species }
     }
 }

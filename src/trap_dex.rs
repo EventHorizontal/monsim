@@ -45,8 +45,8 @@ impl EventListener<TrapID, Nothing> for SpikesEventListener {
         Some(EventHandler {
             response: |battle, broadcaster_id, receiver_id, mechanic_id, context, relay| {
                 // TODO: Fix Percent type to allow floats.
-                battle.queue_message(format!["Pointed stones dug into {}'s feet!", mon![broadcaster_id].name()]);
-                let number_of_layers = battle.trap(mechanic_id).expect("We are in the event handler for the trap").number_of_layers();
+                battle.queue_message(format!["Sharp spikes dug into {}'s feet!", mon![broadcaster_id].name()]);
+                let number_of_layers = battle.trap(mechanic_id).expect("The id corresponds to the trap we are in.").number_of_layers();
                 let damage_amount = match number_of_layers {
                     1 => mon![broadcaster_id].max_health() * Percent(12),
                     2 => mon![broadcaster_id].max_health() * Percent(17),

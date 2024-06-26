@@ -512,7 +512,7 @@ impl EnvironmentBuilder {
         Environment {
             weather: self.maybe_weather.map(|weather_builder| weather_builder.build(prng)),
             terrain: self.maybe_terrain.map(|terrain_builder| terrain_builder.build(prng)),
-            traps: PerTeam::new(Ally::new(None), Opponent::new(None)),
+            traps: PerTeam::new(Ally::new(Vec::with_capacity(8)), Opponent::new(Vec::with_capacity(8))),
         }
     }
 }

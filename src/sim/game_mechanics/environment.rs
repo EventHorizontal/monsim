@@ -12,7 +12,7 @@ use crate::PerTeam;
 pub struct Environment {
     pub weather: Option<Weather>,
     pub terrain: Option<Terrain>,
-    pub traps: PerTeam<Option<Trap>>,
+    pub traps: PerTeam<Vec<Trap>>,
 }
 
 impl Environment {
@@ -32,11 +32,11 @@ impl Environment {
         self.terrain.as_mut()
     }
 
-    pub fn traps(&self) -> &PerTeam<Option<Trap>> {
+    pub fn traps(&self) -> &PerTeam<Vec<Trap>> {
         &self.traps
     }
 
-    pub fn traps_mut(&mut self) -> &mut PerTeam<Option<Trap>> {
+    pub fn traps_mut(&mut self) -> &mut PerTeam<Vec<Trap>> {
         &mut self.traps
     }
 }

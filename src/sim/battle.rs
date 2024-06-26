@@ -335,11 +335,13 @@ impl BattleState {
     // Traps ---------------------------------------------------------- //
 
     pub fn trap(&self, id: TrapID) -> Option<&Trap> {
-        self.environment().traps()[id.team_id].as_ref()
+        self.environment().traps()[id.team_id].iter().find(|trap| trap.species == id.species)
     }
 
-    pub fn trap_mut(&mut self, id: TrapID) -> &mut Option<Trap> {
-        &mut self.environment_mut().traps_mut()[id.team_id]
+    pub fn trap_mut(&mut self, id: TrapID) -> Option<&mut Trap> {
+        self.environment_mut().traps_mut()[id.team_id]
+            .iter_mut()
+            .find(|trap| trap.species == id.species)
     }
 
     // Choices -------------------------------------------------------- //

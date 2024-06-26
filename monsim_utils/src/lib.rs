@@ -1,4 +1,6 @@
 mod max_sized_vec;
+use std::fmt::Display;
+
 pub use max_sized_vec::MaxSizedVec;
 mod outcome;
 pub use outcome::Outcome;
@@ -63,4 +65,18 @@ fn test_round_ties_down() {
     assert_eq!(134, 133.6.round_ties_down());
     assert_eq!(133, 133.4999.round_ties_down());
     assert_eq!(423238237847384783, 423238237847384783.4999.round_ties_down());
+}
+
+pub fn vec_to_string<T: Display>(iterator: &mut impl Iterator<Item = T>) -> String {
+    if let Some(item) = iterator.next() {
+        let mut output = format!["[{}", item];
+        output += &iterator.fold("".to_owned(), |mut acc, item| {
+            acc += &format![", {}", item];
+            acc
+        });
+        output += "]";
+        output
+    } else {
+        "[]".to_string()
+    }
 }

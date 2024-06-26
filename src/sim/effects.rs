@@ -5,9 +5,9 @@ use crate::{
     dual_type_matchup,
     sim::event_dispatcher::{events::*, EventDispatcher},
     status::{PersistentStatus, VolatileStatus},
-    AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
-    ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, Terrain,
-    TerrainSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    AbilityActivationContext, Battle, BoardPosition, EntryHazard, EntryHazardSpecies, FieldPosition, InflictPersistentStatusContext,
+    InflictVolatileStatusContext, ItemUseContext, ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat,
+    StatChangeContext, SwitchContext, TeamID, Terrain, TerrainSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -584,7 +584,7 @@ pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpeci
     Outcome::Success(NOTHING)
 }
 
-pub(crate) fn clear_weather(battle: &mut Battle) -> Outcome<Nothing> {
+pub fn clear_weather(battle: &mut Battle) -> Outcome<Nothing> {
     // TODO: We might need something more elaborate here.
     if let Some(weather) = battle.environment().weather() {
         battle.queue_message(weather.on_clear_message());
@@ -607,11 +607,34 @@ pub fn start_terrain(battle: &mut Battle, terrain_species: &'static TerrainSpeci
     Outcome::Success(NOTHING)
 }
 
-pub(crate) fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
+pub fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
     // TODO: We might need something more elaborate here.
     if let Some(terrain) = battle.environment().terrain() {
         battle.queue_message(terrain.on_clear_message());
         battle.environment_mut().terrain = None;
+        Outcome::Success(NOTHING)
+    } else {
+        Outcome::Failure
+    }
+}
+
+pub fn set_entry_hazard(battle: &mut Battle, entry_hazard_species: &'static EntryHazardSpecies, which_team: TeamID) -> Outcome<Nothing> {
+    if let Some(entry_hazard) = &battle.environment().entry_hazards()[which_team] {
+        if entry_hazard.species() == entry_hazard_species {
+            return Outcome::Failure;
+        }
+    }
+    let entry_hazard = EntryHazard::from_species(entry_hazard_species);
+    battle.queue_message(entry_hazard.on_start_message());
+    battle.environment_mut().entry_hazards[which_team] = Some(entry_hazard);
+    Outcome::Success(NOTHING)
+}
+
+pub fn clear_entry_hazard(battle: &mut Battle, which_team: TeamID) -> Outcome<Nothing> {
+    // TODO: We might need something more elaborate here.
+    if let Some(entry_hazard) = &battle.environment().entry_hazards()[which_team] {
+        battle.queue_message(entry_hazard.on_clear_message());
+        battle.environment_mut().entry_hazards[which_team] = None;
         Outcome::Success(NOTHING)
     } else {
         Outcome::Failure

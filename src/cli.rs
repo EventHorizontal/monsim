@@ -1,6 +1,6 @@
 use crate::{
     sim::{AvailableChoices, Battle, PartiallySpecifiedActionChoice},
-    FieldPosition, MonsterID, MoveID, SimulatorUi,
+    FieldPosition, MonsterID, MoveID, SimulatorUi, TeamID,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::MaxSizedVec;
@@ -43,6 +43,13 @@ impl SimulatorUi for Cli {
                 terrain.remaining_turns
             ])
         ];
+        _ = writeln![locked_stdout, "\tTraps:"];
+        let traps = battle
+            .environment()
+            .traps()
+            .map_clone(|trap| if let Some(trap) = trap { trap.name() } else { "None" });
+        _ = writeln![locked_stdout, "\t\tAllySide    : {}", traps[TeamID::Allies]];
+        _ = writeln![locked_stdout, "\t\tOpponentSide: {}", traps[TeamID::Opponents]];
         _ = writeln![locked_stdout];
     }
 

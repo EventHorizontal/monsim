@@ -8,9 +8,9 @@ use crate::{
         game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet},
         targetting::{BoardPosition, FieldPosition},
     },
-    AbilityID, Battle, Environment, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, Stat, TeamID, Terrain,
-    TerrainSpecies, Weather, WeatherSpecies, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4, OPPONENT_5,
-    OPPONENT_6,
+    AbilityID, Battle, Environment, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, PerTeam, Stat, TeamID,
+    Terrain, TerrainSpecies, Weather, WeatherSpecies, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4,
+    OPPONENT_5, OPPONENT_6,
 };
 
 /*
@@ -512,6 +512,7 @@ impl EnvironmentBuilder {
         Environment {
             weather: self.maybe_weather.map(|weather_builder| weather_builder.build(prng)),
             terrain: self.maybe_terrain.map(|terrain_builder| terrain_builder.build(prng)),
+            entry_hazards: PerTeam::new(Ally::new(None), Opponent::new(None)),
         }
     }
 }

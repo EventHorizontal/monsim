@@ -5,9 +5,9 @@ use crate::{
     dual_type_matchup,
     sim::event_dispatcher::{events::*, EventDispatcher},
     status::{PersistentStatus, VolatileStatus},
-    AbilityActivationContext, Battle, BoardPosition, EntryHazard, EntryHazardSpecies, FieldPosition, InflictPersistentStatusContext,
-    InflictVolatileStatusContext, ItemUseContext, ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat,
-    StatChangeContext, SwitchContext, TeamID, Terrain, TerrainSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
+    ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TeamID, Terrain,
+    TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -618,23 +618,23 @@ pub fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
     }
 }
 
-pub fn set_entry_hazard(battle: &mut Battle, entry_hazard_species: &'static EntryHazardSpecies, which_team: TeamID) -> Outcome<Nothing> {
-    if let Some(entry_hazard) = &battle.environment().entry_hazards()[which_team] {
-        if entry_hazard.species() == entry_hazard_species {
+pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome<Nothing> {
+    if let Some(trap) = &battle.environment().traps()[which_team] {
+        if trap.species() == trap_species {
             return Outcome::Failure;
         }
     }
-    let entry_hazard = EntryHazard::from_species(entry_hazard_species);
-    battle.queue_message(entry_hazard.on_start_message());
-    battle.environment_mut().entry_hazards[which_team] = Some(entry_hazard);
+    let trap = Trap::from_species(trap_species);
+    battle.queue_message(trap.on_start_message());
+    battle.environment_mut().traps[which_team] = Some(trap);
     Outcome::Success(NOTHING)
 }
 
-pub fn clear_entry_hazard(battle: &mut Battle, which_team: TeamID) -> Outcome<Nothing> {
+pub fn clear_trap(battle: &mut Battle, which_team: TeamID) -> Outcome<Nothing> {
     // TODO: We might need something more elaborate here.
-    if let Some(entry_hazard) = &battle.environment().entry_hazards()[which_team] {
-        battle.queue_message(entry_hazard.on_clear_message());
-        battle.environment_mut().entry_hazards[which_team] = None;
+    if let Some(trap) = &battle.environment().traps()[which_team] {
+        battle.queue_message(trap.on_clear_message());
+        battle.environment_mut().traps[which_team] = None;
         Outcome::Success(NOTHING)
     } else {
         Outcome::Failure

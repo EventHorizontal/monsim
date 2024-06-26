@@ -3,17 +3,17 @@ use monsim_utils::Nothing;
 use crate::sim::event_dispatcher::EventListener;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EntryHazard {
-    pub(crate) species: &'static EntryHazardSpecies,
+pub struct Trap {
+    pub(crate) species: &'static TrapSpecies,
 }
 
-impl EntryHazard {
-    pub(crate) fn from_species(species: &'static EntryHazardSpecies) -> EntryHazard {
-        EntryHazard { species }
+impl Trap {
+    pub(crate) fn from_species(species: &'static TrapSpecies) -> Trap {
+        Trap { species }
     }
 
     #[inline(always)]
-    pub fn species(&self) -> &'static EntryHazardSpecies {
+    pub fn species(&self) -> &'static TrapSpecies {
         self.species
     }
 
@@ -39,7 +39,7 @@ impl EntryHazard {
 }
 
 #[derive(Debug, Clone)]
-pub struct EntryHazardSpecies {
+pub struct TrapSpecies {
     dex_number: u16,
     name: &'static str,
     event_listener: &'static dyn EventListener<Nothing, Nothing>,
@@ -47,17 +47,17 @@ pub struct EntryHazardSpecies {
     on_clear_message: &'static str,
 }
 
-impl PartialEq for EntryHazardSpecies {
+impl PartialEq for TrapSpecies {
     fn eq(&self, other: &Self) -> bool {
         self.dex_number == other.dex_number
     }
 }
 
-impl Eq for EntryHazardSpecies {}
+impl Eq for TrapSpecies {}
 
-impl EntryHazardSpecies {
-    pub const fn from_dex_entry(dex_entry: EntryHazardDexEntry) -> EntryHazardSpecies {
-        let EntryHazardDexEntry {
+impl TrapSpecies {
+    pub const fn from_dex_entry(dex_entry: TrapDexEntry) -> TrapSpecies {
+        let TrapDexEntry {
             dex_number,
             name,
             event_listener,
@@ -65,7 +65,7 @@ impl EntryHazardSpecies {
             on_clear_message,
         } = dex_entry;
 
-        EntryHazardSpecies {
+        TrapSpecies {
             dex_number,
             name,
             event_listener,
@@ -100,7 +100,7 @@ impl EntryHazardSpecies {
     }
 }
 
-pub struct EntryHazardDexEntry {
+pub struct TrapDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub event_listener: &'static dyn EventListener<Nothing, Nothing>,

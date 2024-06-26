@@ -241,8 +241,8 @@ impl EventDispatcher {
         }
 
         // From the entry hazards
-        for entry_hazard in battle.environment().entry_hazards().iter().flatten() {
-            if let Some(event_handler) = event.get_event_handler_without_receiver(entry_hazard.event_listener()) {
+        for trap in battle.environment().traps().iter().flatten() {
+            if let Some(event_handler) = event.get_event_handler_without_receiver(trap.event_listener()) {
                 let owned_event_handler = Box::new(EventHandlerWithOwner {
                     event_handler,
                     receiver_id: NOTHING,

@@ -328,8 +328,8 @@ pub const StealthRocks: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     dex_number: 016,
     name: "Stealth Rocks",
     on_use_effect: |battle, context| {
-        let set_entry_hazard_outcome = effects::set_entry_hazard(battle, &PointedStones, context.move_user_id.team_id.other());
-        set_entry_hazard_outcome
+        let set_trap_outcome = effects::set_trap(battle, &PointedStones, context.move_user_id.team_id.other());
+        set_trap_outcome
     },
     hits_per_target: Count::Fixed(1),
     base_accuracy: Some(100),

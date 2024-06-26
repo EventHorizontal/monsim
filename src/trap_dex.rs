@@ -1,8 +1,8 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
-use monsim::{EntryHazardDexEntry, EntryHazardSpecies, EventListener, Nothing};
+use monsim::{EventListener, Nothing, TrapDexEntry, TrapSpecies};
 
-pub const PointedStones: EntryHazardSpecies = EntryHazardSpecies::from_dex_entry(EntryHazardDexEntry {
+pub const PointedStones: TrapSpecies = TrapSpecies::from_dex_entry(TrapDexEntry {
     dex_number: 001,
     name: "Pointed Stones",
     event_listener: &PointedStonesEventListener,

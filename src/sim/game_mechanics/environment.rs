@@ -1,9 +1,9 @@
-pub mod entry_hazard;
 pub mod terrain;
+pub mod trap;
 pub mod weather;
 
-pub use entry_hazard::*;
 pub use terrain::*;
+pub use trap::*;
 pub use weather::*;
 
 use crate::PerTeam;
@@ -12,7 +12,7 @@ use crate::PerTeam;
 pub struct Environment {
     pub weather: Option<Weather>,
     pub terrain: Option<Terrain>,
-    pub entry_hazards: PerTeam<Option<EntryHazard>>,
+    pub traps: PerTeam<Option<Trap>>,
 }
 
 impl Environment {
@@ -32,11 +32,11 @@ impl Environment {
         self.terrain.as_mut()
     }
 
-    pub fn entry_hazards(&self) -> &PerTeam<Option<EntryHazard>> {
-        &self.entry_hazards
+    pub fn traps(&self) -> &PerTeam<Option<Trap>> {
+        &self.traps
     }
 
-    pub fn entry_hazards_mut(&mut self) -> &mut PerTeam<Option<EntryHazard>> {
-        &mut self.entry_hazards
+    pub fn traps_mut(&mut self) -> &mut PerTeam<Option<Trap>> {
+        &mut self.traps
     }
 }

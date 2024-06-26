@@ -2,14 +2,14 @@
 
 use monsim::{EntryHazardDexEntry, EntryHazardSpecies, EventListener, Nothing};
 
-pub const StealthRockHazard: EntryHazardSpecies = EntryHazardSpecies::from_dex_entry(EntryHazardDexEntry {
+pub const PointedStones: EntryHazardSpecies = EntryHazardSpecies::from_dex_entry(EntryHazardDexEntry {
     dex_number: 001,
-    name: "Stealth Rocks",
-    event_listener: &StealthRockHazardEventListener,
+    name: "Pointed Stones",
+    event_listener: &PointedStonesEventListener,
     on_start_message: "Pointed rocks were scattered around the opponents feet!",
     on_clear_message: "The pointed rocks were scattered away.",
 });
 
-struct StealthRockHazardEventListener;
+struct PointedStonesEventListener;
 
-impl EventListener<Nothing, Nothing> for StealthRockHazardEventListener {}
+impl EventListener<Nothing, Nothing> for PointedStonesEventListener {}

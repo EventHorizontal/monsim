@@ -7,7 +7,7 @@ use monsim::{
 };
 use monsim_macros::mon;
 
-use crate::HarshSunlight;
+use crate::{HarshSunlight, PointedStones};
 
 use super::status_dex::*;
 
@@ -322,4 +322,22 @@ pub const WillOWisp: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
         .union(PositionRelationFlags::ALLIES)
         .union(PositionRelationFlags::OPPONENTS),
     type_: Type::Fire,
+});
+
+pub const StealthRocks: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 016,
+    name: "Stealth Rocks",
+    on_use_effect: |battle, context| {
+        let set_entry_hazard_outcome = effects::set_entry_hazard(battle, &PointedStones, context.move_user_id.team_id.other());
+        set_entry_hazard_outcome
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: Some(100),
+    base_crit_stage: 1,
+    base_power: 100,
+    category: MoveCategory::Status,
+    max_power_points: 5,
+    priority: 0,
+    targets: PositionRelationFlags::SELF,
+    type_: Type::Rock,
 });

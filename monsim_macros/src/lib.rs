@@ -83,6 +83,7 @@ pub fn event_macro_derive(input: TokenStream) -> TokenStream {
     let name_literal = LitStr::new(name.to_string().as_str(), name.span());
     quote!(
         impl Event<#context, #return_type #broadcaster> for #name {
+            #[cfg(feature = "debug")]
             fn name(&self) -> &'static str {
                 #name_literal
             }

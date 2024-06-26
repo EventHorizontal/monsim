@@ -104,7 +104,7 @@ struct FlashFireStatusEventListener;
 impl EventListener<VolatileStatusID> for FlashFireStatusEventListener {
     fn on_calculate_attack_stat_handler(&self) -> Option<EventHandler<MoveHitContext, u16, VolatileStatusID, MonsterID>> {
         Some(EventHandler {
-            response: |battle, broadcaster_id, receiver_id, mechanic_id, context, attack_stat| {
+            response: |battle, _broadcaster_id, _receiver_id, _mechanic_id, context, attack_stat| {
                 if mov![context.move_used_id].type_() == Type::Fire {
                     battle.queue_debug_message(format![
                         "(Flash Fire Status boosted {}'s {})",

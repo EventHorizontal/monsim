@@ -136,7 +136,7 @@ pub struct TrapID {
     pub(crate) species: &'static TrapSpecies,
 }
 impl TrapID {
-    pub(crate) fn new(team_id: TeamID, species: &'static TrapSpecies) -> TrapID {
+    pub(crate) fn _new(team_id: TeamID, species: &'static TrapSpecies) -> TrapID {
         TrapID { team_id, species }
     }
 }

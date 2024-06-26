@@ -379,6 +379,7 @@ impl EventDispatcher {
 // Event -------------------------------------------------- //
 
 pub trait Event<C: EventContext, R: EventReturnable, B: Broadcaster = MonsterID> {
+    #[cfg(feature = "debug")]
     fn name(&self) -> &'static str;
     fn get_event_handler_with_receiver<M: MechanicID>(&self, event_listener: &'static dyn EventListener<M>) -> Option<EventHandler<C, R, M, MonsterID, B>>;
     fn get_event_handler_without_receiver<M: MechanicID>(

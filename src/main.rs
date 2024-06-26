@@ -3,6 +3,7 @@
 use monsim::*;
 
 mod ability_dex;
+mod entry_hazard_dex;
 mod item_dex;
 mod monster_dex;
 mod move_dex;
@@ -11,6 +12,7 @@ mod terrain_dex;
 mod weather_dex;
 
 use ability_dex::*;
+use entry_hazard_dex::*;
 use item_dex::*;
 use monster_dex::*;
 use move_dex::*;

@@ -271,78 +271,87 @@ impl EventDispatcher {
         event_listener_mechanic_kind: MechanicKind,
         receiver_filtering_options: EventFilteringOptions,
     ) -> bool {
-        // Traps only work if the trap is on the same side as the monster.
-        if let MechanicKind::Trap { team_id } = event_listener_mechanic_kind {
-            if let Some(event_broadcaster_id) = optional_broadcaster_id {
-                return TeamID::are_same(team_id, mon![event_broadcaster_id].id.team_id);
-            }
-        }
-        // If there is no receiver we skip checks and return true UNLESS
-        // the mechanic is a terrain and the broadcaster is not grounded.
-        let Some(event_receiver_id) = optional_receiver_id else {
-            if let Some(event_broadcaster_id) = optional_broadcaster_id {
-                if event_listener_mechanic_kind == MechanicKind::Terrain && not![mon![event_broadcaster_id].is_grounded()] {
-                    return false;
+        match event_listener_mechanic_kind {
+            MechanicKind::Trap { team_id } => {
+                if let Some(event_broadcaster_id) = optional_broadcaster_id {
+                    TeamID::are_same(team_id, mon![event_broadcaster_id].id.team_id)
+                } else {
+                    false
                 }
             }
-            return true;
-        };
+            MechanicKind::Terrain | MechanicKind::Weather => {
+                if let Some(event_broadcaster_id) = optional_broadcaster_id {
+                    if not![mon![event_broadcaster_id].is_grounded()] {
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                }
+            }
+            _ => {
+                let Some(event_receiver_id) = optional_receiver_id else {
+                    return true;
+                };
 
-        let mut passes_filter;
+                let mut passes_filter;
 
-        let EventFilteringOptions {
-            only_if_broadcaster_is: allowed_broadcaster_position_relation_flags,
-            only_if_target_is: allowed_target_position_relation_flags,
-            only_if_receiver_is_active: requires_being_active,
-        } = receiver_filtering_options;
+                let EventFilteringOptions {
+                    only_if_broadcaster_is: allowed_broadcaster_position_relation_flags,
+                    only_if_target_is: allowed_target_position_relation_flags,
+                    only_if_receiver_is_active: requires_being_active,
+                } = receiver_filtering_options;
 
-        // First check - does the event receiver require themselves to be active? If so check if they are actually active.
-        passes_filter = if requires_being_active { mon![event_receiver_id].is_active() } else { true };
+                // First check - does the event receiver require themselves to be active? If so check if they are actually active.
+                passes_filter = if requires_being_active { mon![event_receiver_id].is_active() } else { true };
 
-        // Skip the rest of the calculation if it doesn't pass.
-        if not!(passes_filter) {
-            return false;
-        };
+                // Skip the rest of the calculation if it doesn't pass.
+                if not!(passes_filter) {
+                    return false;
+                };
 
-        let event_receiver_field_position = mon![event_receiver_id]
-            .board_position
-            .field_position()
-            .expect("For now we disallow the receiver to be benched. This is will probably be reverted in the future.");
+                let event_receiver_field_position = mon![event_receiver_id]
+                    .board_position
+                    .field_position()
+                    .expect("For now we disallow the receiver to be benched. This is will probably be reverted in the future.");
 
-        if let Some(event_broadcaster_id) = optional_broadcaster_id {
-            // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster within the allowed relations to the event receiver?
-            let event_broadcaster_field_position = mon![event_broadcaster_id]
-                .board_position
-                .field_position()
-                .expect("We assume broadcasters must be on the field.");
+                if let Some(event_broadcaster_id) = optional_broadcaster_id {
+                    // Second check - are the broadcaster's relation flags a subset of the allowed relation flags? that is, is the broadcaster within the allowed relations to the event receiver?
+                    let event_broadcaster_field_position = mon![event_broadcaster_id]
+                        .board_position
+                        .field_position()
+                        .expect("We assume broadcasters must be on the field.");
 
-            passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
-                event_receiver_field_position,
-                event_broadcaster_field_position,
-                allowed_broadcaster_position_relation_flags,
-            );
-        }
+                    passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
+                        event_receiver_field_position,
+                        event_broadcaster_field_position,
+                        allowed_broadcaster_position_relation_flags,
+                    );
+                }
 
-        if not!(passes_filter) {
-            return false;
-        };
+                if not!(passes_filter) {
+                    return false;
+                };
 
-        // The event target is the contextual target for the action associated with this event. For example,
-        // this could be the target of the current move.
-        if let Some(event_target_id) = optional_target_id {
-            let event_target_field_position = mon![event_target_id].board_position.field_position();
+                // The event target is the contextual target for the action associated with this event. For example,
+                // this could be the target of the current move.
+                if let Some(event_target_id) = optional_target_id {
+                    let event_target_field_position = mon![event_target_id].board_position.field_position();
 
-            // The event target may have fainted by the time an EventHandler procs.
-            if let Some(event_target_field_position) = event_target_field_position {
-                passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
-                    event_receiver_field_position,
-                    event_target_field_position,
-                    allowed_target_position_relation_flags,
-                );
+                    // The event target may have fainted by the time an EventHandler procs.
+                    if let Some(event_target_field_position) = event_target_field_position {
+                        passes_filter = FieldPosition::is_position_relation_allowed_by_flags(
+                            event_receiver_field_position,
+                            event_target_field_position,
+                            allowed_target_position_relation_flags,
+                        );
+                    }
+                }
+
+                passes_filter
             }
         }
-
-        passes_filter
     }
 
     pub fn dispatch_trial_event<C: EventContext + 'static, B: Broadcaster + 'static>(

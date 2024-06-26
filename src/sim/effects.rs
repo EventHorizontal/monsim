@@ -366,11 +366,11 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
 ///
 /// Returns the actual damage dealt. This function cannot fail.
 #[must_use]
-pub fn deal_raw_damage(battle: &mut Battle, target_id: MonsterID, damage: u16) -> u16 {
+pub fn deal_raw_damage(battle: &mut Battle, target_id: MonsterID, amount: u16) -> u16 {
     let original_health = mon![target_id].current_health;
     let actual_damage;
-    mon![mut target_id].current_health = original_health.saturating_sub(damage);
-    battle.queue_message(format!["{} took {damage} damage!", mon![target_id].name()]);
+    mon![mut target_id].current_health = original_health.saturating_sub(amount);
+    battle.queue_message(format!["{} took {amount} damage!", mon![target_id].name()]);
     battle.queue_message(format![
         "{} has {remaining_hp} health left.",
         mon![target_id].name(),
@@ -383,7 +383,7 @@ pub fn deal_raw_damage(battle: &mut Battle, target_id: MonsterID, damage: u16) -
         battle.queue_message(format!["{} fainted!", mon![target_id].name()]);
         switch_out_monster(battle, target_id);
     } else {
-        actual_damage = damage;
+        actual_damage = amount;
     };
     EventDispatcher::dispatch_notify_event(battle, OnDamageDealtEvent, target_id, NOTHING);
     actual_damage

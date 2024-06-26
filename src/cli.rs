@@ -2,6 +2,7 @@ use crate::{
     sim::{AvailableChoices, Battle, PartiallySpecifiedActionChoice},
     FieldPosition, MonsterID, MoveID, SimulatorUi, TeamID,
 };
+use chrono::format;
 use monsim_macros::{mon, mov};
 use monsim_utils::MaxSizedVec;
 use std::io::{stdout, Write};
@@ -44,12 +45,15 @@ impl SimulatorUi for Cli {
             ])
         ];
         _ = writeln![locked_stdout, "\tTraps:"];
-        let traps = battle
-            .environment()
-            .traps()
-            .map_clone(|trap| if let Some(trap) = trap { trap.name() } else { "None" });
-        _ = writeln![locked_stdout, "\t\tAllySide    : {}", traps[TeamID::Allies]];
-        _ = writeln![locked_stdout, "\t\tOpponentSide: {}", traps[TeamID::Opponents]];
+        let traps = battle.environment().traps().map_clone(|trap| {
+            if let Some(trap) = trap {
+                (trap.name(), format!["({} layers)", trap.number_of_layers()])
+            } else {
+                ("None", "".to_owned())
+            }
+        });
+        _ = writeln![locked_stdout, "\t\tAllySide    : {} {}", traps[TeamID::Allies].0, traps[TeamID::Allies].1];
+        _ = writeln![locked_stdout, "\t\tOpponentSide: {} {}", traps[TeamID::Opponents].0, traps[TeamID::Opponents].1];
         _ = writeln![locked_stdout];
     }
 

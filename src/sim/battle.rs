@@ -3,7 +3,7 @@ mod message_log;
 
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Environment, Item, ItemID, PartiallySpecifiedActionChoice,
+    AbilityID, Environment, Item, ItemID, PartiallySpecifiedActionChoice, Trap, TrapID,
 };
 use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
@@ -330,6 +330,16 @@ impl BattleState {
     */
     pub fn item_mut(&mut self, item_id: ItemID) -> Option<&mut Item> {
         self.monster_mut(item_id.item_holder_id).held_item.as_mut()
+    }
+
+    // Traps ---------------------------------------------------------- //
+
+    pub fn trap(&self, id: TrapID) -> Option<&Trap> {
+        self.environment().traps()[id.team_id].as_ref()
+    }
+
+    pub fn trap_mut(&mut self, id: TrapID) -> &mut Option<Trap> {
+        &mut self.environment_mut().traps_mut()[id.team_id]
     }
 
     // Choices -------------------------------------------------------- //

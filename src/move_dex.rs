@@ -7,7 +7,7 @@ use monsim::{
 };
 use monsim_macros::mon;
 
-use crate::{HarshSunlight, PointedStones};
+use crate::{HarshSunlight, PointedStones, SpikesTrap};
 
 use super::status_dex::*;
 
@@ -340,4 +340,22 @@ pub const StealthRocks: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     priority: 0,
     targets: PositionRelationFlags::SELF,
     type_: Type::Rock,
+});
+
+pub const Spikes: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 017,
+    name: "Spikes",
+    on_use_effect: |battle, context| {
+        let set_trap_outcome = effects::set_trap(battle, &SpikesTrap, context.move_user_id.team_id.other());
+        set_trap_outcome
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: Some(100),
+    base_crit_stage: 1,
+    base_power: 100,
+    category: MoveCategory::Status,
+    max_power_points: 5,
+    priority: 0,
+    targets: PositionRelationFlags::SELF,
+    type_: Type::Ground,
 });

@@ -622,13 +622,25 @@ pub fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
 pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome<Nothing> {
     if let Some(trap) = &battle.environment().traps()[which_team] {
         if trap.species() == trap_species {
-            return Outcome::Failure;
+            if trap.layers == trap_species.max_layers() {
+                return Outcome::Failure;
+            } else {
+                battle.queue_message(trap.on_start_message());
+                battle.environment_mut().traps_mut()[which_team].as_mut().unwrap().layers += 1;
+                return Outcome::Success(NOTHING);
+            }
+        } else {
+            let trap = Trap::from_species(trap_species, TrapID::from_team_id(which_team));
+            battle.queue_message(trap.on_start_message());
+            battle.environment_mut().traps[which_team] = Some(trap);
+            Outcome::Success(NOTHING)
         }
+    } else {
+        let trap = Trap::from_species(trap_species, TrapID::from_team_id(which_team));
+        battle.queue_message(trap.on_start_message());
+        battle.environment_mut().traps[which_team] = Some(trap);
+        Outcome::Success(NOTHING)
     }
-    let trap = Trap::from_species(trap_species, TrapID::from_team_id(which_team));
-    battle.queue_message(trap.on_start_message());
-    battle.environment_mut().traps[which_team] = Some(trap);
-    Outcome::Success(NOTHING)
 }
 
 pub fn clear_trap(battle: &mut Battle, which_team: TeamID) -> Outcome<Nothing> {

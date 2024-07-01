@@ -14,7 +14,7 @@ use crate::{
         Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Item, Move,
+    AbilitySpecies, Item, Move,
 };
 
 #[derive(Debug, Clone)]
@@ -303,6 +303,8 @@ pub struct MonsterSpecies {
     name: &'static str,
     primary_type: Type,
     secondary_type: Option<Type>,
+    /// `(primary, secondary, hidden)`
+    abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     base_stats: StatSet,
     event_listener: &'static dyn EventListener<MonsterID>,
 }
@@ -332,6 +334,7 @@ impl MonsterSpecies {
             name,
             primary_type,
             secondary_type,
+            abilities,
             base_stats,
             event_handlers,
         } = dex_entry;
@@ -340,6 +343,7 @@ impl MonsterSpecies {
             name,
             primary_type,
             secondary_type,
+            abilities,
             base_stats,
             event_listener: event_handlers,
         }
@@ -382,6 +386,8 @@ pub struct MonsterDexEntry {
     pub name: &'static str,
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
+    /// `(primary, secondary, hidden)`
+    pub abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     pub base_stats: StatSet,
     pub event_handlers: &'static dyn EventListener<MonsterID>,
 }

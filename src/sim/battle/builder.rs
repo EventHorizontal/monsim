@@ -362,12 +362,15 @@ impl MonsterBuilder {
             nature,
             board_position,
             stat_modifiers: StatModifierSet::blank(),
+            primary_type: self.species.primary_type(),
+            secondary_type: self.species.secondary_type(),
             moveset,
             ability,
             persistent_status: None,
             volatile_statuses: MaxSizedVec::empty(),
             held_item,
             consumed_item: None,
+            modified_base_stats: None,
         }
     }
 }

@@ -27,10 +27,11 @@ fn main() -> MonsimResult<()> {
         .with_ally_team(
             MonsterTeam::spawn()
                 .with_monster(
-                    Dandyleo
-                        .spawn((Ember.spawn(), Some(StealthRocks.spawn()), Some(Confusion.spawn()), Some(Spikes.spawn())))
+                    Monstrossive
+                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(Confusion.spawn()), Some(Spikes.spawn())))
                         .with_nickname("Clover")
-                        .with_item(LifeOrb.spawn()),
+                        .with_item(LifeOrb.spawn())
+                        .with_hitpoints(120),
                 )
                 .with_monster(
                     Zombler
@@ -49,7 +50,7 @@ fn main() -> MonsimResult<()> {
             MonsterTeam::spawn()
                 .with_monster(
                     Merkey
-                        .spawn((Bubble.spawn(), Some(DoubleTeam.spawn()), Some(Swift.spawn()), None))
+                        .spawn((Bubble.spawn(), Some(DoubleTeam.spawn()), Some(Swift.spawn()), Some(Confusion.spawn())))
                         .with_nickname("Shrimp"),
                 )
                 .with_monster(

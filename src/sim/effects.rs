@@ -2,12 +2,12 @@ use monsim_macros::{mon, mov};
 use monsim_utils::{not, ClampedPercent, Count, Outcome, Percent, NOTHING};
 
 use crate::{
-    dual_type_matchup,
+    ability, dual_type_matchup,
     sim::event_dispatcher::{events::*, EventDispatcher},
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
-    ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TeamID, Terrain,
-    TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    ModifiableStat, MonsterForm, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext,
+    TeamID, Terrain, TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
@@ -286,7 +286,7 @@ pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitCont
         };
 
         let move_type = mov![move_used_id].type_();
-        let target_type = mon![defender_id].species.type_();
+        let target_type = mon![defender_id].type_();
 
         let type_effectiveness = dual_type_matchup(move_type, target_type);
         overall_type_effectiveness = type_effectiveness;
@@ -654,4 +654,15 @@ pub fn clear_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which
     } else {
         Outcome::Failure
     }
+}
+
+pub fn change_form(battle: &mut Battle, monster_id: MonsterID, to_which_form: &MonsterForm) -> Outcome {
+    if let Some(ability) = to_which_form.ability {
+        mon![mut monster_id].ability.species = ability;
+    }
+    mon![mut monster_id].primary_type = to_which_form.primary_type;
+    mon![mut monster_id].secondary_type = to_which_form.secondary_type;
+    mon![mut monster_id].modified_base_stats = Some(to_which_form.base_stats);
+    battle.queue_message(format!["{} changed to its {}!", mon![monster_id].name(), to_which_form.name]);
+    Outcome::Success(NOTHING)
 }

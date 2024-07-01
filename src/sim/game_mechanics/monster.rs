@@ -24,12 +24,15 @@ pub struct Monster {
 
     pub(crate) nickname: Option<&'static str>,
     pub(crate) effort_values: StatSet,
+    pub(crate) modified_base_stats: Option<StatSet>,
     pub(crate) current_health: u16,
     pub(crate) individual_values: StatSet,
     pub(crate) level: u16,
     pub(crate) nature: MonsterNature,
     pub(crate) board_position: BoardPosition,
     pub(crate) stat_modifiers: StatModifierSet,
+    pub(crate) primary_type: Type,
+    pub(crate) secondary_type: Option<Type>,
 
     pub(crate) moveset: MaxSizedVec<Move, 4>,
     pub(crate) ability: Ability,
@@ -132,8 +135,9 @@ impl Monster {
         match stat {
             Stat::Hp => self.max_health(),
             _ => {
+                let base_stats = self.modified_base_stats.unwrap_or(self.species().base_stats);
                 // TODO: Division is supposed to be floating point here.
-                ((2 * self.species.base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5
+                ((2 * base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5
                 // * self.nature[stat]
             }
         }
@@ -225,7 +229,7 @@ impl Monster {
     // monster to be different from the species' type.
     #[inline(always)]
     pub fn type_(&self) -> (Type, Option<Type>) {
-        self.species.type_()
+        (self.primary_type, self.secondary_type)
     }
 
     // TODO: Telekinesis/Magnet Rise
@@ -281,13 +285,14 @@ impl Monster {
         }
 
         out.push_str(&format![
-            "{} ({}) HP:[{}{}] {}/{} | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
+            "{} ({}) HP:[{}{}] {}/{} | Ability: {} | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
             self.full_name(),
             self.id,
             health_bar_filled.green(),
             health_bar_empty.red(),
             self.current_health,
             self.max_health(),
+            self.ability.name(),
             self.board_position,
             persistent_status,
             self.volatile_statuses,
@@ -506,4 +511,15 @@ impl Display for MonsterID {
             },
         }
     }
+}
+
+pub struct MonsterForm {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub primary_type: Type,
+    pub secondary_type: Option<Type>,
+    /// If this is `None` then the Monster will retain its ability upon changing form.
+    pub ability: Option<&'static AbilitySpecies>,
+    pub base_stats: StatSet,
+    pub event_handlers: &'static dyn EventListener<MonsterID>,
 }

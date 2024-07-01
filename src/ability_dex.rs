@@ -87,3 +87,15 @@ impl EventListener<AbilityID> for ContraryEventListener {
         })
     }
 }
+
+/// Zombie in-engine does nothing (for now).
+pub const Zombie: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
+    dex_number: 004,
+    name: "Zombie",
+    event_listener: &ZombieEventListener,
+    order: 3,
+});
+
+struct ZombieEventListener;
+
+impl EventListener<AbilityID> for ZombieEventListener {}

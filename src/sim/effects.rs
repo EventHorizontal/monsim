@@ -1,5 +1,5 @@
 use monsim_macros::{mon, mov};
-use monsim_utils::{not, ClampedPercent, Count, Nothing, Outcome, Percent, NOTHING};
+use monsim_utils::{not, ClampedPercent, Count, Outcome, Percent, NOTHING};
 
 use crate::{
     dual_type_matchup,

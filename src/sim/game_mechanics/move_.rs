@@ -1,4 +1,4 @@
-use monsim_utils::{Count, Nothing, Outcome};
+use monsim_utils::{Count, Outcome};
 
 use crate::{sim::Type, Battle, MonsterID, MoveHitContext, PositionRelationFlags};
 use core::fmt::Debug;

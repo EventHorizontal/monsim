@@ -10,8 +10,8 @@ pub struct Move {
     pub(crate) current_power_points: u8,
 }
 
-/// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome<Nothing>`
-type OnUseEffect = fn(&mut Battle, MoveHitContext) -> Outcome<Nothing>;
+/// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome`
+type OnUseEffect = fn(&mut Battle, MoveHitContext) -> Outcome;
 
 impl Move {
     #[inline(always)]
@@ -213,7 +213,7 @@ pub struct MoveDexEntry {
     /// Tells the engine what to do when this move hits a Monster, and returns an `Outcome`
     /// representing whether the move should be considered as having succeeded.
     ///
-    /// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome<Nothing>`
+    /// `fn(battle: &mut BattleState, context: MoveHitContext) -> hit_outcome: Outcome`
     pub on_use_effect: OnUseEffect,
     pub hits_per_target: Count,
 

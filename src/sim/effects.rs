@@ -116,7 +116,7 @@ pub(crate) fn switch_out_monster(battle: &mut Battle, active_monster_id: Monster
 ///
 /// Returns an `Outcome` signifying whether the move succeeded.
 
-pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitContext) -> Outcome<Nothing> {
+pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitContext) -> Outcome {
     let MoveHitContext {
         move_user_id: attacker_id,
         move_used_id,
@@ -392,9 +392,9 @@ pub fn deal_raw_damage(battle: &mut Battle, target_id: MonsterID, amount: u16) -
 
 /// The Simulator simulates the activation of the Ability given by owned by the Monster given by `ability_activation_context.abilty_owner_id`.
 #[must_use]
-pub fn activate_ability<F>(battle: &mut Battle, ability_owner_id: MonsterID, on_activate_effect: F) -> Outcome<Nothing>
+pub fn activate_ability<F>(battle: &mut Battle, ability_owner_id: MonsterID, on_activate_effect: F) -> Outcome
 where
-    F: FnOnce(&mut Battle, AbilityActivationContext) -> Outcome<Nothing>,
+    F: FnOnce(&mut Battle, AbilityActivationContext) -> Outcome,
 {
     let ability_activation_context = AbilityActivationContext::from_owner(ability_owner_id);
     let try_activate_ability_outcome = EventDispatcher::dispatch_trial_event(battle, OnTryActivateAbilityEvent, ability_owner_id, ability_activation_context);
@@ -486,7 +486,7 @@ pub fn change_stat(battle: &mut Battle, affected_monster_id: MonsterID, stat: Mo
 ///
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
-pub fn inflict_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome<Nothing> {
+pub fn inflict_volatile_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static VolatileStatusSpecies) -> Outcome {
     let context = InflictVolatileStatusContext {
         affected_monster_id,
         status_condition: status_species,
@@ -513,7 +513,7 @@ pub fn inflict_volatile_status(battle: &mut Battle, affected_monster_id: Monster
 ///
 /// Returns an `Outcome` representing whether adding the status succeeded.
 #[must_use]
-pub fn inflict_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome<Nothing> {
+pub fn inflict_persistent_status(battle: &mut Battle, affected_monster_id: MonsterID, status_species: &'static PersistentStatusSpecies) -> Outcome {
     let context = InflictPersistentStatusContext {
         affected_monster_id,
         status_condition: status_species,
@@ -563,7 +563,7 @@ where
     }
 }
 
-pub(crate) fn shift_monster(battle: &mut Battle, monster_id: MonsterID, destination_position: FieldPosition) -> Outcome<Nothing> {
+pub(crate) fn shift_monster(battle: &mut Battle, monster_id: MonsterID, destination_position: FieldPosition) -> Outcome {
     if mon![monster_id].field_position().is_some() {
         mon![mut monster_id].board_position = BoardPosition::Field(destination_position);
         battle.queue_message(format!["{} was shifted to {}", mon![monster_id].name(), destination_position]);
@@ -573,7 +573,7 @@ pub(crate) fn shift_monster(battle: &mut Battle, monster_id: MonsterID, destinat
     }
 }
 
-pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpecies) -> Outcome<Nothing> {
+pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpecies) -> Outcome {
     if let Some(weather) = battle.environment().weather() {
         if weather.species() == weather_species {
             return Outcome::Failure;
@@ -585,7 +585,7 @@ pub fn start_weather(battle: &mut Battle, weather_species: &'static WeatherSpeci
     Outcome::Success(NOTHING)
 }
 
-pub fn clear_weather(battle: &mut Battle) -> Outcome<Nothing> {
+pub fn clear_weather(battle: &mut Battle) -> Outcome {
     // TODO: We might need something more elaborate here.
     if let Some(weather) = battle.environment().weather() {
         battle.queue_message(weather.on_clear_message());
@@ -596,7 +596,7 @@ pub fn clear_weather(battle: &mut Battle) -> Outcome<Nothing> {
     }
 }
 
-pub fn start_terrain(battle: &mut Battle, terrain_species: &'static TerrainSpecies) -> Outcome<Nothing> {
+pub fn start_terrain(battle: &mut Battle, terrain_species: &'static TerrainSpecies) -> Outcome {
     if let Some(terrain) = battle.environment().terrain() {
         if terrain.species() == terrain_species {
             return Outcome::Failure;
@@ -608,7 +608,7 @@ pub fn start_terrain(battle: &mut Battle, terrain_species: &'static TerrainSpeci
     Outcome::Success(NOTHING)
 }
 
-pub fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
+pub fn clear_terrain(battle: &mut Battle) -> Outcome {
     // TODO: We might need something more elaborate here.
     if let Some(terrain) = battle.environment().terrain() {
         battle.queue_message(terrain.on_clear_message());
@@ -619,7 +619,7 @@ pub fn clear_terrain(battle: &mut Battle) -> Outcome<Nothing> {
     }
 }
 
-pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome<Nothing> {
+pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome {
     if let Some(trap) = &battle.environment().traps()[which_team].iter().find(|trap| trap.species() == trap_species) {
         if trap.layers == trap_species.max_layers() {
             return Outcome::Failure;
@@ -641,7 +641,7 @@ pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_t
     }
 }
 
-pub fn clear_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome<Nothing> {
+pub fn clear_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome {
     // TODO: We might need something more elaborate here.
     if let Some((index, trap)) = &battle.environment().traps()[which_team]
         .iter()

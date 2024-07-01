@@ -304,7 +304,7 @@ pub struct MonsterSpecies {
     primary_type: Type,
     secondary_type: Option<Type>,
     /// `(primary, secondary, hidden)`
-    abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
+    allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     base_stats: StatSet,
     event_listener: &'static dyn EventListener<MonsterID>,
 }
@@ -334,7 +334,7 @@ impl MonsterSpecies {
             name,
             primary_type,
             secondary_type,
-            abilities,
+            allowed_abilities,
             base_stats,
             event_handlers,
         } = dex_entry;
@@ -343,10 +343,17 @@ impl MonsterSpecies {
             name,
             primary_type,
             secondary_type,
-            abilities,
+            allowed_abilities,
             base_stats,
             event_listener: event_handlers,
         }
+    }
+
+    pub fn can_have_ability(&self, ability_species: &'static AbilitySpecies) -> bool {
+        [Some(self.allowed_abilities.0), self.allowed_abilities.1, self.allowed_abilities.2]
+            .iter()
+            .flatten()
+            .any(|allowed_ability| ability_species == *allowed_ability)
     }
 
     #[inline(always)]
@@ -370,6 +377,11 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
+    pub fn allowed_abilities(&self) -> (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>) {
+        self.allowed_abilities
+    }
+
+    #[inline(always)]
     pub fn base_stat(&self, stat: Stat) -> u16 {
         self.base_stats[stat]
     }
@@ -387,7 +399,7 @@ pub struct MonsterDexEntry {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     /// `(primary, secondary, hidden)`
-    pub abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
+    pub allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     pub base_stats: StatSet,
     pub event_handlers: &'static dyn EventListener<MonsterID>,
 }

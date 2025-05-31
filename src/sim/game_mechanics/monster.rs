@@ -105,11 +105,11 @@ impl Display for Monster {
 
 impl Monster {
     // public
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> &'static str {
         if let Some(nickname) = self.nickname {
-            nickname.to_owned()
+            nickname
         } else {
-            self.species.name.to_owned()
+            self.species.name
         }
     }
 

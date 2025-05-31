@@ -51,11 +51,7 @@ pub(crate) fn use_move(battle: &mut Battle, move_use_context: MoveUseContext) {
             "{attacker} used {move_} on {target}",
             attacker = mon![move_user_id].name(),
             move_ = mov![move_used_id].name(),
-            target = if move_user_id == target_id {
-                "itself".to_owned()
-            } else {
-                mon![target_id].name()
-            }
+            target = if move_user_id == target_id { "itself" } else { mon![target_id].name() }
         ]);
 
         let move_use_outcome = mov![move_used_id].on_use_effect()(battle, move_hit_context);

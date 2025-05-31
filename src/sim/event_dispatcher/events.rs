@@ -93,8 +93,14 @@ pub struct OnModifyDamageEvent;
 #[derive(Event)]
 #[returns(Nothing)]
 #[context(Nothing)]
-#[handler(on_damage_dealt_handler)]
-pub struct OnDamageDealtEvent;
+#[handler(on_damage_received_handler)]
+pub struct OnDamageReceivedEvent;
+
+#[derive(Event)]
+#[returns(Nothing)]
+#[context(Nothing)]
+#[handler(on_health_recovered_handler)]
+pub struct OnHealthRecoveredEvent;
 
 #[derive(Event)]
 #[returns(Outcome)]

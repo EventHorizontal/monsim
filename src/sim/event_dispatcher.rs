@@ -455,7 +455,12 @@ pub trait EventListener<M: MechanicID, V: Receiver = MonsterID> {
         None
     }
 
-    fn on_damage_dealt_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    /// This event is triggered when the broadcaster receives damage.
+    fn on_damage_received_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+        None
+    }
+
+    fn on_health_recovered_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
         None
     }
 

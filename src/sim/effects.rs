@@ -386,7 +386,7 @@ pub fn deal_raw_damage(battle: &mut Battle, target_id: MonsterID, amount: u16) -
     } else {
         actual_damage = amount;
     };
-    EventDispatcher::dispatch_notify_event(battle, OnDamageDealtEvent, target_id, NOTHING);
+    EventDispatcher::dispatch_notify_event(battle, OnDamageReceivedEvent, target_id, NOTHING);
     actual_damage
 }
 

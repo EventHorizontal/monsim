@@ -341,7 +341,7 @@ impl MonsterSpecies {
             secondary_type,
             allowed_abilities,
             base_stats,
-            event_handlers,
+            event_listener,
         } = dex_entry;
         Self {
             dex_number,
@@ -350,7 +350,7 @@ impl MonsterSpecies {
             secondary_type,
             allowed_abilities,
             base_stats,
-            event_listener: event_handlers,
+            event_listener,
         }
     }
 
@@ -406,7 +406,7 @@ pub struct MonsterDexEntry {
     /// `(primary, secondary, hidden)`
     pub allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     pub base_stats: StatSet,
-    pub event_handlers: &'static dyn EventListener<MonsterID>,
+    pub event_listener: &'static dyn EventListener<MonsterID>,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -521,5 +521,5 @@ pub struct MonsterForm {
     /// If this is `None` then the Monster will retain its ability upon changing form.
     pub ability: Option<&'static AbilitySpecies>,
     pub base_stats: StatSet,
-    pub event_handlers: &'static dyn EventListener<MonsterID>,
+    pub event_listener: &'static dyn EventListener<MonsterID>,
 }

@@ -16,7 +16,7 @@ pub const Dandyleo: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEn
     secondary_type: None,
     base_stats: StatSet::new(40, 45, 35, 65, 55, 70),
     allowed_abilities: (&Pickup, None, None),
-    event_handlers: &NullEventListener,
+    event_listener: &NullEventListener,
 });
 
 pub const Squirecoal: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
@@ -26,7 +26,7 @@ pub const Squirecoal: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDex
     secondary_type: None,
     allowed_abilities: (&Pickup, Some(&FlashFire), None),
     base_stats: StatSet::new(45, 60, 40, 70, 50, 45),
-    event_handlers: &NullEventListener,
+    event_listener: &NullEventListener,
 });
 
 pub const Merkey: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
@@ -36,7 +36,7 @@ pub const Merkey: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntr
     secondary_type: Some(Type::Bug),
     allowed_abilities: (&Pickup, None, None),
     base_stats: StatSet::new(50, 70, 50, 50, 50, 40),
-    event_handlers: &NullEventListener,
+    event_listener: &NullEventListener,
 });
 
 pub const Zombler: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
@@ -46,7 +46,7 @@ pub const Zombler: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEnt
     secondary_type: Some(Type::Dark),
     allowed_abilities: (&Contrary, None, None),
     base_stats: StatSet::new(90, 50, 34, 60, 44, 71),
-    event_handlers: &NullEventListener,
+    event_listener: &NullEventListener,
 });
 
 pub const Monstrossive: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
@@ -56,7 +56,7 @@ pub const Monstrossive: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterD
     secondary_type: None,
     allowed_abilities: (&Contrary, None, None),
     base_stats: StatSet::new(100, 110, 90, 81, 20, 55),
-    event_handlers: &MonstrossiveEventListener,
+    event_listener: &NullEventListener,
 });
 
 pub const MonstrossiveHungryForm: MonsterForm = MonsterForm {
@@ -67,5 +67,5 @@ pub const MonstrossiveHungryForm: MonsterForm = MonsterForm {
     ability: Some(&Zombie),
     // TODO: ModifiableStatSet.
     base_stats: StatSet::new(100, 90, 10, 81, 20, 155),
-    event_handlers: &NullEventListener,
-};
+    event_listener: &NullEventListener,
+});

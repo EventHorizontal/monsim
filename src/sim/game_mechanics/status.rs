@@ -167,11 +167,11 @@ pub struct VolatileStatusDexEntry {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VolatileStatusID {
-    owner_id: MonsterID,
-    species: &'static VolatileStatusSpecies,
+    pub(crate) owner_id: MonsterID,
+    pub(crate) species: &'static VolatileStatusSpecies,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PersistentStatusID {
-    owner_id: MonsterID,
+    pub(crate) owner_id: MonsterID,
 }

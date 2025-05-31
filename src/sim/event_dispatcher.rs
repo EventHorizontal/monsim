@@ -12,7 +12,7 @@ use crate::{
 };
 pub use contexts::*;
 
-use super::ordering::sort_by_activation_order;
+use super::{ordering::sort_by_activation_order, WeatherID};
 
 pub struct EventDispatcher;
 

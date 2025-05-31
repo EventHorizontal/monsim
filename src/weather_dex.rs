@@ -2,7 +2,7 @@
 
 use monsim::{
     Count, EventFilteringOptions, EventHandler, EventListener, MonsterID, MoveHitContext, Nothing, NullEventListener, Percent, PositionRelationFlags, Type,
-    WeatherDexEntry, WeatherSpecies,
+    WeatherDexEntry, WeatherID, WeatherSpecies,
 };
 use monsim_macros::mov;
 
@@ -43,7 +43,7 @@ impl EventListener<WeatherID, Nothing> for HarshSunlightEventListener {
         })
     }
 
-    fn on_turn_end_handler(&self) -> Option<EventHandler<Nothing, Nothing, Nothing, WeatherID, Nothing>> {
+    fn on_turn_end_handler(&self) -> Option<EventHandler<Nothing, Nothing, WeatherID, Nothing, Nothing>> {
         Some(EventHandler {
             response: |battle, _, _, _, _, _| {
                 battle.queue_message("The sunlight remains strong.");

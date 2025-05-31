@@ -3,7 +3,7 @@
 use monsim::{
     effects,
     sim::{Battle, EventFilteringOptions, ModifiableStat, MonsterID, MoveCategory, MoveSpecies, Type},
-    Count, MoveDexEntry, MoveHitContext, Outcome, PositionRelationFlags,
+    Count, MoveDexEntry, MoveHitContext, Outcome, PositionRelationFlags, NOTHING,
 };
 use monsim_macros::mon;
 
@@ -358,4 +358,26 @@ pub const Spikes: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
     priority: 0,
     targets: PositionRelationFlags::SELF,
     type_: Type::Ground,
+});
+
+pub const MorningSun: MoveSpecies = MoveSpecies::from_dex_entry(MoveDexEntry {
+    dex_number: 018,
+    name: "Morning Sun",
+    on_use_effect: |battle, context| {
+        let hp_healed = effects::recover_health(battle, context.target_id, mon![context.target_id].max_health() / 2);
+        if hp_healed > 0 {
+            Outcome::Success(NOTHING)
+        } else {
+            Outcome::Failure
+        }
+    },
+    hits_per_target: Count::Fixed(1),
+    base_accuracy: None,
+    base_crit_stage: 0,
+    base_power: 0,
+    category: MoveCategory::Status,
+    max_power_points: 20,
+    priority: 0,
+    targets: PositionRelationFlags::SELF,
+    type_: Type::Dragon,
 });

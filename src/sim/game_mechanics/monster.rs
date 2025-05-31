@@ -14,7 +14,7 @@ use crate::{
         Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    Item, Move,
+    AbilitySpecies, Item, Move,
 };
 
 #[derive(Debug, Clone)]
@@ -30,6 +30,8 @@ pub struct Monster {
     pub(crate) nature: MonsterNature,
     pub(crate) board_position: BoardPosition,
     pub(crate) stat_modifiers: StatModifierSet,
+    pub(crate) primary_type: Type,
+    pub(crate) secondary_type: Option<Type>,
 
     pub(crate) moveset: MaxSizedVec<Move, 4>,
     pub(crate) ability: Ability,
@@ -102,11 +104,11 @@ impl Display for Monster {
 
 impl Monster {
     // public
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> &'static str {
         if let Some(nickname) = self.nickname {
-            nickname.to_owned()
+            nickname
         } else {
-            self.species.name.to_owned()
+            self.species.name
         }
     }
 
@@ -132,8 +134,9 @@ impl Monster {
         match stat {
             Stat::Hp => self.max_health(),
             _ => {
+                let base_stats = self.species().base_stats;
                 // TODO: Division is supposed to be floating point here.
-                ((2 * self.species.base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5
+                ((2 * base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5
                 // * self.nature[stat]
             }
         }
@@ -225,7 +228,7 @@ impl Monster {
     // monster to be different from the species' type.
     #[inline(always)]
     pub fn type_(&self) -> (Type, Option<Type>) {
-        self.species.type_()
+        (self.primary_type, self.secondary_type)
     }
 
     // TODO: Telekinesis/Magnet Rise
@@ -280,18 +283,30 @@ impl Monster {
             }
         }
 
+        let yellow = "\u{001b}[33m";
+        let colorless = "\u{001b}[00m";
+
         out.push_str(&format![
-            "{} ({}) HP:[{}{}] {}/{} | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
+            r#"{} ({}) HP:[{}{}] {}/{}
+	Ability:           {yellow}{}{colorless}
+	Position:          {yellow}{}{colorless}
+	Persistent Status: {yellow}{}{colorless}
+	Volatile Statuses: {yellow}{}{colorless}
+	Held Item:         {yellow}{}{colorless}
+	Form:              {yellow}{} Form{colorless}
+"#,
             self.full_name(),
             self.id,
             health_bar_filled.green(),
             health_bar_empty.red(),
             self.current_health,
             self.max_health(),
+            self.ability.name(),
             self.board_position,
             persistent_status,
-            self.volatile_statuses,
-            held_item
+            self.volatile_statuses.print_as_comma_separated_list(),
+            held_item,
+            self.species.form_name.unwrap_or("Normal")
         ]);
         out
     }
@@ -301,8 +316,11 @@ impl Monster {
 pub struct MonsterSpecies {
     dex_number: u16,
     name: &'static str,
+    form_name: Option<&'static str>,
     primary_type: Type,
     secondary_type: Option<Type>,
+    /// `(primary, secondary, hidden)`
+    allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     base_stats: StatSet,
     event_listener: &'static dyn EventListener<MonsterID>,
 }
@@ -330,19 +348,31 @@ impl MonsterSpecies {
         let MonsterDexEntry {
             dex_number,
             name,
+            form_name,
             primary_type,
             secondary_type,
+            allowed_abilities,
             base_stats,
-            event_handlers,
+            event_listener,
         } = dex_entry;
+
         Self {
             dex_number,
             name,
+            form_name,
             primary_type,
             secondary_type,
+            allowed_abilities,
             base_stats,
-            event_listener: event_handlers,
+            event_listener,
         }
+    }
+
+    pub fn can_have_ability(&self, ability_species: &'static AbilitySpecies) -> bool {
+        [Some(self.allowed_abilities.0), self.allowed_abilities.1, self.allowed_abilities.2]
+            .iter()
+            .flatten()
+            .any(|allowed_ability| ability_species == *allowed_ability)
     }
 
     #[inline(always)]
@@ -366,6 +396,17 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
+    pub fn allowed_abilities(&self) -> (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>) {
+        self.allowed_abilities
+    }
+
+    #[inline(always)]
+    /// Returns `"Normal` if no then monster has no special form name
+    pub fn form_name(&self) -> &'static str {
+        self.form_name.unwrap_or("Normal")
+    }
+
+    #[inline(always)]
     pub fn base_stat(&self, stat: Stat) -> u16 {
         self.base_stats[stat]
     }
@@ -380,10 +421,13 @@ impl MonsterSpecies {
 pub struct MonsterDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
+    pub form_name: Option<&'static str>,
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
+    /// The order of abilities is `(primary, secondary, hidden)`
+    pub allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     pub base_stats: StatSet,
-    pub event_handlers: &'static dyn EventListener<MonsterID>,
+    pub event_listener: &'static dyn EventListener<MonsterID>,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -488,4 +532,15 @@ impl Display for MonsterID {
             },
         }
     }
+}
+
+pub struct MonsterForm {
+    pub dex_number: u16,
+    pub name: &'static str,
+    pub primary_type: Type,
+    pub secondary_type: Option<Type>,
+    /// If this is `None` then the Monster will retain its ability upon changing form.
+    pub ability: Option<&'static AbilitySpecies>,
+    pub base_stats: StatSet,
+    pub event_listener: &'static dyn EventListener<MonsterID>,
 }

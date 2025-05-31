@@ -235,22 +235,18 @@ pub struct MonsterBuilder {
 }
 
 pub trait MonsterBuilderExt {
-    fn spawn(&'static self, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>), ability: AbilityBuilder) -> MonsterBuilder;
+    fn spawn(&'static self, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>)) -> MonsterBuilder;
 }
 
 impl MonsterBuilderExt for MonsterSpecies {
-    fn spawn(&'static self, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>), ability: AbilityBuilder) -> MonsterBuilder {
-        Monster::with(self, moves, ability)
+    fn spawn(&'static self, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>)) -> MonsterBuilder {
+        Monster::with(self, moves)
     }
 }
 
 impl Monster {
     /// Starting point for building a Monster.
-    pub fn with(
-        species: &'static MonsterSpecies,
-        moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>),
-        ability: AbilityBuilder,
-    ) -> MonsterBuilder {
+    pub fn with(species: &'static MonsterSpecies, moves: (MoveBuilder, Option<MoveBuilder>, Option<MoveBuilder>, Option<MoveBuilder>)) -> MonsterBuilder {
         let moves = vec![moves.0]
             .pipe(|mut vec| {
                 if let Some(move_) = moves.1 {
@@ -271,6 +267,8 @@ impl Monster {
                 vec
             });
 
+        let ability = species.allowed_abilities().0.spawn();
+
         let moves = MaxSizedVec::from_vec(moves);
 
         MonsterBuilder {
@@ -290,6 +288,13 @@ impl Monster {
 impl MonsterBuilder {
     pub fn with_nickname(mut self, nickname: &'static str) -> Self {
         self.nickname = Some(nickname);
+        self
+    }
+
+    pub fn with_ability(mut self, ability: AbilityBuilder) -> Self {
+        // FEATURE: Maybe a config for overriding legal abilities would be nice.
+        assert!(self.species.can_have_ability(ability.species));
+        self.ability = ability;
         self
     }
 
@@ -357,6 +362,8 @@ impl MonsterBuilder {
             nature,
             board_position,
             stat_modifiers: StatModifierSet::blank(),
+            primary_type: self.species.primary_type(),
+            secondary_type: self.species.secondary_type(),
             moveset,
             ability,
             persistent_status: None,
@@ -442,7 +449,7 @@ impl Ability {
 // This implementation doesn't really afford us anything extra, but if
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
-    fn build(self, id: AbilityID) -> Ability {
+    pub(crate) fn build(self, id: AbilityID) -> Ability {
         Ability { id, species: self.species }
     }
 }

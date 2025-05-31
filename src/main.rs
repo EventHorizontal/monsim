@@ -15,7 +15,7 @@ use ability_dex::*;
 use item_dex::*;
 use monster_dex::*;
 use move_dex::*;
-use terrain_dex::*;
+// use terrain_dex::*;
 use trap_dex::*;
 use weather_dex::*;
 
@@ -27,48 +27,41 @@ fn main() -> MonsimResult<()> {
         .with_ally_team(
             MonsterTeam::spawn()
                 .with_monster(
-                    Dandyleo
-                        .spawn(
-                            (Ember.spawn(), Some(StealthRocks.spawn()), Some(Confusion.spawn()), Some(Spikes.spawn())),
-                            FlashFire.spawn(),
-                        )
+                    MonstrossiveFullForm
+                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(MorningSun.spawn()), Some(Spikes.spawn())))
                         .with_nickname("Clover")
-                        .with_item(LifeOrb.spawn()),
+                        .with_item(LifeOrb.spawn())
+                        .with_hitpoints(120),
                 )
                 .with_monster(
                     Zombler
-                        .spawn(
-                            (StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), Some(ShadowBall.spawn())),
-                            Contrary.spawn(),
-                        )
+                        .spawn((StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), Some(ShadowBall.spawn())))
                         .with_nickname("Rick"),
                 )
                 .with_monster(
                     Squirecoal
-                        .spawn(
-                            (Ember.spawn(), Some(Growl.spawn()), Some(ShadowBall.spawn()), Some(Recycle.spawn())),
-                            FlashFire.spawn(),
-                        )
+                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(ShadowBall.spawn()), Some(Recycle.spawn())))
                         .with_nickname("Lancelot")
-                        .with_item(PasshoBerry.spawn()),
+                        .with_item(PasshoBerry.spawn())
+                        .with_ability(FlashFire.spawn()),
                 ),
         )
         .with_opponent_team(
             MonsterTeam::spawn()
                 .with_monster(
                     Merkey
-                        .spawn((Bubble.spawn(), Some(DoubleTeam.spawn()), Some(Swift.spawn()), None), Pickup.spawn())
+                        .spawn((Bubble.spawn(), Some(DoubleTeam.spawn()), Some(Swift.spawn()), Some(Confusion.spawn())))
                         .with_nickname("Shrimp"),
                 )
                 .with_monster(
                     Zombler
-                        .spawn((StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), None), Pickup.spawn())
+                        .spawn((StoneEdge.spawn(), Some(Growl.spawn()), Some(DragonDance.spawn()), None))
                         .with_nickname("Cordy")
                         .with_hitpoints(20),
                 )
                 .with_monster(
                     Squirecoal
-                        .spawn((Ember.spawn(), Some(Confusion.spawn()), Some(Scratch.spawn()), None), Pickup.spawn())
+                        .spawn((Ember.spawn(), Some(Confusion.spawn()), Some(Scratch.spawn()), None))
                         .with_nickname("Epona"),
                 ),
         )
@@ -78,7 +71,7 @@ fn main() -> MonsimResult<()> {
 
     println!("{:?}", battle.format());
 
-    #[cfg(feature = "macro")]
+    #[cfg(feature = "macros")]
     let _battle2 = battle!(
         team: Opponents
         {

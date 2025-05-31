@@ -15,6 +15,7 @@ use self::builder::BattleFormat;
 
 use super::{
     prng::Prng,
+    status::{PersistentStatus, PersistentStatusID, VolatileStatus, VolatileStatusID},
     targetting::{BoardPosition, FieldPosition},
     PerTeam, TeamID,
 };
@@ -342,6 +343,18 @@ impl BattleState {
         self.environment_mut().traps_mut()[id.team_id]
             .iter_mut()
             .find(|trap| trap.species == id.species)
+    }
+
+    // Persistent Statuses -------------------------------------------- //
+
+    pub fn persistent_status(&self, id: PersistentStatusID) -> Option<&PersistentStatus> {
+        self.monster(id.owner_id).persistent_status.as_ref()
+    }
+
+    // Volatile Statuses ---------------------------------------------- //
+
+    pub fn volatile_status(&self, id: VolatileStatusID) -> Option<&VolatileStatus> {
+        self.monster(id.owner_id).volatile_status(*id.species)
     }
 
     // Choices -------------------------------------------------------- //

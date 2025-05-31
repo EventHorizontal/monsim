@@ -1,6 +1,12 @@
 use monsim_utils::{Count, Nothing};
 
-use crate::{prng::Prng, sim::builder::InitCount, sim::event_dispatcher::EventListener};
+use crate::{
+    prng::Prng,
+    sim::{
+        builder::InitCount,
+        event_dispatcher::{EventListener, MechanicID},
+    },
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Weather {
@@ -35,7 +41,7 @@ impl Weather {
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener<Nothing, Nothing> {
+    pub fn event_listener(&self) -> &'static dyn EventListener<WeatherID, Nothing> {
         self.species.event_listener
     }
 }
@@ -45,7 +51,7 @@ pub struct WeatherSpecies {
     dex_number: u16,
     name: &'static str,
     lifetime_in_turns: Count,
-    event_listener: &'static dyn EventListener<Nothing, Nothing>,
+    event_listener: &'static dyn EventListener<WeatherID, Nothing>,
     on_start_message: &'static str,
     on_clear_message: &'static str,
 }
@@ -90,7 +96,7 @@ impl WeatherSpecies {
     }
 
     #[inline(always)]
-    pub fn event_listener(&self) -> &'static dyn EventListener<Nothing, Nothing> {
+    pub fn event_listener(&self) -> &'static dyn EventListener<WeatherID, Nothing> {
         self.event_listener
     }
 
@@ -114,7 +120,18 @@ pub struct WeatherDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
     pub lifetime_in_turns: Count,
-    pub event_listener: &'static dyn EventListener<Nothing, Nothing>,
+    pub event_listener: &'static dyn EventListener<WeatherID, Nothing>,
     pub on_start_message: &'static str,
     pub on_clear_message: &'static str,
+}
+
+/// Marker for Weather
+#[derive(Copy, Clone)]
+pub struct WeatherID;
+
+impl MechanicID for WeatherID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &crate::Battle) -> &'static str {
+        battle.environment().weather().expect("Expected weather because id exists").name()
+    }
 }

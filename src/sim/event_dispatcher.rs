@@ -1,42 +1,3 @@
-/*!
-### Event System
-Events are an integral part of the `monsim` engine, they enable the engine to model any reactive game mechanics,
-such as abilities or items. An example would be the item *Life Orb*, which reacts to the `on_calculate_attack_stat`
-event, by raising the attack by 50%. It also reacts to the `on_move_used` event, by draining 10% of the user's max
-HP.
-
-Each Event has a *broadcaster* and zero or more *receivers*. The broadcaster is responsible for emitting or triggering
-the Event, and then each receiver returns an `EventHandler` that contains a callback function of the appropriate
-type and some extra information about how and when to activate it, most prominently `EventFilteringOptions`. This is
-then wrapped into an `OwnedEventHandler` that contains additional information about the owner of the EventHandler (i.e
-the Monster whose EventHandler it is). The `EventDispatcher` is responsible for collecting, filtering and calling all
-the callbacks of the appropriate EventHandlers.
-
-An Event is broadcasted during the turn-loop for two major reasons:
-1. To test if there are mechanics that forbid the next action, or alter it. These events are associated with
-functions of the form `on_try_<something>`. A reactive EventHandler may choose to disable this. Think moves like
-`Embargo` which prevents item use.
-2. To inform the entities in the battle that something specific happened. These events are associated with
-functions of the form `on_<something>_happened`. A reactive EventHandler may choose to do something every time
-that specific thing happens, or only if further conditions are satisfied. `Passho Berry` reacts to the Event
-`on_move_used` when used by an opponent, but only if the move is water-type and super-effective, which it then checks
-manually.
-
-The EventHandler returns a value, which tells the broadcaster how to modify the logic being evaluated. With the Life Orb
-example, it returned a new value for the attack stat to be used when attacking. What kind of value an EventHandler returns
-is decided by the Event it responds to. The `on_calculate_attack_stat` Event expects a `u16` - the modified attack stat.
-Note that Life Orb may choose to return the original attack stat, which would correspond to having no effect. This is
-desirable when an mechanic wants to affect the simulation only if certain conditions are met, it then returns the original
-value when the condition is not met.
-
-The Event Dispatcher folds the return values of all the EventHandlers it collected from the Battle, and then the return
-value is returned to the broadcaster. The execution may be short-circuited if a special value, decided by the broadcaster,
-is obtained. Certain Events also require the specification of a default value to return if there happens (as it often does)
-that there are no EventHandlers for that particular Event at the moment. For "trial" events, which encapsulate checking if
-some action will be successful, have always have a default value of `Outcome::Success<()>` which means they succeed by default,
-as would be expected.
-*/
-
 pub mod contexts;
 pub mod events;
 
@@ -51,7 +12,7 @@ use crate::{
 };
 pub use contexts::*;
 
-use super::ordering::sort_by_activation_order;
+use super::{ordering::sort_by_activation_order, WeatherID};
 
 pub struct EventDispatcher;
 
@@ -83,6 +44,8 @@ impl EventDispatcher {
 
         let mut relay = default;
         for event_handler in event_handlers.into_iter() {
+            #[cfg(feature = "debug")]
+            println!["\t└── (EventHandler for {mechanic} considered)", mechanic = event_handler.mechanic_name(battle)];
             if EventDispatcher::does_event_handler_pass_filters(
                 battle,
                 broadcaster.as_id(),
@@ -210,7 +173,7 @@ impl EventDispatcher {
                 let owned_event_handler = Box::new(EventHandlerWithOwner {
                     event_handler,
                     receiver_id: NOTHING,
-                    mechanic_id: NOTHING,
+                    mechanic_id: WeatherID,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: 0,
@@ -455,7 +418,12 @@ pub trait EventListener<M: MechanicID, V: Receiver = MonsterID> {
         None
     }
 
-    fn on_damage_dealt_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    /// This event is triggered when the broadcaster receives damage.
+    fn on_damage_received_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+        None
+    }
+
+    fn on_health_recovered_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
         None
     }
 
@@ -530,6 +498,14 @@ impl<M: MechanicID> EventListener<M, Nothing> for NullEventListener {}
 
 // EventHandlers --------------------------------------------------- //
 
+/// `B` is the ID of the broadcaster, that is, the monster that triggered the event. `B` is `Nothing`/`()` if the event
+/// was triggered by a non-monster, e.g. the weather.
+///
+/// `V` is the ID of the receiver, that is, the monster that is reacting to the event. `V` is
+/// `Nothing`/`()` if the event is being received by a non-monster, e.g. the weather.
+///
+/// `M` is the ID of the mechanic on the receiver that is reacting to the event. This could be, for
+/// example, the `AbilityID` of the ability (the mechanic) on the monster (the receiver).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventHandler<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster = MonsterID> {
     pub response: EventResponse<C, R, M, V, B>,
@@ -560,12 +536,17 @@ pub trait EventHandlerWithOwnerEmbedded<C, R, B>: DynClone {
     fn event_filtering_options(&self) -> EventFilteringOptions;
 
     fn mechanic_kind(&self) -> MechanicKind;
+
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &mut Battle) -> &'static str;
 }
 
 impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster> EventHandlerWithOwnerEmbedded<C, R, B>
     for EventHandlerWithOwner<C, R, M, V, B>
 {
     fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+        #[cfg(feature = "debug")]
+        println!["\t└── (EventHandler for {mechanic} activated)", mechanic = self.mechanic_name(battle)];
         (self.event_handler.response)(battle, broadcaster_id, self.receiver_id, self.mechanic_id, context, default)
     }
 
@@ -583,6 +564,11 @@ impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadca
 
     fn mechanic_kind(&self) -> MechanicKind {
         self.mechanic_kind
+    }
+
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &mut Battle) -> &'static str {
+        self.mechanic_id.mechanic_name(battle)
     }
 }
 
@@ -625,6 +611,8 @@ impl EventFilteringOptions {
 
 // Constraint Traits ------------------------------------------------------------ //
 
+// Broadcasters ---------------
+
 pub trait Broadcaster: Copy {
     fn as_id(&self) -> Option<MonsterID> {
         None
@@ -647,32 +635,87 @@ pub trait EventContext: Copy {
 
 impl EventContext for Nothing {}
 
+// Returnables -----------------
+
 pub trait EventReturnable: PartialEq + Copy {}
 
 impl<T: PartialEq + Copy> EventReturnable for T {}
 
 pub trait Receiver: Copy {
-    fn id(&self) -> Option<MonsterID>;
-}
-
-impl Receiver for Nothing {
     fn id(&self) -> Option<MonsterID> {
         None
     }
 }
+
+// Receivers -----------------
+
+impl Receiver for Nothing {}
+
 impl Receiver for MonsterID {
     fn id(&self) -> Option<MonsterID> {
         Some(*self)
     }
 }
 
-pub trait MechanicID: Copy {}
+// Mechanics ------------------
 
-impl MechanicID for Nothing {}
-impl MechanicID for AbilityID {}
-impl MechanicID for ItemID {}
-impl MechanicID for MonsterID {}
-impl MechanicID for MoveID {}
-impl MechanicID for PersistentStatusID {}
-impl MechanicID for TrapID {}
-impl MechanicID for VolatileStatusID {}
+pub trait MechanicID: Copy {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str;
+}
+
+impl MechanicID for Nothing {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, _: &Battle) -> &'static str {
+        "None"
+    }
+}
+
+impl MechanicID for AbilityID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.ability(*self).name()
+    }
+}
+
+impl MechanicID for ItemID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.item(*self).map_or("None", |i| i.name())
+    }
+}
+
+impl MechanicID for MonsterID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.monster(*self).name()
+    }
+}
+
+impl MechanicID for MoveID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.move_(*self).name()
+    }
+}
+
+impl MechanicID for PersistentStatusID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.persistent_status(*self).map_or("None", |ps| ps.name())
+    }
+}
+
+impl MechanicID for TrapID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.trap(*self).map_or("None", |t| t.name())
+    }
+}
+
+impl MechanicID for VolatileStatusID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.volatile_status(*self).map_or("None", |s| s.name())
+    }
+}

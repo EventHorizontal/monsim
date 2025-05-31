@@ -3,8 +3,8 @@
 use monsim::{
     effects, move_,
     sim::{Ability, AbilitySpecies, EventFilteringOptions, MoveUseContext, Type},
-    AbilityActivationContext, AbilityDexEntry, AbilityID, EventHandler, EventListener, ModifiableStat, MonsterID, MoveHitContext, PositionRelationFlags,
-    StatChangeContext, NOTHING,
+    AbilityActivationContext, AbilityDexEntry, AbilityID, EventHandler, EventListener, ModifiableStat, MonsterID, MoveHitContext, Nothing,
+    PositionRelationFlags, StatChangeContext, NOTHING,
 };
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, Outcome};
@@ -79,6 +79,49 @@ impl EventListener<AbilityID> for ContraryEventListener {
                 #[cfg(feature = "debug")]
                 battle.queue_message(format!["(Contrary reversed {}'s stat changes).", mon![context.affected_monster_id].name()]);
                 -context.number_of_stages
+            },
+            event_filtering_options: EventFilteringOptions {
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
+                ..EventFilteringOptions::default()
+            },
+        })
+    }
+}
+
+pub const Zombie: AbilitySpecies = AbilitySpecies::from_dex_entry(AbilityDexEntry {
+    dex_number: 004,
+    name: "Zombie",
+    event_listener: &ZombieEventListener,
+    order: 3,
+});
+
+struct ZombieEventListener;
+
+impl EventListener<AbilityID> for ZombieEventListener {
+    fn on_damage_received_handler(&self) -> Option<EventHandler<Nothing, Nothing, AbilityID, MonsterID>> {
+        Some(EventHandler {
+            response: |battle, broadcaster_id, receiver_id, self_id, context, relay| {
+                let health_is_less_than_half = mon![broadcaster_id].current_health() <= mon![broadcaster_id].max_health() / 2;
+                let is_currently_full_form = mon![broadcaster_id].species().form_name() == crate::monster_dex::MonstrossiveFullForm.form_name();
+                if health_is_less_than_half & is_currently_full_form {
+                    effects::change_form(battle, broadcaster_id, &crate::monster_dex::MonstrossiveHungryForm);
+                }
+            },
+            event_filtering_options: EventFilteringOptions {
+                only_if_broadcaster_is: PositionRelationFlags::SELF,
+                ..EventFilteringOptions::default()
+            },
+        })
+    }
+
+    fn on_health_recovered_handler(&self) -> Option<EventHandler<Nothing, Nothing, AbilityID, MonsterID>> {
+        Some(EventHandler {
+            response: |battle, broadcaster_id, receiver_id, self_id, context, relay| {
+                let health_is_more_than_half = mon![broadcaster_id].current_health() > mon![broadcaster_id].max_health() / 2;
+                let is_currently_hungry_form = mon![broadcaster_id].species().form_name() == crate::monster_dex::MonstrossiveHungryForm.form_name();
+                if health_is_more_than_half & is_currently_hungry_form {
+                    effects::change_form(battle, broadcaster_id, &crate::monster_dex::MonstrossiveFullForm);
+                }
             },
             event_filtering_options: EventFilteringOptions {
                 only_if_broadcaster_is: PositionRelationFlags::SELF,

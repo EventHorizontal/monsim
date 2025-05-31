@@ -9,7 +9,7 @@ pub enum Outcome<P = Nothing> {
     Failure,
 }
 
-impl From<bool> for Outcome<Nothing> {
+impl From<bool> for Outcome {
     fn from(value: bool) -> Self {
         match value {
             true => Self::Success(NOTHING),
@@ -27,8 +27,8 @@ impl<T> From<Outcome<T>> for bool {
     }
 }
 
-impl Not for Outcome<Nothing> {
-    type Output = Outcome<Nothing>;
+impl Not for Outcome {
+    type Output = Outcome;
 
     fn not(self) -> Self::Output {
         match self {
@@ -38,8 +38,8 @@ impl Not for Outcome<Nothing> {
     }
 }
 
-impl BitAnd for Outcome<Nothing> {
-    type Output = Outcome<Nothing>;
+impl BitAnd for Outcome {
+    type Output = Outcome;
 
     fn bitand(self, rhs: Self) -> Self::Output {
         if self.is_success() && rhs.is_success() {
@@ -62,7 +62,7 @@ impl<T> Outcome<T> {
     }
 
     #[inline(always)]
-    pub fn opposite(self) -> Outcome<Nothing> {
+    pub fn opposite(self) -> Outcome {
         match self {
             Outcome::Success(_) => Outcome::Failure,
             Outcome::Failure => Outcome::Success(NOTHING),
@@ -77,7 +77,7 @@ impl<T> Outcome<T> {
     }
 
     /// Empties the contents of the `Outcome`.
-    pub fn empty(self) -> Outcome<Nothing> {
+    pub fn empty(self) -> Outcome {
         match self {
             Outcome::Success(_) => Outcome::Success(NOTHING),
             Outcome::Failure => Outcome::Failure,

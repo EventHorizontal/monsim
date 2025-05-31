@@ -103,6 +103,10 @@ impl VolatileStatus {
         }
     }
 
+    pub fn name(&self) -> &'static str {
+        self.species.name
+    }
+
     #[inline(always)]
     pub fn event_listener(&self) -> &'static dyn EventListener<VolatileStatusID> {
         self.species.event_listener()
@@ -167,11 +171,11 @@ pub struct VolatileStatusDexEntry {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VolatileStatusID {
-    owner_id: MonsterID,
-    species: &'static VolatileStatusSpecies,
+    pub(crate) owner_id: MonsterID,
+    pub(crate) species: &'static VolatileStatusSpecies,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PersistentStatusID {
-    owner_id: MonsterID,
+    pub(crate) owner_id: MonsterID,
 }

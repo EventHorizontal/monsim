@@ -1,4 +1,4 @@
-use monsim_utils::{Ally, MaxSizedVec, Opponent};
+use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
     fmt::{Debug, Display, Formatter},
     ops::{Index, IndexMut},
@@ -31,7 +31,7 @@ impl IndexMut<MonsterNumber> for MonsterTeam {
 
 impl MonsterTeam {
     pub fn new(monsters: Vec<Monster>, id: TeamID) -> Self {
-        assert!(monsters.first().is_some(), "There is not a single monster in the team.");
+        assert!(not![monsters.is_empty()], "There is not a single monster in the team.");
         assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
         let monsters = MaxSizedVec::from_vec(monsters);
         MonsterTeam { id, monsters }

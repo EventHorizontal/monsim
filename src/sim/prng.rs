@@ -1,4 +1,4 @@
-use std::{time, u64::MAX};
+use std::time;
 
 use std::ops::RangeInclusive;
 
@@ -55,7 +55,7 @@ impl Prng {
             let random_number = self.next();
             let range = (end - start + 1) as f64;
 
-            ((random_number as f64 / MAX as f64) * range) as u16 + start
+            ((random_number as f64 / u64::MAX as f64) * range) as u16 + start
         }
     }
 

@@ -113,7 +113,6 @@ pub(crate) fn switch_out_monster(battle: &mut Battle, active_monster_id: Monster
 /// with the resulting damage.
 ///
 /// Returns an `Outcome` signifying whether the move succeeded.
-
 pub fn deal_calculated_damage(battle: &mut Battle, move_hit_context: MoveHitContext) -> Outcome {
     let MoveHitContext {
         move_user_id: attacker_id,
@@ -630,7 +629,7 @@ pub fn clear_terrain(battle: &mut Battle) -> Outcome {
 pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_team: TeamID) -> Outcome {
     if let Some(trap) = &battle.environment().traps()[which_team].iter().find(|trap| trap.species() == trap_species) {
         if trap.layers == trap_species.max_layers() {
-            return Outcome::Failure;
+            Outcome::Failure
         } else {
             battle.queue_message(trap.on_start_message());
             battle.environment_mut().traps_mut()[which_team]
@@ -639,7 +638,7 @@ pub fn set_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which_t
                 .as_mut()
                 .unwrap()
                 .layers += 1;
-            return Outcome::Success(NOTHING);
+            Outcome::Success(NOTHING)
         }
     } else {
         let trap = Trap::from_species(trap_species, which_team);

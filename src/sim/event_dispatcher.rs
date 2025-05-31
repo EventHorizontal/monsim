@@ -245,11 +245,7 @@ impl EventDispatcher {
             }
             MechanicKind::Terrain | MechanicKind::Weather => {
                 if let Some(event_broadcaster_id) = optional_broadcaster_id {
-                    if not![mon![event_broadcaster_id].is_grounded()] {
-                        false
-                    } else {
-                        true
-                    }
+                    not![mon![event_broadcaster_id].is_grounded()]
                 } else {
                     true
                 }

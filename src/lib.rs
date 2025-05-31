@@ -13,13 +13,13 @@
 //!
 //! An Event is broadcasted during the turn-loop for two major reasons:
 //! 1. To test if there are mechanics that forbid the next action, or alter it. These events are associated with
-//!		functions of the form `on_try_<something>`. A reactive EventHandler may choose to disable this. Think moves like
-//!		`Embargo` which prevents item use.
+//!    functions of the form `on_try_<something>`. A reactive EventHandler may choose to disable this. Think moves like
+//!    `Embargo` which prevents item use.
 //! 2. To inform the entities in the battle that something specific happened. These events are associated with
-//!		functions of the form `on_<something>_happened`. A reactive EventHandler may choose to do something every time
-//!		that specific thing happens, or only if further conditions are satisfied. `Passho Berry` reacts to the Event
-//!		`on_move_used` when used by an opponent, but only if the move is water-type and super-effective, which it then checks
-//!		manually.
+//!    functions of the form `on_<something>_happened`. A reactive EventHandler may choose to do something every time
+//!    that specific thing happens, or only if further conditions are satisfied. `Passho Berry` reacts to the Event
+//!    `on_move_used` when used by an opponent, but only if the move is water-type and super-effective, which it then checks
+//!    manually.
 //!
 //! The EventHandler returns a value, which tells the broadcaster how to modify the logic being evaluated. With the Life Orb
 //! example, it returned a new value for the attack stat to be used when attacking. What kind of value an EventHandler returns

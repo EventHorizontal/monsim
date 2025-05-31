@@ -498,6 +498,14 @@ impl<M: MechanicID> EventListener<M, Nothing> for NullEventListener {}
 
 // EventHandlers --------------------------------------------------- //
 
+/// `B` is the ID of the broadcaster, that is, the monster that triggered the event. `B` is `Nothing`/`()` if the event
+/// was triggered by a non-monster, e.g. the weather.
+///
+/// `V` is the ID of the receiver, that is, the monster that is reacting to the event. `V` is
+/// `Nothing`/`()` if the event is being received by a non-monster, e.g. the weather.
+///
+/// `M` is the ID of the mechanic on the receiver that is reacting to the event. This could be, for
+/// example, the `AbilityID` of the ability (the mechanic) on the monster (the receiver).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventHandler<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster = MonsterID> {
     pub response: EventResponse<C, R, M, V, B>,

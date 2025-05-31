@@ -44,6 +44,8 @@ impl EventDispatcher {
 
         let mut relay = default;
         for event_handler in event_handlers.into_iter() {
+            #[cfg(feature = "debug")]
+            println!["\t└── (EventHandler for {mechanic} considered)", mechanic = event_handler.mechanic_name(battle)];
             if EventDispatcher::does_event_handler_pass_filters(
                 battle,
                 broadcaster.as_id(),
@@ -526,12 +528,17 @@ pub trait EventHandlerWithOwnerEmbedded<C, R, B>: DynClone {
     fn event_filtering_options(&self) -> EventFilteringOptions;
 
     fn mechanic_kind(&self) -> MechanicKind;
+
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &mut Battle) -> &'static str;
 }
 
 impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster> EventHandlerWithOwnerEmbedded<C, R, B>
     for EventHandlerWithOwner<C, R, M, V, B>
 {
     fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+        #[cfg(feature = "debug")]
+        println!["\t└── (EventHandler for {mechanic} activated)", mechanic = self.mechanic_name(battle)];
         (self.event_handler.response)(battle, broadcaster_id, self.receiver_id, self.mechanic_id, context, default)
     }
 
@@ -549,6 +556,11 @@ impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadca
 
     fn mechanic_kind(&self) -> MechanicKind {
         self.mechanic_kind
+    }
+
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &mut Battle) -> &'static str {
+        self.mechanic_id.mechanic_name(battle)
     }
 }
 
@@ -591,6 +603,8 @@ impl EventFilteringOptions {
 
 // Constraint Traits ------------------------------------------------------------ //
 
+// Broadcasters ---------------
+
 pub trait Broadcaster: Copy {
     fn as_id(&self) -> Option<MonsterID> {
         None
@@ -613,32 +627,87 @@ pub trait EventContext: Copy {
 
 impl EventContext for Nothing {}
 
+// Returnables -----------------
+
 pub trait EventReturnable: PartialEq + Copy {}
 
 impl<T: PartialEq + Copy> EventReturnable for T {}
 
 pub trait Receiver: Copy {
-    fn id(&self) -> Option<MonsterID>;
-}
-
-impl Receiver for Nothing {
     fn id(&self) -> Option<MonsterID> {
         None
     }
 }
+
+// Receivers -----------------
+
+impl Receiver for Nothing {}
+
 impl Receiver for MonsterID {
     fn id(&self) -> Option<MonsterID> {
         Some(*self)
     }
 }
 
-pub trait MechanicID: Copy {}
+// Mechanics ------------------
 
-impl MechanicID for Nothing {}
-impl MechanicID for AbilityID {}
-impl MechanicID for ItemID {}
-impl MechanicID for MonsterID {}
-impl MechanicID for MoveID {}
-impl MechanicID for PersistentStatusID {}
-impl MechanicID for TrapID {}
-impl MechanicID for VolatileStatusID {}
+pub trait MechanicID: Copy {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str;
+}
+
+impl MechanicID for Nothing {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, _: &Battle) -> &'static str {
+        "None"
+    }
+}
+
+impl MechanicID for AbilityID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.ability(*self).name()
+    }
+}
+
+impl MechanicID for ItemID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.item(*self).map_or("None", |i| i.name())
+    }
+}
+
+impl MechanicID for MonsterID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.monster(*self).name()
+    }
+}
+
+impl MechanicID for MoveID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.move_(*self).name()
+    }
+}
+
+impl MechanicID for PersistentStatusID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.persistent_status(*self).map_or("None", |ps| ps.name())
+    }
+}
+
+impl MechanicID for TrapID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.trap(*self).map_or("None", |t| t.name())
+    }
+}
+
+impl MechanicID for VolatileStatusID {
+    #[cfg(feature = "debug")]
+    fn mechanic_name(&self, battle: &Battle) -> &'static str {
+        battle.volatile_status(*self).map_or("None", |s| s.name())
+    }
+}

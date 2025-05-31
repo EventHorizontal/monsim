@@ -450,7 +450,7 @@ impl Ability {
 // This implementation doesn't really afford us anything extra, but if
 // Abilities become more complicated in the future, this will scale better.
 impl AbilityBuilder {
-    fn build(self, id: AbilityID) -> Ability {
+    pub(crate) fn build(self, id: AbilityID) -> Ability {
         Ability { id, species: self.species }
     }
 }

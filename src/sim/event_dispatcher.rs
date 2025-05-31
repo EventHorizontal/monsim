@@ -171,7 +171,7 @@ impl EventDispatcher {
                 let owned_event_handler = Box::new(EventHandlerWithOwner {
                     event_handler,
                     receiver_id: NOTHING,
-                    mechanic_id: NOTHING,
+                    mechanic_id: WeatherID,
                     activation_order: ActivationOrder {
                         priority: 0,
                         speed: 0,

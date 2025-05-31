@@ -14,6 +14,8 @@ pub const Dandyleo: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEn
     name: "Dandyleo",
     primary_type: Type::Grass,
     secondary_type: None,
+    // TODO: Not sure yet if we should have this field.
+    form_name: None,
     base_stats: StatSet::new(40, 45, 35, 65, 55, 70),
     allowed_abilities: (&Pickup, None, None),
     event_listener: &NullEventListener,
@@ -22,6 +24,7 @@ pub const Dandyleo: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEn
 pub const Squirecoal: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
     dex_number: 003,
     name: "Squirecoal",
+    form_name: None,
     primary_type: Type::Fire,
     secondary_type: None,
     allowed_abilities: (&Pickup, Some(&FlashFire), None),
@@ -32,6 +35,7 @@ pub const Squirecoal: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDex
 pub const Merkey: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
     dex_number: 009,
     name: "Merkey",
+    form_name: None,
     primary_type: Type::Water,
     secondary_type: Some(Type::Bug),
     allowed_abilities: (&Pickup, None, None),
@@ -43,29 +47,31 @@ pub const Zombler: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEnt
     dex_number: 045,
     name: "Zombler",
     primary_type: Type::Ghost,
+    form_name: None,
     secondary_type: Some(Type::Dark),
     allowed_abilities: (&Contrary, None, None),
     base_stats: StatSet::new(90, 50, 34, 60, 44, 71),
     event_listener: &NullEventListener,
 });
 
-pub const Monstrossive: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
+pub const MonstrossiveFullForm: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
     dex_number: 047,
     name: "Monstrossive",
+    form_name: Some("Full"),
     primary_type: Type::Ghost,
     secondary_type: None,
-    allowed_abilities: (&Contrary, None, None),
+    allowed_abilities: (&Zombie, None, None),
     base_stats: StatSet::new(100, 110, 90, 81, 20, 55),
     event_listener: &NullEventListener,
 });
 
-pub const MonstrossiveHungryForm: MonsterForm = MonsterForm {
+pub const MonstrossiveHungryForm: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
     dex_number: 047,
-    name: "Hungry Form",
+    name: "Monstrossive",
+    form_name: Some("Hungry"),
     primary_type: Type::Ghost,
     secondary_type: Some(Type::Dark),
-    ability: Some(&Zombie),
-    // TODO: ModifiableStatSet.
+    allowed_abilities: (&Zombie, None, None),
     base_stats: StatSet::new(100, 90, 10, 81, 20, 155),
     event_listener: &NullEventListener,
 });

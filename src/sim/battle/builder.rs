@@ -370,7 +370,6 @@ impl MonsterBuilder {
             volatile_statuses: MaxSizedVec::empty(),
             held_item,
             consumed_item: None,
-            modified_base_stats: None,
         }
     }
 }

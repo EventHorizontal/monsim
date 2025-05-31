@@ -27,8 +27,8 @@ fn main() -> MonsimResult<()> {
         .with_ally_team(
             MonsterTeam::spawn()
                 .with_monster(
-                    Monstrossive
-                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(Confusion.spawn()), Some(Spikes.spawn())))
+                    MonstrossiveFullForm
+                        .spawn((Ember.spawn(), Some(Growl.spawn()), Some(MorningSun.spawn()), Some(Spikes.spawn())))
                         .with_nickname("Clover")
                         .with_item(LifeOrb.spawn())
                         .with_hitpoints(120),

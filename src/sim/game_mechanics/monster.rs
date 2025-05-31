@@ -24,7 +24,6 @@ pub struct Monster {
 
     pub(crate) nickname: Option<&'static str>,
     pub(crate) effort_values: StatSet,
-    pub(crate) modified_base_stats: Option<StatSet>,
     pub(crate) current_health: u16,
     pub(crate) individual_values: StatSet,
     pub(crate) level: u16,
@@ -135,7 +134,7 @@ impl Monster {
         match stat {
             Stat::Hp => self.max_health(),
             _ => {
-                let base_stats = self.modified_base_stats.unwrap_or(self.species().base_stats);
+                let base_stats = self.species().base_stats;
                 // TODO: Division is supposed to be floating point here.
                 ((2 * base_stats[stat] + self.individual_values[stat] + (self.effort_values[stat] / 4)) * self.level) / 100 + 5
                 // * self.nature[stat]
@@ -284,8 +283,18 @@ impl Monster {
             }
         }
 
+        let yellow = "\u{001b}[33m";
+        let colorless = "\u{001b}[00m";
+
         out.push_str(&format![
-            "{} ({}) HP:[{}{}] {}/{} | Ability: {} | Position: {} | Persistent Status: {} | Volatile Statuses: {} | Held Item: {}\n",
+            r#"{} ({}) HP:[{}{}] {}/{}
+	Ability:           {yellow}{}{colorless}
+	Position:          {yellow}{}{colorless}
+	Persistent Status: {yellow}{}{colorless}
+	Volatile Statuses: {yellow}{}{colorless}
+	Held Item:         {yellow}{}{colorless}
+	Form:              {yellow}{} Form{colorless}
+"#,
             self.full_name(),
             self.id,
             health_bar_filled.green(),
@@ -295,8 +304,9 @@ impl Monster {
             self.ability.name(),
             self.board_position,
             persistent_status,
-            self.volatile_statuses,
-            held_item
+            self.volatile_statuses.print_as_comma_separated_list(),
+            held_item,
+            self.species.form_name.unwrap_or("Normal")
         ]);
         out
     }
@@ -306,6 +316,7 @@ impl Monster {
 pub struct MonsterSpecies {
     dex_number: u16,
     name: &'static str,
+    form_name: Option<&'static str>,
     primary_type: Type,
     secondary_type: Option<Type>,
     /// `(primary, secondary, hidden)`
@@ -337,15 +348,18 @@ impl MonsterSpecies {
         let MonsterDexEntry {
             dex_number,
             name,
+            form_name,
             primary_type,
             secondary_type,
             allowed_abilities,
             base_stats,
             event_listener,
         } = dex_entry;
+
         Self {
             dex_number,
             name,
+            form_name,
             primary_type,
             secondary_type,
             allowed_abilities,
@@ -387,6 +401,12 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
+    /// Returns `"Normal` if no then monster has no special form name
+    pub fn form_name(&self) -> &'static str {
+        self.form_name.unwrap_or("Normal")
+    }
+
+    #[inline(always)]
     pub fn base_stat(&self, stat: Stat) -> u16 {
         self.base_stats[stat]
     }
@@ -401,9 +421,10 @@ impl MonsterSpecies {
 pub struct MonsterDexEntry {
     pub dex_number: u16,
     pub name: &'static str,
+    pub form_name: Option<&'static str>,
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
-    /// `(primary, secondary, hidden)`
+    /// The order of abilities is `(primary, secondary, hidden)`
     pub allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     pub base_stats: StatSet,
     pub event_listener: &'static dyn EventListener<MonsterID>,

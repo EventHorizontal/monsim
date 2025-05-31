@@ -2,13 +2,15 @@ use monsim_macros::{mon, mov};
 use monsim_utils::{not, ClampedPercent, Count, Outcome, Percent, NOTHING};
 
 use crate::{
-    ability, dual_type_matchup,
+    dual_type_matchup,
     sim::event_dispatcher::{events::*, EventDispatcher},
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
-    ModifiableStat, MonsterForm, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext,
-    TeamID, Terrain, TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TeamID, Terrain,
+    TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
+
+use super::MonsterSpecies;
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
 /// `move_use_context.move_user_id` on all Monsters in `move_use_context.target_ids`
@@ -396,6 +398,7 @@ pub fn recover_health(battle: &mut Battle, target_id: MonsterID, amount: u16) ->
     actual_healed_amount
 }
 
+/// The Simulator simulates the activation of the Ability owned by the Monster given by `ability_activation_context.abilty_owner_id`.
 #[must_use]
 pub fn activate_ability<F>(battle: &mut Battle, ability_owner_id: MonsterID, on_activate_effect: F) -> Outcome
 where
@@ -661,13 +664,16 @@ pub fn clear_trap(battle: &mut Battle, trap_species: &'static TrapSpecies, which
     }
 }
 
-pub fn change_form(battle: &mut Battle, monster_id: MonsterID, to_which_form: &MonsterForm) -> Outcome {
-    if let Some(ability) = to_which_form.ability {
-        mon![mut monster_id].ability.species = ability;
-    }
-    mon![mut monster_id].primary_type = to_which_form.primary_type;
-    mon![mut monster_id].secondary_type = to_which_form.secondary_type;
-    mon![mut monster_id].modified_base_stats = Some(to_which_form.base_stats);
-    battle.queue_message(format!["{} changed to its {}!", mon![monster_id].name(), to_which_form.name]);
+// The Simulator simulates the monster given by `monster_id` changing form to a form given by `new_form`.
+pub fn change_form(battle: &mut Battle, monster_id: MonsterID, new_form: &'static MonsterSpecies) -> Outcome {
+    assert!(battle.monster(monster_id).species() == new_form);
+    mon![mut monster_id].primary_type = new_form.primary_type();
+    mon![mut monster_id].secondary_type = new_form.secondary_type();
+    mon![mut monster_id].species = new_form;
+    battle.queue_message(format![
+        "{name} changed to its {form} form!",
+        name = mon![monster_id].name(),
+        form = new_form.form_name()
+    ]);
     Outcome::Success(NOTHING)
 }

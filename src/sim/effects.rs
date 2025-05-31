@@ -390,7 +390,16 @@ pub fn deal_raw_damage(battle: &mut Battle, target_id: MonsterID, amount: u16) -
     actual_damage
 }
 
-/// The Simulator simulates the activation of the Ability given by owned by the Monster given by `ability_activation_context.abilty_owner_id`.
+// TODO: Should healing be able to fail?
+pub fn recover_health(battle: &mut Battle, target_id: MonsterID, amount: u16) -> u16 {
+    let original_health = mon![target_id].current_health();
+    mon![mut target_id].current_health = u16::min(original_health + amount, mon![target_id].max_health());
+    battle.queue_message(format!["{name} recovered {amount} HP!", name = mon![target_id].name()]);
+    let actual_healed_amount = mon![target_id].current_health() - original_health;
+    EventDispatcher::dispatch_notify_event(battle, OnHealthRecoveredEvent, target_id, NOTHING);
+    actual_healed_amount
+}
+
 #[must_use]
 pub fn activate_ability<F>(battle: &mut Battle, ability_owner_id: MonsterID, on_activate_effect: F) -> Outcome
 where

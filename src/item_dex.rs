@@ -19,7 +19,7 @@ pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
     name: "Life Orb",
     kind: ItemFlags::NONE,
     is_consumable: false,
-    event_listener: &NullEventListener,
+    event_listener: &LifeOrbEventListener,
 });
 
 struct LifeOrbEventListener;

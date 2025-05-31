@@ -59,24 +59,6 @@ pub const Monstrossive: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterD
     event_handlers: &MonstrossiveEventListener,
 });
 
-struct MonstrossiveEventListener;
-
-impl EventListener<MonsterID> for MonstrossiveEventListener {
-    fn on_damage_dealt_handler(&self) -> Option<EventHandler<Nothing, Nothing, MonsterID, MonsterID>> {
-        Some(EventHandler {
-            response: |battle, broadcaster_id, receiver_id, self_id, context, relay| {
-                if mon![self_id].current_health() <= mon![self_id].max_health() / 2 {
-                    effects::change_form(battle, self_id, &MonstrossiveHungryForm);
-                }
-            },
-            event_filtering_options: EventFilteringOptions {
-                only_if_broadcaster_is: PositionRelationFlags::SELF,
-                ..EventFilteringOptions::default()
-            },
-        })
-    }
-}
-
 pub const MonstrossiveHungryForm: MonsterForm = MonsterForm {
     dex_number: 047,
     name: "Hungry Form",

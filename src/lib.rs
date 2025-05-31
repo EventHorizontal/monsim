@@ -41,14 +41,10 @@ pub(crate) mod cli;
 #[cfg(feature = "debug")]
 pub mod debug;
 pub mod sim;
-#[cfg(feature = "monsim_tui")]
-pub(crate) mod tui;
 
 pub use cli::Cli;
 pub use sim::*;
 use std::error::Error;
-#[cfg(feature = "monsim_tui")]
-pub use tui::run as run_tui;
 
 pub use monsim_utils::{not, Nothing, NOTHING};
 

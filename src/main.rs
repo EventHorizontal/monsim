@@ -71,7 +71,7 @@ fn main() -> MonsimResult<()> {
 
     println!("{:?}", battle.format());
 
-    #[cfg(feature = "macro")]
+    #[cfg(feature = "macros")]
     let _battle2 = battle!(
         team: Opponents
         {

@@ -28,6 +28,7 @@ event_gen = ["monsim_macros/event_gen"]
 entity_fetchers = ["monsim_macros/entity_fetchers"]
 battle_builder = ["monsim_macros/battle_builder"]
 always_roll_high = []
+macros = ["monsim_macros/entity_fetchers", "monsim_macros/battle_builder", "monsim_macros/event_gen"]
 
 [profile.speed]
 inherits = "dev"

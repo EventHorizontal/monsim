@@ -28,7 +28,7 @@ macro_rules! debug_to_file {
         #[cfg(feature = "debug")]
         let debug_file_output_error = crate::debug::write_debug_to_file(format![
             "{location}: {name} = {value:#?}",
-            location: debug_location!(),
+            location = crate::source_code_location!(),
             name = stringify!($x),
             value = $x.clone()
         ]);

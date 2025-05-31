@@ -89,6 +89,27 @@ impl<T: PartialEq, const CAP: usize> MaxSizedVec<T, CAP> {
     }
 }
 
+impl<T: Display, const CAP: usize> MaxSizedVec<T, CAP> {
+    pub fn print_as_comma_separated_list(&self) -> String {
+        if !self.is_empty() {
+            let mut output = String::new();
+            // Iterate over all but one element
+            for i in 0..self.count() - 1 {
+                output += &format!["{}, ", self[i]];
+            }
+            output += &format![
+                "{}",
+                self.elements[self.count() - 1]
+                    .as_ref()
+                    .expect("Expected to get the last element as this branch is predicated on count being larger than zero")
+            ];
+            output
+        } else {
+            String::from("None")
+        }
+    }
+}
+
 impl<T, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn empty() -> Self {
         MaxSizedVec {

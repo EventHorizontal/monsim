@@ -103,6 +103,10 @@ impl VolatileStatus {
         }
     }
 
+    pub fn name(&self) -> &'static str {
+        self.species.name
+    }
+
     #[inline(always)]
     pub fn event_listener(&self) -> &'static dyn EventListener<VolatileStatusID> {
         self.species.event_listener()

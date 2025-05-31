@@ -20,15 +20,15 @@ impl EventDispatcher {
     /// `default` tells the resolver what value it should return if there are no event handlers, or the event handlers fall through.
     ///
     /// `short_circuit` is an optional value that, if returned by a handler in the chain, the resolution "short-circuits", or returns early.
-    pub fn dispatch_event<R: EventReturnable + 'static, C: EventContext + 'static, B: Broadcaster + 'static>(
+    pub fn dispatch_event<Ctx: EventContext + 'static, Rtn: EventReturnable + 'static, Bdc: Broadcaster + 'static>(
         battle: &mut Battle,
 
-        event: impl Event<C, R, B>,
-        broadcaster: B,
-        event_context: C,
-        default: R,
-        short_circuit: Option<R>,
-    ) -> R {
+        event: impl Event<Ctx, Rtn, Bdc>,
+        broadcaster: Bdc,
+        event_context: Ctx,
+        default: Rtn,
+        short_circuit: Option<Rtn>,
+    ) -> Rtn {
         #[cfg(feature = "debug")]
         println!["(Dispatching {})", event.name()];
 
@@ -66,10 +66,10 @@ impl EventDispatcher {
         relay
     }
 
-    pub fn collect_event_handlers_for<C: EventContext + 'static, R: EventReturnable + 'static, B: Broadcaster + 'static>(
+    pub fn collect_event_handlers_for<Ctx: EventContext + 'static, Rtn: EventReturnable + 'static, Bdc: Broadcaster + 'static>(
         battle: &Battle,
-        event: impl Event<C, R, B>,
-    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>> {
+        event: impl Event<Ctx, Rtn, Bdc>,
+    ) -> Vec<Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>> {
         let mut output_event_handlers = Vec::new();
         // Collect all the event handlers from each team
         for team in battle.teams().iter() {
@@ -87,7 +87,7 @@ impl EventDispatcher {
                         },
                         mechanic_id: monster.id,
                         mechanic_kind: MechanicKind::Monster,
-                    }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
+                    }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>
                 }) {
                     output_event_handlers.push(owned_event_handler);
                 }
@@ -104,7 +104,7 @@ impl EventDispatcher {
                             order: monster.ability.order(),
                         },
                         mechanic_kind: MechanicKind::Ability,
-                    }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
+                    }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>
                 }) {
                     output_event_handlers.push(owned_event_handler);
                 }
@@ -124,7 +124,7 @@ impl EventDispatcher {
                                 order: 0,
                             },
                             mechanic_kind: MechanicKind::VolatileStatus,
-                        }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>
+                        }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>
                     }) {
                         output_event_handlers.push(owned_event_handler)
                     }
@@ -143,7 +143,7 @@ impl EventDispatcher {
                             },
                             mechanic_id: persistent_status.id,
                             mechanic_kind: MechanicKind::PersistentStatus,
-                        }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                        }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>;
                         output_event_handlers.push(owned_event_handler);
                     }
                 }
@@ -161,7 +161,7 @@ impl EventDispatcher {
                             },
                             mechanic_id: held_item.id,
                             mechanic_kind: MechanicKind::Item,
-                        }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                        }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>;
                         output_event_handlers.push(owned_event_handler);
                     }
                 }
@@ -180,7 +180,7 @@ impl EventDispatcher {
                         order: 0,
                     },
                     mechanic_kind: MechanicKind::Weather,
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>;
                 output_event_handlers.push(owned_event_handler);
             }
         }
@@ -198,7 +198,7 @@ impl EventDispatcher {
                         order: 0,
                     },
                     mechanic_kind: MechanicKind::Terrain,
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>;
                 output_event_handlers.push(owned_event_handler);
             }
         }
@@ -216,7 +216,7 @@ impl EventDispatcher {
                         order: 0,
                     },
                     mechanic_kind: MechanicKind::Trap { team_id: trap.id.team_id },
-                }) as Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>>;
+                }) as Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>>;
                 output_event_handlers.push(owned_event_handler);
             }
         }
@@ -318,22 +318,22 @@ impl EventDispatcher {
         }
     }
 
-    pub fn dispatch_trial_event<C: EventContext + 'static, B: Broadcaster + 'static>(
+    pub fn dispatch_trial_event<Ctx: EventContext + 'static, Bdc: Broadcaster + 'static>(
         battle: &mut Battle,
 
-        event: impl Event<C, Outcome, B>,
-        broadcaster_id: B,
-        event_context: C,
+        event: impl Event<Ctx, Outcome, Bdc>,
+        broadcaster_id: Bdc,
+        event_context: Ctx,
     ) -> Outcome {
         EventDispatcher::dispatch_event(battle, event, broadcaster_id, event_context, Outcome::Success(NOTHING), Some(Outcome::Failure))
     }
 
-    pub fn dispatch_notify_event<C: EventContext + 'static, B: Broadcaster + 'static>(
+    pub fn dispatch_notify_event<Ctx: EventContext + 'static, Bdc: Broadcaster + 'static>(
         battle: &mut Battle,
 
-        event: impl Event<C, Nothing, B>,
-        broadcaster_id: B,
-        event_context: C,
+        event: impl Event<Ctx, Nothing, Bdc>,
+        broadcaster_id: Bdc,
+        event_context: Ctx,
     ) {
         EventDispatcher::dispatch_event(battle, event, broadcaster_id, event_context, NOTHING, None)
     }
@@ -341,150 +341,155 @@ impl EventDispatcher {
 
 // Event -------------------------------------------------- //
 
-pub trait Event<C: EventContext, R: EventReturnable, B: Broadcaster = MonsterID> {
+pub trait Event<Ctx: EventContext, Rtn: EventReturnable, Bdc: Broadcaster = MonsterID> {
     #[cfg(feature = "debug")]
     fn name(&self) -> &'static str;
-    fn get_event_handler_with_receiver<M: MechanicID>(&self, event_listener: &'static dyn EventListener<M>) -> Option<EventHandler<C, R, M, MonsterID, B>>;
-    fn get_event_handler_without_receiver<M: MechanicID>(
+
+    fn get_event_handler_with_receiver<Mch: MechanicID>(
         &self,
-        event_listener: &'static dyn EventListener<M, Nothing>,
-    ) -> Option<EventHandler<C, R, M, Nothing, B>>;
+        event_listener: &'static dyn EventListener<Mch>,
+    ) -> Option<EventHandler<Ctx, Rtn, Mch, MonsterID, Bdc>>;
+
+    fn get_event_handler_without_receiver<Mch: MechanicID>(
+        &self,
+        event_listener: &'static dyn EventListener<Mch, Nothing>,
+    ) -> Option<EventHandler<Ctx, Rtn, Mch, Nothing, Bdc>>;
 }
 
 // EventListener ------------------------------------------ //
 
-pub trait EventListener<M: MechanicID, V: Receiver = MonsterID> {
-    fn on_try_move_handler(&self) -> Option<EventHandler<MoveUseContext, Outcome, M, V>> {
+pub trait EventListener<Mch: MechanicID, Rcv: Receiver = MonsterID> {
+    fn on_try_move_handler(&self) -> Option<EventHandler<MoveUseContext, Outcome, Mch, Rcv>> {
         None
     }
 
-    fn on_move_used_handler(&self) -> Option<EventHandler<MoveUseContext, Nothing, M, V>> {
+    fn on_move_used_handler(&self) -> Option<EventHandler<MoveUseContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_damaging_move_used_handler(&self) -> Option<EventHandler<MoveUseContext, Nothing, M, V>> {
+    fn on_damaging_move_used_handler(&self) -> Option<EventHandler<MoveUseContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_status_move_used_handler(&self) -> Option<EventHandler<MoveUseContext, Nothing, M, V>> {
+    fn on_status_move_used_handler(&self) -> Option<EventHandler<MoveUseContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_accuracy_handler(&self) -> Option<EventHandler<MoveHitContext, u16, M, V>> {
+    fn on_calculate_accuracy_handler(&self) -> Option<EventHandler<MoveHitContext, u16, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_accuracy_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, M, V>> {
+    fn on_calculate_accuracy_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_evasion_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, M, V>> {
+    fn on_calculate_evasion_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_crit_stage_handler(&self) -> Option<EventHandler<MoveHitContext, u8, M, V>> {
+    fn on_calculate_crit_stage_handler(&self) -> Option<EventHandler<MoveHitContext, u8, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_crit_damage_multiplier_handler(&self) -> Option<EventHandler<MoveHitContext, Percent, M, V>> {
+    fn on_calculate_crit_damage_multiplier_handler(&self) -> Option<EventHandler<MoveHitContext, Percent, Mch, Rcv>> {
         None
     }
 
-    fn on_try_move_hit_handler(&self) -> Option<EventHandler<MoveHitContext, Outcome, M, V>> {
+    fn on_try_move_hit_handler(&self) -> Option<EventHandler<MoveHitContext, Outcome, Mch, Rcv>> {
         None
     }
 
-    fn on_move_hit_handler(&self) -> Option<EventHandler<MoveHitContext, Nothing, M, V>> {
+    fn on_move_hit_handler(&self) -> Option<EventHandler<MoveHitContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_attack_stat_handler(&self) -> Option<EventHandler<MoveHitContext, u16, M, V>> {
+    fn on_calculate_attack_stat_handler(&self) -> Option<EventHandler<MoveHitContext, u16, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_attack_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, M, V>> {
+    fn on_calculate_attack_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_defense_stat_handler(&self) -> Option<EventHandler<MoveHitContext, u16, M, V>> {
+    fn on_calculate_defense_stat_handler(&self) -> Option<EventHandler<MoveHitContext, u16, Mch, Rcv>> {
         None
     }
 
-    fn on_calculate_defense_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, M, V>> {
+    fn on_calculate_defense_stage_handler(&self) -> Option<EventHandler<MoveHitContext, i8, Mch, Rcv>> {
         None
     }
 
-    fn on_modify_damage_handler(&self) -> Option<EventHandler<MoveHitContext, u16, M, V>> {
+    fn on_modify_damage_handler(&self) -> Option<EventHandler<MoveHitContext, u16, Mch, Rcv>> {
         None
     }
 
     /// This event is triggered when the broadcaster receives damage.
-    fn on_damage_received_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    fn on_damage_received_handler(&self) -> Option<EventHandler<Nothing, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_health_recovered_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    fn on_health_recovered_handler(&self) -> Option<EventHandler<Nothing, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_try_activate_ability_handler(&self) -> Option<EventHandler<AbilityActivationContext, Outcome, M, V>> {
+    fn on_try_activate_ability_handler(&self) -> Option<EventHandler<AbilityActivationContext, Outcome, Mch, Rcv>> {
         None
     }
 
-    fn on_ability_activated_handler(&self) -> Option<EventHandler<AbilityActivationContext, Nothing, M, V>> {
+    fn on_ability_activated_handler(&self) -> Option<EventHandler<AbilityActivationContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_try_stat_change_handler(&self) -> Option<EventHandler<StatChangeContext, Outcome, M, V>> {
+    fn on_try_stat_change_handler(&self) -> Option<EventHandler<StatChangeContext, Outcome, Mch, Rcv>> {
         None
     }
 
-    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<StatChangeContext, i8, M, V>> {
+    fn on_modify_stat_change_handler(&self) -> Option<EventHandler<StatChangeContext, i8, Mch, Rcv>> {
         None
     }
 
-    fn on_stat_changed_handler(&self) -> Option<EventHandler<StatChangeContext, Nothing, M, V>> {
+    fn on_stat_changed_handler(&self) -> Option<EventHandler<StatChangeContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_try_inflict_volatile_status_handler(&self) -> Option<EventHandler<InflictVolatileStatusContext, Outcome, M, V>> {
+    fn on_try_inflict_volatile_status_handler(&self) -> Option<EventHandler<InflictVolatileStatusContext, Outcome, Mch, Rcv>> {
         None
     }
 
-    fn on_volatile_status_inflicted_handler(&self) -> Option<EventHandler<InflictVolatileStatusContext, Nothing, M, V>> {
+    fn on_volatile_status_inflicted_handler(&self) -> Option<EventHandler<InflictVolatileStatusContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_try_inflict_persistent_status_handler(&self) -> Option<EventHandler<InflictPersistentStatusContext, Outcome, M, V>> {
+    fn on_try_inflict_persistent_status_handler(&self) -> Option<EventHandler<InflictPersistentStatusContext, Outcome, Mch, Rcv>> {
         None
     }
 
-    fn on_persistent_status_inflicted_handler(&self) -> Option<EventHandler<InflictPersistentStatusContext, Nothing, M, V>> {
+    fn on_persistent_status_inflicted_handler(&self) -> Option<EventHandler<InflictPersistentStatusContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_try_use_held_item_handler(&self) -> Option<EventHandler<ItemUseContext, Outcome, M, V>> {
+    fn on_try_use_held_item_handler(&self) -> Option<EventHandler<ItemUseContext, Outcome, Mch, Rcv>> {
         None
     }
 
-    fn on_held_item_used_handler(&self) -> Option<EventHandler<ItemUseContext, Nothing, M, V>> {
+    fn on_held_item_used_handler(&self) -> Option<EventHandler<ItemUseContext, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_monster_enter_battle_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    fn on_monster_enter_battle_handler(&self) -> Option<EventHandler<Nothing, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_monster_exit_battle_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V>> {
+    fn on_monster_exit_battle_handler(&self) -> Option<EventHandler<Nothing, Nothing, Mch, Rcv>> {
         None
     }
 
-    fn on_turn_end_handler(&self) -> Option<EventHandler<Nothing, Nothing, M, V, Nothing>> {
+    fn on_turn_end_handler(&self) -> Option<EventHandler<Nothing, Nothing, Mch, Rcv, Nothing>> {
         None
     }
 }
 
-impl<T, U> Debug for dyn EventListener<T, U> {
+impl<Mch, Rcv> Debug for dyn EventListener<Mch, Rcv> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<Event Listener>")
     }
@@ -492,42 +497,42 @@ impl<T, U> Debug for dyn EventListener<T, U> {
 
 pub struct NullEventListener;
 
-impl<M: MechanicID> EventListener<M> for NullEventListener {}
+impl<Mch: MechanicID> EventListener<Mch> for NullEventListener {}
 
-impl<M: MechanicID> EventListener<M, Nothing> for NullEventListener {}
+impl<Mch: MechanicID> EventListener<Mch, Nothing> for NullEventListener {}
 
 // EventHandlers --------------------------------------------------- //
 
-/// `B` is the ID of the broadcaster, that is, the monster that triggered the event. `B` is `Nothing`/`()` if the event
+/// `Bdc` is the ID of the broadcaster, that is, the monster that triggered the event. `Bdc` is `Nothing`/`()` if the event
 /// was triggered by a non-monster, e.g. the weather.
 ///
-/// `V` is the ID of the receiver, that is, the monster that is reacting to the event. `V` is
+/// `Rcv` is the ID of the receiver, that is, the monster that is reacting to the event. `Rcv` is
 /// `Nothing`/`()` if the event is being received by a non-monster, e.g. the weather.
 ///
-/// `M` is the ID of the mechanic on the receiver that is reacting to the event. This could be, for
+/// `Mch` is the ID of the mechanic on the receiver that is reacting to the event. This could be, for
 /// example, the `AbilityID` of the ability (the mechanic) on the monster (the receiver).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EventHandler<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster = MonsterID> {
-    pub response: EventResponse<C, R, M, V, B>,
+pub struct EventHandler<Ctx: EventContext, Rtn: EventReturnable, Mch: MechanicID, Rcv: Receiver, Bdc: Broadcaster = MonsterID> {
+    pub response: EventResponse<Ctx, Rtn, Mch, Rcv, Bdc>,
     pub event_filtering_options: EventFilteringOptions,
 }
 
-/// `fn(battle: &mut BattleState, broadcaster_id: B, receiver_id: V, mechanic_id: M, context: C, relay: R) -> event_outcome: R`
-pub type EventResponse<C, R, M, V, B> = fn(&mut Battle, B, V, M, C, R) -> R;
+/// `fn(battle: &mut BattleState, broadcaster_id: Bdc, receiver_id: Rcv, mechanic_id: Mch, context: Ctx, relay: Rtn) -> event_outcome: Rtn`
+pub type EventResponse<Ctx, Rtn, Mch, Rcv, Bdc> = fn(&mut Battle, Bdc, Rcv, Mch, Ctx, Rtn) -> Rtn;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EventHandlerWithOwner<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster> {
-    pub event_handler: EventHandler<C, R, M, V, B>,
-    pub receiver_id: V,
-    pub mechanic_id: M,
+pub struct EventHandlerWithOwner<Ctx: EventContext, Rtn: EventReturnable, Mch: MechanicID, Rcv: Receiver, Bdc: Broadcaster> {
+    pub event_handler: EventHandler<Ctx, Rtn, Mch, Rcv, Bdc>,
+    pub receiver_id: Rcv,
+    pub mechanic_id: Mch,
     pub mechanic_kind: MechanicKind,
     pub activation_order: ActivationOrder,
 }
 
 use dyn_clone::DynClone;
 
-pub trait EventHandlerWithOwnerEmbedded<C, R, B>: DynClone {
-    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R;
+pub trait EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>: DynClone {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: Bdc, context: Ctx, default: Rtn) -> Rtn;
 
     fn activation_order(&self) -> ActivationOrder;
 
@@ -541,10 +546,10 @@ pub trait EventHandlerWithOwnerEmbedded<C, R, B>: DynClone {
     fn mechanic_name(&self, battle: &mut Battle) -> &'static str;
 }
 
-impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadcaster> EventHandlerWithOwnerEmbedded<C, R, B>
-    for EventHandlerWithOwner<C, R, M, V, B>
+impl<Ctx: EventContext, Rtn: EventReturnable, Mch: MechanicID, Rcv: Receiver, Bdc: Broadcaster> EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>
+    for EventHandlerWithOwner<Ctx, Rtn, Mch, Rcv, Bdc>
 {
-    fn respond(&self, battle: &mut Battle, broadcaster_id: B, context: C, default: R) -> R {
+    fn respond(&self, battle: &mut Battle, broadcaster_id: Bdc, context: Ctx, default: Rtn) -> Rtn {
         #[cfg(feature = "debug")]
         println!["\t└── (EventHandler for {mechanic} activated)", mechanic = self.mechanic_name(battle)];
         (self.event_handler.response)(battle, broadcaster_id, self.receiver_id, self.mechanic_id, context, default)
@@ -572,7 +577,7 @@ impl<C: EventContext, R: EventReturnable, M: MechanicID, V: Receiver, B: Broadca
     }
 }
 
-impl<R: EventReturnable, C: EventContext, B: Broadcaster> Clone for Box<dyn EventHandlerWithOwnerEmbedded<C, R, B>> {
+impl<Rtn: EventReturnable, Ctx: EventContext, Bdc: Broadcaster> Clone for Box<dyn EventHandlerWithOwnerEmbedded<Ctx, Rtn, Bdc>> {
     fn clone(&self) -> Self {
         dyn_clone::clone_box(&**self)
     }

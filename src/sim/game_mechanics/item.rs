@@ -72,6 +72,14 @@ impl ItemSpecies {
     }
 }
 
+impl PartialEq for ItemSpecies {
+    fn eq(&self, other: &Self) -> bool {
+        self.dex_number == other.dex_number
+    }
+}
+
+impl Eq for ItemSpecies {}
+
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct ItemFlags: u8 {

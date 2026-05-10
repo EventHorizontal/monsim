@@ -3,16 +3,15 @@ pub mod events;
 
 use core::fmt::Debug;
 
+pub use contexts::*;
 use monsim_macros::mon;
 use monsim_utils::{not, Nothing, Outcome, Percent, NOTHING};
 
+use super::{ordering::sort_by_activation_order, WeatherID};
 use crate::{
     status::{PersistentStatusID, VolatileStatusID},
     AbilityID, ActivationOrder, Battle, FieldPosition, ItemID, MechanicKind, MonsterID, MoveID, PositionRelationFlags, Stat, TeamID, TrapID,
 };
-pub use contexts::*;
-
-use super::{ordering::sort_by_activation_order, WeatherID};
 
 pub struct EventDispatcher;
 

@@ -79,6 +79,10 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn clear(&mut self) {
         *self = MaxSizedVec::empty();
     }
+
+    pub fn first(&self) -> Option<&T> {
+        self.elements[0].as_ref()
+    }
 }
 
 impl<T: PartialEq, const CAP: usize> MaxSizedVec<T, CAP> {

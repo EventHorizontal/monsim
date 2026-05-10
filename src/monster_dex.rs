@@ -22,7 +22,7 @@ pub const Dandyleo: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEn
 });
 
 pub const Squirecoal: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
-    dex_number: 003,
+    dex_number: 004,
     name: "Squirecoal",
     form_name: None,
     primary_type: Type::Fire,
@@ -33,7 +33,7 @@ pub const Squirecoal: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDex
 });
 
 pub const Merkey: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
-    dex_number: 009,
+    dex_number: 007,
     name: "Merkey",
     form_name: None,
     primary_type: Type::Water,

@@ -83,10 +83,11 @@ impl Eq for ItemSpecies {}
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct ItemFlags: u8 {
-        const _     = 0b1111_1111;
+        const _          = 0b1111_1111;
 
-        const NONE  = 0b0000_0000;
-        const BERRY = 0b0000_0001;
+        const NONE       = 0b0000_0000;
+        const BERRY      = 0b0000_0001;
+        const MEGA_STONE = 0b0000_0010;
     }
 }
 

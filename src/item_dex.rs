@@ -1,5 +1,7 @@
 #![allow(non_upper_case_globals, clippy::zero_prefixed_literal, unused)]
 
+#[cfg(feature = "debug")]
+use monsim::source_code_location;
 use monsim::{
     dual_type_matchup, effects, EventHandler, EventListener, ItemID, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, Nothing, NullEventListener, Type,
 };
@@ -10,9 +12,6 @@ use crate::{
     item::{ItemDexEntry, ItemFlags, ItemSpecies},
     EventFilteringOptions, PositionRelationFlags,
 };
-
-#[cfg(feature = "debug")]
-use monsim::source_code_location;
 
 pub const LifeOrb: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
     dex_number: 001,
@@ -108,3 +107,11 @@ impl EventListener<ItemID> for PasshoBerryEventListener {
         })
     }
 }
+
+pub const Spacimianite: ItemSpecies = ItemSpecies::from_dex_entry(ItemDexEntry {
+    dex_number: 003,
+    name: "Spacimianite",
+    kind: ItemFlags::MEGA_STONE,
+    is_consumable: false,
+    event_listener: &NullEventListener,
+});

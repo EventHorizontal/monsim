@@ -49,9 +49,10 @@ fn main() -> MonsimResult<()> {
         .with_opponent_team(
             MonsterTeam::spawn()
                 .with_monster(
-                    Merkey
+                    Spacimian
                         .spawn((Bubble.spawn(), Some(DoubleTeam.spawn()), Some(Swift.spawn()), Some(Confusion.spawn())))
-                        .with_nickname("Shrimp"),
+                        .with_nickname("Shrimp")
+                        .with_item(Spacimianite.spawn()),
                 )
                 .with_monster(
                     Zombler

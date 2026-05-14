@@ -1,16 +1,15 @@
 use monsim_macros::{mon, mov};
 use monsim_utils::{not, ClampedPercent, Count, Outcome, Percent, NOTHING};
 
+use super::MonsterSpecies;
 use crate::{
     dual_type_matchup,
     sim::event_dispatcher::{events::*, EventDispatcher},
     status::{PersistentStatus, VolatileStatus},
     AbilityActivationContext, Battle, BoardPosition, FieldPosition, InflictPersistentStatusContext, InflictVolatileStatusContext, ItemUseContext,
     ModifiableStat, MonsterID, MoveCategory, MoveHitContext, MoveUseContext, PersistentStatusSpecies, Stat, StatChangeContext, SwitchContext, TeamID, Terrain,
-    TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, VolatileStatusSpecies, Weather, WeatherSpecies,
+    TerrainSpecies, Trap, TrapSpecies, TypeEffectiveness, UltimateID, VolatileStatusSpecies, Weather, WeatherSpecies,
 };
-
-use super::MonsterSpecies;
 
 /// The Simulator simulates the use of a move `move_use_context.move_used_id` by
 /// `move_use_context.move_user_id` on all Monsters in `move_use_context.target_ids`
@@ -668,11 +667,20 @@ pub fn change_form(battle: &mut Battle, monster_id: MonsterID, new_form: &'stati
     assert!(battle.monster(monster_id).species() == new_form);
     mon![mut monster_id].primary_type = new_form.primary_type();
     mon![mut monster_id].secondary_type = new_form.secondary_type();
+    // HACK: We need to handle abilities properly here.
+    mon![mut monster_id].ability.species = new_form.allowed_abilities().0;
     mon![mut monster_id].species = new_form;
     battle.queue_message(format![
         "{name} changed to its {form} form!",
         name = mon![monster_id].name(),
         form = new_form.form_name()
     ]);
+    Outcome::Success(NOTHING)
+}
+// TODO: ultimate related events
+pub fn activate_ultimate(battle: &mut Battle, ultimate_id: UltimateID) -> Outcome {
+    let ultimate = battle.ultimate(ultimate_id).expect("We should have passed an ultimate id that exists.");
+    ultimate.activate(battle, ultimate_id.user_id);
+    battle.team_mut(ultimate_id.user_id.team_id).has_used_ultimate = true;
     Outcome::Success(NOTHING)
 }

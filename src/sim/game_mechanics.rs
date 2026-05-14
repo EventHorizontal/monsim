@@ -6,6 +6,7 @@ pub mod move_;
 pub mod status;
 pub mod team;
 pub(crate) mod types;
+pub mod ultimate;
 
 pub use ability::*;
 pub use environment::*;
@@ -14,6 +15,7 @@ pub use monster::*;
 pub use move_::*;
 pub use team::*;
 pub use types::*;
+pub use ultimate::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MechanicKind {

@@ -1,4 +1,4 @@
-use monsim_utils::{Ally, Count, MaxSizedVec, Opponent};
+use monsim_utils::{Ally, Count, MaxSizedVec, Opponent, Outcome};
 use tap::Pipe;
 
 use crate::{
@@ -8,9 +8,9 @@ use crate::{
         game_mechanics::{Ability, AbilitySpecies, MonsterNature, MonsterSpecies, MoveSpecies, StatModifierSet, StatSet},
         targetting::{BoardPosition, FieldPosition},
     },
-    AbilityID, Battle, Environment, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveID, MoveNumber, PerTeam, Stat, TeamID,
-    Terrain, TerrainSpecies, Weather, WeatherSpecies, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2, OPPONENT_3, OPPONENT_4,
-    OPPONENT_5, OPPONENT_6,
+    AbilityID, Battle, Environment, Item, ItemID, ItemSpecies, Monster, MonsterID, MonsterTeam, Move, MoveCategory, MoveHitContext, MoveID, MoveNumber,
+    PerTeam, Stat, TeamID, Terrain, TerrainSpecies, Weather, WeatherSpecies, ALLY_1, ALLY_2, ALLY_3, ALLY_4, ALLY_5, ALLY_6, OPPONENT_1, OPPONENT_2,
+    OPPONENT_3, OPPONENT_4, OPPONENT_5, OPPONENT_6,
 };
 
 /*
@@ -351,6 +351,9 @@ impl MonsterBuilder {
         let held_item = self.item.map(|item| item.build(ItemID { item_holder_id: monster_id }));
 
         let max_health = Monster::calculate_max_health(self.species.base_stat(Stat::Hp), 31, 252, level);
+
+        let available_ultimates = MaxSizedVec::from_vec(self.species.available_ultimates().into_iter().flatten().collect::<Vec<_>>());
+
         Monster {
             id: monster_id,
             species: self.species,
@@ -370,6 +373,7 @@ impl MonsterBuilder {
             volatile_statuses: MaxSizedVec::empty(),
             held_item,
             consumed_item: None,
+            available_ultimates,
         }
     }
 }
@@ -412,7 +416,11 @@ impl MoveBuilder {
     fn build(self, move_id: MoveID) -> Move {
         let species = self.species;
         // FEATURE: When the engine is more mature, we'd like to make warnings like this toggleable.
-        if species.category() == MoveCategory::Status && species.on_hit_effect() as usize == effects::deal_calculated_damage as usize {
+        let effect_is_default_calculated_damage = {
+            let deal_calculated_damage_effect: fn(&mut Battle, MoveHitContext) -> Outcome = effects::deal_calculated_damage;
+            std::ptr::fn_addr_eq(species.on_hit_effect(), deal_calculated_damage_effect)
+        };
+        if species.category() == MoveCategory::Status && effect_is_default_calculated_damage {
             println!("\n Warning: The user created move {} has been given the category \"Status\" but deals damage only. Consider changing its category to Physical or Special. If this is intentional, ignore this message.", species.name())
         }
         Move {

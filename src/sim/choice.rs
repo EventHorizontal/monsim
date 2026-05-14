@@ -2,9 +2,8 @@ use std::ops::{Index, IndexMut};
 
 use monsim_utils::MaxSizedVec;
 
-use crate::{ActivationOrder, Battle, MonsterID};
-
 use super::{game_mechanics::MoveID, targetting::FieldPosition};
+use crate::{ActivationOrder, Battle, MonsterID, UltimateID};
 
 pub trait SimulatorUi {
     fn update_battle_status(&self, battle: &mut Battle);
@@ -45,6 +44,10 @@ pub enum PartiallySpecifiedActionChoice {
         switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>,
         activation_order: ActivationOrder,
     },
+    Ultimate {
+        ultimate_id: UltimateID,
+        activation_order: ActivationOrder,
+    },
     CancelSimulation,
 }
 
@@ -62,12 +65,17 @@ pub enum FullySpecifiedActionChoice {
         benched_monster_id: MonsterID,
         activation_order: ActivationOrder,
     },
+    Ultimate {
+        ultimate_id: UltimateID,
+        activation_order: ActivationOrder,
+    },
 }
 impl FullySpecifiedActionChoice {
     pub(crate) fn activation_order(&self) -> ActivationOrder {
         match *self {
             FullySpecifiedActionChoice::Move { activation_order, .. } => activation_order,
             FullySpecifiedActionChoice::SwitchOut { activation_order, .. } => activation_order,
+            FullySpecifiedActionChoice::Ultimate { activation_order, .. } => activation_order,
         }
     }
 
@@ -75,24 +83,32 @@ impl FullySpecifiedActionChoice {
         match *self {
             FullySpecifiedActionChoice::Move { move_id, .. } => move_id.owner_id,
             FullySpecifiedActionChoice::SwitchOut { active_monster_id, .. } => active_monster_id,
+            FullySpecifiedActionChoice::Ultimate { ultimate_id, .. } => ultimate_id.user_id,
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AvailableChoices {
-    choices: MaxSizedVec<PartiallySpecifiedActionChoice, 5>,
+    choices: MaxSizedVec<PartiallySpecifiedActionChoice, 6>,
     switch_index: usize,
     iter_cursor: usize,
     // TODO: more actions will be added when they are added to the engine.
 }
 
 impl AvailableChoices {
-    pub fn new(move_choices: Vec<PartiallySpecifiedActionChoice>, switch_out_choice: Option<PartiallySpecifiedActionChoice>) -> Self {
+    pub fn new(
+        move_choices: Vec<PartiallySpecifiedActionChoice>,
+        switch_out_choice: Option<PartiallySpecifiedActionChoice>,
+        ultimate_choice: Option<PartiallySpecifiedActionChoice>,
+    ) -> Self {
         let move_count = move_choices.len();
         let mut choices = MaxSizedVec::from_vec(move_choices);
         if let Some(switch_out) = switch_out_choice {
             choices.push(switch_out);
+        };
+        if let Some(ultimate) = ultimate_choice {
+            choices.push(ultimate)
         };
         Self {
             choices,
@@ -109,7 +125,11 @@ impl AvailableChoices {
         self.choices.get(self.switch_index)
     }
 
-    pub fn choices(&self) -> &MaxSizedVec<PartiallySpecifiedActionChoice, 5> {
+    pub fn ultimate_choice(&self) -> Option<&PartiallySpecifiedActionChoice> {
+        self.choices.get(self.switch_index + 1)
+    }
+
+    pub fn choices(&self) -> &MaxSizedVec<PartiallySpecifiedActionChoice, 6> {
         &self.choices
     }
 

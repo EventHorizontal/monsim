@@ -1,17 +1,22 @@
-use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
     fmt::{Debug, Display, Formatter},
     ops::{Index, IndexMut},
 };
 
+use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
+
 use super::Monster;
-use crate::sim::{targetting::BoardPosition, MonsterNumber};
+use crate::{
+    sim::{targetting::BoardPosition, MonsterNumber},
+    MonsterID,
+};
 
 const MAX_BATTLERS_PER_TEAM: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonsterTeam {
     pub id: TeamID,
+    pub(crate) has_used_ultimate: bool,
     monsters: MaxSizedVec<Monster, 6>,
 }
 
@@ -34,7 +39,11 @@ impl MonsterTeam {
         assert!(not![monsters.is_empty()], "There is not a single monster in the team.");
         assert!(monsters.len() <= MAX_BATTLERS_PER_TEAM);
         let monsters = MaxSizedVec::from_vec(monsters);
-        MonsterTeam { id, monsters }
+        MonsterTeam {
+            id,
+            has_used_ultimate: false,
+            monsters,
+        }
     }
 
     pub fn active_monsters(&self) -> Vec<&Monster> {
@@ -49,6 +58,10 @@ impl MonsterTeam {
 
     pub fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         self.monsters.iter_mut()
+    }
+
+    pub fn monster_ids(&self) -> impl Iterator<Item = MonsterID> {
+        self.monsters.iter().map(|monster| monster.id).collect::<Vec<_>>().into_iter()
     }
 
     pub(crate) fn team_status_string(&self) -> String {

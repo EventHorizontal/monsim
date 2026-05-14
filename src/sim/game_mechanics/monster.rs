@@ -14,7 +14,7 @@ use crate::{
         Type,
     },
     status::{PersistentStatus, VolatileStatus, VolatileStatusSpecies},
-    AbilitySpecies, Item, Move,
+    ultimate, AbilitySpecies, Item, Move, Ultimate, UltimateKind,
 };
 
 #[derive(Debug, Clone)]
@@ -39,6 +39,8 @@ pub struct Monster {
     pub(crate) volatile_statuses: MaxSizedVec<VolatileStatus, 16>,
     pub(crate) held_item: Option<Item>,
     pub(crate) consumed_item: Option<Item>,
+
+    pub(crate) available_ultimates: MaxSizedVec<&'static dyn Ultimate, 4>,
 }
 
 impl PartialEq for Monster {
@@ -241,6 +243,10 @@ impl Monster {
                 true
             }
     }
+
+    pub(crate) fn available_ultimates(&self) -> &MaxSizedVec<&'static dyn Ultimate, 4> {
+        &self.available_ultimates
+    }
 }
 
 impl Monster {
@@ -294,6 +300,7 @@ impl Monster {
 	Volatile Statuses: {yellow}{}{colorless}
 	Held Item:         {yellow}{}{colorless}
 	Form:              {yellow}{} Form{colorless}
+	Ultimate:          {yellow}{}{colorless}
 "#,
             self.full_name(),
             self.id,
@@ -306,7 +313,8 @@ impl Monster {
             persistent_status,
             self.volatile_statuses.print_as_comma_separated_list(),
             held_item,
-            self.species.form_name.unwrap_or("Normal")
+            self.species.form_name.unwrap_or("Normal"),
+            self.available_ultimates() // .fold(String::new(), |ult_list, next_ult| format!["{ult_list}, {next_ult}"])
         ]);
         out
     }
@@ -323,6 +331,8 @@ pub struct MonsterSpecies {
     allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     base_stats: StatSet,
     event_listener: &'static dyn EventListener<MonsterID>,
+
+    available_ultimates: [Option<&'static dyn Ultimate>; ultimate::MAX_ULTIMATES_PER_MONSTER],
 }
 
 impl Debug for MonsterSpecies {
@@ -354,6 +364,7 @@ impl MonsterSpecies {
             allowed_abilities,
             base_stats,
             event_listener,
+            available_ultimates,
         } = dex_entry;
 
         Self {
@@ -365,6 +376,7 @@ impl MonsterSpecies {
             allowed_abilities,
             base_stats,
             event_listener,
+            available_ultimates,
         }
     }
 
@@ -415,6 +427,17 @@ impl MonsterSpecies {
     pub fn event_listener(&self) -> &'static dyn EventListener<MonsterID> {
         self.event_listener
     }
+
+    pub(crate) fn ultimate(&self, ultimate_kind: UltimateKind) -> Option<&dyn Ultimate> {
+        self.available_ultimates()
+            .into_iter()
+            .find(|it| if let Some(ult) = it { ult.kind() == ultimate_kind } else { false })
+            .expect("")
+    }
+
+    pub(crate) fn available_ultimates(&self) -> MaxSizedVec<Option<&dyn Ultimate>, 4> {
+        MaxSizedVec::from_slice(self.available_ultimates.as_slice())
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -428,6 +451,7 @@ pub struct MonsterDexEntry {
     pub allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
     pub base_stats: StatSet,
     pub event_listener: &'static dyn EventListener<MonsterID>,
+    pub available_ultimates: [Option<&'static dyn Ultimate>; ultimate::MAX_ULTIMATES_PER_MONSTER],
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]

@@ -150,6 +150,9 @@ impl BattleSimulator {
                             activation_order,
                         }
                     }
+                    PartiallySpecifiedActionChoice::Ultimate { ultimate_id, activation_order } => {
+                        FullySpecifiedActionChoice::Ultimate { ultimate_id, activation_order }
+                    }
                     PartiallySpecifiedActionChoice::CancelSimulation => {
                         break 'turn_loop;
                     }
@@ -180,6 +183,8 @@ impl BattleSimulator {
                             self.battle.monster(active_monster_id).name(),
                             self.battle.monster(benched_monster_id).name()
                         ],
+                        FullySpecifiedActionChoice::Ultimate { ultimate_id, .. } =>
+                            format!["{} used it's ultimate", self.battle.monster(ultimate_id.user_id).name()],
                     }
                 ];
                 // If the actor fainted we move on to the next action..
@@ -213,6 +218,11 @@ impl BattleSimulator {
                         ..
                     } => {
                         effects::switch_monsters(&mut self.battle, SwitchContext::new(active_monster_id, benched_monster_id));
+                    }
+                    FullySpecifiedActionChoice::Ultimate { ultimate_id, .. } => {
+                        // TODO: forgot that you can click a move after you mega evolve xD need to fix that. Right
+                        // now all you can do is click ult and that's it.
+                        effects::activate_ultimate(&mut self.battle, ultimate_id);
                     }
                 }
 

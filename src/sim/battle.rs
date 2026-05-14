@@ -1,25 +1,25 @@
 pub(super) mod builder;
 mod message_log;
 
-use crate::{
-    sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    AbilityID, Environment, Item, ItemID, PartiallySpecifiedActionChoice, Trap, TrapID,
-};
-use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 use std::{
     fmt::Display,
     ops::{Deref, DerefMut, RangeInclusive},
 };
 
-use self::builder::BattleFormat;
+use message_log::MessageLog;
+use monsim_utils::{not, Ally, MaxSizedVec, Opponent};
 
+use self::builder::BattleFormat;
 use super::{
     prng::Prng,
     status::{PersistentStatus, PersistentStatusID, VolatileStatus, VolatileStatusID},
     targetting::{BoardPosition, FieldPosition},
-    PerTeam, TeamID,
+    PerTeam, TeamID, UltimateID,
 };
-use message_log::MessageLog;
+use crate::{
+    sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
+    ultimate, AbilityID, Environment, Item, ItemID, PartiallySpecifiedActionChoice, Trap, TrapID, Ultimate,
+};
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -172,6 +172,14 @@ impl Battle {
     /// is **inclusive** of both end points.
     pub fn roll_random_number_in_range(&mut self, range: RangeInclusive<u16>) -> u16 {
         self.prng.roll_random_number_in_range(range)
+    }
+
+    pub(crate) fn ultimate(&self, ultimate_id: UltimateID) -> Option<&'static dyn Ultimate> {
+        self.monster(ultimate_id.user_id)
+            .available_ultimates
+            .iter()
+            .find(|item| item.kind() == ultimate_id.kind)
+            .copied()
     }
 }
 
@@ -410,7 +418,31 @@ impl BattleState {
             None
         };
 
-        AvailableChoices::new(move_actions, switch_action)
+        // Ultimate choice
+        // TODO: ultimate ruleset validation
+        let ultimate_action = if self.team(monster.id.team_id).has_used_ultimate {
+            None
+        } else {
+            monster
+                .available_ultimates()
+                .first()
+                .map(|_| {
+                    Some(PartiallySpecifiedActionChoice::Ultimate {
+                        ultimate_id: UltimateID {
+                            user_id: monster.id,
+                            kind: ultimate::ULTIMATE_KIND_MEGA,
+                        },
+                        activation_order: ActivationOrder {
+                            priority: 8,
+                            speed: monster.stat(Stat::Speed),
+                            order: 0,
+                        },
+                    })
+                })
+                .flatten()
+        };
+
+        AvailableChoices::new(move_actions, switch_action, ultimate_action)
     }
 
     /// Returns an array of options where all the `Some` variants are at the beginning.

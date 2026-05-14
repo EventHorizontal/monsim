@@ -1,10 +1,12 @@
+use std::io::{stdout, Write};
+
+use monsim_macros::{mon, mov};
+use monsim_utils::MaxSizedVec;
+
 use crate::{
     sim::{AvailableChoices, Battle, PartiallySpecifiedActionChoice},
     FieldPosition, MonsterID, MoveID, SimulatorUi,
 };
-use monsim_macros::{mon, mov};
-use monsim_utils::MaxSizedVec;
-use std::io::{stdout, Write};
 
 // TODO: We might eventually want to handle io::errors somehow?
 pub struct Cli;
@@ -74,6 +76,9 @@ impl SimulatorUi for Cli {
             let display_text = match available_choice {
                 PartiallySpecifiedActionChoice::Move { move_id, .. } => format!["Use {}", mov![move_id].name()],
                 PartiallySpecifiedActionChoice::SwitchOut { .. } => String::from("Switch Out"),
+                PartiallySpecifiedActionChoice::Ultimate { ultimate_id, .. } => {
+                    battle.ultimate(ultimate_id).expect("Ultimate should be an existant one.").call_to_action()
+                }
                 PartiallySpecifiedActionChoice::CancelSimulation => String::from("Exit Monsim"),
             };
             _ = writeln![locked_stdout, "[{}] {}", index + 1, display_text];

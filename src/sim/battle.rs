@@ -244,6 +244,11 @@ impl BattleState {
         ally_team.monsters().chain(opponent_team.monsters())
     }
 
+    pub fn monster_ids(&self) -> impl Iterator<Item = MonsterID> {
+        let (ally_team, opponent_team) = self.teams.unwrap_ref();
+        ally_team.monster_ids().chain(opponent_team.monster_ids())
+    }
+
     /// The iterator yields ally monsters first, then yields opponent monsters, in id order.
     pub(crate) fn monsters_mut(&mut self) -> impl Iterator<Item = &mut Monster> {
         let (ally_team, opponent_team) = self.teams.unwrap_mut();

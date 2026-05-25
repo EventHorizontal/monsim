@@ -290,31 +290,43 @@ impl Monster {
         }
 
         let yellow = "\u{001b}[33m";
+        let blue = "\u{001b}[34m";
         let colorless = "\u{001b}[00m";
 
         out.push_str(&format![
-            r#"{} ({}) HP:[{}{}] {}/{}
-	Ability:           {yellow}{}{colorless}
-	Position:          {yellow}{}{colorless}
-	Persistent Status: {yellow}{}{colorless}
-	Volatile Statuses: {yellow}{}{colorless}
-	Held Item:         {yellow}{}{colorless}
-	Form:              {yellow}{} Form{colorless}
-	Ultimate:          {yellow}{}{colorless}
+            r#"{name} ({id}) HP:[{filled_bar}{empty_bar}] {current_health}/{max_health}
+	Stats:             Att {blue}{att}{colorless} ({att_stages}); Def {blue}{def}{colorless} ({def_stages}); SpA {blue}{spa}{colorless} ({spa_stages}); Spd {blue}{spd}{colorless} ({spd_stages}) ({spd_stages}); Spe {blue}{spe}{colorless} ({spe_stages});
+	Ability:           {yellow}{ability}{colorless}
+	Position:          {yellow}{position}{colorless}
+	Persistent Status: {yellow}{status}{colorless}
+	Volatile Statuses: {yellow}{volatile_status}{colorless}
+	Held Item:         {yellow}{held_item}{colorless}
+	Form:              {yellow}{form_name} Form{colorless}
+	Ultimate:          {yellow}{available_ultimates}{colorless}
 "#,
-            self.full_name(),
-            self.id,
-            health_bar_filled.green(),
-            health_bar_empty.red(),
-            self.current_health,
-            self.max_health(),
-            self.ability.name(),
-            self.board_position,
-            persistent_status,
-            self.volatile_statuses.print_as_comma_separated_list(),
-            held_item,
-            self.species.form_name.unwrap_or("Normal"),
-            self.available_ultimates() // .fold(String::new(), |ult_list, next_ult| format!["{ult_list}, {next_ult}"])
+            name = self.full_name(),
+            id = self.id,
+            filled_bar = health_bar_filled.green(),
+            empty_bar = health_bar_empty.red(),
+            current_health = self.current_health,
+            max_health = self.max_health(),
+            att = self.stat(Stat::PhysicalAttack) * ModifiableStat::stat_stage_multiplier(self.stat_modifier(ModifiableStat::PhysicalAttack)),
+            att_stages = self.stat_modifier(ModifiableStat::PhysicalAttack),
+            def = self.stat(Stat::PhysicalDefense) * ModifiableStat::stat_stage_multiplier(self.stat_modifier(ModifiableStat::PhysicalDefense)),
+            def_stages = self.stat_modifier(ModifiableStat::PhysicalDefense),
+            spa = self.stat(Stat::SpecialAttack) * ModifiableStat::stat_stage_multiplier(self.stat_modifier(ModifiableStat::SpecialAttack)),
+            spa_stages = self.stat_modifier(ModifiableStat::SpecialAttack),
+            spd = self.stat(Stat::SpecialDefense) * ModifiableStat::stat_stage_multiplier(self.stat_modifier(ModifiableStat::SpecialDefense)),
+            spd_stages = self.stat_modifier(ModifiableStat::SpecialDefense),
+            spe = self.stat(Stat::Speed) * ModifiableStat::stat_stage_multiplier(self.stat_modifier(ModifiableStat::Speed)),
+            spe_stages = self.stat_modifier(ModifiableStat::Speed),
+            ability = self.ability.name(),
+            position = self.board_position,
+            status = persistent_status,
+            volatile_status = self.volatile_statuses.print_as_comma_separated_list(),
+            held_item = held_item,
+            form_name = self.species.form_name.unwrap_or("Normal"),
+            available_ultimates = self.available_ultimates()
         ]);
         out
     }

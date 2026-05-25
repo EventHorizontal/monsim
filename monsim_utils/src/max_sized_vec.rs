@@ -23,6 +23,12 @@ impl<T: Display, const CAP: usize> Display for MaxSizedVec<T, CAP> {
     }
 }
 
+impl<T, const CAP: usize> FromIterator<T> for MaxSizedVec<T, CAP> {
+    fn from_iter<U: IntoIterator<Item = T>>(iter: U) -> Self {
+        MaxSizedVec::from_vec(iter.into_iter().collect())
+    }
+}
+
 impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn from_slice(elements: &[T]) -> Self {
         let count = elements.len();

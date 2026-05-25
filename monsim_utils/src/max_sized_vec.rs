@@ -89,6 +89,12 @@ impl<T: Clone, const CAP: usize> MaxSizedVec<T, CAP> {
     pub fn first(&self) -> Option<&T> {
         self.elements[0].as_ref()
     }
+
+    pub fn pop_front(&mut self) -> T {
+        let element = self.first().expect("Expected non-empty vec").clone();
+        self.remove(0);
+        element
+    }
 }
 
 impl<T: PartialEq, const CAP: usize> MaxSizedVec<T, CAP> {
@@ -251,6 +257,14 @@ impl<T, const CAP: usize> MaxSizedVec<T, CAP> {
 
     pub fn get(&self, index: usize) -> Option<&T> {
         self.elements[index].as_ref()
+    }
+
+    pub fn as_slice(&self) -> &[Option<T>] {
+        &self.elements[..self.count]
+    }
+
+    pub fn as_mut_slice(&mut self) -> &mut [Option<T>] {
+        &mut self.elements[..self.count]
     }
 }
 

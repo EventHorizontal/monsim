@@ -87,13 +87,12 @@ impl BattleSimulator {
                     .available_choices_for_monster(self.battle.monster(active_monster_id), &monsters_selected_for_switch);
                 let partially_specified_action_choice =
                     ui.prompt_user_to_select_action_for_monster(&mut self.battle, active_monster_id, available_choices_for_monster);
-                let fully_specified_action_choice = match partially_specified_action_choice {
-                    PartiallySpecifiedActionChoice::Move {
-                        move_id,
+                match partially_specified_action_choice {
+                    PartiallySpecifiedActionChoice::Move(MoveChoice {
+                        id: move_id,
                         possible_target_positions,
                         activation_order,
-                        ..
-                    } => {
+                    }) => {
                         let move_targets_all = self
                             .battle
                             .move_(move_id)
@@ -106,8 +105,9 @@ impl BattleSimulator {
                             .contains(PositionRelationFlags::ANY);
 
                         // The engine autopicks if the move targets all possible targets...
-                        if move_targets_all {
+                        let finalised_move_choice = if move_targets_all {
                             let target_positions = possible_target_positions;
+
                             FullySpecifiedActionChoice::Move {
                                 move_id,
                                 target_positions,
@@ -128,8 +128,11 @@ impl BattleSimulator {
                             }
                         } else {
                             unreachable!("Expected move to target either ALL or ANY target(s).")
-                        }
+                        };
+
+                        action_schedule.push(finalised_move_choice);
                     }
+
                     PartiallySpecifiedActionChoice::SwitchOut {
                         active_monster_id,
                         switchable_benched_monster_ids,
@@ -144,20 +147,75 @@ impl BattleSimulator {
                         let selected_benched_monster_id =
                             ui.prompt_user_to_select_benched_monster_to_switch_in(&mut self.battle, active_monster_position, switchable_benched_monster_ids);
                         monsters_selected_for_switch.push(selected_benched_monster_id);
-                        FullySpecifiedActionChoice::SwitchOut {
+                        let finalised_switch_choice = FullySpecifiedActionChoice::SwitchOut {
                             active_monster_id,
                             benched_monster_id: selected_benched_monster_id,
                             activation_order,
-                        }
+                        };
+                        action_schedule.push(finalised_switch_choice);
                     }
+
                     PartiallySpecifiedActionChoice::Ultimate { ultimate_id, activation_order } => {
-                        FullySpecifiedActionChoice::Ultimate { ultimate_id, activation_order }
+                        {
+                            let final_ultimate_choice = FullySpecifiedActionChoice::Ultimate { ultimate_id, activation_order };
+                            action_schedule.push(final_ultimate_choice);
+                        }
+
+                        {
+                            let move_choice = ui.prompt_user_to_select_move(
+                                &mut self.battle,
+                                ultimate_id.user_id,
+                                available_choices_for_monster.move_choices().into_iter().collect::<MaxSizedVec<_, 4>>(),
+                            );
+
+                            let move_targets_all = self
+                                .battle
+                                .move_(move_choice.id)
+                                .allowed_target_position_relation_flags()
+                                .contains(PositionRelationFlags::ALL);
+                            let move_targets_any = self
+                                .battle
+                                .move_(move_choice.id)
+                                .allowed_target_position_relation_flags()
+                                .contains(PositionRelationFlags::ANY);
+                            let MoveChoice {
+                                id: move_id,
+                                possible_target_positions,
+                                activation_order,
+                            } = *move_choice;
+                            // The engine autopicks if the move targets all possible targets...
+                            let finalised_move_choice = if move_targets_all {
+                                let target_positions = possible_target_positions;
+                                FullySpecifiedActionChoice::Move {
+                                    move_id,
+                                    target_positions,
+                                    activation_order,
+                                }
+                            } else if move_targets_any {
+                                // ...and if the move targets any possible target and there is only one possible target.
+                                let chosen_target_position = (if possible_target_positions.count() == 1 {
+                                    possible_target_positions[0]
+                                } else {
+                                    ui.prompt_user_to_select_target_position(&mut self.battle, move_id, possible_target_positions)
+                                })
+                                .pipe(|chosen_target_position| MaxSizedVec::from_slice(&[chosen_target_position]));
+                                FullySpecifiedActionChoice::Move {
+                                    move_id,
+                                    target_positions: chosen_target_position,
+                                    activation_order,
+                                }
+                            } else {
+                                unreachable!("Expected move to target either ALL or ANY target(s).")
+                            };
+
+                            action_schedule.push(finalised_move_choice)
+                        };
                     }
+
                     PartiallySpecifiedActionChoice::CancelSimulation => {
                         break 'turn_loop;
                     }
                 };
-                action_schedule.push(fully_specified_action_choice);
             }
 
             // Action Phase --------------------------------------------- //

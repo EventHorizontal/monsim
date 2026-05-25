@@ -18,7 +18,7 @@ use super::{
 };
 use crate::{
     sim::{Ability, ActivationOrder, AvailableChoices, Monster, MonsterID, MonsterTeam, Move, MoveID, Stat},
-    ultimate, AbilityID, Environment, Item, ItemID, PartiallySpecifiedActionChoice, Trap, TrapID, Ultimate,
+    ultimate, AbilityID, Environment, Item, ItemID, MoveChoice, PartiallySpecifiedActionChoice, Trap, TrapID, Ultimate,
 };
 
 /// The main data struct that contains all the information one could want to know about the current battle. This is meant to be passed around as a unit and queried for battle-related information.
@@ -388,15 +388,15 @@ impl BattleState {
             the monster has that move but its out of PP).
             */
             if move_.current_power_points > 0 {
-                let partially_specified_choice = PartiallySpecifiedActionChoice::Move {
-                    move_id: move_.id,
+                let partially_specified_choice = PartiallySpecifiedActionChoice::Move(MoveChoice {
+                    id: move_.id,
                     possible_target_positions: self.possible_targets_for_move(move_),
                     activation_order: ActivationOrder {
                         priority: move_.priority(),
                         speed: monster.stat(Stat::Speed),
                         order: 0, //TODO: Think about how to restrict order to be mutually exclusive
                     },
-                };
+                });
                 move_actions.push(partially_specified_choice);
             }
         }

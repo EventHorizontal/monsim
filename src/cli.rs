@@ -5,7 +5,7 @@ use monsim_utils::MaxSizedVec;
 
 use crate::{
     sim::{AvailableChoices, Battle, PartiallySpecifiedActionChoice},
-    FieldPosition, MonsterID, MoveID, SimulatorUi,
+    FieldPosition, MonsterID, MoveChoice, MoveID, SimulatorUi,
 };
 
 // TODO: We might eventually want to handle io::errors somehow?
@@ -74,7 +74,9 @@ impl SimulatorUi for Cli {
             .enumerate()
         {
             let display_text = match available_choice {
-                PartiallySpecifiedActionChoice::Move { move_id, .. } => format!["Use {}", mov![move_id].name()],
+                PartiallySpecifiedActionChoice::Move(MoveChoice { id: move_id, .. }) => {
+                    format!["Use {}", mov![move_id].name()]
+                }
                 PartiallySpecifiedActionChoice::SwitchOut { .. } => String::from("Switch Out"),
                 PartiallySpecifiedActionChoice::Ultimate { ultimate_id, .. } => {
                     battle.ultimate(ultimate_id).expect("Ultimate should be an existant one.").call_to_action()
@@ -144,6 +146,27 @@ impl SimulatorUi for Cli {
         let user_choice_index = self.prompt_user_for_choice_index(switchable_benched_monster_ids.count());
         let selected_benched_monster_id = switchable_benched_monster_ids[user_choice_index];
         selected_benched_monster_id
+    }
+
+    // TODO: Make something like a `OrCancel<MoveChoice>`
+    fn prompt_user_to_select_move<'a>(&self, battle: &mut Battle, move_user_id: MonsterID, available_moves: MaxSizedVec<&'a MoveChoice, 4>) -> &'a MoveChoice {
+        let mut locked_stdout = stdout().lock();
+        _ = writeln![locked_stdout, "Choose a move for {}", mon![move_user_id].name()];
+        for (index, available_move) in available_moves.into_iter().enumerate() {
+            let move_id = available_move.id;
+            let display_text = format!["Use {}", mov![move_id].name()];
+            _ = writeln![locked_stdout, "[{}] {}", index + 1, display_text];
+        }
+        let available_move_count = available_moves.count();
+        let total_choice_count = available_move_count;
+        _ = writeln![locked_stdout];
+        let user_choice_index = self.prompt_user_for_choice_index(total_choice_count);
+
+        if user_choice_index < total_choice_count {
+            available_moves[user_choice_index]
+        } else {
+            unreachable!("User choice index is already validated.");
+        }
     }
 }
 

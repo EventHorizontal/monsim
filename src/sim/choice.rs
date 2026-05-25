@@ -23,21 +23,19 @@ pub trait SimulatorUi {
         switch_position: FieldPosition,
         switchable_benched_monster_ids: MaxSizedVec<MonsterID, 5>,
     ) -> MonsterID;
+
+    fn prompt_user_to_select_move<'a>(
+        &self,
+        battle: &mut Battle,
+        ultimate_user_id: MonsterID,
+        available_moves: MaxSizedVec<&'a MoveChoice, 4>,
+    ) -> &'a MoveChoice;
 }
 
 /// An action choice before certain details can be established, most often the target.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartiallySpecifiedActionChoice {
-    Move {
-        move_id: MoveID,
-        /**
-        Only the positions with Monsters in them (at the time of calculation) are included.
-        So there is no chance of targetting an empty position (A position can be empty if one
-        of the teams has less Monsters than the total required battlers per side for the format).
-        */
-        possible_target_positions: MaxSizedVec<FieldPosition, 6>,
-        activation_order: ActivationOrder,
-    },
+    Move(MoveChoice),
     /// A switch out action before we know which monster to switch with.
     SwitchOut {
         active_monster_id: MonsterID,
@@ -49,6 +47,33 @@ pub enum PartiallySpecifiedActionChoice {
         activation_order: ActivationOrder,
     },
     CancelSimulation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MoveChoice {
+    pub id: MoveID,
+    /**
+    Only the positions with Monsters in them (at the time of calculation) are included.
+    So there is no chance of targetting an empty position (A position can be empty if one
+    of the teams has less Monsters than the total required battlers per side for the format).
+    */
+    pub possible_target_positions: MaxSizedVec<FieldPosition, 6>,
+    pub activation_order: ActivationOrder,
+}
+
+impl MoveChoice {
+    /// Returns true if the move has no valid targets.
+    pub fn is_empty(&self) -> bool {
+        self.possible_target_positions.is_empty()
+    }
+
+    /// Returns the number of possible targets for this move.
+    ///
+    /// This is useful because it allows us to know if a move has no valid targets
+    /// and therefore should be skipped (e.g. when calculating all possible actions).
+    pub fn num_possible_targets(&self) -> usize {
+        self.possible_target_positions.count()
+    }
 }
 
 /// An action whose details have been fully specified.
@@ -117,8 +142,14 @@ impl AvailableChoices {
         }
     }
 
-    pub fn move_choices(&self) -> impl Iterator<Item = &PartiallySpecifiedActionChoice> {
-        self.choices[0..self.switch_index].iter().flatten()
+    pub fn move_choices(&self) -> impl Iterator<Item = &MoveChoice> {
+        self.choices[0..self.switch_index].iter().flatten().map(|it| {
+            if let PartiallySpecifiedActionChoice::Move(move_choice) = it {
+                move_choice
+            } else {
+                unreachable!()
+            }
+        })
     }
 
     pub fn switch_out_choice(&self) -> Option<&PartiallySpecifiedActionChoice> {

@@ -667,8 +667,7 @@ pub fn change_form(battle: &mut Battle, monster_id: MonsterID, new_form: &'stati
     assert!(battle.monster(monster_id).species() == new_form);
     mon![mut monster_id].primary_type = new_form.primary_type();
     mon![mut monster_id].secondary_type = new_form.secondary_type();
-    // HACK: We need to handle abilities properly here.
-    mon![mut monster_id].ability.species = new_form.allowed_abilities().0;
+    mon![mut monster_id].ability.species = new_form.allowed_abilities().primary();
     mon![mut monster_id].species = new_form;
     battle.queue_message(format![
         "{name} changed to its {form} form!",

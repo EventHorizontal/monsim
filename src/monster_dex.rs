@@ -3,8 +3,8 @@
 use monsim::{
     effects,
     sim::{MonsterSpecies, StatSet, Type},
-    EventFilteringOptions, EventHandler, EventListener, MegaEvolution, MonsterDexEntry, MonsterForm, MonsterID, Nothing, NullEventListener,
-    PositionRelationFlags,
+    AbilitySet, EventFilteringOptions, EventHandler, EventListener, MegaEvolution, MonsterAlternateForm, MonsterDexEntry, MonsterID, Nothing,
+    NullEventListener, PositionRelationFlags,
 };
 use monsim_macros::mon;
 use monsim_utils::MaxSizedVec;
@@ -19,7 +19,11 @@ pub const Dandyleo: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEn
     // TODO: Not sure yet if we should have this field.
     form_name: None,
     base_stats: StatSet::new(40, 45, 35, 65, 55, 70),
-    allowed_abilities: (&Pickup, None, None),
+    allowed_abilities: AbilitySet {
+        primary: &Pickup,
+        secondary: None,
+        hidden: None,
+    },
     event_listener: &NullEventListener,
     available_ultimates: [None, None, None, None],
 });
@@ -30,7 +34,11 @@ pub const Squirecoal: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDex
     form_name: None,
     primary_type: Type::Fire,
     secondary_type: None,
-    allowed_abilities: (&Pickup, Some(&FlashFire), None),
+    allowed_abilities: AbilitySet {
+        primary: &Pickup,
+        secondary: Some(&FlashFire),
+        hidden: None,
+    },
     base_stats: StatSet::new(45, 60, 40, 70, 50, 45),
     event_listener: &NullEventListener,
     available_ultimates: [None, None, None, None],
@@ -42,7 +50,11 @@ pub const Merkey: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntr
     form_name: None,
     primary_type: Type::Water,
     secondary_type: Some(Type::Bug),
-    allowed_abilities: (&Pickup, None, None),
+    allowed_abilities: AbilitySet {
+        primary: &Pickup,
+        secondary: None,
+        hidden: None,
+    },
     base_stats: StatSet::new(50, 70, 50, 50, 50, 40),
     event_listener: &NullEventListener,
     available_ultimates: [None, None, None, None],
@@ -54,7 +66,11 @@ pub const Spacimian: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexE
     form_name: None,
     primary_type: Type::Water,
     secondary_type: Some(Type::Bug),
-    allowed_abilities: (&Pickup, None, None),
+    allowed_abilities: AbilitySet {
+        primary: &Pickup,
+        secondary: None,
+        hidden: None,
+    },
     base_stats: StatSet::new(100, 90, 120, 135, 130, 50),
     event_listener: &NullEventListener,
     available_ultimates: [
@@ -74,8 +90,12 @@ pub const MegaSpacimian: MonsterSpecies = MonsterSpecies::from_dex_entry(Monster
     form_name: Some("Mega"),
     primary_type: Type::Water,
     secondary_type: Some(Type::Dragon),
-    allowed_abilities: (&FlashFire, None, None),
-    base_stats: StatSet::new(150, 90, 120, 185, 130, 50),
+    allowed_abilities: AbilitySet {
+        primary: &FlashFire,
+        secondary: None,
+        hidden: None,
+    },
+    base_stats: StatSet::new(150, 90, 120, 185, 130, 90),
     event_listener: &NullEventListener,
     available_ultimates: [None, None, None, None],
 });
@@ -86,7 +106,11 @@ pub const Zombler: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEnt
     primary_type: Type::Ghost,
     form_name: None,
     secondary_type: Some(Type::Dark),
-    allowed_abilities: (&Contrary, None, None),
+    allowed_abilities: AbilitySet {
+        primary: &Contrary,
+        secondary: None,
+        hidden: None,
+    },
     base_stats: StatSet::new(90, 50, 34, 60, 44, 71),
     event_listener: &NullEventListener,
     available_ultimates: [None, None, None, None],
@@ -98,20 +122,22 @@ pub const MonstrossiveFullForm: MonsterSpecies = MonsterSpecies::from_dex_entry(
     form_name: Some("Full"),
     primary_type: Type::Ghost,
     secondary_type: None,
-    allowed_abilities: (&Zombie, None, None),
+    allowed_abilities: AbilitySet {
+        primary: &Zombie,
+        secondary: None,
+        hidden: None,
+    },
     base_stats: StatSet::new(100, 110, 90, 81, 20, 55),
     event_listener: &NullEventListener,
     available_ultimates: [None, None, None, None],
 });
 
-pub const MonstrossiveHungryForm: MonsterSpecies = MonsterSpecies::from_dex_entry(MonsterDexEntry {
-    dex_number: 047,
-    name: "Monstrossive",
-    form_name: Some("Hungry"),
+pub const MonstrossiveHungryForm: MonsterSpecies = MonsterSpecies::from_alternate_form(MonsterAlternateForm {
+    species: &MonstrossiveFullForm,
+    form_name: "Hungry",
     primary_type: Type::Ghost,
     secondary_type: Some(Type::Dark),
-    allowed_abilities: (&Zombie, None, None),
+    ability: &Zombie,
     base_stats: StatSet::new(100, 90, 10, 81, 20, 155),
     event_listener: &NullEventListener,
-    available_ultimates: [None, None, None, None],
 });

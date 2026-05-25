@@ -267,7 +267,7 @@ impl Monster {
                 vec
             });
 
-        let ability = species.allowed_abilities().0.spawn();
+        let ability = species.allowed_abilities().primary().spawn();
 
         let moves = MaxSizedVec::from_vec(moves);
 

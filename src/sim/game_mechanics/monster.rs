@@ -320,6 +320,31 @@ impl Monster {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AbilitySet {
+    pub primary: &'static AbilitySpecies,
+    pub secondary: Option<&'static AbilitySpecies>,
+    pub hidden: Option<&'static AbilitySpecies>,
+}
+
+impl AbilitySet {
+    pub fn primary(&self) -> &'static AbilitySpecies {
+        self.primary
+    }
+
+    pub fn secondary(&self) -> Option<&'static AbilitySpecies> {
+        self.secondary
+    }
+
+    pub fn hidden(&self) -> Option<&'static AbilitySpecies> {
+        self.hidden
+    }
+
+    fn to_list(&self) -> [Option<&'static AbilitySpecies>; 3] {
+        [Some(self.primary), self.secondary, self.hidden]
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct MonsterSpecies {
     dex_number: u16,
@@ -327,8 +352,7 @@ pub struct MonsterSpecies {
     form_name: Option<&'static str>,
     primary_type: Type,
     secondary_type: Option<Type>,
-    /// `(primary, secondary, hidden)`
-    allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
+    allowed_abilities: AbilitySet,
     base_stats: StatSet,
     event_listener: &'static dyn EventListener<MonsterID>,
 
@@ -380,8 +404,37 @@ impl MonsterSpecies {
         }
     }
 
+    pub const fn from_alternate_form(form: MonsterAlternateForm) -> Self {
+        let MonsterAlternateForm {
+            species,
+            form_name,
+            primary_type,
+            secondary_type,
+            ability,
+            base_stats,
+            event_listener,
+        } = form;
+
+        Self {
+            dex_number: species.dex_number,
+            name: species.name,
+            form_name: Some(form_name),
+            primary_type,
+            secondary_type,
+            allowed_abilities: AbilitySet {
+                primary: ability,
+                secondary: None,
+                hidden: None,
+            },
+            base_stats,
+            event_listener,
+            available_ultimates: [None; 4],
+        }
+    }
+
     pub fn can_have_ability(&self, ability_species: &'static AbilitySpecies) -> bool {
-        [Some(self.allowed_abilities.0), self.allowed_abilities.1, self.allowed_abilities.2]
+        self.allowed_abilities()
+            .to_list()
             .iter()
             .flatten()
             .any(|allowed_ability| ability_species == *allowed_ability)
@@ -408,7 +461,7 @@ impl MonsterSpecies {
     }
 
     #[inline(always)]
-    pub fn allowed_abilities(&self) -> (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>) {
+    pub fn allowed_abilities(&self) -> AbilitySet {
         self.allowed_abilities
     }
 
@@ -448,7 +501,7 @@ pub struct MonsterDexEntry {
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     /// The order of abilities is `(primary, secondary, hidden)`
-    pub allowed_abilities: (&'static AbilitySpecies, Option<&'static AbilitySpecies>, Option<&'static AbilitySpecies>),
+    pub allowed_abilities: AbilitySet,
     pub base_stats: StatSet,
     pub event_listener: &'static dyn EventListener<MonsterID>,
     pub available_ultimates: [Option<&'static dyn Ultimate>; ultimate::MAX_ULTIMATES_PER_MONSTER],
@@ -558,13 +611,14 @@ impl Display for MonsterID {
     }
 }
 
-pub struct MonsterForm {
-    pub dex_number: u16,
-    pub name: &'static str,
+#[derive(Debug, Clone, Copy)]
+pub struct MonsterAlternateForm {
+    pub species: &'static MonsterSpecies,
+    pub form_name: &'static str,
     pub primary_type: Type,
     pub secondary_type: Option<Type>,
     /// If this is `None` then the Monster will retain its ability upon changing form.
-    pub ability: Option<&'static AbilitySpecies>,
+    pub ability: &'static AbilitySpecies,
     pub base_stats: StatSet,
     pub event_listener: &'static dyn EventListener<MonsterID>,
 }

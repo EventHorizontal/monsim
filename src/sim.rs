@@ -46,6 +46,8 @@ impl Display for SimError {
     }
 }
 
+const MAX_ACTIONS_PER_TURN: usize = 12;
+
 /**
 The main engine behind `monsim`. This struct is a namespace for all the simulator functionality. It contains no data,
 just functions that transform a `Battle` from one state to another.
@@ -78,9 +80,11 @@ impl BattleSimulator {
             ui.update_battle_status(&mut self.battle);
 
             // Choice Phase ------------------------------------------------- //
-            let mut action_schedule = Vec::new();
+            let mut action_schedule: MaxSizedVec<FullySpecifiedActionChoice, MAX_ACTIONS_PER_TURN> = MaxSizedVec::empty();
             let mut monsters_selected_for_switch = MaxSizedVec::empty();
             let active_monster_ids = self.battle.active_monster_ids();
+
+            // Prompt the user for each monster's action choice and convert to FullySpecifiedActionChoice.
             for active_monster_id in active_monster_ids {
                 let available_choices_for_monster = self
                     .battle
@@ -218,35 +222,23 @@ impl BattleSimulator {
                 };
             }
 
+            // Sorting Phase --------------------------------------------- //
+
+            self.sort_action_schedule(&mut action_schedule);
+
             // Action Phase --------------------------------------------- //
 
             #[cfg(feature = "debug")]
             let action_phase_start_time = std::time::SystemTime::now();
 
-            ordering::sort_by_activation_order(&mut self.battle.prng, &mut action_schedule, |choice| choice.activation_order());
+            'action_loop: while not![action_schedule.is_empty()] {
+                let next_action_choice = action_schedule.pop_front();
 
-            'action_loop: for action_choice in action_schedule.into_iter() {
                 #[cfg(feature = "debug")]
-                println![
-                    "(Simulating {})",
-                    match action_choice {
-                        FullySpecifiedActionChoice::Move { move_id, .. } =>
-                            format!["{} using {}", self.battle.monster(move_id.owner_id).name(), self.battle.move_(move_id).name()],
-                        FullySpecifiedActionChoice::SwitchOut {
-                            active_monster_id,
-                            benched_monster_id,
-                            ..
-                        } => format![
-                            "{} switching out with {}",
-                            self.battle.monster(active_monster_id).name(),
-                            self.battle.monster(benched_monster_id).name()
-                        ],
-                        FullySpecifiedActionChoice::Ultimate { ultimate_id, .. } =>
-                            format!["{} used it's ultimate", self.battle.monster(ultimate_id.user_id).name()],
-                    }
-                ];
+                println!["(Simulating {})", self.action_choice_as_string(&next_action_choice),];
+
                 // If the actor fainted we move on to the next action..
-                let actor_id = action_choice.actor_id();
+                let actor_id = next_action_choice.actor_id();
                 if self.battle.monster(actor_id).is_fainted() {
                     self.battle.queue_multiple_messages(
                         [
@@ -259,7 +251,7 @@ impl BattleSimulator {
                 }
 
                 // ...otherwise resolve the action
-                match action_choice {
+                match next_action_choice {
                     FullySpecifiedActionChoice::Move { move_id, target_positions, .. } => {
                         // The target position may be empty if the target fainted with no replacement, for example.
                         let target_ids = target_positions
@@ -301,6 +293,29 @@ impl BattleSimulator {
                     self.battle.queue_multiple_messages(&[EMPTY_LINE, "The battle ended.", "---", EMPTY_LINE]);
                     self.battle.message_log.show_new_messages();
                     break 'turn_loop;
+                }
+
+                // And we also have to resort the action schedule in case there were any speed changes.
+                {
+                    for action in action_schedule.iter_mut() {
+                        match action {
+                            FullySpecifiedActionChoice::Move { move_id, activation_order, .. } => {
+                                activation_order.speed = self.battle.monster(move_id.owner_id).stat(Stat::Speed);
+                            }
+                            FullySpecifiedActionChoice::SwitchOut {
+                                active_monster_id,
+                                activation_order,
+                                ..
+                            } => {
+                                activation_order.speed = self.battle.monster(*active_monster_id).stat(Stat::Speed);
+                            }
+                            FullySpecifiedActionChoice::Ultimate { ultimate_id, activation_order } => {
+                                activation_order.speed = self.battle.monster(ultimate_id.user_id).stat(Stat::Speed);
+                            }
+                        }
+                    }
+
+                    self.sort_action_schedule(&mut action_schedule);
                 }
             }
 
@@ -420,5 +435,56 @@ impl BattleSimulator {
         }
 
         Ok(true)
+    }
+
+    fn sort_action_schedule(&mut self, action_schedule: &mut MaxSizedVec<FullySpecifiedActionChoice, MAX_ACTIONS_PER_TURN>) {
+        ordering::sort_by_activation_order(&mut self.battle.prng, action_schedule.as_mut_slice(), |choice| {
+            choice.expect("We only get the Some elements from mut slice").activation_order()
+        });
+
+        #[cfg(feature = "debug")]
+        {
+            println!("Sorted action schedule:");
+            let mut list = String::from("[");
+            for action_choice in action_schedule.iter() {
+                list.push_str(&format!["{}, ", self.action_choice_as_string(action_choice)]);
+            }
+            println!("{list}]");
+        }
+    }
+
+    fn action_choice_as_string(&mut self, action_choice: &FullySpecifiedActionChoice) -> String {
+        format![
+            "{}",
+            match action_choice {
+                FullySpecifiedActionChoice::Move { move_id, activation_order, .. } => format![
+                    "{} using {} (Priority: {}, Speed: {}, Order: {})",
+                    self.battle.monster(move_id.owner_id).name(),
+                    self.battle.move_(*move_id).name(),
+                    activation_order.priority,
+                    activation_order.speed,
+                    activation_order.order
+                ],
+                FullySpecifiedActionChoice::SwitchOut {
+                    active_monster_id,
+                    benched_monster_id,
+                    activation_order,
+                } => format![
+                    "{} switching out with {} (Priority: {}, Speed: {}, Order: {})",
+                    self.battle.monster(*active_monster_id).name(),
+                    self.battle.monster(*benched_monster_id).name(),
+                    activation_order.priority,
+                    activation_order.speed,
+                    activation_order.order
+                ],
+                FullySpecifiedActionChoice::Ultimate { ultimate_id, activation_order } => format![
+                    "{} using its ultimate (Priority: {}, Speed: {}, Order: {})",
+                    self.battle.monster(ultimate_id.user_id).name(),
+                    activation_order.priority,
+                    activation_order.speed,
+                    activation_order.order
+                ],
+            }
+        ]
     }
 }
